@@ -1,2 +1,3 @@
-# lf
-Functional deep learning
+# LF
+Functional deep learning in python.
+

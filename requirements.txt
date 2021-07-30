@@ -1,0 +1,11 @@
+click==7.1.0
+blessings==1.7
+pandas==1.2.4
+python-forge==18.6.0
+pymongo==3.8.0
+scipy==1.5.4
+sentencepiece==0.1.95
+numpy==1.18.5
+dill==0.3.3
+tqdm==4.31.1
+flask
