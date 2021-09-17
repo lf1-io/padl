@@ -29,3 +29,7 @@ class Variable:
         self._has_value = True
         self._value = x
 
+
+class StateDict(Variable):
+    ...
+

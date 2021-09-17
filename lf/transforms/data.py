@@ -13,7 +13,6 @@ class DataSet(Transform):
     :param: samples
     """
     def __init__(self, samples):
-
         super().__init__(
             samples=samples,
         )
@@ -31,7 +30,7 @@ class DataSet(Transform):
         return x
 
 
-class Images(DataSet):
+class Images(DataSet):  # TODO do we need these? could just compose with load image etc..
     """
     :param: samples
     """

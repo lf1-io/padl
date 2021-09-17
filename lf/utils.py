@@ -6,7 +6,7 @@ import numpy
 import torch
 
 from torch.utils.data import DataLoader
-from lf.dataproc.data import SimpleIterator
+from lf.transforms import SimpleIterator
 
 
 def make_loader(samples, model, *args, **kwargs):

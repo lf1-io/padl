@@ -12,7 +12,6 @@ import os
 import functools
 import importlib
 import inspect
-import io
 import itertools
 import json
 import pdb
@@ -29,18 +28,14 @@ import torch
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
-from lf.dataproc.data import SimpleIterator
-from lf.typing.types import (Any, Dict, Bool, Number, Float, Integer, Tensor, FloatTensor,
-                             LongTensor, Image, Set, Sequence, List, Tuple, Ftype, TypeBuilder,
-                             TypeMismatch, Mismatch, Typevar, String, Void, FtypeDict,
+from lf.typing.types import (Any, Tensor,
+                             Sequence, Ftype, TypeBuilder,
+                             TypeMismatch, Mismatch, Typevar, Void, FtypeDict,
                              val, Mvar, Matchable, AnyType)
 from lf.typing.checkers import JitError
-from lf.utils import evalmodel
-from lf.utils import convert, unbatch
-from lf.variables import (
-    Variable,
-    AlephMongoCrossProcessClient,
-)
+from lf.utils import convert, unbatch, evalmodel
+from lf.transforms.utils import get_source
+from lf.variables import Variable
 from lf import saving
 
 settings = {
@@ -107,7 +102,7 @@ def _load_trans(class_, dict_param: tp.Dict, dict_var: tp.Dict) -> "Transform":
         trans_loaded = class_.from_dict(dict_param['kwargs'], vars=dict_var, handles={})
     except AttributeError as err:
         warn(str(err))
-        if 'from_dict' in str(err):
+        if 'from_dict' in str(err): # TODO what's this?
             warn(f'legacy function used in load or {dict_param}')
             class_ = eval(class_.name)
             trans_loaded = class_.from_dict(dict_param['kwargs'], vars=dict_var,
@@ -174,7 +169,7 @@ def load(
     """
     Load transform from file.
 
-    :param path_: path_ to model (usually `.tabc` filename)
+    :param path_: path_ to model (usually `.lf` filename)
     :param compile_transform: toggle off to `False` if only to load dictionaries
     :param test: toggle on to check sample inputs/ outputs
     :param load_samples: If *True*, load input / output samples if they are stored with the model.
@@ -238,18 +233,17 @@ def move_torch_jit_to_device(variables, to_device):
     return prev_devices
 
 
-def save(t, path_, legacy=False, **kwargs):
+def save(t, path_, **kwargs):
     """
     Save a transform
 
     :param t: transform
     :param path_: path to which to save
-    :param legacy: If *True*, save in legacy format.
     """
     path_ = str(path_)
 
-    if not path_.endswith('.tabc'):
-        path_ += '.tabc'
+    if not path_.endswith('.lf'):
+        path_ += '.lf'
 
     current_device = t.device
     t.to('cpu')
@@ -263,10 +257,7 @@ def save(t, path_, legacy=False, **kwargs):
             v[key] = v[key].value
 
     metadata = {**kwargs, '__versions__': t.__versions__}
-    if legacy:
-        _save_legacy(my_dict, v, path_)
-    else:
-        saving.save(path_, d=my_dict, v=v, metadata=metadata, samples=t._samples)
+    saving.save(path_, d=my_dict, v=v, metadata=metadata, samples=t._samples)
 
     _ = move_torch_jit_to_device(v, prev_devices)
     t.to(current_device)
@@ -795,23 +786,6 @@ class Transform:
                 raise err
         return d
 
-    @staticmethod
-    def from_mongo_client(e):
-        """
-        get mongo client
-        :param e: Exception raised
-        :return:
-        """
-        try:
-            with open('config.json') as file1:
-                clientdef = json.load(file1)['mongodb']
-
-            warn('**USING DEFAULT CLIENT!!**')
-            val = AlephMongoCrossProcessClient(**clientdef, name='mongoclient')
-        except (FileNotFoundError, KeyError):
-            raise e
-        return val
-
     @classmethod
     def _load_from_dict_helper_str(cls, vals, vars):
         try:
@@ -869,16 +843,6 @@ class Transform:
 
         return t
 
-    @staticmethod
-    def _parse_handles(handles):
-        """
-        :param handles:
-        """
-        for k in handles:
-            if not handles[k].startswith('lambda'):
-                handles[k] = json.loads(handles[k])
-        return handles
-
     @classmethod
     def _eq_no_types_dict(cls, a: tp.Dict, b: tp.Dict) -> bool:
         """Comparing two dictionaries"""
@@ -931,14 +895,13 @@ class Transform:
         # ignore type (this can differ in the dict although it's essentially the same)
         return self._eq_no_types(s_dict, o_dict)
 
-    def save(self, path_: str, legacy=False, **kwargs) -> None:
+    def save(self, path_: str, **kwargs) -> None:
         """ Save transform.
 
         :param path_: Path to file to save.
         :param kwargs: Key-value pairs to add to meta-data (e.g. documentation etc.).
-        :param legacy: If *True*, save in legacy format.
         """
-        save(self, path_, legacy=legacy, **{**self.meta_info, **kwargs})
+        save(self, path_, **{**self.meta_info, **kwargs})
 
     @property
     def trans(self) -> "Transform":
@@ -1229,23 +1192,6 @@ class Transform:
         if isinstance(t, ListTransform) and t.name is None:
             return '(' + string + ')'
         return string
-
-    def __getitem__(self, item):
-        """
-        :param item:
-        """
-        if callable(self._handles[item]):
-            return self._handles[item](self)
-        return self._handles[item]
-
-    def __setitem__(self, key, item):
-        """Set a handle. """
-        if isinstance(item, str) and item.startswith('lambda'):
-            self._handle_defs[key] = item
-            self._handles[key] = eval(item)
-        else:
-            self._handle_defs[key] = json.dumps(item)
-            self._handles[key] = item
 
     def do(self, args):
         """Do the transform. Inheriting transforms need to implement this. """
@@ -1713,288 +1659,6 @@ class ListTransform(Transform):
 
     def pretty_string(self, marker=None):
         return self.astr(with_type=True, compact=False, with_types=False)
-
-
-class Layer(Transform):
-    """ Transform wrapping a pytorch layer.
-
-    :param layer: `torch.jit.ScriptModule` or `torch.nn.Module`
-    :param layer_name: name of layer
-    :param script: name of method to use (default: `forward`)
-    :param _type: type tuple
-    :param in_type: input type
-    :param out_type: output type
-    """
-
-    def __init__(self, layer=None, layer_name='', script='forward', _type=None,
-                 in_type=Any(), out_type=Any(), uid=None):
-
-        if uid is None:
-            uid = str(uuid4())
-
-        super().__init__(in_type=in_type, out_type=out_type,
-                         script=script, layer=layer, layer_name=layer_name,
-                         _type=_type, uid=uid)
-
-        self.script_fn = getattr(self.layer, self.script)
-
-    def do(self, args):
-        """
-        :param args:
-        """
-        if type(args) in {tuple, list}:
-            return self.script_fn(*args)
-        if type(args) == torch.Tensor:
-            return self.script_fn(args)
-        raise TypeError('only support tensors or tuples/lists thereof')
-
-    @property
-    def layers(self):
-        return {self.layer_name + f'_{self.uid}': self.layer}
-
-    def train(self):
-        self.layer.train()
-        self._stage = 'train'
-
-    def eval(self):
-        self.layer.eval()
-        self._stage = 'eval'
-
-    def infer(self):
-        self.layer.eval()
-        self._stage = 'infer'
-
-    def to_dict(self):
-        """
-        Convert layer to dictionaries
-        :return:
-        """
-
-        layer_name = self.layer_name + f'_{self.uid}'
-        my_dict = {
-            'layer': '$' + layer_name,
-            'script': self.script,
-            'layer_name': self.layer_name,
-            'uid': self.uid,
-        }
-
-        v = {layer_name: self.layer}
-
-        self._add_type_to_dict(my_dict)
-
-        res = {
-            'cls': self.__class__.__module__ + '.' + self.__class__.__name__,
-            'kwargs': my_dict,
-            'handles': self._handle_defs
-        }
-
-        if self._name is not None:
-            res['_name'] = self.name
-        return res, v
-
-    @classmethod
-    def from_dict(cls, d, vars=None, handles=None):
-        """
-        Build from a dict
-        :param d: dict
-        :param vars: var dict
-        :param handles:
-        :return:
-        """
-        cls.type_from_dict(d)
-        if not handles:
-            handles = {}
-        if 'uid' in d:
-            layer_name = d['layer_name'] + f'_{d["uid"]}'
-            uid = d['uid']
-        else:
-            layer_name = d['layer_name']
-            uid = None
-
-        t = cls(layer=vars[layer_name], layer_name=d['layer_name'],
-                script=d['script'], _type=d.get('_type'), uid=uid)
-
-        handles = cls._parse_handles(handles)
-        for k in handles:
-            t[k] = handles[k]
-
-        return t
-
-    def repr(self):
-        str_ = super().repr()[:-1] + ': "$' + self.layer_name + '/' + \
-               self.script + '"'
-        str_ += '\n'
-        str_ += '\n'.join(['    ' + x
-                           for x in self.layer.__repr__().split('\n')])
-        str_ += '>'
-        return str_
-
-    def to(self, device):
-        """
-        Move to device
-        :param device: device
-        """
-        self._device = device
-        self.layer.to(device)
-        return self
-
-    def astr(self, with_type=True, compact=True, with_types=False):
-        return self.layer_name
-
-    def traced(self, example=None):
-        """Return a traced version of the layer.
-
-        :param example: Example input needed for tracing. If *None*, will try to infer from
-            input type.
-        """
-        if example is None:
-            example = self.type.x.sample()
-        return TracedLayer(layer=self.layer, example=example, in_type=self.type.x,
-                           out_type=self.type.y, script=self.script, layer_name=self.layer_name)
-
-
-class TracedLayer(Transform):
-    """ Wrapper around a jit-traceable pytorch module.
-
-    :param layer: `torch.nn.Module`
-    :param example: example on which to perform tracing
-    :param in_type: in-type
-    :param out_type: out-type
-    :param layer_name: name of layer
-    :param script: name of method
-    :param _type: tuple of `(in_type, out_type)`
-    """
-
-    def __init__(self, layer, example=None,
-                 in_type=Any(), out_type=Any(),
-                 layer_name='', script='forward', _type=None, uid=None):
-
-        if uid is None:
-            uid = str(uuid4())
-
-        super().__init__(in_type=in_type, out_type=out_type, script=script, layer=layer,
-                         layer_name=layer_name, _type=_type, example=example, uid=uid)
-
-        self.script_fn = getattr(self.layer, self.script)
-
-    def do(self, args):
-        """
-        :param args: Args to call with
-        :return:
-        """
-        if type(args) in {tuple, list}:
-            return self.script_fn(*args)
-        if type(args) == torch.Tensor:
-            return self.script_fn(args)
-        raise TypeError('only support tensors or recursively tuples thereof')
-
-    @property
-    def layers(self):
-        return {self.layer_name + f'_{self.uid}': self.layer}
-
-    def train(self):
-        self.layer.train()
-        self._stage = 'train'
-
-    def eval(self):
-        self.layer.eval()
-        self._stage = 'eval'
-
-    def infer(self):
-        self.layer.eval()
-        self._stage = 'infer'
-
-    def _clone(self):
-        t = type(self)(
-            layer=self.layer,
-            example=self.example,
-            layer_name=self.layer_name,
-            script=self.script,
-            _type=self.type
-        )
-        return t
-
-    def to_dict(self):
-        """
-        Convert to dictionaries
-        """
-        my_dict = {}
-        layer_name = self.layer_name + f'_{self.uid}'
-        my_dict['layer'] = '$' + layer_name
-        my_dict['script'] = self.script
-        my_dict['layer_name'] = self.layer_name
-        my_dict['uid'] = self.uid
-
-        if not isinstance(self.layer, torch.jit.TopLevelTracedModule) and self.example is not None:
-            with evalmodel(self.layer):
-                if not isinstance(self.example, tuple):
-                    example = self.example.to(self.device)
-                else:
-                    example = tuple([ex.to(self.device) for ex in self.example])
-                traced_layer = torch.jit.trace(self.layer, example)
-        else:
-            traced_layer = self.layer
-
-        v = {layer_name: traced_layer}
-
-        self._add_type_to_dict(my_dict)
-
-        res = {
-            'cls': self.__class__.__module__ + '.' + self.__class__.__name__,
-            'kwargs': my_dict,
-        }
-
-        if self._name is not None:
-            res['_name'] = self.name
-
-        return res, v
-
-    @classmethod
-    def from_dict(cls, d, vars=None, handles=None):
-        """
-        Build from dictionary
-        :param d: dict
-        :param vars: var dict
-        :param handles:
-        :return:
-        """
-        if '_type' in d:
-            _type = Ftype.from_dict(d.pop('_type'))
-            d = {**d, '_type': _type}
-        else:
-            _type = None
-        if 'uid' in d:
-            layer_name = d['layer_name'] + f'_{d["uid"]}'
-            uid = d['uid']
-        else:
-            layer_name = d['layer_name']
-            uid = None
-        t = cls(layer=vars[layer_name], layer_name=d['layer_name'],
-                script=d['script'], _type=_type, uid=uid)
-
-        if handles is not None:
-            for k in handles:
-                t[k] = handles[k]
-
-        return t
-
-    from_dict.__doc__ = Transform.from_dict.__doc__
-
-    def repr(self):
-        str_ = super().repr()[:-1] + ': "$' + self.layer_name + '/' + self.script + '"'
-        str_ += '\n'
-        str_ += '\n'.join(['    ' + x for x in self.layer.__repr__().split('\n')])
-        str_ += '>'
-        return str_
-
-    def to(self, device):
-        """
-        Move to device
-        :param device: device
-        """
-        self._device = device
-        self.layer.to(device)
-        return self
 
 
 class Compose(ListTransform):
@@ -2813,7 +2477,7 @@ class TeleportReader(Transform):
         return f'{self.alias}⇝'
 
 
-class Choose(Transform): # do we need this I've never used it
+class Choose(Transform): # do we need this I've never used it - class If seems to do the job
     """Choose one of two transforms based on the value of *condition* at
     execution time.
 
@@ -3504,14 +3168,7 @@ class Class(Transform):
         assert isinstance(c, Transform)
 
         if not source:
-            source = inspect.getsource(c.__class__)
-            source = strip_decorator(source)
-            if source[0][0] != ' ':
-                padding = 0
-            else:
-                padding = [i for i, x in enumerate(source[0]) if x != ' '][0]
-
-            source = '\n'.join([x[padding:] for x in source])
+            source = get_source(c)
 
         super().__init__(c=c,
                          imports=imports,
@@ -3531,7 +3188,12 @@ class Class(Transform):
 
     @staticmethod
     def _source_with_imports(source, imports):
-        defn = 'from lf.transforms import Transform\nfrom lf import transforms as lf\n'
+        defn = (
+            'from lf.transforms import Transform\n'
+            'from lf.transforms import ListTransform\n'
+            'from lf.transforms.data import DataSet\n'
+            'from lf import transforms as lf\n'
+        )
         if not imports:
             return defn + source
 
@@ -3600,7 +3262,7 @@ class Class(Transform):
         return self.c.do(*args)
 
 
-def wrap_class(imports, in_type=Any(), out_type=Any()):
+def wrap_class(imports, in_type=Any(), out_type=Any()): # TODO collapse into trans
     """Decorator for wrapping a class such that it becomes a "Class"-Transform. """
 
     imports_ = []
@@ -3632,7 +3294,7 @@ def wrap_class(imports, in_type=Any(), out_type=Any()):
     return decorator
 
 
-def wrap_layer(layer_class: torch.nn.Module, in_type=Any(), out_type=Any()):
+def wrap_layer(layer_class: torch.nn.Module, in_type=Any(), out_type=Any()): # deprecate for 1 function
     """ Wrap a torch Module.
 
     :param layer_class: Module / layer class.
@@ -3900,7 +3562,7 @@ class _X:
         return T()
 
 
-x = _X()
+x = _X() # TODO rename? (not Cyril compliant)
 
 
 class Value(Transform):
@@ -3931,7 +3593,7 @@ def use_teleport(name: str):
     return TeleportWriter(name, alias=name), TeleportReader(name, alias=name)
 
 
-def I(*args, **kwargs): # consider renaming multiple of these...
+def I(*args, **kwargs): # not sure what's it for
     """
     Get Identity
     :param args:
@@ -3939,3 +3601,29 @@ def I(*args, **kwargs): # consider renaming multiple of these...
     :return:
     """
     return Identity()(*args, **kwargs)
+
+
+class SimpleIterator:
+    """
+    :param samples: object implementing __getitem__ and __len__
+    :param trans: instance of lf.transforms.core.Transform
+    :param exception: exception to catch for default
+    :param default: default value
+    """
+    def __init__(self, samples, trans, exception=None, default=None):
+        self.samples = samples
+        self.trans = trans
+        self.exception = exception
+        self.default = default
+
+    def __getitem__(self, item):
+        if self.exception:
+            try:
+                return self.trans(self.samples[item])
+            except self.exception:
+                return self.default
+        else:
+            return self.trans(self.samples[item])
+
+    def __len__(self):
+        return len(self.samples)

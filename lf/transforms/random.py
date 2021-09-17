@@ -2,27 +2,11 @@
 """Transforms that use functionality with random components"""
 import random
 import time
-from warnings import warn
 
 import numpy
 
-from lf.transforms.core import Transform, ListTransform, trans, WrapperTransform, Compose
+from lf.transforms.core import Transform, ListTransform, trans, Compose
 from lf.typing import types as t
-
-
-class ShuffleList(Transform):
-    """
-    Shuffle list of objects
-    ??a: make function transform
-    """
-
-    def __init__(self):
-        warn('Deprecated: Use "shuffle" instead of "ShuffleList()"')
-        super().__init__(in_type=t.List(len='?a'), out_type=t.List(len='?a'))
-
-    def do(self, l_):
-        perm = list(numpy.random.permutation(len(l_)))
-        return [l_[i] for i in perm]
 
 
 @trans(t.List(len='?a'), t.List(len='?a'))
@@ -66,7 +50,7 @@ class Sample(Transform):
         )
 
 
-class RandomApply(WrapperTransform):
+class RandomApply(Transform):
     """ Randomly apply transforms."""
 
     def __init__(self, transform, p=0.5):
@@ -114,49 +98,6 @@ class RandomOrder(ListTransform):
         body = '\n'.join(lines)
         end = '\n])'
         return start + body + end
-
-
-class ClipInput(Transform):
-    """Clip the input"""
-
-    def __init__(self, n=95):
-        super().__init__(n=n)
-        self._p = self.n - numpy.arange(self.n)
-        self._p = self._p / self._p.sum()
-
-    def do(self, input_):
-        if self._stage != 'train':
-            return input_
-
-        new_len = int(numpy.random.multinomial(1, self._p).nonzero()[0][0] + 5)
-        new_len = min(new_len, len(input_))
-
-        if new_len < len(input_):
-            start = numpy.random.randint(0, len(input_) - new_len)
-            return input_[start:start + new_len]
-
-        return input_
-
-
-class ClipInputBatch(Transform):
-    """Clip the input batch"""
-    def __init__(self, n=95):
-        super().__init__(n=n)
-        self._p = self.n - numpy.arange(self.n)
-        self._p = self._p / self._p.sum()
-
-    def do(self, x):
-        input_ = x[0]
-        lens = x[1]
-        new_len = int(numpy.random.multinomial(1, self._p).nonzero()[0][0] + 5)
-        new_len = min(new_len, max(lens).item())
-        for i, a_len in enumerate(lens):
-            if a_len.item() <= new_len:
-                continue
-            start = numpy.random.randint(a_len.item() - new_len)
-            lens[i] = new_len
-            input_[i, :a_len] = input_[i, start:start+a_len].clone()
-        return input_[:, :new_len], lens
 
 
 class Synchronized(ListTransform):

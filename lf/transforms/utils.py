@@ -1,10 +1,56 @@
 # pylint: disable=no-member,arguments-differ,not-callable
 """Utilities for lf transforms"""
+import inspect
+from random import choice
 import functools
 import torch
 
-from lf.transforms.core import Layer
+# from lf.transforms.core import Layer
+from types import ModuleType
 import lf.typing.types as t
+
+
+def strip_decorator(source):
+    """
+    :param source:
+    :return:
+    """
+    source = source.split('\n')
+    start = next(i for i, x in enumerate(source) if x.strip().startswith('def')
+                 or x.strip().startswith('class'))
+    return [x for x in source[start:] if x]
+
+
+def get_instance_from_source(defn, imports, cls, kwargs):
+    a_hash = ''.join([str(choice(range(10))) for _ in range(8)])
+    temp_module = ModuleType(f'_temp_{a_hash}')
+    exec(source_with_imports(defn, imports), temp_module.__dict__)
+    c = getattr(temp_module, cls)
+    return c(**kwargs)
+
+
+def source_with_imports(source, imports):
+    defn = 'from lf.transforms import Transform\nfrom lf import transforms as lf\n'
+    if not imports:
+        return defn + source
+    return defn + '\n'.join(['import ' + x for x in imports]) + '\n' + source
+
+
+def get_source(c):
+    """
+    Get the source code of class.
+
+    :param c: class
+    """
+    source = inspect.getsource(c.__class__)
+    source = strip_decorator(source)
+    if source[0][0] != ' ':
+        padding = 0
+    else:
+        padding = [i for i, x in enumerate(source[0]) if x != ' '][0]
+
+    source = '\n'.join([x[padding:] for x in source])
+    return source
 
 
 class _TorchNN:
