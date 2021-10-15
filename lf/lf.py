@@ -471,7 +471,7 @@ class Compose(CompoundTransform):
 
         :param arg: arguments to call with
         """
-        for i, transform_ in enumerate(self.transforms):
+        for transform_ in self.transforms:
             arg = transform_(arg)
         return arg
 
@@ -490,7 +490,7 @@ class Rollout(CompoundTransform):
         :return: tuple of outputs
         """
         out = []
-        for i, transform_ in enumerate(self.transforms):
+        for transform_ in self.transforms:
             out.append(transform_(arg))
         out = tuple(out)
         return out
@@ -510,11 +510,11 @@ class NamedRollout(CompoundTransform):
     def __init__(self, module, stack, flatten=False, **kwargs):
         keys = []
         transforms = []
-        for x in kwargs:
-            keys.append(x)
-            transforms.append(kwargs[x])
+        for key in kwargs:
+            keys.append(key)
+            transforms.append(kwargs[key])
 
-        super().__init__(self, transforms, module, stack, flatten)
+        super().__init__(self, transforms, module, stack, flatten=flatten)
         self.keys = keys
         self._output_format = namedtuple('namedtuple', keys)
 
@@ -525,7 +525,7 @@ class NamedRollout(CompoundTransform):
         :return: namedtuple of outputs
         """
         out = []
-        for i, transform_ in enumerate(self.transforms):
+        for transform_ in self.transforms:
             out.append(transform_(arg))
         out = self._output_format(*out)
         return out
@@ -564,11 +564,11 @@ class NamedParallel(CompoundTransform):
     def __init__(self, module, stack, flatten=False, **kwargs):
         keys = []
         transforms = []
-        for x in kwargs:
-            keys.append(x)
-            transforms.append(kwargs[x])
+        for key in kwargs:
+            keys.append(key)
+            transforms.append(kwargs[key])
 
-        super().__init__(self, transforms, module, stack, flatten)
+        super().__init__(self, transforms, module, stack, flatten=flatten)
         self.keys = keys
         self._output_format = namedtuple('namedtuple', self.keys)
 
