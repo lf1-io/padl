@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import types
 from typing import List
+from collections import namedtuple
 
 import torch
 
@@ -349,7 +350,7 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms, in contrast to `MetaTransform`s. """
+    other transforms, in contrast to `CompoundTransform`s. """
 
     def __init__(self, call, module, stack):
         super().__init__(module, stack)
@@ -396,8 +397,8 @@ class TorchModuleTransform(AtomicTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
 
-class MetaTransform(Transform):
-    """Abstract base class for meta-trasforms (transforms combining other transforms. """
+class CompoundTransform(Transform):
+    """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
     def __init__(self, transforms, module, stack, flatten=True):
@@ -456,16 +457,132 @@ class MetaTransform(Transform):
         return res
 
 
-class Compose(MetaTransform):
+class Compose(CompoundTransform):
+    """Compose transformations.
+
+       :param trans_list: List of transforms to compose.
+       :param flatten: If *True* flatten transforms -
+           `Compose([Compose([a,b]), c]) becomes Compose([a, b, c])``
+       """
     op = '>>'
 
+    def __call__(self, arg):
+        """Call method for Compose
 
-class Rollout(MetaTransform):
+        :param arg: arguments to call with
+        """
+        for i, transform_ in enumerate(self.transforms):
+            arg = transform_(arg)
+        return arg
+
+
+class Rollout(CompoundTransform):
+    """Apply transforms in sequence to same input and get tuple output
+
+    Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
+    """
     op = '+'
 
+    def __call__(self, arg):
+        """Call method for Rollout
 
-class Parallel(MetaTransform):
+        :param arg: Argument to call with
+        :return: tuple of outputs
+        """
+        out = []
+        for i, transform_ in enumerate(self.transforms):
+            out.append(transform_(arg))
+        out = tuple(out)
+        return out
+
+
+class NamedRollout(CompoundTransform):
+    """Apply transforms in sequence to same input and get namedtuple output
+
+    It is same as *Rollout* except that transforms get a name and
+    output is a namedtuple with transform names as keys.
+
+    NamedRollout(f1=f1, f2=f2, ...])(x) := namedtuple(f1=f1(x), f2=f2(x), ...)
+
+    :param **kwargs: key-values for transforms in parallel
+    """
+
+    def __init__(self, module, stack, flatten=False, **kwargs):
+        keys = []
+        transforms = []
+        for x in kwargs:
+            keys.append(x)
+            transforms.append(kwargs[x])
+
+        super().__init__(self, transforms, module, stack, flatten)
+        self.keys = keys
+        self._output_format = namedtuple('namedtuple', keys)
+
+    def __call__(self, arg):
+        """Call method for Rollout
+
+        :param arg: Argument to call with
+        :return: namedtuple of outputs
+        """
+        out = []
+        for i, transform_ in enumerate(self.transforms):
+            out.append(transform_(arg))
+        out = self._output_format(*out)
+        return out
+
+
+class Parallel(CompoundTransform):
+    """Apply transforms in parallel to a tuple of inputs and get tuple output
+
+    Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
+    """
     op = '/'
+
+    def __call__(self, arg):
+        """Call method for Parallel
+
+        :param arg: Argument to call with
+        :return: tuple of output
+        """
+        out = []
+        for i, transform_ in enumerate(self.transforms):
+            out.append(transform_(arg[i]))
+        out = tuple(out)
+        return out
+
+
+class NamedParallel(CompoundTransform):
+    """Apply transforms in parallel to tuples of inputs and get namedtuple output
+
+    It is same as *Parallel* except that transforms get a name and
+    output is a namedtuple with transform names as keys.
+
+    NamedParallel(f1=f1, f2=f2, ...])((x1, x2, ..)) := namedtuple(f1=f1(x1), f2=f2(x2), ...)
+
+    :param **kwargs: key-values for transforms in parallel
+    """
+    def __init__(self, module, stack, flatten=False, **kwargs):
+        keys = []
+        transforms = []
+        for x in kwargs:
+            keys.append(x)
+            transforms.append(kwargs[x])
+
+        super().__init__(self, transforms, module, stack, flatten)
+        self.keys = keys
+        self._output_format = namedtuple('namedtuple', self.keys)
+
+    def __call__(self, arg):
+        """Call method for Parallel
+
+        :param arg: Argument to call with
+        :return: namedtuple of output
+        """
+        out = []
+        for i, transform_ in enumerate(self.transforms):
+            out.append(transform_(arg[i]))
+        out = self._output_format(*out)
+        return out
 
 
 def save(transform: Transform, path):
