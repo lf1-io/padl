@@ -1,9 +1,14 @@
 import ast
 import builtins
-from collections import namedtuple
+from collections import namedtuple, Iterable
 import sys
 
 from lf import thingfinder
+
+try:
+    unparse = ast.unparse
+except AttributeError:  # python < 3.9
+    from astunparse import unparse
 
 
 class Finder(ast.NodeVisitor):
@@ -14,6 +19,7 @@ class Finder(ast.NodeVisitor):
     >>> f = Finder(ast.Name).find(ast.parse('x(y)'))
     [<_ast.Name at ...>, <_ast.Name at ...>]
     """
+
     def __init__(self, nodetype):
         self.nodetype = nodetype
         self.result = []
@@ -83,11 +89,11 @@ class _VarFinder(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         for target in node.targets:
-            self.locals.update(Finder(ast.Name).find(target))
+            self.locals.update([x.id for x in Finder(ast.Name).find(target)])
         self.visit(node.value)
 
     def visit_For(self, node):
-        self.locals.update(Finder(ast.Name).find(node.target))
+        self.locals.update([x.id for x in Finder(ast.Name).find(node.target)])
         for child in node.body:
             self.visit(child)
 
@@ -113,11 +119,13 @@ class _VarFinder(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         self.locals.add(node.name)
-        inner_globals, _ = _VarFinder().find(node)
+        inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_ClassDef(self, node):
         self.locals.add(node.name)
+        inner_globals = find_globals(node)
+        self.globals.update(inner_globals - self.locals)
 
     def visit_Import(self, node):
         for name in node.names:
@@ -132,6 +140,47 @@ class _VarFinder(ast.NodeVisitor):
                 self.locals.add(name.name)
             else:
                 self.locals.add(name.asname)
+
+
+class _Renamer(ast.NodeTransformer):
+    def __init__(self, from_, to):
+        self.from_ = from_
+        self.to = to
+
+    def visit_arg(self, node):
+        if node.arg == self.from_:
+            return ast.arg(**{**node.__dict__, 'arg': self.to})
+        return node
+
+    def visit_Name(self, node):
+        if node.id == self.from_:
+            return ast.Name(**{**node.__dict__, 'id': self.to})
+        return node
+
+    def visit_FunctionDef(self, node):
+        globals_ = find_globals(node)
+        if self.from_ not in globals_:
+            return node
+        return ast.FunctionDef(**{**node.__dict__, 'body': rename(node.body, self.from_, self.to)})
+
+    def visit_ClassDef(self, node):
+        globals_ = find_globals(node)
+        if self.from_ not in globals_:
+            return node
+        return ast.ClassDef(**{**node.__dict__, 'body': rename(node.body, self.from_, self.to)})
+
+
+def rename(tree, from_, to, rename_locals=False):
+    if not rename_locals:
+        globals_ = find_globals(tree)
+        if from_ not in globals_:
+            return tree
+    if isinstance(tree, Iterable) and not isinstance(tree, str):
+        return [rename(x, from_, to) for x in tree]
+    elif not isinstance(tree, ast.AST):
+        return tree
+    renamer = _Renamer(from_, to)
+    return renamer.visit(tree)
 
 
 class _MethodFinder(ast.NodeVisitor):
@@ -225,18 +274,19 @@ def _topsort(graph):
 _PRECEDENCE = {
     ast.Import: lambda _k, v: '1' + v[2].names[0].name.lower(),
     ast.ImportFrom: lambda _k, v: '1' + v[2].module.lower(),
-    ast.Assign: lambda k, _v: '2' + k.lower()
+    ast.Assign: lambda k, _v: '2' + str(k[1]) + k[0].lower()
 }
 
 
 def _sort(graph):
     top = _topsort({k: v[1] for k, v in graph.items()})
+
     def sortkey(x):
         val = graph[x]
         try:
             return _PRECEDENCE[val[2].__class__](x, val)
         except KeyError:
-            return 'zz' + x.lower()
+            return 'zz' + str(x[1]) + x[0].lower()
 
     res = []
     for level in top:
