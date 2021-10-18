@@ -18,6 +18,18 @@ from lf import var2mod
 from IPython import embed
 
 
+def _isinstance_of_namedtuple(arg):
+    """Check if input is instance of namedtuple"""
+    typ = type(arg)
+    base = typ.__bases__
+    if len(base) != 1 or base[0] != tuple:
+        return False
+    fields = getattr(typ, '_fields', None)
+    if not isinstance(fields, tuple):
+        return False
+    return all(isinstance(field, str) for field in fields)
+
+
 def _instructions_up_to_call(x):
     """Get all instructions up to last CALL FUNCTION. """
     instructions = []
@@ -347,6 +359,22 @@ class Transform:
         except IndexError:
             return None
 
+    def __call__(self, arg):
+        return NotImplementedError
+
+    def _call_transform(self, arg):
+        """Call transform with possiblity to pass multiple arguments"""
+        signature_parameters = inspect.signature(self).parameters
+        if len(signature_parameters) == 1:
+            return self(arg)
+        if _isinstance_of_namedtuple(arg):
+            arg_to_pass = {key: getattr(arg, key) for key in signature_parameters}
+            try:
+                return self(**arg_to_pass)
+            except TypeError:
+                pass
+        return self(*arg)
+
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
@@ -473,7 +501,7 @@ class Compose(CompoundTransform):
         :param arg: arguments to call with
         """
         for transform_ in self.transforms:
-            arg = transform_(arg)
+            arg = transform_._call_transform(arg)
         return arg
 
 
@@ -496,12 +524,12 @@ class Rollout(CompoundTransform):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_(arg))
+            out.append(transform_._call_transform(arg))
         out = tuple(out)
         return out
 
 
-class NamedRollout(CompoundTransform):
+class NamedRollout(Rollout):
     """Apply a list of transforms to same input and get namedtuple output
 
     It is same as *Rollout* except that transforms get a name and
@@ -509,18 +537,17 @@ class NamedRollout(CompoundTransform):
 
     NamedRollout(f1=f1, f2=f2, ...])(x) := namedtuple(f1=f1(x), f2=f2(x), ...)
 
-    :param flatten: If *True* flatten transforms - ???
     :param **kwargs: key-values for transforms in parallel
     """
 
-    def __init__(self, module, stack, flatten=False, **kwargs):
+    def __init__(self, module, stack, **kwargs):
         keys = []
         transforms = []
         for key in kwargs:
             keys.append(key)
             transforms.append(kwargs[key])
 
-        super().__init__(self, transforms, module, stack, flatten=flatten)
+        super().__init__(self, transforms, module, stack, False)
         self.keys = keys
         self._output_format = namedtuple('namedtuple', keys)
 
@@ -532,7 +559,7 @@ class NamedRollout(CompoundTransform):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_(arg))
+            out.append(transform_._call_transform(arg))
         out = self._output_format(*out)
         return out
 
@@ -556,12 +583,12 @@ class Parallel(CompoundTransform):
         """
         out = []
         for i, transform_ in enumerate(self.transforms):
-            out.append(transform_(arg[i]))
+            out.append(transform_._call_transform(arg[i]))
         out = tuple(out)
         return out
 
 
-class NamedParallel(CompoundTransform):
+class NamedParallel(Parallel):
     """Apply transforms in parallel to tuples of inputs and get namedtuple output
 
     It is same as *Parallel* except that transforms get a name and
@@ -569,17 +596,16 @@ class NamedParallel(CompoundTransform):
 
     NamedParallel(f1=f1, f2=f2, ...])((x1, x2, ..)) := namedtuple(f1=f1(x1), f2=f2(x2), ...)
 
-    :param flatten: If *True* flatten transforms - ???
     :param **kwargs: key-values for transforms in parallel
     """
-    def __init__(self, module, stack, flatten=False, **kwargs):
+    def __init__(self, module, stack, **kwargs):
         keys = []
         transforms = []
         for key in kwargs:
             keys.append(key)
             transforms.append(kwargs[key])
 
-        super().__init__(self, transforms, module, stack, flatten=flatten)
+        super().__init__(self, transforms, module, stack, False)
         self.keys = keys
         self._output_format = namedtuple('namedtuple', self.keys)
 
@@ -591,7 +617,7 @@ class NamedParallel(CompoundTransform):
         """
         out = []
         for i, transform_ in enumerate(self.transforms):
-            out.append(transform_(arg[i]))
+            out.append(transform_._call_transform(arg[i]))
         out = self._output_format(*out)
         return out
 
