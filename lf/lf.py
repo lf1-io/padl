@@ -509,8 +509,7 @@ class NamedRollout(CompoundTransform):
 
     NamedRollout(f1=f1, f2=f2, ...])(x) := namedtuple(f1=f1(x), f2=f2(x), ...)
 
-    :param flatten: If *True* flatten transforms -
-        NamedRollout([NamedRollout([a,b]), c]) becomes NamedRollout([a, b, c])
+    :param flatten: If *True* flatten transforms - ???
     :param **kwargs: key-values for transforms in parallel
     """
 
@@ -542,6 +541,10 @@ class Parallel(CompoundTransform):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
 
     Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
+
+    :param transforms: List of transforms to parallelize.
+    :param flatten: If *True* flatten transforms -
+        Parallel([Parallel([a,b]), c]) becomes Parallel([a, b, c])
     """
     op = '/'
 
@@ -566,6 +569,7 @@ class NamedParallel(CompoundTransform):
 
     NamedParallel(f1=f1, f2=f2, ...])((x1, x2, ..)) := namedtuple(f1=f1(x1), f2=f2(x2), ...)
 
+    :param flatten: If *True* flatten transforms - ???
     :param **kwargs: key-values for transforms in parallel
     """
     def __init__(self, module, stack, flatten=False, **kwargs):
