@@ -371,7 +371,6 @@ class AtomicTransform(Transform):
         return res
 
 
-
 class FunctionTransform(AtomicTransform):
     def __init__(self, function, module, stack, call=None):
         if call is None:
@@ -458,12 +457,14 @@ class CompoundTransform(Transform):
 
 
 class Compose(CompoundTransform):
-    """Compose transformations.
+    """Apply series of transforms on input.
 
-       :param trans_list: List of transforms to compose.
-       :param flatten: If *True* flatten transforms -
-           `Compose([Compose([a,b]), c]) becomes Compose([a, b, c])``
-       """
+    Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
+
+    :param transforms: List of transforms to compose.
+    :param flatten: If *True* flatten transforms -
+        Compose([Compose([a,b]), c]) becomes Compose([a, b, c])
+    """
     op = '>>'
 
     def __call__(self, arg):
@@ -477,9 +478,13 @@ class Compose(CompoundTransform):
 
 
 class Rollout(CompoundTransform):
-    """Apply transforms in sequence to same input and get tuple output
+    """Apply a list of transform to same input and get tuple output
 
     Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
+
+    :param transforms: List of transforms to rollout.
+    :param flatten: If *True* flatten transforms -
+        Rollout([Rollout([a,b]), c]) becomes Rollout([a, b, c])
     """
     op = '+'
 
@@ -497,13 +502,15 @@ class Rollout(CompoundTransform):
 
 
 class NamedRollout(CompoundTransform):
-    """Apply transforms in sequence to same input and get namedtuple output
+    """Apply a list of transforms to same input and get namedtuple output
 
     It is same as *Rollout* except that transforms get a name and
     output is a namedtuple with transform names as keys.
 
     NamedRollout(f1=f1, f2=f2, ...])(x) := namedtuple(f1=f1(x), f2=f2(x), ...)
 
+    :param flatten: If *True* flatten transforms -
+        NamedRollout([NamedRollout([a,b]), c]) becomes NamedRollout([a, b, c])
     :param **kwargs: key-values for transforms in parallel
     """
 
@@ -519,7 +526,7 @@ class NamedRollout(CompoundTransform):
         self._output_format = namedtuple('namedtuple', keys)
 
     def __call__(self, arg):
-        """Call method for Rollout
+        """Call method for NamedRollout
 
         :param arg: Argument to call with
         :return: namedtuple of outputs
@@ -573,7 +580,7 @@ class NamedParallel(CompoundTransform):
         self._output_format = namedtuple('namedtuple', self.keys)
 
     def __call__(self, arg):
-        """Call method for Parallel
+        """Call method for NamedParallel
 
         :param arg: Argument to call with
         :return: namedtuple of output
