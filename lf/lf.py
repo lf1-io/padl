@@ -19,10 +19,6 @@ from lf import var2mod
 from lf.data import SimpleIterator
 
 
-# TODO: remove (debug)
-from IPython import embed
-
-
 def _isinstance_of_namedtuple(arg):
     """Check if input is instance of namedtuple"""
     typ = type(arg)
@@ -268,6 +264,9 @@ class Transform:
             return self.lf_varname
         return self.__lf_name
 
+        self._layers = None
+        self._stage = None
+
     def __rshift__(self, other):
         return Compose([self, other], _caller_module(1), flatten=True)
 
@@ -389,6 +388,34 @@ class Transform:
             return self(arg)
         return self(*arg)
 
+    def getattribute_object(self, item):
+        """ Like getattribute, but not returning variable values, but variable objects. """
+        return object.__getattribute__(self, item)
+
+    @property
+    def layers(self):
+        """
+        Get a dict with all layers in the transform (including layers in sub-transforms).
+        """
+        if self._layers is None:
+            layer_dict = {}
+            for item in self.__dict__:
+                attrib = self.getattribute_object(item)
+                if isinstance(attrib, Transform):
+                    layer_dict.update(attrib.layers)
+                elif type(attrib) in {tuple, list} and attrib and isinstance(attrib[0], Transform):
+                    for y in attrib:
+                        layer_dict.update(y.layers)
+            self._layers = layer_dict
+        return self._layers
+
+    @property
+    def stage(self):
+        """
+        :return: Stage of Transform
+        """
+        return self._stage
+
     @contextmanager
     def set_stage(self, stage: str):
         """
@@ -397,6 +424,7 @@ class Transform:
         """
         assert stage in ('train', 'eval', 'infer')
 
+        self._stage = stage
         layers = self.layers
         try:
             for layer in layers.values():
@@ -407,6 +435,7 @@ class Transform:
             yield
         # TODO: Should we put layers in eval mode by default?
         finally:
+            self._stage = None
             for layer in layers.values():
                 layer.eval()
 
