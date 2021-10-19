@@ -5,12 +5,11 @@ import inspect
 import linecache
 import sys
 import types
-from pathlib import Path
-from warnings import warn
-from typing import List, Union
-from collections import namedtuple
-
 import torch
+from pathlib import Path
+from typing import Union
+from typing import List
+from collections import namedtuple, Counter
 
 from lf import var2mod
 
@@ -504,6 +503,34 @@ class CompoundTransform(Transform):
         return cls(transform.transforms, transform.module, transform.stack,
                    transform.flatten, transform.lf_name, _group=True)
 
+    @staticmethod
+    def _lf_get_keys(transforms):
+        """Get deduplicated keys from list of transforms
+
+        Names are updated as below.
+        [None, None, 'a', 'a', 'b', 'c'] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'c']
+
+        :param transforms: list of transforms
+        :return: list of keys
+        """
+        names = []
+        for ind, transform_ in enumerate(transforms):
+            if transform_.lf_name is None:
+                name = 'out_'+str(ind)
+            else:
+                name = transform_.lf_name
+            names.append(name)
+
+        counter = Counter(names)
+        updated_counter = Counter()
+        deduped_keys = []
+
+        for name in names:
+            new_name = name + '_' + str(updated_counter[name]) if counter[name] > 1 else name
+            updated_counter.update({name: 1})
+            deduped_keys.append(new_name)
+        return deduped_keys
+
 
 class Compose(CompoundTransform):
     """Apply series of transforms on input.
@@ -541,14 +568,8 @@ class Rollout(CompoundTransform):
     op = '+'
 
     def __init__(self, transforms, module, stack, flatten=False, lf_name=None, **kwargs):
-        keys = []
-        for ind, transform_ in enumerate(transforms):
-            if transform_.lf_name is None:
-                keys.append(ind)
-            else:
-                keys.append(transform_.lf_name)
-
-        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
+        keys = self._lf_get_keys(transforms)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -559,7 +580,7 @@ class Rollout(CompoundTransform):
         :return: namedtuple of outputs
         """
         out = []
-        for transform_ in enumerate(self.transforms):
+        for transform_ in self.transforms:
             out.append(transform_._lf_call_transform(arg))
         out = self._lf_output_format(*out)
         return out
@@ -578,14 +599,8 @@ class Parallel(CompoundTransform):
     op = '/'
 
     def __init__(self, transforms, module, stack, flatten=False, lf_name=None, **kwargs):
-        keys = []
-        for ind, transform_ in enumerate(transforms):
-            if transform_.lf_name is None:
-                keys.append(ind)
-            else:
-                keys.append(transform_.lf_name)
-
-        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
+        keys = self._lf_get_keys(transforms)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
