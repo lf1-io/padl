@@ -10,10 +10,12 @@ import sys
 import types
 from typing import List
 from collections import namedtuple
+import numpy as np
 
 from tqdm import tqdm
 
 import torch
+from torch.utils.data import DataLoader
 
 from lf import var2mod
 from lf.data import SimpleIterator
@@ -503,6 +505,35 @@ class Transform:
             for layer in layers.values():
                 layer.eval()
 
+    def _get_loader(self, iterator, loader_kwargs=None, horovod=False):
+        """
+        Get Data Loader
+        :param iterator: Iterator
+        :param loader_kwargs:
+        """
+        if horovod:
+            import horovod.torch as hvd
+            from torch.utils.data.distributed import DistributedSampler
+            sampler = DistributedSampler(
+                iterator,
+                num_replicas=hvd.size(),
+                rank=hvd.rank(),
+                # shuffle=shuffle,
+            )
+            loader = DataLoader(
+                iterator,
+                sampler=sampler,
+                worker_init_fn=lambda _: np.random.seed(),
+                **loader_kwargs
+            )
+        else:
+            loader = DataLoader(
+                iterator,
+                worker_init_fn=lambda _: np.random.seed(),
+                **loader_kwargs
+            )
+        return loader
+
     def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
@@ -521,7 +552,7 @@ class Transform:
         if loader_kwargs is None:
             loader_kwargs = {}
 
-        loader = self._get_loader(iterator=iterator, args=args, loader_kwargs=loader_kwargs)
+        loader = self._get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
 
         pbar = None
         if verbose:
