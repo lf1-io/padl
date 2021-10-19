@@ -454,10 +454,9 @@ class CompoundTransform(Transform):
 
     def __init__(self, transforms, module, stack, flatten=True, lf_name=None, **kwargs):
 
-        self.lf_name = lf_name
-        self._group = False if self.lf_name is None else True
-
+        self._group = False if lf_name is None else True
         super().__init__(module, stack, lf_name=lf_name, **kwargs)
+        assert not self.lf_name is not None and self._group is False
 
         if flatten:
             transforms = self._flatten_list(transforms)
@@ -574,8 +573,8 @@ class Rollout(CompoundTransform):
 
     @classmethod
     def return_grouped(cls, transform):
-         return cls(transform.transforms, transform.module, transform.stack,
-                    transform.flatten, transform.lf_name, _group=True)
+        return cls(transform.transforms, transform.module, transform.stack,
+                   transform.flatten, transform.lf_name, _group=True)
 
 
 class Parallel(CompoundTransform):
@@ -616,8 +615,8 @@ class Parallel(CompoundTransform):
 
     @classmethod
     def return_grouped(cls, transform):
-         return cls(transform.transforms, transform.module, transform.stack,
-                    transform.flatten, transform.lf_name, _group=True)
+        return cls(transform.transforms, transform.module, transform.stack,
+                   transform.flatten, transform.lf_name, _group=True)
 
 
 def save(transform: Transform, path):
