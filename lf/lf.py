@@ -564,17 +564,17 @@ class Transform:
             with self.set_stage('infer'):
                 return context.run(self._lf_call_transform, arg)
 
-    def eval_apply(self, arg, loader_kwargs=None):
+    def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
         """Call transform within the eval context"""
         context = contextvars.copy_context()
         with self.set_stage('eval'):
-            return context.run(self._lf_call_transform, arg)
+            return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
-    def train_apply(self, arg, loader_kwargs=None):
+    def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
         """Call transform within the train context"""
         context = contextvars.copy_context()
         with self.set_stage('train'):
-            return context.run(self._lf_call_transform, arg)
+            return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
 
 class AtomicTransform(Transform):
