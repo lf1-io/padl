@@ -574,11 +574,8 @@ class Transform:
 
         use_forward = not forward.is_identity
 
-        # TODO _callyield is now run within stage context
-        # fix the stage, otherwise it may change within the loop
-        # stage = self.stage
-
         for batch in loader:
+            # NOTE: context_do not needed since _callyield is run inside context
             # output = self._forward_context_do(batch, forward, stage, use_forward)
             if use_forward:
                 output = forward._lf_call_transform(batch)
@@ -586,7 +583,7 @@ class Transform:
                 output = batch
 
             if use_post:
-                # TODO unbatch not needed anymore since it is part of post Issue 19
+                # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
                 # output = unbatch(output)
                 # output = [
                 #     post._lf_call_transform(output[i])
@@ -595,7 +592,7 @@ class Transform:
                 output = post._lf_call_transform(output)
 
             if flatten:
-                # TODO unbatch not needed anymore since it is part of post Issue 19
+                # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
                 # if not use_post:
                 #     output = unbatch(output)
                 yield from self._yield_flatten_data(output, verbose, pbar)
