@@ -453,10 +453,8 @@ class CompoundTransform(Transform):
     op = NotImplemented
 
     def __init__(self, transforms, module, stack, flatten=True, lf_name=None, **kwargs):
-
-        self.lf_name = lf_name
-        self._group = False if self.lf_name is None else True
-
+        
+        self._group = False if lf_name is None else True
         super().__init__(module, stack, lf_name=lf_name, **kwargs)
 
         if flatten:
