@@ -572,7 +572,7 @@ class Rollout(CompoundTransform):
         out = self._lf_output_format(*out)
         return out
 
-     @classmethod
+    @classmethod
     def return_grouped(cls, transform):
          return cls(transform.transforms, transform.module, transform.stack,
                     transform.flatten, transform.lf_name, _group=True)
@@ -614,7 +614,7 @@ class Parallel(CompoundTransform):
         out = self._lf_output_format(*out)
         return out
 
-     @classmethod
+    @classmethod
     def return_grouped(cls, transform):
          return cls(transform.transforms, transform.module, transform.stack,
                     transform.flatten, transform.lf_name, _group=True)
