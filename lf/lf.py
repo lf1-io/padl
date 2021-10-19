@@ -385,7 +385,6 @@ class Transform:
 
     def _lf_call_transform(self, arg):
         """Call transform with possibility to pass multiple arguments"""
-        print(self.stage)
         signature_parameters = inspect.signature(self).parameters
         if len(signature_parameters) == 1:
             return self(arg)
