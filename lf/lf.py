@@ -257,20 +257,8 @@ class Transform:
         self._lf_module = module
         self._lf_stack = stack
         self.__lf_name = lf_name
-
-        for k, v in kwargs.items():
-            try:
-                self.getattribute_object(k)
-            except AttributeError:
-                pass
-            else:
-                warn(
-                    f"While creating Transform '{self.__class__.__name__}': "
-                    f"Setting existing attribute {k}. "
-                    "This might cause problems. "
-                    "Please consider choosing a different name. "
-                )
-            setattr(self, k, v)
+        if lf_name is None:
+            self._group = kwargs.get('_copy', False)
 
     @property
     def lf_name(self):
@@ -511,6 +499,11 @@ class CompoundTransform(Transform):
                     res.append(child_transform)
         return res
 
+    @classmethod
+    def return_grouped(cls, transform):
+        return cls(transform.transforms, transform.module, transform.stack,
+                   transform.flatten, transform.lf_name, _group=True)
+
 
 class Compose(CompoundTransform):
     """Apply series of transforms on input.
@@ -571,11 +564,6 @@ class Rollout(CompoundTransform):
         out = self._lf_output_format(*out)
         return out
 
-    @classmethod
-    def return_grouped(cls, transform):
-        return cls(transform.transforms, transform.module, transform.stack,
-                   transform.flatten, transform.lf_name, _group=True)
-
 
 class Parallel(CompoundTransform):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
@@ -613,11 +601,6 @@ class Parallel(CompoundTransform):
         out = self._lf_output_format(*out)
         return out
 
-    @classmethod
-    def return_grouped(cls, transform):
-        return cls(transform.transforms, transform.module, transform.stack,
-                   transform.flatten, transform.lf_name, _group=True)
-
 
 def save(transform: Transform, path):
     transform.lf_save(path)
@@ -642,4 +625,4 @@ def load(path):
 
 
 def group(transform: Union[Rollout, Parallel]):
-    return transform.return_grouped()
+    return type(transform).return_grouped(transform)
