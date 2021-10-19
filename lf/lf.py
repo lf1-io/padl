@@ -1,4 +1,6 @@
 import ast
+import contextvars
+from contextlib import contextmanager
 import dis
 import functools
 import inspect
@@ -9,9 +11,12 @@ import types
 from typing import List
 from collections import namedtuple
 
+import tqdm
+
 import torch
 
 from lf import var2mod
+from lf.data import SimpleIterator
 
 
 # TODO: remove (debug)
@@ -378,11 +383,106 @@ class Transform:
         return NotImplementedError
 
     def _lf_call_transform(self, arg):
-        """Call transform with possiblity to pass multiple arguments"""
+        """Call transform with possibility to pass multiple arguments"""
         signature_parameters = inspect.signature(self).parameters
         if len(signature_parameters) == 1:
             return self(arg)
         return self(*arg)
+
+    @contextmanager
+    def set_stage(self, stage: str):
+        """
+        Set of stage of Transform
+        :param stage: stage ('train', 'eval', 'infer')
+        """
+        assert stage in ('train', 'eval', 'infer')
+
+        layers = self.layers
+        try:
+            for layer in layers.values():
+                if stage == 'train':
+                    layer.train()
+                else:
+                    layer.eval()
+            yield
+        # TODO: Should we put layers in eval mode by default?
+        finally:
+            for layer in layers.values():
+                layer.eval()
+
+    def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
+        """
+        :param args: Arguments to call with.
+        """
+
+        iterator = SimpleIterator(
+            args,
+            self.trans.to('cpu').context_do
+        )
+
+        if loader_kwargs is None:
+            loader_kwargs = {}
+
+        loader = self._get_loader(iterator=iterator, args=args, loader_kwargs=loader_kwargs)
+
+        pbar = None
+        if verbose:
+            if flatten:
+                pbar = tqdm(total=len(args))
+            else:
+                loader = tqdm(loader, total=len(loader))
+
+        forward = self.forward
+        post = self.postprocess_with_fixed_stage
+
+        try:
+            use_post = not post.is_identity
+        except AttributeError as err:
+            if 'is_identity' not in str(err):
+                raise err
+            use_post = False
+
+        use_forward = not forward.is_identity
+
+        # fix the stage, otherwise it may change within the loop
+        stage = self.stage
+
+        for batch in loader:
+            output = self._forward_context_do(batch, forward, stage, use_forward)
+
+            if use_post:
+                output = unbatch(output)
+                output = [
+                    post.context_do(output[i], stage=stage)
+                    for i in range(len(output))
+                ]
+
+            if flatten:
+                if not use_post:
+                    output = unbatch(output)
+                yield from self._yield_flatten_data(output, verbose, pbar)
+                continue
+
+            yield output
+
+    def infer_apply(self, arg):
+        """Call transform within the infer context"""
+        with torch.no_grad():
+            context = contextvars.copy_context()
+            with self.set_stage('infer'):
+                return context.run(self._lf_call_transform, arg)
+
+    def eval_apply(self, arg, loader_kwargs=None):
+        """Call transform within the eval context"""
+        context = contextvars.copy_context()
+        with self.set_stage('eval'):
+            return context.run(self._lf_call_transform, arg)
+
+    def train_apply(self, arg, loader_kwargs=None):
+        """Call transform within the train context"""
+        context = contextvars.copy_context()
+        with self.set_stage('train'):
+            return context.run(self._lf_call_transform, arg)
 
 
 class AtomicTransform(Transform):
