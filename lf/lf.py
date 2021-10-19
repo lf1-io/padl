@@ -499,8 +499,12 @@ class Transform:
                 layer.eval()
 
     def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
-        """
+        """Create a data loader and run preprocessing, forward, and postprocessing steps.
+
         :param args: Arguments to call with.
+        :param loader_kwargs: data loader keyword arguments
+        :param verbose: if *True* print progress bar
+        :param flatten: flatten the output
         """
 
         iterator = SimpleIterator(
