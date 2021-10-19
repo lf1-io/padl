@@ -497,7 +497,7 @@ class CompoundTransform(Transform):
         """Get deduplicated keys from list of transforms
 
         Names are updated as below.
-        [None, None, 'a', 'a', 'b', 'c'] -> [0, 1, 'a0', 'a1', 'b', 'c']
+        [None, None, 'a', 'a', 'b', 'c'] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'c']
 
         :param transforms: list of transforms
         :return: list of keys
@@ -505,7 +505,7 @@ class CompoundTransform(Transform):
         names = []
         for ind, transform_ in enumerate(transforms):
             if transform_.lf_name is None:
-                name = str(ind)
+                name = 'out_'+str(ind)
             else:
                 name = transform_.lf_name
             names.append(name)
@@ -515,7 +515,7 @@ class CompoundTransform(Transform):
         deduped_keys = []
 
         for name in names:
-            new_name = name + str(updated_counter[name]) if counter[name] > 1 else name
+            new_name = name + '_' + str(updated_counter[name]) if counter[name] > 1 else name
             updated_counter.update({name: 1})
             deduped_keys.append(new_name)
         return deduped_keys
