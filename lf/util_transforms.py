@@ -3,14 +3,13 @@ from lf.lf import Transform, Identity
 
 class IfInStage(Transform):
     """Perform *t* if self.stage is *target_stage*, else perform *else_*.
+
+    :param cond_trans: transform for the if part
+    :param target_stage: stage {'train', 'eval', 'infer'}
+    :param else_: transform for the else_ part
     """
 
     def __init__(self, cond_trans, target_stage, else_=None):
-        """
-        :param cond_trans: transform for the if part
-        :param target_stage: stage {'train', 'eval', 'infer'}
-        :param else_: transform for the else_ part
-        """
         if else_ is None:
             else_ = Identity()
         super().__init__(
@@ -97,7 +96,8 @@ class IfInStage(Transform):
 
 
 def IfInfer(t, else_=None):
-    """
+    """Call transform *t* if infer stage otherwise call *else_*.
+
     :param t: transform for infer phase
     :param else_: transform otherwise
     """
@@ -105,7 +105,8 @@ def IfInfer(t, else_=None):
 
 
 def IfTrain(t, else_=None):
-    """
+    """Perform transform *t* if train stage otherwise call *else_*.
+
     :param t: transform for train phase
     :param else_: transform otherwise
     """
@@ -113,7 +114,8 @@ def IfTrain(t, else_=None):
 
 
 def IfEval(t, else_=None):
-    """
+    """Perform transform *t* if eval stage otherwise call *else_*.
+
     :param t: transform for eval phase
     :param else_: transform otherwise
     """
