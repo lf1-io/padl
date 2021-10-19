@@ -258,16 +258,16 @@ class Transform:
         self._lf_stack = stack
         self.__lf_name = lf_name
 
+        self._layers = None
+        self._stage = None
+        self._mapdevice = {'gpu'}
+        self._device = 'gpu'
+
     @property
     def lf_name(self):
         if self.__lf_name is None:
             return self.lf_varname
         return self.__lf_name
-
-        self._layers = None
-        self._stage = None
-        self._mapdevice = {'gpu'}
-        self._device = 'gpu'
 
     def __rshift__(self, other):
         return Compose([self, other], _caller_module(1), flatten=True)
@@ -796,8 +796,8 @@ class Parallel(CompoundTransform):
 class Identity(Transform):
     """Do nothing."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, module=None, stack=None, lf_name=None):
+        super().__init__(module, stack, lf_name=lf_name)
 
     @property
     def is_identity(self):
