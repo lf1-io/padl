@@ -488,7 +488,6 @@ class Transform:
         """
         assert stage in ('train', 'eval', 'infer')
 
-        # TODO Set the stage of all children transforms?
         self._stage = stage
         layers = self.layers
         try:
