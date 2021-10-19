@@ -417,7 +417,7 @@ class Transform:
 
     @property
     def postprocess(self):
-        """ The postprocessing part of the transform. """
+        """The postprocessing part of the transform. """
         if 'bcpu' in self.mapdevice:
             return self
         return Identity()
@@ -482,6 +482,7 @@ class Transform:
         """
         assert stage in ('train', 'eval', 'infer')
 
+        # TODO Set the stage of all children transforms?
         self._stage = stage
         layers = self.layers
         try:
@@ -537,11 +538,16 @@ class Transform:
 
         use_forward = not forward.is_identity
 
+        # TODO _callyield is now run within stage context
         # fix the stage, otherwise it may change within the loop
-        stage = self.stage
+        # stage = self.stage
 
         for batch in loader:
-            output = self._forward_context_do(batch, forward, stage, use_forward)
+            # output = self._forward_context_do(batch, forward, stage, use_forward)
+            if use_forward:
+                output = forward._lf_call_transform(batch)
+            else:
+                output = batch
 
             if use_post:
                 # TODO unbatch not needed anymore since it is part of post Issue 19
@@ -553,6 +559,7 @@ class Transform:
                 output = post._lf_call_transform(output)
 
             if flatten:
+                # TODO unbatch not needed anymore since it is part of post Issue 19
                 # if not use_post:
                 #     output = unbatch(output)
                 yield from self._yield_flatten_data(output, verbose, pbar)
@@ -569,9 +576,10 @@ class Transform:
 
     def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
         """Call transform within the eval context"""
-        context = contextvars.copy_context()
-        with self.set_stage('eval'):
-            return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
+        with torch.no_grad():
+            context = contextvars.copy_context()
+            with self.set_stage('eval'):
+                return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
     def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
         """Call transform within the train context"""
