@@ -536,7 +536,7 @@ class Rollout(CompoundTransform):
             else:
                 keys.append(transform_.lf_name)
 
-        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -573,7 +573,7 @@ class Parallel(CompoundTransform):
             else:
                 keys.append(transform_.lf_name)
 
-        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
