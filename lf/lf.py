@@ -252,12 +252,10 @@ def trans(fun_or_cls):
 
 
 class Transform:
-    def __init__(self, module, stack, lf_name=None, **kwargs):
+    def __init__(self, module, stack, lf_name=None):
         self._lf_module = module
         self._lf_stack = stack
         self.__lf_name = lf_name
-        if lf_name is None:
-            self._group = kwargs.get('_copy', False)
 
     @property
     def lf_name(self):
@@ -441,9 +439,13 @@ class CompoundTransform(Transform):
 
     def __init__(self, transforms, module, stack, flatten=True, lf_name=None, **kwargs):
 
-        self._group = False if lf_name is None else True
-        super().__init__(module, stack, lf_name=lf_name, **kwargs)
-        assert not self.lf_name is not None and self._group is False
+        super().__init__(module, stack, lf_name=lf_name)
+
+        if lf_name is None:
+            self._lf_group = kwargs.get('_lf_group', False)
+        else:
+            self._lf_group = True
+        assert not self.lf_name is not None and self._lf_group is False
 
         if flatten:
             transforms = self._flatten_list(transforms)
@@ -501,7 +503,7 @@ class CompoundTransform(Transform):
     @classmethod
     def return_grouped(cls, transform):
         return cls(transform.transforms, transform.module, transform.stack,
-                   transform.flatten, transform.lf_name, _group=True)
+                   transform.flatten, transform.lf_name, _lf_group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
