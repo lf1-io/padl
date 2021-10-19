@@ -362,17 +362,11 @@ class Transform:
     def __call__(self, arg):
         return NotImplementedError
 
-    def _call_transform(self, arg):
+    def _lf_call_transform(self, arg):
         """Call transform with possiblity to pass multiple arguments"""
         signature_parameters = inspect.signature(self).parameters
         if len(signature_parameters) == 1:
             return self(arg)
-        if _isinstance_of_namedtuple(arg):
-            arg_to_pass = {key: getattr(arg, key) for key in signature_parameters}
-            try:
-                return self(**arg_to_pass)
-            except TypeError:
-                pass
         return self(*arg)
 
 
@@ -492,6 +486,7 @@ class Compose(CompoundTransform):
     :param transforms: List of transforms to compose.
     :param flatten: If *True* flatten transforms -
         Compose([Compose([a,b]), c]) becomes Compose([a, b, c])
+    :return: output from series of transforms
     """
     op = '>>'
 
@@ -499,9 +494,10 @@ class Compose(CompoundTransform):
         """Call method for Compose
 
         :param arg: arguments to call with
+        :return: output from series of transforms
         """
         for transform_ in self.transforms:
-            arg = transform_._call_transform(arg)
+            arg = transform_._lf_call_transform(arg)
         return arg
 
 
@@ -513,54 +509,32 @@ class Rollout(CompoundTransform):
     :param transforms: List of transforms to rollout.
     :param flatten: If *True* flatten transforms -
         Rollout([Rollout([a,b]), c]) becomes Rollout([a, b, c])
+    :return: namedtuple of outputs
     """
     op = '+'
+
+    def __init__(self, transforms, module, stack, flatten):
+        keys = []
+        for ind, transform_ in enumerate(transforms):
+            if transform_.lf_varname is None:
+                keys.append(ind)
+            else:
+                keys.append(transform_.lf_varname)
+
+        super().__init__(self, transforms, module, stack, flatten)
+        self.lf_keys = keys
+        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
     def __call__(self, arg):
         """Call method for Rollout
 
         :param arg: Argument to call with
-        :return: tuple of outputs
-        """
-        out = []
-        for transform_ in self.transforms:
-            out.append(transform_._call_transform(arg))
-        out = tuple(out)
-        return out
-
-
-class NamedRollout(Rollout):
-    """Apply a list of transforms to same input and get namedtuple output
-
-    It is same as *Rollout* except that transforms get a name and
-    output is a namedtuple with transform names as keys.
-
-    NamedRollout(f1=f1, f2=f2, ...])(x) := namedtuple(f1=f1(x), f2=f2(x), ...)
-
-    :param **kwargs: key-values for transforms in parallel
-    """
-
-    def __init__(self, module, stack, **kwargs):
-        keys = []
-        transforms = []
-        for key in kwargs:
-            keys.append(key)
-            transforms.append(kwargs[key])
-
-        super().__init__(self, transforms, module, stack, False)
-        self.keys = keys
-        self._output_format = namedtuple('namedtuple', keys)
-
-    def __call__(self, arg):
-        """Call method for NamedRollout
-
-        :param arg: Argument to call with
         :return: namedtuple of outputs
         """
         out = []
-        for transform_ in self.transforms:
-            out.append(transform_._call_transform(arg))
-        out = self._output_format(*out)
+        for transform_ in enumerate(self.transforms):
+            out.append(transform_._lf_call_transform(arg))
+        out = self._lf_output_format(*out)
         return out
 
 
@@ -572,53 +546,32 @@ class Parallel(CompoundTransform):
     :param transforms: List of transforms to parallelize.
     :param flatten: If *True* flatten transforms -
         Parallel([Parallel([a,b]), c]) becomes Parallel([a, b, c])
+    :return: namedtuple of outputs
     """
     op = '/'
+
+    def __init__(self, transforms, module, stack, flatten):
+        keys = []
+        for ind, transform_ in enumerate(transforms):
+            if transform_.lf_varname is None:
+                keys.append(ind)
+            else:
+                keys.append(transform_.lf_varname)
+
+        super().__init__(self, transforms, module, stack, flatten)
+        self.lf_keys = keys
+        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
     def __call__(self, arg):
         """Call method for Parallel
 
         :param arg: Argument to call with
-        :return: tuple of output
-        """
-        out = []
-        for i, transform_ in enumerate(self.transforms):
-            out.append(transform_._call_transform(arg[i]))
-        out = tuple(out)
-        return out
-
-
-class NamedParallel(Parallel):
-    """Apply transforms in parallel to tuples of inputs and get namedtuple output
-
-    It is same as *Parallel* except that transforms get a name and
-    output is a namedtuple with transform names as keys.
-
-    NamedParallel(f1=f1, f2=f2, ...])((x1, x2, ..)) := namedtuple(f1=f1(x1), f2=f2(x2), ...)
-
-    :param **kwargs: key-values for transforms in parallel
-    """
-    def __init__(self, module, stack, **kwargs):
-        keys = []
-        transforms = []
-        for key in kwargs:
-            keys.append(key)
-            transforms.append(kwargs[key])
-
-        super().__init__(self, transforms, module, stack, False)
-        self.keys = keys
-        self._output_format = namedtuple('namedtuple', self.keys)
-
-    def __call__(self, arg):
-        """Call method for NamedParallel
-
-        :param arg: Argument to call with
         :return: namedtuple of output
         """
         out = []
-        for i, transform_ in enumerate(self.transforms):
-            out.append(transform_._call_transform(arg[i]))
-        out = self._output_format(*out)
+        for ind, transform_ in enumerate(self.transforms):
+            out.append(transform_._lf_call_transform(arg[ind]))
+        out = self._lf_output_format(*out)
         return out
 
 
