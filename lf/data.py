@@ -3,7 +3,7 @@
 class SimpleIterator:
     """
     :param samples: object implementing __getitem__ and __len__
-    :param trans: instance of aleph.transforms.core.Transform
+    :param trans: instance of lf.lf.Transform
     :param exception: exception to catch for default
     :param default: default value
     """

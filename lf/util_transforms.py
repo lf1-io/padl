@@ -1,21 +1,4 @@
-from lf.lf import Transform
-
-
-class Identity(Transform):
-    """Do nothing."""
-
-    def __init__(self):
-        super().__init__()
-
-    @property
-    def is_identity(self):
-        return True
-
-    def __call__(self, *args):
-        # remove, make consistent
-        if len(args) == 1:
-            return args[0]
-        return args
+from lf.lf import Transform, Identity
 
 
 class IfInStage(Transform):

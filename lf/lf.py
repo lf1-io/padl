@@ -11,7 +11,7 @@ import types
 from typing import List
 from collections import namedtuple
 
-import tqdm
+from tqdm import tqdm
 
 import torch
 
@@ -266,6 +266,8 @@ class Transform:
 
         self._layers = None
         self._stage = None
+        self._mapdevice = {'gpu'}
+        self._device = 'gpu'
 
     def __rshift__(self, other):
         return Compose([self, other], _caller_module(1), flatten=True)
@@ -383,20 +385,65 @@ class Transform:
 
     def _lf_call_transform(self, arg):
         """Call transform with possibility to pass multiple arguments"""
+        print(self.stage)
         signature_parameters = inspect.signature(self).parameters
         if len(signature_parameters) == 1:
             return self(arg)
         return self(*arg)
 
+    @property
+    def device(self):
+        """Return the device"""
+        return self._device
+
+    @property
+    def preprocess(self):
+        """The preprocessing part (everything that happens before sending to gpu). """
+        if 'cpu' in self.mapdevice:
+            return self
+        return Identity()
+
+    def _forward_part(self):
+        """The forward (GPU) part of the transform """
+        if 'gpu' in self.mapdevice:
+            return self
+        return Identity()
+
+    @property
+    def forward(self):
+        """The forward (GPU) part of the transform and send to GPU"""
+        f = self._forward_part()
+        f.to(self.device)
+        return f
+
+    # DANGER: makes it mutable
+    def to(self, device: str):
+        """Set the transform's device to *device*.
+
+        :param device: device on which to map {'cpu', 'cuda'}
+        """
+        self._device = device
+        for item in self.__dict__:
+            obj_ = self.getattribute_object(item)
+            if isinstance(obj_, Transform):
+                obj_.to(device)
+            elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
+                for a_trans in obj_:
+                    a_trans.to(device)
+        return self
+
     def getattribute_object(self, item):
-        """ Like getattribute, but not returning variable values, but variable objects. """
+        """Like getattribute, but not returning variable values, but variable objects. """
         return object.__getattribute__(self, item)
 
     @property
+    def mapdevice(self):
+        """Return the map device"""
+        return self._mapdevice
+
+    @property
     def layers(self):
-        """
-        Get a dict with all layers in the transform (including layers in sub-transforms).
-        """
+        """Get a dict with all layers in the transform (including layers in sub-transforms)."""
         if self._layers is None:
             layer_dict = {}
             for item in self.__dict__:
@@ -439,60 +486,60 @@ class Transform:
             for layer in layers.values():
                 layer.eval()
 
-    def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
-        """
-        :param args: Arguments to call with.
-        """
-
-        iterator = SimpleIterator(
-            args,
-            self.trans.to('cpu').context_do
-        )
-
-        if loader_kwargs is None:
-            loader_kwargs = {}
-
-        loader = self._get_loader(iterator=iterator, args=args, loader_kwargs=loader_kwargs)
-
-        pbar = None
-        if verbose:
-            if flatten:
-                pbar = tqdm(total=len(args))
-            else:
-                loader = tqdm(loader, total=len(loader))
-
-        forward = self.forward
-        post = self.postprocess_with_fixed_stage
-
-        try:
-            use_post = not post.is_identity
-        except AttributeError as err:
-            if 'is_identity' not in str(err):
-                raise err
-            use_post = False
-
-        use_forward = not forward.is_identity
-
-        # fix the stage, otherwise it may change within the loop
-        stage = self.stage
-
-        for batch in loader:
-            output = self._forward_context_do(batch, forward, stage, use_forward)
-
-            if use_post:
-                output = unbatch(output)
-                output = [
-                    post.context_do(output[i], stage=stage)
-                    for i in range(len(output))
-                ]
-
-            if flatten:
-                if not use_post:
-                    output = unbatch(output)
-                yield from self._yield_flatten_data(output, verbose, pbar)
-                continue
-
-            yield output
+    # def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
+    #     """
+    #     :param args: Arguments to call with.
+    #     """
+    #
+    #     iterator = SimpleIterator(
+    #         args,
+    #         self.preprocess.to('cpu').context_do
+    #     )
+    #
+    #     if loader_kwargs is None:
+    #         loader_kwargs = {}
+    #
+    #     loader = self._get_loader(iterator=iterator, args=args, loader_kwargs=loader_kwargs)
+    #
+    #     pbar = None
+    #     if verbose:
+    #         if flatten:
+    #             pbar = tqdm(total=len(args))
+    #         else:
+    #             loader = tqdm(loader, total=len(loader))
+    #
+    #     forward = self.forward
+    #     post = self.postprocess_with_fixed_stage
+    #
+    #     try:
+    #         use_post = not post.is_identity
+    #     except AttributeError as err:
+    #         if 'is_identity' not in str(err):
+    #             raise err
+    #         use_post = False
+    #
+    #     use_forward = not forward.is_identity
+    #
+    #     # fix the stage, otherwise it may change within the loop
+    #     stage = self.stage
+    #
+    #     for batch in loader:
+    #         output = self._forward_context_do(batch, forward, stage, use_forward)
+    #
+    #         if use_post:
+    #             output = unbatch(output)
+    #             output = [
+    #                 post.context_do(output[i], stage=stage)
+    #                 for i in range(len(output))
+    #             ]
+    #
+    #         if flatten:
+    #             if not use_post:
+    #                 output = unbatch(output)
+    #             yield from self._yield_flatten_data(output, verbose, pbar)
+    #             continue
+    #
+    #         yield output
 
     def infer_apply(self, arg):
         """Call transform within the infer context"""
@@ -717,6 +764,23 @@ class Parallel(CompoundTransform):
             out.append(transform_._lf_call_transform(arg[ind]))
         out = self._lf_output_format(*out)
         return out
+
+
+class Identity(Transform):
+    """Do nothing."""
+
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def is_identity(self):
+        return True
+
+    def __call__(self, *args):
+        # remove, make consistent
+        if len(args) == 1:
+            return args[0]
+        return args
 
 
 def save(transform: Transform, path):
