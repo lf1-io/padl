@@ -252,9 +252,16 @@ def trans(fun_or_cls):
 
 
 class Transform:
-    def __init__(self, module, stack):
+    def __init__(self, module, stack, lf_name=None):
         self._lf_module = module
         self._lf_stack = stack
+        self.__lf_name = lf_name
+
+    @property
+    def lf_name(self):
+        if self.__lf_name is None:
+            return self.lf_varname
+        return self.__lf_name
 
     def __rshift__(self, other):
         return Compose([self, other], _caller_module(1), flatten=True)
@@ -266,6 +273,14 @@ class Transform:
     def __truediv__(self, other: "Transform") -> "Parallel":
         """ Parallel with *other*. """
         return Parallel([self, other], _caller_module(1), flatten=True)
+
+    def __sub__(self, transform_name: str) -> "Transform":
+        """Name Transform"""
+        return self.lf_clone(lf_name=transform_name)
+
+    def lf_clone(self, **kwargs):
+        """Clone Transform"""
+        return NotImplementedError
 
     def lf_pre_save(self, path, i):
         pass
@@ -422,8 +437,8 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
-    def __init__(self, transforms, module, stack, flatten=True):
-        super().__init__(module, stack)
+    def __init__(self, transforms, module, stack, flatten=True, lf_name=None):
+        super().__init__(module, stack, lf_name=lf_name)
         if flatten:
             transforms = self._flatten_list(transforms)
         self.transforms = transforms
@@ -460,7 +475,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform.lf_varname is None:
+                if transform.lf_name is None:
                     list_flat += transform.transforms
                 else:
                     list_flat.append(transform)
@@ -513,15 +528,15 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module, stack, flatten):
+    def __init__(self, transforms, module, stack, flatten=False, lf_name=None):
         keys = []
         for ind, transform_ in enumerate(transforms):
-            if transform_.lf_varname is None:
+            if transform_.lf_name is None:
                 keys.append(ind)
             else:
-                keys.append(transform_.lf_varname)
+                keys.append(transform_.lf_name)
 
-        super().__init__(self, transforms, module, stack, flatten)
+        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -550,15 +565,15 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module, stack, flatten):
+    def __init__(self, transforms, module, stack, flatten=False, lf_name=None):
         keys = []
         for ind, transform_ in enumerate(transforms):
-            if transform_.lf_varname is None:
+            if transform_.lf_name is None:
                 keys.append(ind)
             else:
-                keys.append(transform_.lf_varname)
+                keys.append(transform_.lf_name)
 
-        super().__init__(self, transforms, module, stack, flatten)
+        super().__init__(self, transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
