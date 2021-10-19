@@ -400,13 +400,17 @@ class Transform:
         """The preprocessing part (everything that happens before sending to gpu). """
         if 'cpu' in self.mapdevice:
             return self
-        return Identity()
+        t = Identity()
+        t._stage = self.stage
+        return t
 
     def _forward_part(self):
         """The forward (GPU) part of the transform """
         if 'gpu' in self.mapdevice:
             return self
-        return Identity()
+        t = Identity()
+        t._stage = self.stage
+        return t
 
     @property
     def forward(self):
@@ -420,7 +424,9 @@ class Transform:
         """The postprocessing part of the transform. """
         if 'bcpu' in self.mapdevice:
             return self
-        return Identity()
+        t = Identity()
+        t._stage = self.stage
+        return t
 
     # DANGER: makes it mutable
     def to(self, device: str):
