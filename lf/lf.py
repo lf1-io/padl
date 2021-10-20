@@ -442,10 +442,10 @@ class CompoundTransform(Transform):
         super().__init__(module, stack, lf_name=lf_name)
 
         if lf_name is None:
-            self._lf_group = kwargs.get('_lf_group', False)
+            self.__lf_group = kwargs.get('__lf_group', False)
         else:
-            self._lf_group = True
-        assert not self.lf_name is not None and self._lf_group is False
+            self.__lf_group = True
+        #assert not (self.lf_name is not None and self.__lf_group is False)
 
         if flatten:
             transforms = self._flatten_list(transforms)
@@ -483,7 +483,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform._lf_group is True:
+                if transform.__lf_group is True:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
@@ -503,7 +503,7 @@ class CompoundTransform(Transform):
     @classmethod
     def return_grouped(cls, transform):
         return cls(transform.transforms, transform.module, transform.stack,
-                   transform.flatten, transform.lf_name, _lf_group=True)
+                   transform.flatten, transform.lf_name, __lf_group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
