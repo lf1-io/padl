@@ -64,7 +64,7 @@ class IfInStage(Transform):
         trans.lf_stage = self.lf_stage
         return trans
 
-    def _forward_part(self):
+    def _lf_forward_part(self):
         trans = type(self)(cond_trans=self.cond_trans.lf_forward, target_stage=self.target_stage,
                            else_=self.else_.lf_forward)
         trans.lf_stage = self.lf_stage

@@ -406,7 +406,7 @@ class Transform:
         t._lf_stage = self.lf_stage
         return t
 
-    def _forward_part(self):
+    def _lf_forward_part(self):
         """The forward (GPU) part of the transform """
         if 'gpu' in self.lf_mapdevice:
             return self
@@ -417,7 +417,7 @@ class Transform:
     @property
     def lf_forward(self):
         """The forward (GPU) part of the transform and send to GPU"""
-        f = self._forward_part()
+        f = self._lf_forward_part()
         f.lf_to(self.lf_device)
         return f
 
