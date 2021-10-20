@@ -15,9 +15,9 @@ def test_context():
     assert plus_one.lf_stage is None
     with plus_one.lf_set_stage('infer'):
         assert plus_one.lf_stage is 'infer'
-        assert plus_one.preprocess.lf_stage == 'infer'
-        assert plus_one.forward.lf_stage == 'infer'
-        assert plus_one.postprocess.lf_stage == 'infer'
+        assert plus_one.lf_preprocess.lf_stage == 'infer'
+        assert plus_one.lf_forward.lf_stage == 'infer'
+        assert plus_one.lf_postprocess.lf_stage == 'infer'
 
 
 def test_infer_apply():

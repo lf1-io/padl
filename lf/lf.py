@@ -393,12 +393,12 @@ class Transform:
         return self(*arg)
 
     @property
-    def device(self):
+    def lf_device(self):
         """Return the device"""
         return self._device
 
     @property
-    def preprocess(self):
+    def lf_preprocess(self):
         """The preprocessing part (everything that happens before sending to gpu). """
         if 'cpu' in self.lf_mapdevice:
             return self
@@ -415,14 +415,14 @@ class Transform:
         return t
 
     @property
-    def forward(self):
+    def lf_forward(self):
         """The forward (GPU) part of the transform and send to GPU"""
         f = self._forward_part()
-        f.lf_to(self.device)
+        f.lf_to(self.lf_device)
         return f
 
     @property
-    def postprocess(self):
+    def lf_postprocess(self):
         """The postprocessing part of the transform. """
         if 'bcpu' in self.lf_mapdevice:
             return self
@@ -438,7 +438,7 @@ class Transform:
         """
         self._device = device
         for item in self.__dict__:
-            obj_ = self.getattribute_object(item)
+            obj_ = self._lf_getattribute_object(item)
             if isinstance(obj_, Transform):
                 obj_.lf_to(device)
             elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
@@ -446,7 +446,7 @@ class Transform:
                     a_trans.lf_to(device)
         return self
 
-    def getattribute_object(self, item):
+    def _lf_getattribute_object(self, item):
         """Like getattribute, but not returning variable values, but variable objects. """
         return object.__getattribute__(self, item)
 
@@ -466,7 +466,7 @@ class Transform:
         if self._layers is None:
             layer_dict = {}
             for item in self.__dict__:
-                attrib = self.getattribute_object(item)
+                attrib = self._lf_getattribute_object(item)
                 if isinstance(attrib, Transform):
                     layer_dict.update(attrib.lf_layers)
                 elif type(attrib) in {tuple, list} and attrib and isinstance(attrib[0], Transform):
@@ -530,9 +530,9 @@ class Transform:
         :param flatten: flatten the output
         """
 
-        preprocess = self.preprocess
-        forward = self.forward
-        post = self.postprocess
+        preprocess = self.lf_preprocess
+        forward = self.lf_forward
+        post = self.lf_postprocess
         # post = self.postprocess_with_fixed_stage
 
         use_preprocess = not preprocess.lf_is_identity
@@ -542,7 +542,7 @@ class Transform:
         if use_preprocess:
             iterator = SimpleIterator(
                 args,
-                self.preprocess.lf_to('cpu')._lf_call_transform
+                self.lf_preprocess.lf_to('cpu')._lf_call_transform
                 # self.preprocess.to('cpu').context_do
             )
             if loader_kwargs is None:

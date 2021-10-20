@@ -65,15 +65,15 @@ class IfInStage(Transform):
         return trans
 
     def _forward_part(self):
-        trans = type(self)(cond_trans=self.cond_trans.forward, target_stage=self.target_stage,
-                           else_=self.else_.forward)
+        trans = type(self)(cond_trans=self.cond_trans.lf_forward, target_stage=self.target_stage,
+                           else_=self.else_.lf_forward)
         trans.lf_stage = self.lf_stage
         return trans
 
     @property
-    def postprocess(self):
-        trans = type(self)(cond_trans=self.cond_trans.postprocess, target_stage=self.target_stage,
-                           else_=self.else_.postprocess)
+    def lf_postprocess(self):
+        trans = type(self)(cond_trans=self.cond_trans.lf_postprocess, target_stage=self.target_stage,
+                           else_=self.else_.lf_postprocess)
         trans.lf_stage = self.lf_stage
         return trans
 
