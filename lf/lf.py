@@ -261,7 +261,7 @@ class Transform:
         self.__lf_name = lf_name
 
         self._layers = None
-        self._stage = None
+        self._lf_stage = None
         self._mapdevice = {'gpu'}
         self._device = 'gpu'
 
@@ -403,7 +403,7 @@ class Transform:
         if 'cpu' in self.mapdevice:
             return self
         t = Identity()
-        t._stage = self.stage
+        t._lf_stage = self.lf_stage
         return t
 
     def _forward_part(self):
@@ -411,7 +411,7 @@ class Transform:
         if 'gpu' in self.mapdevice:
             return self
         t = Identity()
-        t._stage = self.stage
+        t._lf_stage = self.lf_stage
         return t
 
     @property
@@ -427,7 +427,7 @@ class Transform:
         if 'bcpu' in self.mapdevice:
             return self
         t = Identity()
-        t._stage = self.stage
+        t._lf_stage = self.lf_stage
         return t
 
     # DANGER: makes it mutable
@@ -476,21 +476,22 @@ class Transform:
         return self._layers
 
     @property
-    def stage(self):
+    def lf_stage(self):
         """
         :return: Stage of Transform
         """
-        return self._stage
+        return self._lf_stage
 
     @contextmanager
-    def set_stage(self, stage: str):
+    def lf_set_stage(self, stage: str):
         """
         Set of stage of Transform
+
         :param stage: stage ('train', 'eval', 'infer')
         """
         assert stage in ('train', 'eval', 'infer')
 
-        self._stage = stage
+        self._lf_stage = stage
         layers = self.layers
         try:
             for layer in layers.values():
@@ -501,16 +502,17 @@ class Transform:
             yield
         # TODO: Should we put layers in eval mode by default?
         finally:
-            self._stage = None
+            self._lf_stage = None
             for layer in layers.values():
                 layer.eval()
 
     @staticmethod
-    def _get_loader(iterator, loader_kwargs=None):
+    def _lf_get_loader(iterator, loader_kwargs=None):
         """
-        Get Data Loader
+        Get the data loader
+
         :param iterator: Iterator
-        :param loader_kwargs:
+        :param loader_kwargs: key word arguments for the data loader
         """
         loader = DataLoader(
             iterator,
@@ -519,7 +521,7 @@ class Transform:
         )
         return loader
 
-    def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=False):
+    def _lf_callyield(self, args, loader_kwargs=None, verbose=False, flatten=False):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
@@ -533,14 +535,6 @@ class Transform:
         post = self.postprocess
         # post = self.postprocess_with_fixed_stage
 
-        # TODO Is this try statement needed?
-        # try:
-        #     use_post = not post.is_identity
-        # except AttributeError as err:
-        #     if 'is_identity' not in str(err):
-        #         raise err
-        #     use_post = False
-
         use_preprocess = not preprocess.is_identity
         use_post = not post.is_identity
         use_forward = not forward.is_identity
@@ -553,7 +547,7 @@ class Transform:
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
-            loader = self._get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+            loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
         else:
             loader = args
 
@@ -565,8 +559,6 @@ class Transform:
                 loader = tqdm(loader, total=len(loader))
 
         for batch in loader:
-            # NOTE: context_do not needed since _callyield is run inside context
-            # output = self._forward_context_do(batch, forward, stage, use_forward)
             if use_forward:
                 output = forward._lf_call_transform(batch)
             else:
@@ -594,21 +586,21 @@ class Transform:
         """Call transform within the infer context"""
         with torch.no_grad():
             context = contextvars.copy_context()
-            with self.set_stage('infer'):
+            with self.lf_set_stage('infer'):
                 return context.run(self._lf_call_transform, arg)
 
     def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the eval context"""
         with torch.no_grad():
             context = contextvars.copy_context()
-            with self.set_stage('eval'):
-                return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
+            with self.lf_set_stage('eval'):
+                return context.run(self._lf_callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
     def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the train context"""
         context = contextvars.copy_context()
-        with self.set_stage('train'):
-            return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
+        with self.lf_set_stage('train'):
+            return context.run(self._lf_callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
 
 class AtomicTransform(Transform):

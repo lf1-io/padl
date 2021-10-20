@@ -12,12 +12,12 @@ def get_info_(x):
 
 def test_context():
     plus_one = lf.trans(plus_one_)
-    assert plus_one.stage is None
-    with plus_one.set_stage('infer'):
-        assert plus_one.stage is 'infer'
-        assert plus_one.preprocess.stage == 'infer'
-        assert plus_one.forward.stage == 'infer'
-        assert plus_one.postprocess.stage == 'infer'
+    assert plus_one.lf_stage is None
+    with plus_one.lf_set_stage('infer'):
+        assert plus_one.lf_stage is 'infer'
+        assert plus_one.preprocess.lf_stage == 'infer'
+        assert plus_one.forward.lf_stage == 'infer'
+        assert plus_one.postprocess.lf_stage == 'infer'
 
 
 def test_infer_apply():

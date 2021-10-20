@@ -46,7 +46,7 @@ class IfInStage(Transform):
         return self.stage_transform('eval')
 
     def do(self, *args):
-        if self.stage == self.target_stage:
+        if self.lf_stage == self.target_stage:
             return self.cond_trans._do(*args)
         return self.else_._do(*args)
 
@@ -61,27 +61,27 @@ class IfInStage(Transform):
     def trans(self):
         trans = type(self)(cond_trans=self.cond_trans.trans, target_stage=self.target_stage,
                            else_=self.else_.trans)
-        trans.stage = self.stage
+        trans.lf_stage = self.lf_stage
         return trans
 
     def _forward_part(self):
         trans = type(self)(cond_trans=self.cond_trans.forward, target_stage=self.target_stage,
                            else_=self.else_.forward)
-        trans.stage = self.stage
+        trans.lf_stage = self.lf_stage
         return trans
 
     @property
     def postprocess(self):
         trans = type(self)(cond_trans=self.cond_trans.postprocess, target_stage=self.target_stage,
                            else_=self.else_.postprocess)
-        trans.stage = self.stage
+        trans.lf_stage = self.lf_stage
         return trans
 
     @property
     def postprocess_with_fixed_stage(self) -> "Transform":
         """ Get the postprocess transform while fixing it to the current stage (removing all
         branches that belong to a different stage). """
-        if self.stage == self.target_stage:
+        if self.lf_stage == self.target_stage:
             return self.cond_trans.postprocess_with_fixed_stage
         return self.else_.postprocess_with_fixed_stage
 
