@@ -441,10 +441,7 @@ class CompoundTransform(Transform):
 
         super().__init__(module, stack, lf_name=lf_name)
 
-        if lf_name is None:
-            self.__lf_group = kwargs.get('__lf_group', False)
-        else:
-            self.__lf_group = True
+        self.__lf_group = kwargs.get('__lf_group', False) if lf_name is None else True
         #assert not (self.lf_name is not None and self.__lf_group is False)
 
         if flatten:
