@@ -534,7 +534,7 @@ class Transform:
             )
         return loader
 
-    def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=True):
+    def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=False):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
@@ -543,16 +543,34 @@ class Transform:
         :param flatten: flatten the output
         """
 
-        iterator = SimpleIterator(
-            args,
-            self.preprocess.to('cpu')._lf_call_transform
-            # self.preprocess.to('cpu').context_do
-        )
+        preprocess = self.preprocess
+        forward = self.forward
+        post = self.postprocess
+        # post = self.postprocess_with_fixed_stage
 
-        if loader_kwargs is None:
-            loader_kwargs = {}
+        # TODO Is this try statement needed?
+        # try:
+        #     use_post = not post.is_identity
+        # except AttributeError as err:
+        #     if 'is_identity' not in str(err):
+        #         raise err
+        #     use_post = False
 
-        loader = self._get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+        use_preprocess = not preprocess.is_identity
+        use_post = not post.is_identity
+        use_forward = not forward.is_identity
+
+        if use_preprocess:
+            iterator = SimpleIterator(
+                args,
+                self.preprocess.to('cpu')._lf_call_transform
+                # self.preprocess.to('cpu').context_do
+            )
+            if loader_kwargs is None:
+                loader_kwargs = {}
+            loader = self._get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+        else:
+            loader = args
 
         pbar = None
         if verbose:
@@ -560,19 +578,6 @@ class Transform:
                 pbar = tqdm(total=len(args))
             else:
                 loader = tqdm(loader, total=len(loader))
-
-        forward = self.forward
-        post = self.postprocess
-        # post = self.postprocess_with_fixed_stage
-
-        try:
-            use_post = not post.is_identity
-        except AttributeError as err:
-            if 'is_identity' not in str(err):
-                raise err
-            use_post = False
-
-        use_forward = not forward.is_identity
 
         for batch in loader:
             # NOTE: context_do not needed since _callyield is run inside context
@@ -592,7 +597,7 @@ class Transform:
                 output = post._lf_call_transform(output)
 
             if flatten:
-                # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
+                # TODO Should we put the unbatch step inside of _yield_flatten_data?
                 # if not use_post:
                 #     output = unbatch(output)
                 yield from self._yield_flatten_data(output, verbose, pbar)
@@ -607,14 +612,14 @@ class Transform:
             with self.set_stage('infer'):
                 return context.run(self._lf_call_transform, arg)
 
-    def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
+    def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the eval context"""
         with torch.no_grad():
             context = contextvars.copy_context()
             with self.set_stage('eval'):
                 return context.run(self._callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
 
-    def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=True):
+    def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the train context"""
         context = contextvars.copy_context()
         with self.set_stage('train'):
