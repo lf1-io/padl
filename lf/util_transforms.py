@@ -17,7 +17,7 @@ class IfInStage(Transform):
             target_stage=target_stage,
             else_=else_,
         )
-        self._mapdevice = set.union(*[t.mapdevice for t in [self.t, self.else_]])
+        self._mapdevice = set.union(*[t.lf_mapdevice for t in [self.t, self.else_]])
 
     def _versions(self):
         versions = self.cond_trans._versions().copy()

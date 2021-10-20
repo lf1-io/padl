@@ -400,7 +400,7 @@ class Transform:
     @property
     def preprocess(self):
         """The preprocessing part (everything that happens before sending to gpu). """
-        if 'cpu' in self.mapdevice:
+        if 'cpu' in self.lf_mapdevice:
             return self
         t = Identity()
         t._lf_stage = self.lf_stage
@@ -408,7 +408,7 @@ class Transform:
 
     def _forward_part(self):
         """The forward (GPU) part of the transform """
-        if 'gpu' in self.mapdevice:
+        if 'gpu' in self.lf_mapdevice:
             return self
         t = Identity()
         t._lf_stage = self.lf_stage
@@ -418,20 +418,20 @@ class Transform:
     def forward(self):
         """The forward (GPU) part of the transform and send to GPU"""
         f = self._forward_part()
-        f.to(self.device)
+        f.lf_to(self.device)
         return f
 
     @property
     def postprocess(self):
         """The postprocessing part of the transform. """
-        if 'bcpu' in self.mapdevice:
+        if 'bcpu' in self.lf_mapdevice:
             return self
         t = Identity()
         t._lf_stage = self.lf_stage
         return t
 
     # DANGER: makes it mutable
-    def to(self, device: str):
+    def lf_to(self, device: str):
         """Set the transform's device to *device*.
 
         :param device: device on which to map {'cpu', 'cuda'}
@@ -440,10 +440,10 @@ class Transform:
         for item in self.__dict__:
             obj_ = self.getattribute_object(item)
             if isinstance(obj_, Transform):
-                obj_.to(device)
+                obj_.lf_to(device)
             elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
                 for a_trans in obj_:
-                    a_trans.to(device)
+                    a_trans.lf_to(device)
         return self
 
     def getattribute_object(self, item):
@@ -451,27 +451,27 @@ class Transform:
         return object.__getattribute__(self, item)
 
     @property
-    def mapdevice(self):
+    def lf_mapdevice(self):
         """Return the map device"""
         return self._mapdevice
 
     @property
-    def is_identity(self):
+    def lf_is_identity(self):
         """Return *True* iff the transform is the identity transform. """
         return False
 
     @property
-    def layers(self):
+    def lf_layers(self):
         """Get a dict with all layers in the transform (including layers in sub-transforms)."""
         if self._layers is None:
             layer_dict = {}
             for item in self.__dict__:
                 attrib = self.getattribute_object(item)
                 if isinstance(attrib, Transform):
-                    layer_dict.update(attrib.layers)
+                    layer_dict.update(attrib.lf_layers)
                 elif type(attrib) in {tuple, list} and attrib and isinstance(attrib[0], Transform):
                     for y in attrib:
-                        layer_dict.update(y.layers)
+                        layer_dict.update(y.lf_layers)
             self._layers = layer_dict
         return self._layers
 
@@ -492,7 +492,7 @@ class Transform:
         assert stage in ('train', 'eval', 'infer')
 
         self._lf_stage = stage
-        layers = self.layers
+        layers = self.lf_layers
         try:
             for layer in layers.values():
                 if stage == 'train':
@@ -535,14 +535,14 @@ class Transform:
         post = self.postprocess
         # post = self.postprocess_with_fixed_stage
 
-        use_preprocess = not preprocess.is_identity
-        use_post = not post.is_identity
-        use_forward = not forward.is_identity
+        use_preprocess = not preprocess.lf_is_identity
+        use_post = not post.lf_is_identity
+        use_forward = not forward.lf_is_identity
 
         if use_preprocess:
             iterator = SimpleIterator(
                 args,
-                self.preprocess.to('cpu')._lf_call_transform
+                self.preprocess.lf_to('cpu')._lf_call_transform
                 # self.preprocess.to('cpu').context_do
             )
             if loader_kwargs is None:
@@ -831,7 +831,7 @@ class Identity(Transform):
         super().__init__(module, stack, lf_name=lf_name)
 
     @property
-    def is_identity(self):
+    def lf_is_identity(self):
         return True
 
     def __call__(self, *args):
