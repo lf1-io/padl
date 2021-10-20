@@ -505,33 +505,18 @@ class Transform:
             for layer in layers.values():
                 layer.eval()
 
-    def _get_loader(self, iterator, loader_kwargs=None, horovod=False):
+    @staticmethod
+    def _get_loader(iterator, loader_kwargs=None):
         """
         Get Data Loader
         :param iterator: Iterator
         :param loader_kwargs:
         """
-        if horovod:
-            import horovod.torch as hvd
-            from torch.utils.data.distributed import DistributedSampler
-            sampler = DistributedSampler(
-                iterator,
-                num_replicas=hvd.size(),
-                rank=hvd.rank(),
-                # shuffle=shuffle,
-            )
-            loader = DataLoader(
-                iterator,
-                sampler=sampler,
-                worker_init_fn=lambda _: np.random.seed(),
-                **loader_kwargs
-            )
-        else:
-            loader = DataLoader(
-                iterator,
-                worker_init_fn=lambda _: np.random.seed(),
-                **loader_kwargs
-            )
+        loader = DataLoader(
+            iterator,
+            worker_init_fn=lambda _: np.random.seed(),
+            **loader_kwargs
+        )
         return loader
 
     def _callyield(self, args, loader_kwargs=None, verbose=False, flatten=False):
