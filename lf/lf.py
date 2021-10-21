@@ -437,12 +437,12 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
-    def __init__(self, transforms, module, stack, flatten=True, lf_name=None, **kwargs):
+    def __init__(self, transforms, module, stack, flatten=True, lf_name=None, lf_group=False):
 
         super().__init__(module, stack, lf_name=lf_name)
 
-        self.__lf_group = kwargs.get('__lf_group', False) if lf_name is None else True
-        #assert not (self.lf_name is not None and self.__lf_group is False)
+        self._lf_group = True if lf_name is not None else lf_group
+        #assert not (self.lf_name is not None and self._lf_group is False)
 
         if flatten:
             transforms = self._flatten_list(transforms)
@@ -480,7 +480,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform.__lf_group:
+                if transform._lf_group:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
@@ -497,10 +497,9 @@ class CompoundTransform(Transform):
                     res.append(child_transform)
         return res
 
-    @classmethod
-    def return_grouped(cls, transform):
-        return cls(transform.transforms, transform.module, transform.stack,
-                   transform.flatten, transform.lf_name, __lf_group=True)
+    def grouped(self):
+        return type(self)(self.transforms, self._lf_module, self._lf_stack, flatten=True,
+                          lf_name=self.lf_name, lf_group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
@@ -566,9 +565,9 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, **kwargs):
+    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, lf_group=False):
         keys = self._lf_get_keys(transforms)
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -597,9 +596,9 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, **kwargs):
+    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, lf_group=False):
         keys = self._lf_get_keys(transforms)
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, **kwargs)
+        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -639,4 +638,4 @@ def load(path):
 
 
 def group(transform: Union[Rollout, Parallel]):
-    return type(transform).return_grouped(transform)
+    return transform.grouped()
