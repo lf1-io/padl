@@ -1,5 +1,6 @@
 import ast
 import contextvars
+import contextlib
 from contextlib import contextmanager
 import dis
 import functools
@@ -398,27 +399,12 @@ class Transform:
     def __call__(self, arg):
         return NotImplementedError
 
-    def _lf_call_transform(self, arg, stage=None):
+    def _lf_call_transform(self, arg):
         """Call transform with possibility to pass multiple arguments"""
         signature_parameters = inspect.signature(self).parameters
         if len(signature_parameters) == 1:
             return self(arg)
         return self(*arg)
-        # if stage in ('infer', 'eval'):
-        #     with torch.no_grad():
-        #         with self.lf_set_stage(stage):
-        #             print(f'inside lf_call_transform: {self.lf_stage}')
-        #             signature_parameters = inspect.signature(self).parameters
-        #             if len(signature_parameters) == 1:
-        #                 return self(arg)
-        #             return self(*arg)
-        # else:
-        #     with self.lf_set_stage(stage):
-        #         print(self.lf_stage)
-        #         signature_parameters = inspect.signature(self).parameters
-        #         if len(signature_parameters) == 1:
-        #             return self(arg)
-        #         return self(*arg)
 
     def _lf_callyield(self, args, stage, loader_kwargs=None, verbose=False, flatten=False):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -428,10 +414,12 @@ class Transform:
         :param verbose: if *True* print progress bar
         :param flatten: flatten the output
         """
+        assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
+
         if stage == 'eval':
             torch_context = torch.no_grad()
         else:
-            torch_context = contextmanager(lambda: None)
+            torch_context = contextlib.suppress()
 
         with self.lf_set_stage(stage), torch_context:
             preprocess = self.lf_preprocess
@@ -445,7 +433,6 @@ class Transform:
             if use_preprocess:
                 iterator = SimpleIterator(
                     args,
-                    # lambda arg: self.lf_preprocess.lf_to('cpu')._lf_call_transform(arg, stage=stage)
                     self.lf_preprocess.lf_to('cpu')._lf_call_transform
                 )
                 if loader_kwargs is None:
@@ -463,7 +450,6 @@ class Transform:
 
             for batch in loader:
                 if use_forward:
-                    # output = forward._lf_call_transform(batch, stage=stage)
                     output = forward._lf_call_transform(batch)
                 else:
                     output = batch
@@ -475,7 +461,6 @@ class Transform:
                     #     post._lf_call_transform(output[i])
                     #     for i in range(len(output))
                     # ]
-                    # output = post._lf_call_transform(output, stage=stage)
                     output = post._lf_call_transform(output)
 
                 if flatten:
@@ -618,7 +603,8 @@ class Transform:
 
     def infer_apply(self, arg):
         """Call transform within the infer context"""
-        return self._lf_call_transform(arg, stage='infer')
+        with self.lf_set_stage('infer'), torch.no_grad():
+            return self._lf_call_transform(arg)
 
     def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the eval context"""
