@@ -791,10 +791,7 @@ class Compose(CompoundTransform):
             else:
                 self._lf_forward = Identity()
 
-        try:
-            self._lf_forward._lf_stage = self._lf_stage
-        except AttributeError:
-            pass
+        self._lf_forward._lf_stage = self._lf_stage
         return self._lf_forward
 
     @property
@@ -828,10 +825,7 @@ class Compose(CompoundTransform):
             else:
                 self._lf_postprocess = Identity()
 
-        try:
-            self._lf_postprocess._lf_stage = self._lf_stage
-        except AttributeError:
-            pass
+        self._lf_postprocess._lf_stage = self._lf_stage
         return self._lf_postprocess
 
 
