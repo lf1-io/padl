@@ -480,7 +480,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform.__lf_group is True:
+                if transform.__lf_group:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
