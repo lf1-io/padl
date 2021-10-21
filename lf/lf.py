@@ -255,18 +255,6 @@ def trans(fun_or_cls):
     raise ValueError('Can only wrap classes or callables.')
 
 
-class StageManager:
-    def __enter__(self):
-        print("__enter__")
-        return self
-
-    def __exit__(self, exctype, value, tb):
-        print("  __exit__; excptype: '%s'; value: '%s'" % (exctype, value))
-        if exctype is GeneratorExit:
-            return False
-        return True
-
-
 class Transform:
     _lf_stage = None
 
@@ -568,21 +556,17 @@ class Transform:
         """
         assert stage in ('train', 'eval', 'infer')
 
-        # TODO Do we need to set all children Transforms stage?
         layers = self.lf_layers
         try:
-            print('Entered')
             for layer in layers.values():
                 if stage == 'train':
                     layer.train()
                 else:
                     layer.eval()
             Transform._lf_stage = stage
-            print(f'Inside lf_set_stage: {self.lf_stage}')
             yield
         # TODO: Should we put layers in eval mode by default?
         finally:
-            print('Closed')
             for layer in layers.values():
                 layer.eval()
             Transform._lf_stage = None
@@ -608,11 +592,13 @@ class Transform:
 
     def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the eval context"""
-        return self._lf_callyield(arg, 'eval', loader_kwargs=loader_kwargs, verbose=verbose, flatten=flatten)
+        return self._lf_callyield(arg, 'eval', loader_kwargs=loader_kwargs,
+                                  verbose=verbose, flatten=flatten)
 
     def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the train context"""
-        return self._lf_callyield(arg, 'train', loader_kwargs=loader_kwargs, verbose=verbose, flatten=flatten)
+        return self._lf_callyield(arg, 'train', loader_kwargs=loader_kwargs,
+                                  verbose=verbose, flatten=flatten)
 
 
 class AtomicTransform(Transform):
