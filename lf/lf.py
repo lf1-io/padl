@@ -557,9 +557,8 @@ class Rollout(CompoundTransform):
     op = '+'
 
     def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
-        keys = self._lf_get_keys(transforms)
         super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
-        self.lf_keys = keys
+        self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
     def __call__(self, arg):
@@ -588,9 +587,8 @@ class Parallel(CompoundTransform):
     op = '/'
 
     def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
-        keys = self._lf_get_keys(transforms)
         super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
-        self.lf_keys = keys
+        self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
     def __call__(self, arg):

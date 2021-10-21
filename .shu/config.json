@@ -1,0 +1,8 @@
+{
+   "links": [
+      {"project": "lf", "link": "lf"}
+     ],
+   "exclude": [
+      "config.json", ".venv", ".idea", ".pytest_cache", ".ipynb_checkpoints", "__pycache__"
+   ]
+ }
