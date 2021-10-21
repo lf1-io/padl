@@ -49,10 +49,10 @@ def test_compose():
     plus_one = lf.trans(plus_one_)
     comp2 = lf.Compose([plus_one, plus_one, Batchify()], module=None, stack=None)
     # print(comp2.infer_apply(2))
-    gen = comp2.eval_apply([2, 2])
-    next(gen)
-    next(gen)
-    # print(list(comp2.eval_apply([2, 2])))
+    # gen = comp2.eval_apply([2, 2])
+    # next(gen)
+    # next(gen)
+    print(list(comp2.train_apply([2, 2])))
 
 
 # TODO Add back once I can test Compose with preprocess step

@@ -254,6 +254,18 @@ def trans(fun_or_cls):
     raise ValueError('Can only wrap classes or callables.')
 
 
+class StageManager:
+    def __enter__(self):
+        print("__enter__")
+        return self
+
+    def __exit__(self, exctype, value, tb):
+        print("  __exit__; excptype: '%s'; value: '%s'" % (exctype, value))
+        if exctype is GeneratorExit:
+            return False
+        return True
+
+
 class Transform:
     _lf_stage = None
 
@@ -388,21 +400,25 @@ class Transform:
 
     def _lf_call_transform(self, arg, stage=None):
         """Call transform with possibility to pass multiple arguments"""
-        if stage in ('infer', 'eval'):
-            with torch.no_grad():
-                with self.lf_set_stage(stage):
-                    print(f'inside lf_call_transform: {self.lf_stage}')
-                    signature_parameters = inspect.signature(self).parameters
-                    if len(signature_parameters) == 1:
-                        return self(arg)
-                    return self(*arg)
-        else:
-            with self.lf_set_stage(stage):
-                print(self.lf_stage)
-                signature_parameters = inspect.signature(self).parameters
-                if len(signature_parameters) == 1:
-                    return self(arg)
-                return self(*arg)
+        signature_parameters = inspect.signature(self).parameters
+        if len(signature_parameters) == 1:
+            return self(arg)
+        return self(*arg)
+        # if stage in ('infer', 'eval'):
+        #     with torch.no_grad():
+        #         with self.lf_set_stage(stage):
+        #             print(f'inside lf_call_transform: {self.lf_stage}')
+        #             signature_parameters = inspect.signature(self).parameters
+        #             if len(signature_parameters) == 1:
+        #                 return self(arg)
+        #             return self(*arg)
+        # else:
+        #     with self.lf_set_stage(stage):
+        #         print(self.lf_stage)
+        #         signature_parameters = inspect.signature(self).parameters
+        #         if len(signature_parameters) == 1:
+        #             return self(arg)
+        #         return self(*arg)
 
     def _lf_callyield(self, args, stage, loader_kwargs=None, verbose=False, flatten=False):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -412,56 +428,64 @@ class Transform:
         :param verbose: if *True* print progress bar
         :param flatten: flatten the output
         """
-
-        preprocess = self.lf_preprocess
-        forward = self.lf_forward
-        post = self.lf_postprocess
-
-        use_preprocess = not preprocess.lf_is_identity
-        use_post = not post.lf_is_identity
-        use_forward = not forward.lf_is_identity
-
-        if use_preprocess:
-            iterator = SimpleIterator(
-                args,
-                lambda arg: self.lf_preprocess.lf_to('cpu')._lf_call_transform(arg, stage=stage)
-            )
-            if loader_kwargs is None:
-                loader_kwargs = {}
-            loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+        if stage == 'eval':
+            torch_context = torch.no_grad()
         else:
-            loader = args
+            torch_context = contextmanager(lambda: None)
 
-        pbar = None
-        if verbose:
-            if flatten:
-                pbar = tqdm(total=len(args))
+        with self.lf_set_stage(stage), torch_context:
+            preprocess = self.lf_preprocess
+            forward = self.lf_forward
+            post = self.lf_postprocess
+
+            use_preprocess = not preprocess.lf_is_identity
+            use_post = not post.lf_is_identity
+            use_forward = not forward.lf_is_identity
+
+            if use_preprocess:
+                iterator = SimpleIterator(
+                    args,
+                    # lambda arg: self.lf_preprocess.lf_to('cpu')._lf_call_transform(arg, stage=stage)
+                    self.lf_preprocess.lf_to('cpu')._lf_call_transform
+                )
+                if loader_kwargs is None:
+                    loader_kwargs = {}
+                loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
             else:
-                loader = tqdm(loader, total=len(loader))
+                loader = args
 
-        for batch in loader:
-            if use_forward:
-                output = forward._lf_call_transform(batch, stage=stage)
-            else:
-                output = batch
+            pbar = None
+            if verbose:
+                if flatten:
+                    pbar = tqdm(total=len(args))
+                else:
+                    loader = tqdm(loader, total=len(loader))
 
-            if use_post:
-                # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
-                # output = unbatch(output)
-                # output = [
-                #     post._lf_call_transform(output[i])
-                #     for i in range(len(output))
-                # ]
-                output = post._lf_call_transform(output, stage=stage)
+            for batch in loader:
+                if use_forward:
+                    # output = forward._lf_call_transform(batch, stage=stage)
+                    output = forward._lf_call_transform(batch)
+                else:
+                    output = batch
 
-            if flatten:
-                # TODO Should we put the unbatch step inside of _yield_flatten_data?
-                # if not use_post:
-                #     output = unbatch(output)
-                yield from self._yield_flatten_data(output, verbose, pbar)
-                continue
+                if use_post:
+                    # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
+                    # output = unbatch(output)
+                    # output = [
+                    #     post._lf_call_transform(output[i])
+                    #     for i in range(len(output))
+                    # ]
+                    # output = post._lf_call_transform(output, stage=stage)
+                    output = post._lf_call_transform(output)
 
-            yield output
+                if flatten:
+                    # TODO Should we put the unbatch step inside of _yield_flatten_data?
+                    # if not use_post:
+                    #     output = unbatch(output)
+                    yield from self._yield_flatten_data(output, verbose, pbar)
+                    continue
+
+                yield output
 
     @property
     def lf_device(self):
@@ -562,6 +586,7 @@ class Transform:
         # TODO Do we need to set all children Transforms stage?
         layers = self.lf_layers
         try:
+            print('Entered')
             for layer in layers.values():
                 if stage == 'train':
                     layer.train()
@@ -572,6 +597,7 @@ class Transform:
             yield
         # TODO: Should we put layers in eval mode by default?
         finally:
+            print('Closed')
             for layer in layers.values():
                 layer.eval()
             Transform._lf_stage = None
