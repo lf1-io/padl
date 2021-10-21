@@ -658,7 +658,7 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
-    def __init__(self, transforms, module, stack, flatten=True, lf_name=None):
+    def __init__(self, transforms, module=None, stack=None, flatten=True, lf_name=None):
         super().__init__(module, stack, lf_name=lf_name)
         if flatten:
             transforms = self._flatten_list(transforms)
@@ -841,7 +841,7 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None):
+    def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
         keys = self._lf_get_keys(transforms)
         super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
@@ -872,7 +872,7 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None):
+    def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
         keys = self._lf_get_keys(transforms)
         super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
         self.lf_keys = keys
