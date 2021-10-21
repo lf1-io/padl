@@ -1,5 +1,6 @@
 import torch
 from lf import lf
+from lf.util_transforms import Batchify
 
 
 def plus_one_(x):
@@ -37,6 +38,18 @@ def test_eval_apply():
     assert len(out) == 2
     assert out[0] == 'hello'
     assert out[1] == 'dog'
+
+
+def test_compose():
+    plus_one = lf.trans(plus_one_)
+    comp1 = lf.Compose([plus_one, plus_one], module=None, stack=None)
+    assert comp1(2) == 4
+    assert comp1.infer_apply(2) == 4
+
+    plus_one = lf.trans(plus_one_)
+    comp2 = lf.Compose([plus_one, plus_one, Batchify()], module=None, stack=None)
+    print(comp2.infer_apply(2))
+    print(list(comp2.eval_apply([2, 2])))
 
 
 # TODO Add back once I can test Compose with preprocess step

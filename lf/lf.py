@@ -491,6 +491,7 @@ class Transform:
         """
         assert stage in ('train', 'eval', 'infer')
 
+        # TODO Do we need to set all children Transforms stage?
         self._lf_stage = stage
         layers = self.lf_layers
         try:
@@ -662,6 +663,9 @@ class CompoundTransform(Transform):
         if flatten:
             transforms = self._flatten_list(transforms)
         self.transforms = transforms
+        self._lf_preprocess = None
+        self._lf_forward = None
+        self._lf_postprocess = None
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
@@ -760,8 +764,75 @@ class Compose(CompoundTransform):
         :return: output from series of transforms
         """
         for transform_ in self.transforms:
+            transform_._lf_stage = self._lf_stage
             arg = transform_._lf_call_transform(arg)
         return arg
+
+    def _lf_list_of_forward_parts(self):
+        """Accumulate all forward parts of the transforms"""
+        ts_ = []
+        for a_trans, dev in zip(self.transforms, self._mapdevice_list):
+            if 'gpu' in dev:
+                if len(dev) == 1:
+                    ts_.append(a_trans)
+                else:
+                    ts_.append(a_trans.forward)
+        return ts_
+
+    def _lf_forward_part(self):
+        """Forward part of transforms"""
+        if self._lf_forward is None:
+            ts_ = self._lf_list_of_forward_parts()
+
+            if len(ts_) == 1:
+                self._lf_forward = ts_[0]
+            elif ts_:
+                self._lf_forward = Compose(ts_, module=None, stack=None)
+            else:
+                self._lf_forward = Identity()
+
+        try:
+            self._lf_forward._lf_stage = self._lf_stage
+        except AttributeError:
+            pass
+        return self._lf_forward
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t = [
+                t.trans for t, d in zip(self.transforms, self._mapdevice_list) if 'cpu' in d
+            ]
+
+            if len(t) == 1:
+                self._lf_preprocess = t[0].trans
+            elif t:
+                self._lf_preprocess = Compose(t, module=None, stack=None)
+            else:
+                self._lf_preprocess = Identity()
+
+        self._lf_preprocess._lf_stage = self._lf_stage
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t = [
+                t for t, d in zip(self.transforms, self._mapdevice_list) if 'bcpu' in d
+            ]
+
+            if len(t) == 1:
+                self._lf_postprocess = t[0].postprocess
+            elif t:
+                self._lf_postprocess = Compose(t, module=None, stack=None)
+            else:
+                self._lf_postprocess = Identity()
+
+        try:
+            self._lf_postprocess._lf_stage = self._lf_stage
+        except AttributeError:
+            pass
+        return self._lf_postprocess
 
 
 class Rollout(CompoundTransform):
