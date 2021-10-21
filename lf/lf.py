@@ -594,13 +594,15 @@ class Transform:
         with torch.no_grad():
             context = contextvars.copy_context()
             with self.lf_set_stage('eval'):
-                return context.run(self._lf_callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
+                return context.run(self._lf_callyield, arg, loader_kwargs,
+                                   verbose=verbose, flatten=flatten)
 
     def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
         """Call transform within the train context"""
         context = contextvars.copy_context()
         with self.lf_set_stage('train'):
-            return context.run(self._lf_callyield, arg, loader_kwargs, verbose=verbose, flatten=flatten)
+            return context.run(self._lf_callyield, arg, loader_kwargs,
+                               verbose=verbose, flatten=flatten)
 
 
 class AtomicTransform(Transform):
