@@ -264,15 +264,15 @@ class Transform:
         return self.__lf_name
 
     def __rshift__(self, other):
-        return Compose([self, other], _caller_module(1), flatten=True)
+        return Compose([self, other], _caller_module(1), lf_group=False)
 
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*. """
-        return Rollout([self, other], _caller_module(1), flatten=True)
+        return Rollout([self, other], _caller_module(1), lf_group=False)
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """ Parallel with *other*. """
-        return Parallel([self, other], _caller_module(1), flatten=True)
+        return Parallel([self, other], _caller_module(1), lf_group=False)
 
     def __sub__(self, transform_name: str) -> "Transform":
         """Name Transform"""
@@ -437,15 +437,14 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
-    def __init__(self, transforms, module, stack, flatten=True, lf_name=None, lf_group=False):
+    def __init__(self, transforms, module, stack, lf_name=None, lf_group=False):
 
         super().__init__(module, stack, lf_name=lf_name)
 
         self._lf_group = True if lf_name is not None else lf_group
-        #assert not (self.lf_name is not None and self._lf_group is False)
+       #assert not (self.lf_name is not None and self._lf_group is False)
 
-        if flatten:
-            transforms = self._flatten_list(transforms)
+        transforms = self._flatten_list(transforms)
         self.transforms = transforms
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
@@ -498,7 +497,7 @@ class CompoundTransform(Transform):
         return res
 
     def grouped(self):
-        return type(self)(self.transforms, self._lf_module, self._lf_stack, flatten=True,
+        return type(self)(self.transforms, self._lf_module, self._lf_stack,
                           lf_name=self.lf_name, lf_group=True)
 
     @staticmethod
@@ -565,9 +564,9 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, lf_group=False):
+    def __init__(self, transforms, module, stack, lf_name=None, lf_group=False):
         keys = self._lf_get_keys(transforms)
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, lf_group=lf_group)
+        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -596,9 +595,9 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module, stack, flatten=False, lf_name=None, lf_group=False):
+    def __init__(self, transforms, module, stack, lf_name=None, lf_group=False):
         keys = self._lf_get_keys(transforms)
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name, lf_group=lf_group)
+        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = keys
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
