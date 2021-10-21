@@ -438,7 +438,6 @@ class CompoundTransform(Transform):
     op = NotImplemented
 
     def __init__(self, transforms, module, stack, lf_name=None, lf_group=False):
-
         super().__init__(module, stack, lf_name=lf_name)
 
         self._lf_group = True if lf_name is not None else lf_group
@@ -595,9 +594,8 @@ class Parallel(CompoundTransform):
     op = '/'
 
     def __init__(self, transforms, module, stack, lf_name=None, lf_group=False):
-        keys = self._lf_get_keys(transforms)
         super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
-        self.lf_keys = keys
+        self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
     def __call__(self, arg):
