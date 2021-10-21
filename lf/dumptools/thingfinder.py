@@ -3,7 +3,6 @@ import inspect
 import linecache
 from math import inf
 import sys
-from typing import List
 
 
 class _ThingFinder(ast.NodeVisitor):
@@ -14,6 +13,7 @@ class _ThingFinder(ast.NodeVisitor):
     :param max_n: Stop searching after this number of statements from the bottom
         of the module.
     """
+
     def __init__(self, source, var_name, max_n=inf):
         self.source = source
         self.var_name = var_name
@@ -171,7 +171,7 @@ class _CallFinder(_ThingFinder):
         tree = ast.parse(self.source)
         self.visit(tree)
         if self.found_something():
-            return self._get_name(self._result), *_get_call_signature(self.source, self._result)
+            return self._get_name(self._result), *_get_call_signature(self.source)
         raise ThingNotFound(f'Did not find call of "{self.var_name}".')
 
     def _get_name(self, call: ast.Call):
@@ -206,15 +206,18 @@ def _get_call_signature(source: str):
 
 
 class Scope:
-
     def __init__(self, module, def_source, scopelist):
         self.module = module
         self.def_source = def_source
         self.scopelist = scopelist
 
     @classmethod
-    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0):
+    def toplevel(cls, module):
+        """Create a top-level scope (i.e. module level, no nesting). """
+        return cls(module, '', [])
 
+    @classmethod
+    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0):
         tree = ast.parse(def_source)
         branch = _find_branch(tree, lineno)
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
@@ -271,6 +274,15 @@ class Scope:
     def __repr__(self):
         return f'Scope[{".".join(x[0] for x in self.scopelist)}]'
 
+    def __len__(self):
+        return len(self.scopelist)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
+
 
 def find_in_function_def(var_name, source, lineno, call_source):
     """Find where *var_name* was assigned.
@@ -324,7 +336,7 @@ def find_in_module(var_name: str, module):
     :returns: Tuple with source code segment and corresponding ast node.
     """
     source = inspect.getsource(module)
-    return find_in_source(var_name, source), []
+    return find_in_source(var_name, source)
 
 
 def _find_branch(node, lineno):

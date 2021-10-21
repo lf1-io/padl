@@ -1,9 +1,11 @@
 import ast
 import builtins
-from collections import namedtuple, Iterable
+from collections import namedtuple
+from collections.abc import Iterable
+from dataclasses import dataclass
 import sys
 
-from lf import thingfinder
+from lf.dumptools import thingfinder
 
 try:
     unparse = ast.unparse
@@ -143,9 +145,10 @@ class _VarFinder(ast.NodeVisitor):
 
 
 class _Renamer(ast.NodeTransformer):
-    def __init__(self, from_, to):
+    def __init__(self, from_, to, rename_locals):
         self.from_ = from_
         self.to = to
+        self.rename_locals = rename_locals
 
     def visit_arg(self, node):
         if node.arg == self.from_:
@@ -158,12 +161,23 @@ class _Renamer(ast.NodeTransformer):
         return node
 
     def visit_FunctionDef(self, node):
-        globals_ = find_globals(node)
-        if self.from_ not in globals_:
-            return node
-        return ast.FunctionDef(**{**node.__dict__, 'body': rename(node.body, self.from_, self.to)})
+        if self.rename_locals and node.name == self.from_:
+            name = self.to
+        else:
+            name = node.name
+        if not self.rename_locals:
+            globals_ = find_globals(node)
+            if self.from_ not in globals_:
+                return node
+        return ast.FunctionDef(**{**node.__dict__,
+                                  'body': rename(node.body, self.from_, self.to),
+                                  'name': name})
 
     def visit_ClassDef(self, node):
+        if self.rename_locals:
+            for child_node in ast.iter_child_nodes(node):
+                self.visit(child_node)
+            return node
         globals_ = find_globals(node)
         if self.from_ not in globals_:
             return node
@@ -179,7 +193,7 @@ def rename(tree, from_, to, rename_locals=False):
         return [rename(x, from_, to) for x in tree]
     elif not isinstance(tree, ast.AST):
         return tree
-    renamer = _Renamer(from_, to)
+    renamer = _Renamer(from_, to, rename_locals)
     return renamer.visit(tree)
 
 
@@ -274,7 +288,7 @@ def _topsort(graph):
 _PRECEDENCE = {
     ast.Import: lambda _k, v: '1' + v[2].names[0].name.lower(),
     ast.ImportFrom: lambda _k, v: '1' + v[2].module.lower(),
-    ast.Assign: lambda k, _v: '2' + str(k[1]) + k[0].lower()
+    ast.Assign: lambda k, _v: '2' + k.lower()
 }
 
 
@@ -286,12 +300,44 @@ def _sort(graph):
         try:
             return _PRECEDENCE[val[2].__class__](x, val)
         except KeyError:
-            return 'zz' + str(x[1]) + x[0].lower()
+            return 'zz' + x.lower()
 
     res = []
     for level in top:
         res += sorted(level, key=sortkey)
     return res
+
+
+def unscope(name, scope):
+    return scope.unscoped(name)
+
+
+def unscope_graph(graph, scopemap):
+    res = {}
+    for k, v in graph.items():
+        changed = False
+        k_unscoped = unscope(*k)
+        changed = changed or k_unscoped != k[0]
+        code = v.source
+        tree = ast.parse(code)
+        rename(tree, k[0], k_unscoped, rename_locals=True)
+        vars_ = set()
+        for var in list(v.globals_):
+            var_unscoped = scopemap[var].unscoped(var[0])
+            changed = changed or var_unscoped != var[0]
+            rename(tree, var[0], var_unscoped)
+            vars_.add(var_unscoped)
+        if changed:
+            code = unparse(tree).strip('\n')
+        res[k_unscoped] = (code, vars_, v.ast_node)
+    return res
+
+
+@dataclass
+class CodeNode:
+    source: str
+    globals_: set
+    ast_node: ast.AST
 
 
 def dumps_graph(graph):
@@ -310,7 +356,7 @@ def dumps_graph(graph):
                 res += '\n'
             else:
                 res += '\n\n\n'
-    return res
+    return res + '\n'
 
 
 def dumps(x: str, module=None):

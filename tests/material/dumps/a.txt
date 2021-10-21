@@ -1,0 +1,12 @@
+from lf import trans
+
+
+CONST = 1
+
+
+@trans
+def x(y):
+    return CONST + 1
+
+
+_lf_main = x
