@@ -1,0 +1,42 @@
+from lf import trans
+
+
+CONST = 1
+
+
+def k(o):
+    return o * 7
+
+
+@trans
+def x(y):
+    return CONST + 1
+
+
+@trans
+def y(y):
+    return CONST + k(y)
+
+
+c_a = (
+    (
+        x
+        >> y
+    )
+    >> x
+)
+
+
+_lf_main = (
+    (
+        x
+        >> y
+    )
+    >> (
+        (
+            x
+            / x
+        )
+        + c_a
+    )
+)
