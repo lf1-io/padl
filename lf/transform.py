@@ -5,7 +5,7 @@ import contextlib
 import inspect
 from pathlib import Path
 import types
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import torch
@@ -255,12 +255,22 @@ class Transform:
     def __call__(self, arg):
         return NotImplementedError
 
-    def _lf_call_transform(self, arg):
+    def _lf_call_transform(self, arg, stage=None):
         """Call transform with possibility to pass multiple arguments"""
+        print('stage', stage)
+
+        if stage == 'eval':
+            torch_context = torch.no_grad()
+        else:
+            torch_context = contextlib.suppress()
+
         signature_parameters = inspect.signature(self).parameters
-        if len(signature_parameters) == 1:
-            return self(arg)
-        return self(*arg)
+
+        with self.lf_set_stage(stage), torch_context:
+            print('in', self.lf_stage)
+            if len(signature_parameters) == 1:
+                return self(arg)
+            return self(*arg)
 
     def _lf_callyield(self, args, stage, loader_kwargs=None, verbose=False, flatten=False):
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -272,61 +282,55 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
 
-        if stage == 'eval':
-            torch_context = torch.no_grad()
+        preprocess = self.lf_preprocess
+        forward = self.lf_forward
+        post = self.lf_postprocess
+
+        use_preprocess = not preprocess.lf_is_identity
+        use_post = not post.lf_is_identity
+        use_forward = not forward.lf_is_identity
+
+        if use_preprocess:
+            iterator = SimpleIterator(
+                args,
+                lambda *args: self.lf_preprocess.lf_to('cpu')._lf_call_transform(*args, stage)
+            )
+            if loader_kwargs is None:
+                loader_kwargs = {}
+            loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
         else:
-            torch_context = contextlib.suppress()
+            loader = args
 
-        with self.lf_set_stage(stage), torch_context:
-            preprocess = self.lf_preprocess
-            forward = self.lf_forward
-            post = self.lf_postprocess
-
-            use_preprocess = not preprocess.lf_is_identity
-            use_post = not post.lf_is_identity
-            use_forward = not forward.lf_is_identity
-
-            if use_preprocess:
-                iterator = SimpleIterator(
-                    args,
-                    self.lf_preprocess.lf_to('cpu')._lf_call_transform
-                )
-                if loader_kwargs is None:
-                    loader_kwargs = {}
-                loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+        pbar = None
+        if verbose:
+            if flatten:
+                pbar = tqdm(total=len(args))
             else:
-                loader = args
+                loader = tqdm(loader, total=len(loader))
 
-            pbar = None
-            if verbose:
-                if flatten:
-                    pbar = tqdm(total=len(args))
-                else:
-                    loader = tqdm(loader, total=len(loader))
+        for batch in loader:
+            if use_forward:
+                output = forward._lf_call_transform(batch, stage)
+            else:
+                output = batch
 
-            for batch in loader:
-                if use_forward:
-                    output = forward._lf_call_transform(batch)
-                else:
-                    output = batch
+            if use_post:
+                # TODO: unbatch not needed anymore since it is part of the post transform (Issue 19)
+                # output = unbatch(output)
+                # output = [
+                #     post._lf_call_transform(output[i])
+                #     for i in range(len(output))
+                # ]
+                output = post._lf_call_transform(output, stage)
 
-                if use_post:
-                    # TODO: unbatch not needed anymore since it is part of the post transform (Issue 19)
-                    # output = unbatch(output)
-                    # output = [
-                    #     post._lf_call_transform(output[i])
-                    #     for i in range(len(output))
-                    # ]
-                    output = post._lf_call_transform(output)
+            if flatten:
+                # TODO Should we put the unbatch step inside of _yield_flatten_data?
+                # if not use_post:
+                #     output = unbatch(output)
+                yield from self._yield_flatten_data(output, verbose, pbar)
+                continue
 
-                if flatten:
-                    # TODO Should we put the unbatch step inside of _yield_flatten_data?
-                    # if not use_post:
-                    #     output = unbatch(output)
-                    yield from self._yield_flatten_data(output, verbose, pbar)
-                    continue
-
-                yield output
+            yield output
 
     @property
     def lf_device(self):
@@ -413,12 +417,16 @@ class Transform:
         return self._lf_stage
 
     @contextlib.contextmanager
-    def lf_set_stage(self, stage: str):
+    def lf_set_stage(self, stage: Optional[str]=None):
         """Set of stage of Transform
 
         :param stage: stage ('train', 'eval', 'infer')
         """
-        assert stage in ('train', 'eval', 'infer')
+        assert stage in ('train', 'eval', 'infer', None)
+
+        if stage is None:
+            yield
+            return
 
         layers = self.lf_layers
         try:
@@ -474,7 +482,7 @@ class AtomicTransform(Transform):
     :param name: name of the transform
     """
 
-    def __init__(self, call, call_info, lf_name=None):
+    def __init__(self, call, call_info=None, lf_name=None):
         super().__init__(call_info, lf_name)
         self._lf_call = call
 
@@ -640,7 +648,7 @@ class CompoundTransform(Transform):
 
     def grouped(self):
         """Return a grouped version of *self*. """
-        return type(self)(self.transforms, self._lf_call_info, name=self.lf_name, group=True)
+        return type(self)(self.transforms, self._lf_call_info, lf_name=self.lf_name, lf_group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
@@ -683,8 +691,8 @@ class Compose(CompoundTransform):
     """
     op = '>>'
 
-    def __init__(self, transforms, call_info, lf_name=None, group=False):
-        super().__init__(transforms, call_info, lf_name=lf_name, group=group)
+    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
+        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
 
         preprocess_end = 0
         postprocess_start = len(self.transforms)
@@ -787,8 +795,8 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, call_info, lf_name=None, lf_group=False):
-        super().__init__(transforms, call_info, lf_name=lf_name, lf_group=lf_group)
+    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
+        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -859,7 +867,7 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, call_info, lf_name=None, lf_group=False):
+    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
@@ -909,7 +917,7 @@ class Parallel(CompoundTransform):
 class Identity(ClassTransform):
     """Do nothing.
 
-    :param name: name of the transform
+    :param lf_name: name of the transform
     """
 
     def __init__(self, lf_name=None):
