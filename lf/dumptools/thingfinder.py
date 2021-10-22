@@ -3,6 +3,7 @@ import inspect
 import linecache
 from math import inf
 import sys
+from warnings import warn
 
 
 class _ThingFinder(ast.NodeVisitor):
