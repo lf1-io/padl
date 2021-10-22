@@ -605,7 +605,7 @@ class CompoundTransform(Transform):
 
     def grouped(self):
         """Return a grouped version of *self*. """
-        return type(self)(self.transforms, self._lf_call_info, name=self.lf_name(), group=True)
+        return type(self)(self.transforms, self._lf_call_info, name=self.lf_name, group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
@@ -619,10 +619,10 @@ class CompoundTransform(Transform):
         """
         names = []
         for ind, transform_ in enumerate(transforms):
-            if transform_.lf_name() is None:
+            if transform_.lf_name is None:
                 name = 'out_'+str(ind)
             else:
-                name = transform_.lf_name()
+                name = transform_.lf_name
             names.append(name)
 
         counter = Counter(names)
