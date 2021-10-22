@@ -509,13 +509,13 @@ class TorchModuleTransform(torch.nn.Module, AtomicTransform):
 
 
 class CompoundTransform(Transform):
-    """Abstract base class for meta-trasforms (transforms combining other transforms. """
+    """Abstract base class for compound-transforms (transforms combining other transforms). """
     op = NotImplemented
 
-    def __init__(self, transforms, call_info, name=None, group=False):
+    def __init__(self, transforms, call_info, name=None, lf_group=False):
         super().__init__(call_info, name)
 
-        self._lf_group = True if name is not None else group
+        self._lf_group = True if name is not None else lf_group
 
         self._lf_preprocess = None
         self._lf_forward = None
@@ -735,8 +735,8 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, call_info, name=None, group=False):
-        super().__init__(transforms, call_info, name=name, group=group)
+    def __init__(self, transforms, call_info, name=None, lf_group=False):
+        super().__init__(transforms, call_info, name=name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -807,8 +807,8 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, call_info, name=None, group=False):
-        super().__init__(transforms, call_info=call_info, name=name, group=group)
+    def __init__(self, transforms, call_info, name=None, lf_group=False):
+        super().__init__(transforms, call_info=call_info, name=name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
