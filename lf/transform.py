@@ -854,20 +854,17 @@ class Parallel(CompoundTransform):
         return self._lf_forward
 
 
-class Identity(Transform):
+class Identity(AtomicTransform):
     """Do nothing."""
 
     def __init__(self, name=None):
-        super().__init__(None, name=name)
+        super().__init__('Identity()', call_info=inspector.caller_info(), name=name)
 
     @property
     def lf_is_identity(self):
         return True
 
-    def __call__(self, *args):
-        # remove, make consistent
-        if len(args) == 1:
-            return args[0]
+    def __call__(self, args):
         return args
 
 
