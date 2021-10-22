@@ -25,6 +25,11 @@ def plus(x, y):
     return x + y
 
 
+@lf.trans
+def get_info(x):
+    return x['info']
+
+
 def simple_func(x):
     return x
 
@@ -102,16 +107,7 @@ class TestCompose:
         assert self.transform_4(1) == 4
 
 
-def plus_one_(x):
-    return x + 1
-
-
-def get_info_(x):
-    return x['info']
-
-
 def test_context():
-    plus_one = lf.trans(plus_one_)
     assert plus_one.lf_stage is None
     with plus_one.lf_set_stage('infer'):
         assert plus_one.lf_stage is 'infer'
@@ -121,18 +117,15 @@ def test_context():
 
 
 def test_infer_apply():
-    plus_one = lf.trans(plus_one_)
     assert plus_one.infer_apply(5) == 6
 
 
 def test_eval_apply():
-    plus_one = lf.trans(plus_one_)
     out = list(plus_one.eval_apply([5, 6], flatten=False))
     assert len(out) == 2
     assert out[0] == 6
     assert out[1] == 7
 
-    get_info = lf.trans(get_info_)
     out = list(get_info.eval_apply([{'info': 'hello'}, {'info': 'dog'}], flatten=False))
     assert len(out) == 2
     assert out[0] == 'hello'
@@ -140,12 +133,10 @@ def test_eval_apply():
 
 
 def test_compose():
-    plus_one = lf.trans(plus_one_)
     comp1 = lf.Compose([plus_one, plus_one], module=None, stack=None)
     assert comp1(2) == 4
     assert comp1.infer_apply(2) == 4
 
-    plus_one = lf.trans(plus_one_)
     comp2 = lf.Compose([plus_one, plus_one, Batchify()], module=None, stack=None)
     print(comp2.infer_apply(2))
     print(list(comp2.eval_apply([2, 2])))
