@@ -872,35 +872,37 @@ class Rollout(CompoundTransform):
     @property
     def lf_preprocess(self):
         if self._lf_preprocess is None:
-            t_pre_list = [x.lf_preprocess for x in self.transforms]
-            if all([isinstance(t, Identity) for t in t_pre_list]):
+            t_list = [x.lf_preprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_postprocess = Identity()
             elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
-                self._lf_postprocess = Parallel(t_pre_list)
+                self._lf_postprocess = Parallel(t_list)
             else:
-                self._lf_preprocess = Rollout(t_pre_list)
+                self._lf_preprocess = Rollout(t_list)
         return self._lf_preprocess
 
     def _lf_forward_part(self):
         """Forward part"""
+        # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
+            t_list = [x.lf_forward for x in self.transforms]
             if len(list(self._mapdevice)) >= 2 and 'gpu' in self._lf_mapdevice:
-                self._lf_forward = Parallel([x.lf_forward for x in self.transforms])
+                self._lf_forward = Parallel(t_list)
             else:
-                self._lf_forward = Rollout([x.lf_forward for x in self.transforms])
+                self._lf_forward = Rollout(t_list)
         return self._lf_forward
 
     @property
     def lf_postprocess(self):
         """Post process part"""
         if self._lf_postprocess is None:
-            t_post_list = [x.lf_postprocess for x in self.transforms]
-            if all([isinstance(t, Identity) for t in t_post_list]):
+            t_list = [x.lf_postprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_postprocess = Identity()
             elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
-                self._lf_postprocess = Parallel(t_post_list)
+                self._lf_postprocess = Parallel(t_list)
             else:
-                self._lf_postprocess = Rollout(t_post_list)
+                self._lf_postprocess = Rollout(t_list)
         return self._lf_postprocess
 
 
@@ -932,6 +934,35 @@ class Parallel(CompoundTransform):
             out.append(transform_._lf_call_transform(arg[ind]))
         out = self._lf_output_format(*out)
         return out
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_list = [x.lf_preprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_preprocess = Identity()
+            else:
+                self._lf_preprocess = Parallel(t_list)
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t_list = [x.lf_postprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_postprocess = Identity()
+            else:
+                self._lf_postprocess = Parallel(t_list)
+        return self._lf_postprocess
+
+    def _lf_forward_part(self):
+        if self._lf_forward is None:
+            t_list = [x.lf_forward for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Parallel(t_list)
+        return self._lf_forward
 
 
 class Identity(Transform):
