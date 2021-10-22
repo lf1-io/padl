@@ -1,11 +1,18 @@
 """The Transform class and some of its children. """
 import ast
+from collections import Counter, namedtuple
+import contextlib
+import inspect
 from pathlib import Path
 import types
-from typing import List
+from typing import List, Union
 
+import numpy as np
 import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
+from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
 
 
@@ -16,23 +23,54 @@ class _Notset:
 _notset = _Notset()
 
 
+def _isinstance_of_namedtuple(arg):
+    """Check if input is instance of namedtuple"""
+    typ = type(arg)
+    base = typ.__bases__
+    if len(base) != 1 or base[0] != tuple:
+        return False
+    fields = getattr(typ, '_fields', None)
+    if not isinstance(fields, tuple):
+        return False
+    return all(isinstance(field, str) for field in fields)
+
+
 class Transform:
     """Transform base class. """
+    _lf_stage = None
 
-    def __init__(self, call_info):
+    def __init__(self, call_info, name=None):
         self._lf_call_info = call_info
         self._lf_varname = _notset
+        self._lf_name = name
+        self._lf_mapdevice = {'gpu'}
+        self._lf_device = 'gpu'
+        self._lf_layers = None
+
+    @property
+    def lf_name(self):
+        if self._lf_name is None:
+            return self.lf_varname()
+        return self._lf_name
 
     def __rshift__(self, other):
-        return Compose([self, other], inspector.caller_info(), flatten=True)
+        return Compose([self, other], inspector.caller_info())
 
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*. """
-        return Rollout([self, other], inspector.caller_info(), flatten=True)
+        return Rollout([self, other], inspector.caller_info())
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """ Parallel with *other*. """
-        return Parallel([self, other], inspector.caller_info(), flatten=True)
+        return Parallel([self, other], inspector.caller_info())
+
+    def __sub__(self, transform_name: str) -> "Transform":
+        """Name Transform"""
+        return self.lf_clone(lf_name=transform_name)
+
+    def lf_clone(self, **kwargs):
+        """Clone Transform"""
+        return NotImplemented
 
     def lf_pre_save(self, path, i):
         """Method that is called on each transform before saving.
@@ -208,13 +246,226 @@ class Transform:
     def lf_set_varname(self, val):
         self._lf_varname = val
 
+    def __call__(self, arg):
+        return NotImplementedError
+
+    def _lf_call_transform(self, arg):
+        """Call transform with possibility to pass multiple arguments"""
+        signature_parameters = inspect.signature(self).parameters
+        if len(signature_parameters) == 1:
+            return self(arg)
+        return self(*arg)
+
+    def _lf_callyield(self, args, stage, loader_kwargs=None, verbose=False, flatten=False):
+        """Create a data loader and run preprocessing, forward, and postprocessing steps.
+
+        :param args: Arguments to call with.
+        :param loader_kwargs: data loader keyword arguments
+        :param verbose: if *True* print progress bar
+        :param flatten: flatten the output
+        """
+        assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
+
+        if stage == 'eval':
+            torch_context = torch.no_grad()
+        else:
+            torch_context = contextlib.suppress()
+
+        with self.lf_set_stage(stage), torch_context:
+            preprocess = self.lf_preprocess
+            forward = self.lf_forward
+            post = self.lf_postprocess
+
+            use_preprocess = not preprocess.lf_is_identity
+            use_post = not post.lf_is_identity
+            use_forward = not forward.lf_is_identity
+
+            if use_preprocess:
+                iterator = SimpleIterator(
+                    args,
+                    self.lf_preprocess.lf_to('cpu')._lf_call_transform
+                )
+                if loader_kwargs is None:
+                    loader_kwargs = {}
+                loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+            else:
+                loader = args
+
+            pbar = None
+            if verbose:
+                if flatten:
+                    pbar = tqdm(total=len(args))
+                else:
+                    loader = tqdm(loader, total=len(loader))
+
+            for batch in loader:
+                if use_forward:
+                    output = forward._lf_call_transform(batch)
+                else:
+                    output = batch
+
+                if use_post:
+                    # TODO: unbatch not needed anymore since it is part of the post transform (Issue 19)
+                    # output = unbatch(output)
+                    # output = [
+                    #     post._lf_call_transform(output[i])
+                    #     for i in range(len(output))
+                    # ]
+                    output = post._lf_call_transform(output)
+
+                if flatten:
+                    # TODO Should we put the unbatch step inside of _yield_flatten_data?
+                    # if not use_post:
+                    #     output = unbatch(output)
+                    yield from self._yield_flatten_data(output, verbose, pbar)
+                    continue
+
+                yield output
+
+    @property
+    def lf_device(self):
+        """Return the device"""
+        return self._lf_device
+
+    @property
+    def lf_mapdevice(self):
+        """Return the map device"""
+        return self._lf_mapdevice
+
+    @property
+    def lf_preprocess(self):
+        """The preprocessing part (everything that happens before sending to gpu). """
+        if 'cpu' in self.lf_mapdevice:
+            return self
+        return Identity()
+
+    def _lf_forward_part(self):
+        """The forward (GPU) part of the transform """
+        if 'gpu' in self.lf_mapdevice:
+            return self
+        return Identity()
+
+    @property
+    def lf_forward(self):
+        """The forward (GPU) part of the transform and send to GPU"""
+        f = self._lf_forward_part()
+        f.lf_to(self.lf_device)
+        return f
+
+    @property
+    def lf_postprocess(self):
+        """The postprocessing part of the transform. """
+        if 'bcpu' in self.lf_mapdevice:
+            return self
+        return Identity()
+
+    # DANGER: makes it mutable
+    def lf_to(self, device: str):
+        """Set the transform's device to *device*.
+
+        :param device: device on which to map {'cpu', 'cuda'}
+        """
+        self._lf_device = device
+        for item in self.__dict__:
+            obj_ = self._lf_getattribute_object(item)
+            if isinstance(obj_, Transform):
+                obj_.lf_to(device)
+            elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
+                for a_trans in obj_:
+                    a_trans.lf_to(device)
+        return self
+
+    def _lf_getattribute_object(self, item):
+        """Like getattribute, but not returning variable values, but variable objects. """
+        return object.__getattribute__(self, item)
+
+    @property
+    def lf_is_identity(self):
+        """Return *True* iff the transform is the identity transform. """
+        return False
+
+    @property
+    def lf_layers(self):
+        """Get a dict with all layers in the transform (including layers in sub-transforms)."""
+        if self._lf_layers is None:
+            layer_dict = {}
+            for item in self.__dict__:
+                attrib = self._lf_getattribute_object(item)
+                if isinstance(attrib, Transform):
+                    layer_dict.update(attrib.lf_layers)
+                elif type(attrib) in {tuple, list} and attrib and isinstance(attrib[0], Transform):
+                    for y in attrib:
+                        layer_dict.update(y.lf_layers)
+            self._lf_layers = layer_dict
+        return self._lf_layers
+
+    @property
+    def lf_stage(self):
+        """
+        :return: Stage of Transform
+        """
+        return self._lf_stage
+
+    @contextlib.contextmanager
+    def lf_set_stage(self, stage: str):
+        """
+        Set of stage of Transform
+
+        :param stage: stage ('train', 'eval', 'infer')
+        """
+        assert stage in ('train', 'eval', 'infer')
+
+        layers = self.lf_layers
+        try:
+            for layer in layers.values():
+                if stage == 'train':
+                    layer.train()
+                else:
+                    layer.eval()
+            Transform._lf_stage = stage
+            yield
+        # TODO: Should we put layers in eval mode by default?
+        finally:
+            for layer in layers.values():
+                layer.eval()
+            Transform._lf_stage = None
+
+    def _lf_get_loader(self, iterator, loader_kwargs=None):
+        """
+        Get the data loader
+
+        :param iterator: Iterator
+        :param loader_kwargs: key word arguments for the data loader
+        """
+        loader = DataLoader(
+            iterator,
+            worker_init_fn=lambda _: np.random.seed(),
+            **loader_kwargs
+        )
+        return loader
+
+    def infer_apply(self, arg):
+        """Call transform within the infer context"""
+        with self.lf_set_stage('infer'), torch.no_grad():
+            return self._lf_call_transform(arg)
+
+    def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
+        """Call transform within the eval context"""
+        return self._lf_callyield(arg, 'eval', loader_kwargs=loader_kwargs,
+                                  verbose=verbose, flatten=flatten)
+
+    def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
+        """Call transform within the train context"""
+        return self._lf_callyield(arg, 'train', loader_kwargs=loader_kwargs,
+                                  verbose=verbose, flatten=flatten)
+
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms, in contrast to `MetaTransform`s. """
+    other transforms, in contrast to `CompoundTransform`s. """
 
-    def __init__(self, call, call_info):
-        super().__init__(call_info)
+    def __init__(self, call, call_info, name=None):
+        super().__init__(call_info, name)
         self._lf_call = call
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
@@ -233,10 +484,10 @@ class AtomicTransform(Transform):
 
 
 class FunctionTransform(AtomicTransform):
-    def __init__(self, function, call_info, call=None):
+    def __init__(self, function, call_info, name=None, call=None):
         if call is None:
             call = function.__name__
-        super().__init__(call, call_info)
+        super().__init__(call, call_info, name)
         self.function = function
 
     def __call__(self, *args, **kwargs):
@@ -257,15 +508,28 @@ class TorchModuleTransform(torch.nn.Module, AtomicTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
 
-class MetaTransform(Transform):
+class CompoundTransform(Transform):
     """Abstract base class for meta-trasforms (transforms combining other transforms. """
     op = NotImplemented
 
-    def __init__(self, transforms, call_info, flatten=True):
-        super().__init__(call_info)
-        if flatten:
-            transforms = self._flatten_list(transforms)
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(call_info, name)
+
+        self._lf_group = True if name is not None else group
+
+        self._lf_preprocess = None
+        self._lf_forward = None
+        self._lf_postprocess = None
+
+        transforms = self._flatten_list(transforms)
         self.transforms = transforms
+
+        # self._lf_mapdevice_list = None
+        self._lf_mapdevice_list = [t.lf_mapdevice for t in self.transforms]
+        try:
+            self._mapdevice = set.union(*self._lf_mapdevice_list)
+        except (AttributeError, TypeError):
+            self._mapdevice = None
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
@@ -322,10 +586,10 @@ class MetaTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform.lf_varname is None:
-                    list_flat += transform.transforms
-                else:
+                if transform._lf_group is None:
                     list_flat.append(transform)
+                else:
+                    list_flat += transform.transforms
             else:
                 list_flat.append(transform)
 
@@ -339,17 +603,272 @@ class MetaTransform(Transform):
                     res.append(child_transform)
         return res
 
+    def grouped(self):
+        """Return a grouped version of *self*. """
+        return type(self)(self.transforms, self._lf_call_info, name=self.lf_name, group=True)
 
-class Compose(MetaTransform):
+    @staticmethod
+    def _lf_get_keys(transforms):
+        """Get deduplicated keys from list of transforms
+
+        Names are updated as below.
+        [None, None, 'a', 'a', 'b', 'c'] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'c']
+
+        :param transforms: list of transforms
+        :return: list of keys
+        """
+        names = []
+        for ind, transform_ in enumerate(transforms):
+            if transform_.lf_name is None:
+                name = 'out_'+str(ind)
+            else:
+                name = transform_.lf_name
+            names.append(name)
+
+        counter = Counter(names)
+        updated_counter = Counter()
+        deduped_keys = []
+
+        for name in names:
+            new_name = name + '_' + str(updated_counter[name]) if counter[name] > 1 else name
+            updated_counter.update({name: 1})
+            deduped_keys.append(new_name)
+        return deduped_keys
+
+
+class Compose(CompoundTransform):
+    """Apply series of transforms on input.
+
+    Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
+
+    :param transforms: List of transforms to compose.
+    :param flatten: If *True* flatten transforms -
+        Compose([Compose([a,b]), c]) becomes Compose([a, b, c])
+    :return: output from series of transforms
+    """
     op = '>>'
 
+    def __call__(self, arg):
+        """Call method for Compose
 
-class Rollout(MetaTransform):
+        :param arg: arguments to call with
+        :return: output from series of transforms
+        """
+        for transform_ in self.transforms:
+            arg = transform_._lf_call_transform(arg)
+        return arg
+
+    # TODO Finish adding
+    # def __len__(self):
+    #     # TODO Previously was length of first element of trans_list. Any reason why?
+    #     # return len(self.trans_list[0])
+    #     return len(self.transforms)
+
+    def _lf_list_of_forward_parts(self):
+        """Accumulate all forward parts of the transforms"""
+        ts_ = []
+        for a_trans, dev in zip(self.transforms, self._lf_mapdevice_list):
+            if 'gpu' in dev:
+                # TODO Why is there a special case here?
+                if len(dev) == 1:
+                    ts_.append(a_trans)
+                else:
+                    ts_.append(a_trans.lf_forward)
+        return ts_
+
+    def _lf_forward_part(self):
+        """Forward part of transforms"""
+        if self._lf_forward is None:
+            ts_ = self._lf_list_of_forward_parts()
+
+            if len(ts_) == 1:
+                self._lf_forward = ts_[0]
+            elif ts_:
+                self._lf_forward = Compose(ts_, call_info=self._lf_call_info)
+            else:
+                self._lf_forward = Identity()
+
+        return self._lf_forward
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t = [
+                t.lf_preprocess for t, d in zip(self.transforms, self._lf_mapdevice_list) if 'cpu' in d
+            ]
+
+            if len(t) == 1:
+                self._lf_preprocess = t[0].lf_preprocess
+            elif t:
+                self._lf_preprocess = Compose(t, call_info=self._lf_call_info)
+            else:
+                self._lf_preprocess = Identity()
+
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t = [
+                t for t, d in zip(self.transforms, self._lf_mapdevice_list) if 'bcpu' in d
+            ]
+
+            if len(t) == 1:
+                self._lf_postprocess = t[0].lf_postprocess
+            elif t:
+                self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
+            else:
+                self._lf_postprocess = Identity()
+
+        return self._lf_postprocess
+
+
+class Rollout(CompoundTransform):
+    """Apply a list of transform to same input and get tuple output
+
+    Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
+
+    :param transforms: List of transforms to rollout.
+    :param flatten: If *True* flatten transforms -
+        Rollout([Rollout([a,b]), c]) becomes Rollout([a, b, c])
+    :return: namedtuple of outputs
+    """
     op = '+'
 
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(transforms, call_info, name=name, group=group)
+        self.lf_keys = self._lf_get_keys(self.transforms)
+        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
-class Parallel(MetaTransform):
+    def __call__(self, arg):
+        """Call method for Rollout
+
+        :param arg: Argument to call with
+        :return: namedtuple of outputs
+        """
+        out = []
+        for transform_ in self.transforms:
+            out.append(transform_._lf_call_transform(arg))
+        out = self._lf_output_format(*out)
+        return out
+
+    # TODO Finish adding
+    # def __len__(self):
+    #     lens = [len(x) for x in self.transforms]
+    #     assert len(set(lens)) == 1
+    #     return lens[0]
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_list = [x.lf_preprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_preprocess = Identity()
+            elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
+                self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
+            else:
+                self._lf_preprocess = Rollout(t_list, call_info=self._lf_call_info)
+        return self._lf_preprocess
+
+    def _lf_forward_part(self):
+        """Forward part"""
+        # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
+        if self._lf_forward is None:
+            t_list = [x.lf_forward for x in self.transforms]
+            if len(list(self._mapdevice)) >= 2 and 'gpu' in self._lf_mapdevice:
+                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
+            else:
+                self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
+        return self._lf_forward
+
+    @property
+    def lf_postprocess(self):
+        """Post process part"""
+        if self._lf_postprocess is None:
+            t_list = [x.lf_postprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_postprocess = Identity()
+            elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
+                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
+            else:
+                self._lf_postprocess = Rollout(t_list, call_info=self._lf_call_info)
+        return self._lf_postprocess
+
+
+class Parallel(CompoundTransform):
+    """Apply transforms in parallel to a tuple of inputs and get tuple output
+
+    Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
+
+    :param transforms: List of transforms to parallelize.
+    :param flatten: If *True* flatten transforms -
+        Parallel([Parallel([a,b]), c]) becomes Parallel([a, b, c])
+    :return: namedtuple of outputs
+    """
     op = '/'
+
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(transforms, call_info=call_info, name=name, group=group)
+        self.lf_keys = self._lf_get_keys(self.transforms)
+        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
+
+    def __call__(self, arg):
+        """Call method for Parallel
+
+        :param arg: Argument to call with
+        :return: namedtuple of output
+        """
+        out = []
+        for ind, transform_ in enumerate(self.transforms):
+            out.append(transform_._lf_call_transform(arg[ind]))
+        out = self._lf_output_format(*out)
+        return out
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_list = [x.lf_preprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_preprocess = Identity()
+            else:
+                self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t_list = [x.lf_postprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_postprocess = Identity()
+            else:
+                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
+        return self._lf_postprocess
+
+    def _lf_forward_part(self):
+        if self._lf_forward is None:
+            t_list = [x.lf_forward for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
+        return self._lf_forward
+
+
+class Identity(Transform):
+    """Do nothing."""
+
+    def __init__(self, name=None):
+        super().__init__(None, name=name)
+
+    @property
+    def lf_is_identity(self):
+        return True
+
+    def __call__(self, *args):
+        # remove, make consistent
+        if len(args) == 1:
+            return args[0]
+        return args
 
 
 def save(transform: Transform, path):
@@ -372,3 +891,7 @@ def load(path):
     for i, subtrans in enumerate(transform.lf_all_transforms_with_globals()):
         subtrans.lf_post_load(path, i)
     return transform
+
+
+def group(transform: Union[Rollout, Parallel]):
+    return transform.grouped()
