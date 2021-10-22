@@ -7,6 +7,7 @@ import linecache
 import sys
 import types
 from typing import Callable, Optional
+from warnings import warn
 
 from lf.dumptools import thingfinder, var2mod
 
@@ -28,12 +29,16 @@ def caller_info(drop_n=0):
     call_info = _CallInfo(module)
     call_info.function = caller.function
     if caller.function != '<module>':
-        call_source = get_call_segment_from_frame(caller.frame.f_back)
-        call_info.fdef_source = get_source(caller.filename)
-        fdef_lineno = caller.frame.f_lineno
-        call_info.scope = thingfinder.Scope.from_source(call_info.fdef_source, fdef_lineno,
-                                                        call_source, call_info.module, drop_n)
-        assert len(call_info.scope) <= 1, 'scope longer than 1 currently not supported'
+        try:
+            call_source = get_call_segment_from_frame(caller.frame.f_back)
+            call_info.fdef_source = get_source(caller.filename)
+            fdef_lineno = caller.frame.f_lineno
+            call_info.scope = thingfinder.Scope.from_source(call_info.fdef_source, fdef_lineno,
+                                                            call_source, call_info.module, drop_n)
+            assert len(call_info.scope) <= 1, 'scope longer than 1 currently not supported'
+        except (SyntaxError, IndexError) as e:
+            warn(f'Error determining scope, using top level: {e}')  # TODO: fix this
+            call_info.scope = thingfinder.Scope(module, '', [])
     else:
         call_info.scope = thingfinder.Scope(module, '', [])
     return call_info
@@ -187,7 +192,7 @@ def get_call_segment_from_frame(caller_frame):
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
     source = get_statement(full_source,
-                            caller_frame.f_lineno)
+                           caller_frame.f_lineno)
     # the source can contain surrounding stuff we need to discard
     # as we only have the line number (this is what makes this complicated)
 
