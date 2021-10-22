@@ -44,11 +44,12 @@ class Transform:
         self._lf_name = name
         self._lf_mapdevice = {'gpu'}
         self._lf_device = 'gpu'
+        self.args = {'arg_number_1': 649, 'arg_number_2': 'hola', 'arg_number_3': 'I hope this does not appear'}
 
     @property
     def lf_name(self):
         if self._lf_name is None:
-            return self.lf_varname
+            return self.lf_varname()
         return self._lf_name
 
     def __rshift__(self, other):
@@ -174,7 +175,7 @@ class Transform:
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
-        return NotImplemented
+        return type(self).__name__
 
     def lf_all_transforms(self):
         return NotImplemented
@@ -214,12 +215,39 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
-    def lf_repr(self, indent=0):
-        varname = self.lf_varname()
+    def lf_fullname(self):
         evaluable_repr = self.lf_evaluable_repr()
+        t = '\33[1m' + evaluable_repr
+        end = ':\33[0m\n\n'
+        if self.lf_name is not None:
+            return t + f'[{self.lf_name}]' + end
+        varname = self.lf_varname()
         if varname is None or varname == evaluable_repr:
-            return f'{evaluable_repr}'
-        return f'{evaluable_repr} [{varname}]'
+            return t + end
+        return t + f'[{varname}]' + end
+
+    def lf_bodystr(self, ignore_args=['arg_number_3']):
+        #if self.__lf_name is not None:
+        #    return f'{type(self).__name__}[{self.lf_name}]'
+        a_str = f'{self.__class__.__name__}'
+        args = [
+            (k, str(v)[:20] + ('...' if len(str(v)) > 20 else ''))
+            for k, v in self.args.items() if k not in ignore_args
+        ]
+        a_str += '(' + ', '.join(f'{k}={v}' for k, v in args) + ')'
+        return a_str
+
+    @staticmethod
+    def _lf_add_format_to_str(name):
+        res = '\33[32m        🠳  \33[0m\n'
+        res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
+        res += '\33[32m        🠳  \33[0m\n'
+        return res
+
+    def lf_repr(self, indent=0):
+        top_message = self.lf_fullname()
+        bottom_message = self.lf_bodystr()
+        return top_message + self._lf_add_format_to_str(bottom_message)
 
     def __repr__(self):
         return self.lf_repr()
@@ -490,12 +518,17 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call, call_info, name)
         self.function = function
+        self.source = inspect.getsource(function)
+
+    def lf_bodystr(self):
+        body_msg = self.source
+        return body_msg[:100] + ('  ...' if len(body_msg) > 100 else '')
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
 
 
-class TorchModuleTransform(torch.nn.Module, AtomicTransform):
+class TorchModuleTransform(AtomicTransform):
     def lf_pre_save(self, path, i):
         path = Path(path)
         checkpoint_path = path / f'{path.stem}_{i}.pt'
@@ -587,7 +620,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform._lf_group is None:
+                if transform._lf_group:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
