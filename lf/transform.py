@@ -37,6 +37,7 @@ def _isinstance_of_namedtuple(arg):
 
 class Transform:
     """Transform base class. """
+    _lf_stage = None
 
     def __init__(self, call_info, lf_name=None):
         self._lf_call_info = call_info
@@ -44,6 +45,7 @@ class Transform:
         self._lf_name = lf_name
         self._lf_component = {'forward'}
         self._lf_device = 'gpu'
+        self._lf_layers = None
 
     @property
     def lf_name(self):
@@ -335,15 +337,13 @@ class Transform:
         """The preprocessing part (everything that happens before sending to gpu). """
         if 'preprocess' in self.lf_component:
             return self
-        t = Identity()
-        return t
+        return Identity()
 
     def _lf_forward_part(self):
         """The forward (GPU) part of the transform """
         if 'forward' in self.lf_component:
             return self
-        t = Identity()
-        return t
+        return Identity()
 
     @property
     def lf_forward(self):
@@ -357,8 +357,7 @@ class Transform:
         """The postprocessing part of the transform. """
         if 'postprocess' in self.lf_component:
             return self
-        t = Identity()
-        return t
+        return Identity()
 
     # DANGER: makes it mutable
     def lf_to(self, device: str):
@@ -388,7 +387,7 @@ class Transform:
     @property
     def lf_layers(self):
         """Get a dict with all layers in the transform (including layers in sub-transforms)."""
-        if self._layers is None:
+        if self._lf_layers is None:
             layer_dict = {}
             for item in self.__dict__:
                 attrib = self._lf_getattribute_object(item)
@@ -397,8 +396,8 @@ class Transform:
                 elif type(attrib) in {tuple, list} and attrib and isinstance(attrib[0], Transform):
                     for y in attrib:
                         layer_dict.update(y.lf_layers)
-            self._layers = layer_dict
-        return self._layers
+            self._lf_layers = layer_dict
+        return self._lf_layers
 
     @property
     def lf_stage(self):
@@ -732,7 +731,7 @@ class Compose(CompoundTransform):
             ]
 
             if len(t) == 1:
-                self._lf_postprocess = t[0].postprocess
+                self._lf_postprocess = t[0].lf_postprocess
             elif t:
                 self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
             else:
