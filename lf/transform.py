@@ -763,9 +763,9 @@ class Rollout(CompoundTransform):
         if self._lf_preprocess is None:
             t_list = [x.lf_preprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_postprocess = Identity()
+                self._lf_preprocess = Identity()
             elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
-                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
+                self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_preprocess = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_preprocess
