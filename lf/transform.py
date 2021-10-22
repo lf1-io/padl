@@ -48,7 +48,7 @@ class Transform:
     @property
     def lf_name(self):
         if self._lf_name is None:
-            return self.lf_varname
+            return self.lf_varname()
         return self._lf_name
 
     def __rshift__(self, other):
