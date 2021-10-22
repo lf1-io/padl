@@ -36,7 +36,11 @@ def _isinstance_of_namedtuple(arg):
 
 
 class Transform:
-    """Transform base class. """
+    """Transform base class.
+
+    :param call_info:
+    :param name: name of the transform
+    """
     _lf_stage = None
 
     def __init__(self, call_info, name=None):
@@ -57,15 +61,15 @@ class Transform:
         return Compose([self, other], inspector.caller_info())
 
     def __add__(self, other: "Transform") -> "Rollout":
-        """ Rollout with *other*. """
+        """Rollout with *other*. """
         return Rollout([self, other], inspector.caller_info())
 
     def __truediv__(self, other: "Transform") -> "Parallel":
-        """ Parallel with *other*. """
+        """Parallel with *other*. """
         return Parallel([self, other], inspector.caller_info())
 
     def __sub__(self, transform_name: str) -> "Transform":
-        """Name Transform"""
+        """Name the Transform"""
         return self.lf_clone(lf_name=transform_name)
 
     def lf_clone(self, **kwargs):
@@ -431,8 +435,7 @@ class Transform:
             Transform._lf_stage = None
 
     def _lf_get_loader(self, iterator, loader_kwargs=None):
-        """
-        Get the data loader
+        """Get the data loader
 
         :param iterator: Iterator
         :param loader_kwargs: key word arguments for the data loader
