@@ -769,6 +769,12 @@ class Compose(CompoundTransform):
             arg = transform_._lf_call_transform(arg)
         return arg
 
+    # TODO Finish adding
+    # def __len__(self):
+    #     # TODO Previously was length of first element of trans_list. Any reason why?
+    #     # return len(self.trans_list[0])
+    #     return len(self.transforms)
+
     def _lf_list_of_forward_parts(self):
         """Accumulate all forward parts of the transforms"""
         ts_ = []
@@ -856,6 +862,46 @@ class Rollout(CompoundTransform):
             out.append(transform_._lf_call_transform(arg))
         out = self._lf_output_format(*out)
         return out
+
+    # TODO Finish adding
+    # def __len__(self):
+    #     lens = [len(x) for x in self.transforms]
+    #     assert len(set(lens)) == 1
+    #     return lens[0]
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_pre_list = [x.lf_preprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_pre_list]):
+                self._lf_postprocess = Identity()
+            elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
+                self._lf_postprocess = Parallel(t_pre_list)
+            else:
+                self._lf_preprocess = Rollout(t_pre_list)
+        return self._lf_preprocess
+
+    def _lf_forward_part(self):
+        """Forward part"""
+        if self._lf_forward is None:
+            if len(list(self._mapdevice)) >= 2 and 'gpu' in self._lf_mapdevice:
+                self._lf_forward = Parallel([x.lf_forward for x in self.transforms])
+            else:
+                self._lf_forward = Rollout([x.lf_forward for x in self.transforms])
+        return self._lf_forward
+
+    @property
+    def lf_postprocess(self):
+        """Post process part"""
+        if self._lf_postprocess is None:
+            t_post_list = [x.lf_postprocess for x in self.transforms]
+            if all([isinstance(t, Identity) for t in t_post_list]):
+                self._lf_postprocess = Identity()
+            elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
+                self._lf_postprocess = Parallel(t_post_list)
+            else:
+                self._lf_postprocess = Rollout(t_post_list)
+        return self._lf_postprocess
 
 
 class Parallel(CompoundTransform):
