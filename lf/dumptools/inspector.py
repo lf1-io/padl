@@ -14,17 +14,26 @@ from lf.dumptools import thingfinder, var2mod
 
 @dataclass
 class _CallInfo:
+    # the module from which the call was made
     module: types.ModuleType
     function: str = '<module>'
     scope: Optional[thingfinder.Scope] = None
+    # function definition source
     fdef_source: Optional[str] = None
     globals: dict = field(default_factory=dict)
     nonlocals: dict = field(default_factory=dict)
 
 
-def caller_info(drop_n=0):
-    calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
-    caller = outer_caller(calling_module_name)
+def caller_info(caller=None, drop_n=0):
+    """Collect some information about the caller.
+
+    :param drop_n: Drop *n* from the calling scope.
+
+    :returns: A _CallInfo object.
+    """
+    if caller is None:
+        calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
+        caller = outer_caller(calling_module_name)
     module = _module(caller.frame)
     call_info = _CallInfo(module)
     call_info.function = caller.function
@@ -36,12 +45,21 @@ def caller_info(drop_n=0):
             call_info.scope = thingfinder.Scope.from_source(call_info.fdef_source, fdef_lineno,
                                                             call_source, call_info.module, drop_n)
             assert len(call_info.scope) <= 1, 'scope longer than 1 currently not supported'
-        except (SyntaxError, IndexError) as e:
-            warn(f'Error determining scope, using top level: {e}')  # TODO: fix this
+        except (SyntaxError, IndexError) as exc:
+            warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
             call_info.scope = thingfinder.Scope(module, '', [])
     else:
         call_info.scope = thingfinder.Scope(module, '', [])
     return call_info
+
+
+def non_init_caller():
+    stack = inspect.stack()
+    for frameinfo in stack[1:]:
+        if frameinfo.function != '__init__':
+            break
+    assert frameinfo.function != '__init__'
+    return frameinfo
 
 
 def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None):
@@ -175,10 +193,10 @@ def caller_module():
     return _module(outer_caller(calling_module_name).frame)
 
 
-def caller():
+def caller_frame():
     """Get the callers frame. """
     calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
-    return outer_caller(calling_module_name)
+    return outer_caller(calling_module_name).frame
 
 
 def get_call_segment_from_frame(caller_frame):

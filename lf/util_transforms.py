@@ -9,9 +9,10 @@ class Unbatchify(Transform):
     :param dim: batching dimension
     """
 
-    def __init__(self, call_info, name=None, dim=0):
-        super().__init__(call_info, name=name)
+    def __init__(self, call_info=None, lf_name=None, dim=0):
+        super().__init__(call_info, lf_name=lf_name)
         self.dim = dim
+        self._lf_component = {'postprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
@@ -33,9 +34,10 @@ class Batchify(Transform):
     :param dim: batching dimension
     """
 
-    def __init__(self, module=None, stack=None, lf_name=None, dim=0):
-        super().__init__(module, stack, lf_name=lf_name)
+    def __init__(self, call_info=None, lf_name=None, dim=0):
+        super().__init__(call_info, lf_name=lf_name)
         self.dim = dim
+        self._lf_component = {'preprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
