@@ -714,7 +714,7 @@ class Compose(CompoundTransform):
             ]
 
             if len(t) == 1:
-                self._lf_postprocess = t[0].postprocess
+                self._lf_postprocess = t[0].lf_postprocess
             elif t:
                 self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
             else:
