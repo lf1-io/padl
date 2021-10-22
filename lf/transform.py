@@ -886,7 +886,7 @@ class Parallel(CompoundTransform):
         return self._lf_forward
 
 
-class Identity(AtomicTransform):
+class Identity(ClassTransform):
     """Do nothing."""
 
     def __init__(self, lf_name=None):

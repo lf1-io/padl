@@ -1,18 +1,17 @@
 import torch
 
-from lf.transform import Transform
+from lf.transform import ClassTransform
 
 
-class Unbatchify(Transform):
+class Unbatchify(ClassTransform):
     """Remove batch dimension (inverse of Batchify).
 
     :param dim: batching dimension
     """
 
-    def __init__(self, call_info=None, lf_name=None, dim=0):
-        super().__init__(call_info, lf_name=lf_name)
+    def __init__(self, dim=0, lf_name=None):
+        super().__init__(lf_name=lf_name)
         self.dim = dim
-        self._lf_component = {'postprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
@@ -24,20 +23,20 @@ class Unbatchify(Transform):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.squeeze(self.dim)
+
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(Transform):
+class Batchify(ClassTransform):
     """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
     tensors and, recursively, tuples thereof.
 
     :param dim: batching dimension
     """
 
-    def __init__(self, call_info=None, lf_name=None, dim=0):
-        super().__init__(call_info, lf_name=lf_name)
+    def __init__(self, dim=0, lf_name=None):
+        super().__init__(lf_name=lf_name)
         self.dim = dim
-        self._lf_component = {'preprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
