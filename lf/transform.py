@@ -36,7 +36,11 @@ def _isinstance_of_namedtuple(arg):
 
 
 class Transform:
-    """Transform base class. """
+    """Transform base class.
+
+    :param call_info:
+    :param name: name of the transform
+    """
     _lf_stage = None
 
     def __init__(self, call_info=None, lf_name=None):
@@ -67,7 +71,7 @@ class Transform:
         return Parallel([self, other])
 
     def __sub__(self, transform_name: str) -> "Transform":
-        """Name Transform"""
+        """Name the Transform"""
         return self.lf_clone(lf_name=transform_name)
 
     def lf_clone(self, **kwargs):
@@ -410,8 +414,7 @@ class Transform:
 
     @contextlib.contextmanager
     def lf_set_stage(self, stage: str):
-        """
-        Set of stage of Transform
+        """Set of stage of Transform
 
         :param stage: stage ('train', 'eval', 'infer')
         """
@@ -432,9 +435,9 @@ class Transform:
                 layer.eval()
             Transform._lf_stage = None
 
-    def _lf_get_loader(self, iterator, loader_kwargs=None):
-        """
-        Get the data loader
+    @staticmethod
+    def _lf_get_loader(iterator, loader_kwargs=None):
+        """Get the data loader
 
         :param iterator: Iterator
         :param loader_kwargs: key word arguments for the data loader
@@ -464,7 +467,12 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms, in contrast to `CompoundTransform`s. """
+    other transforms), in contrast to `CompoundTransform`s.
+
+    :param call:
+    :param call_info:
+    :param name: name of the transform
+    """
 
     def __init__(self, call, call_info, lf_name=None):
         super().__init__(call_info, lf_name)
@@ -486,6 +494,13 @@ class AtomicTransform(Transform):
 
 
 class FunctionTransform(AtomicTransform):
+    """Function Transform
+
+    :param function: function to call
+    :param call_info:
+    :param name: name of the transform
+    :param call:
+    """
     def __init__(self, function, call_info, lf_name=None, call=None):
         if call is None:
             call = function.__name__
@@ -524,14 +539,19 @@ class TorchModuleTransform(ClassTransform):
 
 
 class CompoundTransform(Transform):
-    """Abstract base class for meta-trasforms (transforms combining other transforms. """
+    """Abstract base class for compound-transforms (transforms combining other transforms).
+
+    :param transforms: list of transforms
+    :param call_info:
+    :param name: name of CompoundTransform
+    :param lf_group:
+    """
     op = NotImplemented
 
-    def __init__(self, transforms, call_info=None, lf_name=None, group=False):
+    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(call_info, lf_name)
 
-        self._lf_group = True if lf_name is not None else group
-
+        self._lf_group = True if lf_name is not None else lf_group
         self._lf_preprocess = None
         self._lf_forward = None
         self._lf_postprocess = None
@@ -767,8 +787,8 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, call_info, lf_name=None, group=False):
-        super().__init__(transforms, call_info, lf_name=lf_name, group=group)
+    def __init__(self, transforms, call_info, lf_name=None, lf_group=False):
+        super().__init__(transforms, call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -839,8 +859,8 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, call_info, lf_name=None, group=False):
-        super().__init__(transforms, call_info=call_info, lf_name=lf_name, group=group)
+    def __init__(self, transforms, call_info, lf_name=None, lf_group=False):
+        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -887,7 +907,10 @@ class Parallel(CompoundTransform):
 
 
 class Identity(ClassTransform):
-    """Do nothing."""
+    """Do nothing.
+
+    :param name: name of the transform
+    """
 
     def __init__(self, lf_name=None):
         super().__init__(lf_name=lf_name)
