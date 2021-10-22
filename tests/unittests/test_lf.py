@@ -114,6 +114,12 @@ class TestFunctionTransform:
         request.cls.transform_1 = plus_one
         request.cls.transform_2 = get_info
 
+    def test_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+
+    def test_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(5) == 6
 
