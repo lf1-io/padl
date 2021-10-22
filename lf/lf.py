@@ -1,5 +1,4 @@
 import ast
-import contextvars
 import contextlib
 from contextlib import contextmanager
 import dis
@@ -443,7 +442,7 @@ class Transform:
                     output = batch
 
                 if use_post:
-                    # NOTE: unbatch not needed anymore since it is part of the post transform (Issue 19)
+                    # TODO: unbatch not needed anymore since it is part of the post transform (Issue 19)
                     # output = unbatch(output)
                     # output = [
                     #     post._lf_call_transform(output[i])
