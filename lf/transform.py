@@ -465,7 +465,12 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms, in contrast to `CompoundTransform`s. """
+    other transforms), in contrast to `CompoundTransform`s.
+
+    :param call:
+    :param call_info:
+    :param name: name of the transform
+    """
 
     def __init__(self, call, call_info, name=None):
         super().__init__(call_info, name)
@@ -487,6 +492,13 @@ class AtomicTransform(Transform):
 
 
 class FunctionTransform(AtomicTransform):
+    """Function Transform
+
+    :param function: function to call
+    :param call_info:
+    :param name: name of the transform
+    :param call:
+    """
     def __init__(self, function, call_info, name=None, call=None):
         if call is None:
             call = function.__name__
