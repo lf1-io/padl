@@ -484,7 +484,7 @@ class AtomicTransform(Transform):
 
 
 class FunctionTransform(AtomicTransform):
-    def __init__(self, function, call_info, name=None, call=None):
+    def __init__(self, function, call_info, call=None, name=None):
         if call is None:
             call = function.__name__
         super().__init__(call, call_info, name)
@@ -586,7 +586,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform._lf_group is None:
+                if transform._lf_group:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
