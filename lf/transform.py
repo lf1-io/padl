@@ -412,8 +412,7 @@ class Transform:
 
     @contextlib.contextmanager
     def lf_set_stage(self, stage: str):
-        """
-        Set of stage of Transform
+        """Set of stage of Transform
 
         :param stage: stage ('train', 'eval', 'infer')
         """
@@ -434,7 +433,8 @@ class Transform:
                 layer.eval()
             Transform._lf_stage = None
 
-    def _lf_get_loader(self, iterator, loader_kwargs=None):
+    @staticmethod
+    def _lf_get_loader(iterator, loader_kwargs=None):
         """Get the data loader
 
         :param iterator: Iterator
@@ -524,7 +524,13 @@ class TorchModuleTransform(torch.nn.Module, AtomicTransform):
 
 
 class CompoundTransform(Transform):
-    """Abstract base class for compound-transforms (transforms combining other transforms). """
+    """Abstract base class for compound-transforms (transforms combining other transforms).
+
+    :param transforms: list of transforms
+    :param call_info:
+    :param name: name of CompoundTransform
+    :param lf_group:
+    """
     op = NotImplemented
 
     def __init__(self, transforms, call_info, name=None, lf_group=False):
@@ -870,7 +876,10 @@ class Parallel(CompoundTransform):
 
 
 class Identity(Transform):
-    """Do nothing."""
+    """Do nothing.
+
+    :param name: name of the transform
+    """
 
     def __init__(self, name=None):
         super().__init__(None, name=name)
