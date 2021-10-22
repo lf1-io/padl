@@ -1,5 +1,4 @@
 import pytest
-import torch
 from lf import lf
 from collections import namedtuple
 
@@ -22,6 +21,11 @@ def times_two(x):
 @lf.trans
 def plus(x, y):
     return x + y
+
+
+@lf.trans
+def get_info(x):
+    return x['info']
 
 
 def simple_func(x):
@@ -99,3 +103,41 @@ class TestCompose:
 
     def test_output(self):
         assert self.transform_4(1) == 4
+
+    def test_infer_apply(self):
+        assert self.transform_4.infer_apply(1) == 4
+
+
+class TestFunctionTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = plus_one
+        request.cls.transform_2 = get_info
+
+    def test_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+
+    def test_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(5) == 6
+
+    def test_eval_apply(self):
+        out = list(self.transform_1.eval_apply([5, 6], flatten=False))
+        assert len(out) == 2
+        assert out[0] == 6
+        assert out[1] == 7
+
+        out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}], flatten=False))
+        assert len(out) == 2
+        assert out[0] == 'hello'
+        assert out[1] == 'dog'
+
+    def test_context(self):
+        assert self.transform_1.lf_stage is None
+        with self.transform_1.lf_set_stage('infer'):
+            assert self.transform_1.lf_stage is 'infer'
+            assert self.transform_1.lf_preprocess.lf_stage == 'infer'
+            assert self.transform_1.lf_forward.lf_stage == 'infer'
+            assert self.transform_1.lf_postprocess.lf_stage == 'infer'
