@@ -187,7 +187,7 @@ def get_call_segment_from_frame(caller_frame):
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
     source = get_statement(full_source,
-                            caller_frame.f_lineno)
+                           caller_frame.f_lineno)
     # the source can contain surrounding stuff we need to discard
     # as we only have the line number (this is what makes this complicated)
 
