@@ -77,7 +77,7 @@ def _wrap_lambda(fun):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
     become obsolete with python 3.11 (see _wrap_class). """
     # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
-    caller_frame = inspector.caller()
+    caller_frame = inspector.caller().frame
     # get the source
     try:
         full_source = caller_frame.f_globals['_lf_source']
