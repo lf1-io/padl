@@ -65,7 +65,7 @@ def _wrap_class(cls):
         old__init__(self, *args, **kwargs)
         trans_class.__init__(
             self,
-            inspector.get_call_segment_from_frame(inspector.caller()),
+            inspector.get_call_segment_from_frame(inspector.caller().frame),
             inspector.caller_info()
         )
 

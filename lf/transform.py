@@ -494,7 +494,7 @@ class FunctionTransform(AtomicTransform):
         return self.function(*args, **kwargs)
 
 
-class TorchModuleTransform(torch.nn.Module, AtomicTransform):
+class TorchModuleTransform(AtomicTransform):
     def lf_pre_save(self, path, i):
         path = Path(path)
         checkpoint_path = path / f'{path.stem}_{i}.pt'
