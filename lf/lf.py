@@ -5,17 +5,17 @@ import dis
 import functools
 import inspect
 import linecache
-from pathlib import Path
 import sys
 import types
+import torch
+from torch.utils.data import DataLoader
+from pathlib import Path
+from typing import Union
 from typing import List
 import numpy as np
 
 from tqdm import tqdm
 from collections import namedtuple, Counter
-
-import torch
-from torch.utils.data import DataLoader
 
 from lf import var2mod
 from lf.data import SimpleIterator
@@ -273,15 +273,15 @@ class Transform:
         return self.__lf_name
 
     def __rshift__(self, other):
-        return Compose([self, other], _caller_module(1), flatten=True)
+        return Compose([self, other], _caller_module(1), lf_group=False)
 
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*. """
-        return Rollout([self, other], _caller_module(1), flatten=True)
+        return Rollout([self, other], _caller_module(1), lf_group=False)
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """ Parallel with *other*. """
-        return Parallel([self, other], _caller_module(1), flatten=True)
+        return Parallel([self, other], _caller_module(1), lf_group=False)
 
     def __sub__(self, transform_name: str) -> "Transform":
         """Name Transform"""
@@ -652,10 +652,13 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms.)"""
     op = NotImplemented
 
-    def __init__(self, transforms, module=None, stack=None, flatten=True, lf_name=None):
+    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
         super().__init__(module, stack, lf_name=lf_name)
-        if flatten:
-            transforms = self._flatten_list(transforms)
+
+        self._lf_group = True if lf_name is not None else lf_group
+       #assert not (self.lf_name is not None and self._lf_group is False)
+
+        transforms = self._flatten_list(transforms)
         self.transforms = transforms
 
         self._lf_preprocess = None
@@ -701,10 +704,10 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform.lf_name is None:
-                    list_flat += transform.transforms
-                else:
+                if transform._lf_group:
                     list_flat.append(transform)
+                else:
+                    list_flat += transform.transforms
             else:
                 list_flat.append(transform)
 
@@ -717,6 +720,10 @@ class CompoundTransform(Transform):
                 if child_transform not in res:
                     res.append(child_transform)
         return res
+
+    def grouped(self):
+        return type(self)(self.transforms, self._lf_module, self._lf_stack,
+                          lf_name=self.lf_name, lf_group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
@@ -846,8 +853,8 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
+    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
+        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -918,8 +925,8 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module=None, stack=None, flatten=False, lf_name=None):
-        super().__init__(transforms, module, stack, flatten=flatten, lf_name=lf_name)
+    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
+        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -1002,3 +1009,7 @@ def load(path):
     for i, subtrans in enumerate(transform.lf_all_transforms_with_globals()):
         subtrans.lf_post_load(path, i)
     return transform
+
+
+def group(transform: Union[Rollout, Parallel]):
+    return transform.grouped()
