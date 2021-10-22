@@ -1,5 +1,3 @@
-
-
 class SimpleIterator:
     """
     :param samples: object implementing __getitem__ and __len__

@@ -1,24 +1,26 @@
+"""The Transform class and some of its children. """
 import ast
+from collections import Counter, namedtuple
 import contextlib
-from contextlib import contextmanager
-import dis
-import functools
 import inspect
-import linecache
-import sys
+from pathlib import Path
 import types
+from typing import List, Union
+
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from pathlib import Path
-from typing import Union
-from typing import List
-import numpy as np
-
 from tqdm import tqdm
-from collections import namedtuple, Counter
 
-from lf import var2mod
 from lf.data import SimpleIterator
+from lf.dumptools import var2mod, thingfinder, inspector
+
+
+class _Notset:
+    pass
+
+
+_notset = _Notset()
 
 
 def _isinstance_of_namedtuple(arg):
@@ -33,255 +35,32 @@ def _isinstance_of_namedtuple(arg):
     return all(isinstance(field, str) for field in fields)
 
 
-def _instructions_up_to_call(x):
-    """Get all instructions up to last CALL FUNCTION. """
-    instructions = []
-    instructions = list(dis.get_instructions(x))
-    for i, instruction in enumerate(instructions[::-1]):
-        if instruction.opname.startswith('CALL_'):
-            break
-    return instructions[:-i]
-
-
-def _instructions_up_to_offset(x, lasti):
-    """Get all instructions up to offset *lasti*. """
-    instructions = []
-    for instruction in dis.get_instructions(x):
-        instructions.append(instruction)
-        if instruction.offset == lasti:
-            break
-    return instructions
-
-
-def _get_source(filename):
-    """Get source from *filename*.
-
-    Filename as in the code object, can be "<ipython input-...>" in which case
-    the source is taken from the ipython cache.
-    """
-    try:
-        # the ipython case
-        return ''.join(linecache.cache[filename][2])
-    except KeyError:
-        # normal module
-        with open(filename) as f:
-            return f.read()
-
-
-def _get_statement(source, lineno):
-    """Get complete (potentially multi-line) statement at line *lineno*. """
-    module = ast.parse(source)
-    stmts = []
-    for stmt in module.body:
-        if stmt.lineno <= lineno <= stmt.end_lineno:
-            stmts.append(ast.get_source_segment(source, stmt))
-    return '\n'.join(stmts)
-
-
-def _wrap_function(fun):
-    """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
-    wrapper = FunctionTransform(fun, _caller_module(2), _same_module_stack(2))
-    functools.update_wrapper(wrapper, fun)
-    return wrapper
-
-
-def _module(frame):
-    """Get module of *frame*. """
-    try:
-        return frame.f_globals['_lf_module']
-    except KeyError:
-        return sys.modules[frame.f_globals['__name__']]
-
-
-def _caller_frame(depth):
-    """Get the caller frame in depth *depth*. """
-    return inspect.stack()[depth + 1].frame
-
-
-def _caller_module(depth):
-    """Get the caller module in depth *depth*. """
-    return _module(_caller_frame(depth + 1))
-
-
-def _same_module_stack(depth):
-    res = []
-    stack = inspect.stack()[depth + 1:]
-    module_name = stack[0].frame.f_globals['__name__']
-    for f in stack:
-        if f.frame.f_globals['__name__'] == module_name:
-            res.append(f.frame)
-        else:
-            break
-    return res
-
-
-def _wrap_class(cls):
-    """Patch __init__ of class such that the initialization statement is stored
-    as an attribute `_lf_call`. In addition make class inherit from Transform.
-
-    This is called by `trans`, don't call `_wrap_class` directly, always use `trans`.
-
-    Example:
-
-    @trans
-    class MyClass:
-        def __init__(self, x):
-            ...
-
-    >>> myobj = MyClass('hello')
-    >>> myobj._lf_call
-    MyClass('hello')
-    """
-    old__init__ = cls.__init__
-    if issubclass(cls, torch.nn.Module):
-        trans_class = TorchModuleTransform
-    else:
-        trans_class = AtomicTransform
-
-    # make cls inherit from AtomicTransform
-    cls = type(cls.__name__, (cls, trans_class), {})
-
-    @functools.wraps(cls.__init__)
-    def __init__(self, *args, **kwargs):
-        # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
-        # , for python 3.11 (currently in development) this can be done via co_positions
-        # (see https://www.python.org/dev/peps/pep-0657/),
-        # for now, as 3.11 isn't widely used, this requires the following hack:
-
-        # get the caller frame
-        caller_frame = _caller_frame(1)
-        # extract the source of the class init statement
-        try:
-            full_source = caller_frame.f_globals['_lf_source']
-        except KeyError:
-            full_source = _get_source(caller_frame.f_code.co_filename)
-        source = _get_statement(full_source,
-                                caller_frame.f_lineno)
-        # the source can contain surrounding stuff we need to discard
-        # as we only have the line number (this is what makes this complicated)
-
-        # get all segments in the source that correspond to calls and might thus
-        # potentially be the class init
-        candidate_segments = var2mod.Finder(ast.Call).get_source_segments(source)
-        # disassemble and get the instructions up to the current position
-        target_instrs = _instructions_up_to_offset(caller_frame.f_code,
-                                                   caller_frame.f_lasti)
-        # for each candidate, disassemble and compare the instructions to what we
-        # actually have, a match means this is the correct statement
-        if not candidate_segments:
-            raise RuntimeError('No class initializations found.')
-
-        for segment in candidate_segments:
-
-            instrs = _instructions_up_to_call(segment)
-            if len(instrs) > len(target_instrs):
-                continue
-            for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-                if instr.argval != target_instr.argval:
-                    break
-                same_opname = instr.opname == target_instr.opname
-                load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL')
-                both_load = instr.opname in load_ops and target_instr.opname in load_ops
-                if not (same_opname or both_load):
-                    break
-            else:
-                break
-        else:
-            raise RuntimeError('Class initialization not found.')
-
-        old__init__(self, *args, **kwargs)
-        trans_class.__init__(self, segment, _module(caller_frame), _same_module_stack(1))
-
-    cls.__init__ = __init__
-    return cls
-
-
-def _wrap_lambda(fun):
-    """Wrap a lambda function in a transform. Hacky hack that will hopefully
-    become obsolete with python 3.11 (see _wrap_class). """
-    # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
-    caller_frame = _caller_frame(2)
-    # get the source
-    try:
-        full_source = caller_frame.f_globals['_lf_source']
-    except KeyError:
-        full_source = _get_source(caller_frame.f_code.co_filename)
-    source = _get_statement(full_source,
-                            caller_frame.f_lineno)
-    # find all lambda nodes
-    nodes = var2mod.Finder(ast.Lambda).find(ast.parse(source))
-    candidate_segments = []
-    candidate_calls = []
-    for node in nodes:
-        # keep lambda nodes which are contained in a call of `lf.trans`
-        if not isinstance(node.parent, ast.Call):
-            continue
-        containing_call = ast.get_source_segment(source, node.parent.func)
-        containing_function = eval(containing_call, caller_frame.f_globals)
-        if containing_function is not trans:
-            continue
-        candidate_segments.append(ast.get_source_segment(source, node))
-        candidate_calls.append(ast.get_source_segment(source, node.parent))
-
-    # compare candidate's bytecodes to that of `fun`
-    # keep the call for the matching one
-    target_instrs = list(dis.get_instructions(fun))
-    for segment, call in zip(candidate_segments, candidate_calls):
-        instrs = list(dis.get_instructions(eval(segment)))
-        if not len(instrs) == len(target_instrs):
-            continue
-        for instr, target_instr in zip(instrs, target_instrs):
-            if (instr.opname, target_instr.argval) != (instr.opname, target_instr.argval):
-                break
-        else:
-            break
-    else:
-        raise RuntimeError('Lambda not found.')
-
-    wrapper = FunctionTransform(fun, _module(caller_frame), _same_module_stack(2), call)
-    functools.update_wrapper(wrapper, fun)
-    return wrapper
-
-
-def trans(fun_or_cls):
-    """Transform wrapper / decorator. Use to wrap a class or callable. """
-    if inspect.isclass(fun_or_cls):
-        return _wrap_class(fun_or_cls)
-    if inspect.isfunction(fun_or_cls):
-        if fun_or_cls.__name__ == '<lambda>':
-            return _wrap_lambda(fun_or_cls)
-        return _wrap_function(fun_or_cls)
-    raise ValueError('Can only wrap classes or callables.')
-
-
 class Transform:
-    _lf_stage = None
+    """Transform base class. """
 
-    def __init__(self, module, stack, lf_name=None):
-        self._lf_module = module
-        self._lf_stack = stack
-        self.__lf_name = lf_name
-
-        self._layers = None
+    def __init__(self, call_info, name=None):
+        self._lf_call_info = call_info
+        self._lf_varname = _notset
+        self._lf_name = name
         self._lf_mapdevice = {'gpu'}
         self._lf_device = 'gpu'
 
     @property
     def lf_name(self):
-        if self.__lf_name is None:
+        if self._lf_name is None:
             return self.lf_varname
-        return self.__lf_name
+        return self._lf_name
 
     def __rshift__(self, other):
-        return Compose([self, other], _caller_module(1), lf_group=False)
+        return Compose([self, other], inspector.caller_info())
 
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*. """
-        return Rollout([self, other], _caller_module(1), lf_group=False)
+        return Rollout([self, other], inspector.caller_info())
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """ Parallel with *other*. """
-        return Parallel([self, other], _caller_module(1), lf_group=False)
+        return Parallel([self, other], inspector.caller_info())
 
     def __sub__(self, transform_name: str) -> "Transform":
         """Name Transform"""
@@ -289,15 +68,24 @@ class Transform:
 
     def lf_clone(self, **kwargs):
         """Clone Transform"""
-        return NotImplementedError
+        return NotImplemented
 
     def lf_pre_save(self, path, i):
-        pass
+        """Method that is called on each transform before saving.
+
+        :param path: The save path.
+        :param i: Subtransform index.
+        """
 
     def lf_post_load(self, path, i):
-        pass
+        """Method that is called on each transform after loading.
+
+        :param path: The save path.
+        :param i: Subtransform index.
+        """
 
     def lf_save(self, path):
+        """Save the transform to *path*. """
         path = Path(path)
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.lf_all_transforms_with_globals()):
@@ -305,41 +93,101 @@ class Transform:
         with open(path / 'transform.py', 'w') as f:
             f.write(self.lf_dumps())
 
-    def lf_codegraph(self):
-        var_transforms = {}
-        for transform in self.lf_all_transforms():
-            if False and transform is self:
-                continue
-            varname = transform.lf_varname
-            if varname is not None:
-                var_transforms[transform] = varname
-        call = self.lf_evaluable_repr(var_transforms=var_transforms)
-        assignment = f'_lf_main = {call}'
-        if call != self.lf_varname and self.lf_varname is not None:
-            assignment = f'{self.lf_varname} = {assignment}'
-        dependencies = var2mod._VarFinder().find(ast.parse(assignment)).globals
-        graph = var2mod.build_codegraph(dependencies, self._lf_module)
-        graph[f'_lf_main'] = (
-            assignment,
-            dependencies,
-            ast.parse(assignment).body[0]
+    def _lf_codegraph_startnode(self, name):
+        """Build the start-code-node - the node with the source needed to create *self* as "name".
+        (in the scope where *self* was originally created).
+        """
+        start_source = f'{name or "_lf_dummy"} = {self.lf_evaluable_repr()}'
+        start_node = ast.parse(start_source)
+        start_globals = {
+            (var, self._lf_call_info.scope)  # this should be the current scope ...?
+            for var in var2mod.find_globals(start_node)
+        }
+        return var2mod.CodeNode(
+            source=start_source,
+            ast_node=start_node,
+            globals_=start_globals
         )
-        return graph
+
+    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        try:
+            if self._lf_call == name:
+                name = None
+        except AttributeError:
+            pass
+
+        # build the start node ->
+        start = self._lf_codegraph_startnode(name)
+        # <-
+
+        globals_dict = self._lf_call_info.globals
+        all_vars_dict = {**globals_dict, **self._lf_call_info.nonlocals}
+
+        # find dependencies
+        todo = {*start.globals_}
+        while todo and (next_ := todo.pop()):
+            # we know this already - go on
+            if next_ in scopemap:
+                continue
+
+            next_var, next_scope = next_
+
+            # see if the object itself knows how to generate its codegraph
+            try:
+                if len(next_scope) > 0:
+                    next_obj = all_vars_dict[next_var]
+                else:
+                    next_obj = globals_dict[next_var]
+                next_obj._lf_build_codegraph(graph, scopemap, next_var)
+            except (KeyError, AttributeError):
+                pass
+            else:
+                print(next_var, 'can deal with itself')
+                continue
+
+            # find how next_var came into being
+            (source, node), scope = thingfinder.find_in_scope(next_var, next_scope)
+            scopemap[next_var, next_scope] = scope
+
+            # find dependencies
+            globals_ = {
+                (var, scope)
+                for var in var2mod.find_globals(node)
+            }
+            graph[next_var, scope] = var2mod.CodeNode(source=source, globals_=globals_,
+                                                      ast_node=node)
+            todo.update(globals_)
+        # find dependencies done
+
+        if name is not None:
+            assert scope is not None
+            graph[name, scope] = start
+            scopemap[name, scope] = scope
+
+        return graph, scopemap
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
+        """Return a string that if evaluated *in the same scope where the transform was created*
+        creates the transform. """
         return NotImplemented
 
     def lf_all_transforms(self):
         return NotImplemented
 
     def lf_all_transforms_with_globals(self):
+        # TODO: make work with scopes
         res = self.lf_all_transforms()
-        graph = self.lf_codegraph()
+        graph, _ = self._lf_build_codegraph()
         all_globals = set()
         for v in graph.values():
-            all_globals.update(v[1])
+            all_globals.update(v.globals_)
         for g in all_globals:
-            gobj = self._lf_module.__dict__[g]
+            gobj = self._lf_call_info.module.__dict__[g]
             if gobj is self:
                 continue
             self._lf_all_transforms_with_globals(gobj, res)
@@ -360,10 +208,14 @@ class Transform:
             pass
 
     def lf_dumps(self):
-        return var2mod.dumps_graph(self.lf_codegraph())
+        """Dump the transform as python code. """
+        scope = thingfinder.Scope.toplevel(inspector.caller_module())
+        graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
+        unscoped = var2mod.unscope_graph(graph, scopemap)
+        return var2mod.dumps_graph(unscoped)
 
     def lf_repr(self, indent=0):
-        varname = self.lf_varname
+        varname = self.lf_varname()
         evaluable_repr = self.lf_evaluable_repr()
         if varname is None or varname == evaluable_repr:
             return f'{evaluable_repr}'
@@ -372,16 +224,25 @@ class Transform:
     def __repr__(self):
         return self.lf_repr()
 
-    @property
-    def lf_varname(self):
-        """The transform's variable name. """
+    def _lf_find_varname(self, scopedict):
         try:
             return [
-                k for k, v in self._lf_module.__dict__.items()
+                k for k, v in scopedict.items()
                 if v is self and not k.startswith('_')
             ][0]
         except IndexError:
             return None
+
+    def lf_varname(self, scopedict=None):
+        """The transform's variable name. """
+        if self._lf_varname is _notset:
+            if scopedict is None:
+                scopedict = self._lf_call_info.module.__dict__
+            self._lf_varname = self._lf_find_varname(scopedict)
+        return self._lf_varname
+
+    def lf_set_varname(self, val):
+        self._lf_varname = val
 
     def __call__(self, arg):
         return NotImplementedError
@@ -546,7 +407,7 @@ class Transform:
         """
         return self._lf_stage
 
-    @contextmanager
+    @contextlib.contextmanager
     def lf_set_stage(self, stage: str):
         """
         Set of stage of Transform
@@ -604,8 +465,8 @@ class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
     other transforms, in contrast to `CompoundTransform`s. """
 
-    def __init__(self, call, module, stack):
-        super().__init__(module, stack)
+    def __init__(self, call, call_info, name=None):
+        super().__init__(call_info, name)
         self._lf_call = call
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
@@ -624,17 +485,17 @@ class AtomicTransform(Transform):
 
 
 class FunctionTransform(AtomicTransform):
-    def __init__(self, function, module, stack, call=None):
+    def __init__(self, function, call_info, name=None, call=None):
         if call is None:
             call = function.__name__
-        super().__init__(call, module, stack)
+        super().__init__(call, call_info, name)
         self.function = function
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
 
 
-class TorchModuleTransform(AtomicTransform):
+class TorchModuleTransform(torch.nn.Module, AtomicTransform):
     def lf_pre_save(self, path, i):
         path = Path(path)
         checkpoint_path = path / f'{path.stem}_{i}.pt'
@@ -649,21 +510,20 @@ class TorchModuleTransform(AtomicTransform):
 
 
 class CompoundTransform(Transform):
-    """Abstract base class for compound-transforms (transforms combining other transforms.)"""
+    """Abstract base class for meta-trasforms (transforms combining other transforms. """
     op = NotImplemented
 
-    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
-        super().__init__(module, stack, lf_name=lf_name)
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(call_info, name)
 
-        self._lf_group = True if lf_name is not None else lf_group
-       #assert not (self.lf_name is not None and self._lf_group is False)
-
-        transforms = self._flatten_list(transforms)
-        self.transforms = transforms
+        self._lf_group = True if name is not None else group
 
         self._lf_preprocess = None
         self._lf_forward = None
         self._lf_postprocess = None
+
+        transforms = self._flatten_list(transforms)
+        self.transforms = transforms
 
         # self._lf_mapdevice_list = None
         self._lf_mapdevice_list = [t.lf_mapdevice for t in self.transforms]
@@ -674,7 +534,7 @@ class CompoundTransform(Transform):
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
-            x.lf_evaluable_repr(indent + 4, var_transforms)
+            x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
             for x in self.transforms
         ]
         return (
@@ -683,16 +543,39 @@ class CompoundTransform(Transform):
             + '\n' + ' ' * indent + ')'
         )
 
+    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        start = self._lf_codegraph_startnode(name)
+
+        if name is not None:
+            assert scope is not None
+            graph[name, scope] = start
+            scopemap[name, scope] = scope
+
+        for transform in self.transforms:
+            varname = transform.lf_varname()
+            transform._lf_build_codegraph(graph, scopemap, varname,
+                                          self._lf_call_info.scope)
+
+        return graph, scopemap
+
     def lf_repr(self, indent=0):
         sub_reprs = [
             x.lf_repr(indent + 4)
             for x in self.transforms
         ]
-        return (
+        res = (
             '(\n    ' + ' ' * indent
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
+        if self.lf_varname() is not None and self.lf_varname() is not _notset:
+            res += f' [{self.lf_varname()}]'
+        return res
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
@@ -704,7 +587,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform._lf_group:
+                if transform._lf_group is None:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
@@ -722,8 +605,8 @@ class CompoundTransform(Transform):
         return res
 
     def grouped(self):
-        return type(self)(self.transforms, self._lf_module, self._lf_stack,
-                          lf_name=self.lf_name, lf_group=True)
+        """Return a grouped version of *self*. """
+        return type(self)(self.transforms, self._lf_call_info, name=self.lf_name, group=True)
 
     @staticmethod
     def _lf_get_keys(transforms):
@@ -802,7 +685,7 @@ class Compose(CompoundTransform):
             if len(ts_) == 1:
                 self._lf_forward = ts_[0]
             elif ts_:
-                self._lf_forward = Compose(ts_, module=None, stack=None)
+                self._lf_forward = Compose(ts_, call_info=self._lf_call_info)
             else:
                 self._lf_forward = Identity()
 
@@ -818,7 +701,7 @@ class Compose(CompoundTransform):
             if len(t) == 1:
                 self._lf_preprocess = t[0].lf_preprocess
             elif t:
-                self._lf_preprocess = Compose(t, module=None, stack=None)
+                self._lf_preprocess = Compose(t, call_info=self._lf_call_info)
             else:
                 self._lf_preprocess = Identity()
 
@@ -834,7 +717,7 @@ class Compose(CompoundTransform):
             if len(t) == 1:
                 self._lf_postprocess = t[0].postprocess
             elif t:
-                self._lf_postprocess = Compose(t, module=None, stack=None)
+                self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
             else:
                 self._lf_postprocess = Identity()
 
@@ -853,8 +736,8 @@ class Rollout(CompoundTransform):
     """
     op = '+'
 
-    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
-        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(transforms, call_info, name=name, group=group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -883,9 +766,9 @@ class Rollout(CompoundTransform):
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_postprocess = Identity()
             elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
-                self._lf_postprocess = Parallel(t_list)
+                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
             else:
-                self._lf_preprocess = Rollout(t_list)
+                self._lf_preprocess = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_preprocess
 
     def _lf_forward_part(self):
@@ -894,9 +777,9 @@ class Rollout(CompoundTransform):
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
             if len(list(self._mapdevice)) >= 2 and 'gpu' in self._lf_mapdevice:
-                self._lf_forward = Parallel(t_list)
+                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
             else:
-                self._lf_forward = Rollout(t_list)
+                self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_forward
 
     @property
@@ -907,9 +790,9 @@ class Rollout(CompoundTransform):
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_postprocess = Identity()
             elif len(list(self._lf_mapdevice)) >= 2 and 'bcpu' in self._mapdevice:
-                self._lf_postprocess = Parallel(t_list)
+                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
             else:
-                self._lf_postprocess = Rollout(t_list)
+                self._lf_postprocess = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
 
 
@@ -925,8 +808,8 @@ class Parallel(CompoundTransform):
     """
     op = '/'
 
-    def __init__(self, transforms, module=None, stack=None, lf_name=None, lf_group=False):
-        super().__init__(transforms, module, stack, lf_name=lf_name, lf_group=lf_group)
+    def __init__(self, transforms, call_info, name=None, group=False):
+        super().__init__(transforms, call_info=call_info, name=name, group=group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
@@ -949,7 +832,7 @@ class Parallel(CompoundTransform):
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_preprocess = Identity()
             else:
-                self._lf_preprocess = Parallel(t_list)
+                self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_preprocess
 
     @property
@@ -959,7 +842,7 @@ class Parallel(CompoundTransform):
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_postprocess = Identity()
             else:
-                self._lf_postprocess = Parallel(t_list)
+                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
 
     def _lf_forward_part(self):
@@ -968,15 +851,15 @@ class Parallel(CompoundTransform):
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_forward = Identity()
             else:
-                self._lf_forward = Parallel(t_list)
+                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_forward
 
 
 class Identity(Transform):
     """Do nothing."""
 
-    def __init__(self, module=None, stack=None, lf_name=None):
-        super().__init__(module, stack, lf_name=lf_name)
+    def __init__(self, name=None):
+        super().__init__(None, name=name)
 
     @property
     def lf_is_identity(self):

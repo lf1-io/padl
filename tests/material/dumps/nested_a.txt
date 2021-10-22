@@ -1,0 +1,9 @@
+from lf import trans
+
+
+@trans
+def maketransform_z(x):
+    return x
+
+
+_lf_main = maketransform_z

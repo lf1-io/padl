@@ -1,6 +1,6 @@
 import torch
 
-from lf.lf import Transform
+from lf.transform import Transform
 
 
 class Unbatchify(Transform):
@@ -9,8 +9,8 @@ class Unbatchify(Transform):
     :param dim: batching dimension
     """
 
-    def __init__(self, module=None, stack=None, lf_name=None, dim=0):
-        super().__init__(module, stack, lf_name=lf_name)
+    def __init__(self, call_info, name=None, dim=0):
+        super().__init__(call_info, name=name)
         self.dim = dim
 
     def __call__(self, args):

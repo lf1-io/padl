@@ -1,29 +1,29 @@
 import pytest
-from lf import lf
+from lf import transform as lf, trans
 from collections import namedtuple
 
 
-@lf.trans
+@trans
 def plus_one(x):
     return x + 1
 
 
-@lf.trans
+@trans
 def append_one(x):
     return x + "one"
 
 
-@lf.trans
+@trans
 def times_two(x):
     return x * 2
 
 
-@lf.trans
+@trans
 def plus(x, y):
     return x + y
 
 
-@lf.trans
+@trans
 def get_info(x):
     return x['info']
 
@@ -49,8 +49,8 @@ class TestParallel:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one / times_two / times_two
-        request.cls.transform_2 = lf.trans(simple_func) / lf.trans(simple_func) / lf.trans(simple_func)
-        request.cls.transform_3 = plus_one / plus_one / lf.trans(simple_func)
+        request.cls.transform_2 = trans(simple_func) / trans(simple_func) / trans(simple_func)
+        request.cls.transform_3 = plus_one / plus_one / trans(simple_func)
 
     def test_output(self):
         in_ = (2, 2, 2)
@@ -71,8 +71,8 @@ class TestRollout:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one + times_two + times_two
-        request.cls.transform_2 = lf.trans(simple_func) + lf.trans(simple_func) + lf.trans(simple_func)
-        request.cls.transform_3 = plus_one + plus_one + lf.trans(simple_func)
+        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
+        request.cls.transform_3 = plus_one + plus_one + trans(simple_func)
 
     def test_output(self):
         in_ = 123
