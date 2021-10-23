@@ -1,6 +1,5 @@
 """Inspect utils. """
 import ast
-from dataclasses import dataclass, field
 import dis
 import inspect
 import linecache
@@ -12,53 +11,64 @@ from warnings import warn
 from lf.dumptools import thingfinder, var2mod
 
 
-@dataclass
-class _CallInfo:
-    # the module from which the call was made
-    module: types.ModuleType
-    function: str = '<module>'
-    scope: Optional[thingfinder.Scope] = None
-    # function definition source
-    fdef_source: Optional[str] = None
-    globals: dict = field(default_factory=dict)
-    nonlocals: dict = field(default_factory=dict)
+class CallInfo:
+    """Information about the calling context.
 
-
-def caller_info(caller=None, drop_n=0):
-    """Collect some information about the caller.
+    Contains the following information:
+        - the module from which the call was made
+        - the function from which that call was made
+        - the scope (see `thingfinder.Scope`)
 
     :param drop_n: Drop *n* from the calling scope.
 
-    :returns: A _CallInfo object.
+    :returns: A CallInfo object.
     """
-    if caller is None:
-        calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
-        caller = outer_caller(calling_module_name)
-    module = _module(caller.frame)
-    call_info = _CallInfo(module)
-    call_info.function = caller.function
-    if caller.function != '<module>':
+
+    def __init__(self, origin='nextmodule', drop_n: int = 0):
+        assert isinstance(origin, inspect.FrameInfo) or origin in ('nextmodule', 'here')
+        if isinstance(origin, inspect.FrameInfo):
+            caller_frameinfo = origin
+        if origin == 'nextmodule':
+            calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
+            caller_frameinfo = outer_caller_frameinfo(calling_module_name)
+        elif origin == 'here':
+            caller_frameinfo = inspect.stack()[1]
+        self.function = caller_frameinfo.function
+        self.scope = self._determine_scope(caller_frameinfo, drop_n)
+
+    def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
+                         drop_n: int) -> thingfinder.Scope:
+        module = _module(caller_frameinfo.frame)
+
+        if self.function == '<module>':
+            return thingfinder.Scope.toplevel(module)
+
         try:
-            call_source = get_call_segment_from_frame(caller.frame.f_back)
-            call_info.fdef_source = get_source(caller.filename)
-            fdef_lineno = caller.frame.f_lineno
-            call_info.scope = thingfinder.Scope.from_source(call_info.fdef_source, fdef_lineno,
-                                                            call_source, call_info.module, drop_n)
-            assert len(call_info.scope) <= 1, 'scope longer than 1 currently not supported'
-        except (SyntaxError, IndexError) as exc:
+            call_source = get_call_segment_from_frame(caller_frameinfo.frame.f_back)
+            definition_source = get_source(caller_frameinfo.filename)
+            fdef_lineno = caller_frameinfo.frame.f_lineno
+            scope = thingfinder.Scope.from_source(definition_source, fdef_lineno,
+                                                  call_source, module, drop_n)
+            assert len(scope) <= 1, 'scope longer than 1 currently not supported'
+            return scope
+        except (SyntaxError, IndexError, RuntimeError) as exc:
             warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
-            call_info.scope = thingfinder.Scope(module, '', [])
-    else:
-        call_info.scope = thingfinder.Scope(module, '', [])
-    return call_info
+            return thingfinder.Scope.toplevel(module)
+
+    @property
+    def module(self):
+        """The calling module. """
+        return self.scope.module
 
 
-def non_init_caller():
+def non_init_caller_frameinfo() -> inspect.FrameInfo:  # TODO: generalize?
+    """Get the FrameInfo for the first outer frame that is not of an "__init__" method. """
     stack = inspect.stack()
+    frameinfo = None
     for frameinfo in stack[1:]:
         if frameinfo.function != '__init__':
             break
-    assert frameinfo.function != '__init__'
+    assert frameinfo is not None and frameinfo.function != '__init__'
     return frameinfo
 
 
@@ -123,7 +133,7 @@ def _instructions_up_to_offset(x, lasti):
     return instructions
 
 
-def get_source(filename):
+def get_source(filename: str):
     """Get source from *filename*.
 
     Filename as in the code object, can be "<ipython input-...>" in which case
@@ -138,17 +148,54 @@ def get_source(filename):
             return f.read()
 
 
-def get_statement(source, lineno):
+def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*. """
-    module = ast.parse(source)
+    for i in range(lineno):
+        block, lineno_in_block = get_surrounding_block(source, lineno - i)
+        try:
+            return _get_statement_from_block(block, lineno_in_block + i)
+        except SyntaxError:
+            continue
+    raise SyntaxError("Couldn't find the statement.")
+
+
+
+def _get_statement_from_block(block: str, lineno_in_block: int):
+    module = ast.parse(block)
     stmts = []
     for stmt in module.body:
-        if stmt.lineno <= lineno <= stmt.end_lineno:
-            stmts.append(ast.get_source_segment(source, stmt))
+        if stmt.lineno <= lineno_in_block <= stmt.end_lineno:
+            stmts.append(ast.get_source_segment(block, stmt))
     return '\n'.join(stmts)
 
 
-def _module(frame):
+def get_surrounding_block(source, lineno: int):
+    lines = source.split('\n')
+    before, after = lines[:lineno-1], lines[lineno:]
+    white = thingfinder._count_leading_whitespace(lines[lineno-1])
+    if white is None:
+        return ''
+    block = [lines[lineno-1][white:]]
+    lineno_in_block = 1
+    while before:
+        next_ = before.pop(-1)
+        next_white = thingfinder._count_leading_whitespace(next_)
+        if next_white is None or next_white >= white:
+            block = [next_[white:]] + block
+        else:
+            break
+        lineno_in_block += 1
+    while after:
+        next_ = after.pop(0)
+        next_white = thingfinder._count_leading_whitespace(next_)
+        if next_white is None or next_white >= white:
+            block = block + [next_[white:]]
+        else:
+            break
+    return '\n'.join(block), lineno_in_block
+
+
+def _module(frame: types.FrameType):
     """Get module of *frame*. """
     try:
         return frame.f_globals['_lf_module']
@@ -156,7 +203,7 @@ def _module(frame):
         return sys.modules[frame.f_globals['__name__']]
 
 
-def _same_module_stack(depth):
+def _same_module_stack(depth: int):  # TODO: remove (not being used)?
     stack = inspect.stack()[depth + 1:]
     module_name = stack[0].frame.f_globals['__name__']
     same_module = []
@@ -174,7 +221,7 @@ def _same_module_stack(depth):
     return res[::-1]
 
 
-def outer_caller(module_name: str):
+def outer_caller_frameinfo(module_name: str) -> inspect.FrameInfo:
     """Get the first level of the stack before entering the module with name *module_name*. """
     stack = inspect.stack()
     before = True
@@ -187,19 +234,19 @@ def outer_caller(module_name: str):
         return frameinfo
 
 
-def caller_module():
+def caller_module() -> types.ModuleType:
     """Get the first module of the caller. """
     calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
-    return _module(outer_caller(calling_module_name).frame)
+    return _module(outer_caller_frameinfo(calling_module_name).frame)
 
 
-def caller_frame():
+def caller_frame() -> types.FrameType:
     """Get the callers frame. """
     calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
-    return outer_caller(calling_module_name).frame
+    return outer_caller_frameinfo(calling_module_name).frame
 
 
-def get_call_segment_from_frame(caller_frame):
+def get_call_segment_from_frame(caller_frame: types.FrameType) -> str:
     # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
     # , for python 3.11 (currently in development) this can be done via co_positions
     # (see https://www.python.org/dev/peps/pep-0657/),
@@ -209,8 +256,7 @@ def get_call_segment_from_frame(caller_frame):
         full_source = caller_frame.f_globals['_lf_source']
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
-    source = get_statement(full_source,
-                           caller_frame.f_lineno)
+    source = get_statement(full_source, caller_frame.f_lineno)
     # the source can contain surrounding stuff we need to discard
     # as we only have the line number (this is what makes this complicated)
 

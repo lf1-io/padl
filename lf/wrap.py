@@ -24,7 +24,7 @@ def _set_local_varname(frame, event, _args):
 
 def _wrap_function(fun):
     """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
-    call_info = inspector.caller_info(drop_n=1)
+    call_info = inspector.CallInfo(drop_n=1)
     caller = inspect.stack()[2]
     if call_info.function != '<module>':
         inspector.trace_this(_set_local_varname, caller.frame)
@@ -117,7 +117,7 @@ def _wrap_lambda(fun):
     if call is None:
         raise RuntimeError('Lambda not found.')
 
-    wrapper = FunctionTransform(fun, inspector.caller_info(), call)
+    wrapper = FunctionTransform(fun, inspector.CallInfo(), call)
     functools.update_wrapper(wrapper, fun)
     return wrapper
 

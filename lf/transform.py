@@ -45,7 +45,7 @@ class Transform:
 
     def __init__(self, call_info=None, lf_name=None):
         if call_info is None:
-            call_info = inspector.caller_info()
+            call_info = inspector.CallInfo()
         self._lf_call_info = call_info
         self._lf_varname = _notset
         self._lf_name = lf_name
@@ -117,6 +117,10 @@ class Transform:
             globals_=start_globals
         )
 
+    @property
+    def _lf_closuervars(self) -> inspect.ClosureVars:
+        return NotImplemented
+
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
             graph = {}
@@ -133,8 +137,12 @@ class Transform:
         start = self._lf_codegraph_startnode(name)
         # <-
 
-        globals_dict = self._lf_call_info.globals
-        all_vars_dict = {**globals_dict, **self._lf_call_info.nonlocals}
+        closurevars = self._lf_closuervars
+        try:
+            globals_dict = closurevars.globals
+            all_vars_dict = {**globals_dict, **closurevars.nonlocals}
+        except AttributeError:
+            globals_dict = all_vars_dict = {}
 
         # find dependencies
         todo = {*start.globals_}
@@ -515,14 +523,18 @@ class FunctionTransform(AtomicTransform):
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
 
+    @property
+    def _lf_closurevars(self) -> inspect.ClosureVars:
+        return inspect.getclosurevars(self.function)
+
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
 
 
 class ClassTransform(AtomicTransform):
     def __init__(self, lf_name=None):
-        caller_frameinfo = inspector.non_init_caller()
-        call_info = inspector.caller_info(caller_frameinfo)
+        caller_frameinfo = inspector.non_init_caller_frameinfo()
+        call_info = inspector.CallInfo(caller_frameinfo)
         call = inspector.get_call_segment_from_frame(caller_frameinfo.frame)
         AtomicTransform.__init__(
             self,
