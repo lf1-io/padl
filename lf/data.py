@@ -1,4 +1,4 @@
-class SimpleIterator:
+class SimpleIterator:  # TODO: find a different name (it's not an iterator)
     """
     :param samples: object implementing __getitem__ and __len__
     :param trans: instance of lf.lf.Transform

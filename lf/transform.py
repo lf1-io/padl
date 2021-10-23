@@ -3,9 +3,10 @@ import ast
 from collections import Counter, namedtuple
 import contextlib
 import inspect
+from itertools import chain
 from pathlib import Path
 import types
-from typing import List, Optional, Union
+from typing import Iterable, List, Literal, Optional, Set, Tuple, Union
 
 import numpy as np
 import torch
@@ -17,6 +18,7 @@ from lf.dumptools import var2mod, thingfinder, inspector
 
 
 class _Notset:
+    # pylint: disable=too-few-public-methods
     pass
 
 
