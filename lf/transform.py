@@ -416,13 +416,13 @@ class Transform:
         :param device: device on which to map {'cpu', 'gpu'}
         """
         self._lf_device = device
-        for item in self.__dict__:
-            obj_ = self._lf_getattribute_object(item)
-            if isinstance(obj_, Transform):
-                obj_.lf_to(device)
-            elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
-                for a_trans in obj_:
-                    a_trans.lf_to(device)
+        # for item in self.__dict__:
+        #     obj_ = self._lf_getattribute_object(item)
+        #     if isinstance(obj_, Transform):
+        #         obj_.lf_to(device)
+        #     elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
+        #         for a_trans in obj_:
+        #             a_trans.lf_to(device)
         return self
 
     @property
