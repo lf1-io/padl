@@ -206,6 +206,16 @@ class TestCompose:
             assert self.transform_1.lf_forward.lf_stage == 'eval'
             assert self.transform_1.lf_postprocess.lf_stage == 'eval'
 
+    def test_all_transforms_1(self):
+        c = plus_one >> times_two >> times_two
+        all_ = c.lf_all_transforms()
+        assert set(all_) == set([plus_one, times_two, c])
+
+    def test_all_transforms_2(self):
+        c = plus_one >> times_two >> trans_with_globals
+        all_ = c.lf_all_transforms()
+        assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
+
 
 class TestModel:
     @pytest.fixture(autouse=True, scope='class')
@@ -246,16 +256,6 @@ class TestModel:
     def test_eval_apply(self):
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
         assert list(self.model_2.eval_apply([5, 5])) == [(13, 13), (13, 13)]
-
-    def test_all_transforms_1(self):
-        c = plus_one >> times_two >> times_two
-        all_ = c.lf_all_transforms()
-        assert set(all_) == set([plus_one, times_two, c])
-
-    def test_all_transforms_2(self):
-        c = plus_one >> times_two >> trans_with_globals
-        all_ = c.lf_all_transforms()
-        assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
 
 
 class TestFunctionTransform:
