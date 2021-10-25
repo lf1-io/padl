@@ -1,0 +1,4 @@
+from lf import trans
+
+
+_lf_main = trans(lambda x: x)
