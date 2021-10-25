@@ -77,6 +77,12 @@ class TestParallel:
     def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
 
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
+
     def test_context(self):
         assert self.transform_1.lf_stage is None
         with self.transform_1.lf_set_stage('train'):

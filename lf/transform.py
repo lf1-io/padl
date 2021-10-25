@@ -935,6 +935,12 @@ class Parallel(CompoundTransform):
                 self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_preprocess
 
+    def _lf_forward_part(self):
+        if self._lf_forward is None:
+            t_list = [x.lf_forward for x in self.transforms]
+            self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
+        return self._lf_forward
+
     @property
     def lf_postprocess(self):
         if self._lf_postprocess is None:
@@ -944,15 +950,6 @@ class Parallel(CompoundTransform):
             else:
                 self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
-
-    def _lf_forward_part(self):
-        if self._lf_forward is None:
-            t_list = [x.lf_forward for x in self.transforms]
-            if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_forward = Identity()
-            else:
-                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
-        return self._lf_forward
 
 
 class Identity(ClassTransform):
