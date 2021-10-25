@@ -215,10 +215,10 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
-    def lf_fullname(self):
+    def lf_shortname(self, is_child=False):
         evaluable_repr = self.lf_evaluable_repr()
-        t = '\33[1m' + evaluable_repr
-        end = ':\33[0m\n\n'
+        t = evaluable_repr if is_child else '\33[1m' + evaluable_repr
+        end = '' if is_child else ':\33[0m\n\n'
         if self.lf_name is not None:
             return t + f'[{self.lf_name}]' + end
         varname = self.lf_varname()
@@ -245,7 +245,7 @@ class Transform:
         return res
 
     def lf_repr(self, indent=0):
-        top_message = self.lf_fullname()
+        top_message = self.lf_shortname()
         bottom_message = self.lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
@@ -509,7 +509,9 @@ class AtomicTransform(Transform):
         return res
 
     def lf_bodystr(self):
-        body_msg = thingfinder.find(self.__class__.__name__)[0].split('trans\n')[-1]
+        body_msg = thingfinder.find(self.__class__.__name__)[0].split('@trans\n')[-1]
+        body_msg = body_msg.split('@lf.trans\n')[-1]
+        body_msg = body_msg.split('@lf.wrap.trans\n')[-1]
         return body_msg[:200] + ('  ...' if len(body_msg) > 200 else '')
 
 
@@ -522,7 +524,9 @@ class FunctionTransform(AtomicTransform):
         self.source = inspect.getsource(function)
 
     def lf_bodystr(self):
-        body_msg = self.source
+        body_msg = self.source.split('trans\n')[-1]
+        body_msg = body_msg.split('@lf.trans\n')[-1]
+        body_msg = body_msg.split('@lf.wrap.trans\n')[-1]
         return body_msg[:100] + ('  ...' if len(body_msg) > 100 else '')
 
     def __call__(self, *args, **kwargs):
@@ -565,7 +569,7 @@ class CompoundTransform(Transform):
             self._mapdevice = set.union(*self._lf_mapdevice_list)
         except (AttributeError, TypeError):
             self._mapdevice = None
-
+    '''
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
             x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
@@ -576,6 +580,7 @@ class CompoundTransform(Transform):
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
+    '''
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
@@ -597,6 +602,13 @@ class CompoundTransform(Transform):
 
         return graph, scopemap
 
+    def lf_bodystr(self):
+        body_str = ''
+        for i, subtrans in enumerate(self.transforms):
+            body_str += subtrans.lf_shortname(is_child=True) + '\n'
+        return body_str
+
+    ''' 
     def lf_repr(self, indent=0):
         sub_reprs = [
             x.lf_repr(indent + 4)
@@ -610,6 +622,7 @@ class CompoundTransform(Transform):
         if self.lf_varname() is not None and self.lf_varname() is not _notset:
             res += f' [{self.lf_varname()}]'
         return res
+    '''
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
@@ -747,15 +760,21 @@ class Compose(CompoundTransform):
             t = [
                 t for t, d in zip(self.transforms, self._lf_mapdevice_list) if 'bcpu' in d
             ]
-
             if len(t) == 1:
                 self._lf_postprocess = t[0].postprocess
             elif t:
                 self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
             else:
                 self._lf_postprocess = Identity()
-
         return self._lf_postprocess
+
+    @staticmethod
+    def _lf_add_format_to_str(name):
+        res = '\33[32m        🠳  \33[0m\n'
+        res += '    ' + '\n\33[32m        🠳  \33[0m\n    '.join(
+            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\33[32m        🠳  \33[0m\n'
+        return res
 
 
 class Rollout(CompoundTransform):
@@ -829,6 +848,14 @@ class Rollout(CompoundTransform):
                 self._lf_postprocess = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
 
+    @staticmethod
+    def _lf_add_format_to_str(name):
+        res = '\33[32m        🠳  \33[0m\n'
+        res += '    ' + '\n\33[32m        ＋  \33[0m\n    '.join(
+            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\33[32m        🠳  \33[0m\n'
+        return res
+
 
 class Parallel(CompoundTransform):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
@@ -887,6 +914,14 @@ class Parallel(CompoundTransform):
             else:
                 self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_forward
+
+    @staticmethod
+    def _lf_add_format_to_str(name):
+        res = '\33[32m        🠳  \33[0m\n'
+        res += '    ' + '\n\33[32m        ╱  \33[0m\n    '.join(
+            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\33[32m        🠳  \33[0m\n'
+        return res
 
 
 class Identity(Transform):
