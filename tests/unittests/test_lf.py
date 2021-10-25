@@ -34,6 +34,11 @@ def simple_func(x):
     return x
 
 
+@trans
+def trans_with_globals(x, y):
+    return (plus >> times_two)(x, y)
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -242,6 +247,16 @@ class TestModel:
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
         assert list(self.model_2.eval_apply([5, 5])) == [(13, 13), (13, 13)]
 
+    def test_all_transforms_1(self):
+        c = plus_one >> times_two >> times_two
+        all_ = c.lf_all_transforms()
+        assert set(all_) == set([plus_one, times_two, c])
+
+    def test_all_transforms_2(self):
+        c = plus_one >> times_two >> trans_with_globals
+        all_ = c.lf_all_transforms()
+        assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
+
 
 class TestFunctionTransform:
     @pytest.fixture(autouse=True, scope='class')
@@ -279,3 +294,7 @@ class TestFunctionTransform:
             assert self.transform_1.lf_preprocess.lf_stage == 'infer'
             assert self.transform_1.lf_forward.lf_stage == 'infer'
             assert self.transform_1.lf_postprocess.lf_stage == 'infer'
+
+    def test_all_transforms(self):
+        all_ = trans_with_globals.lf_all_transforms()
+        assert set(all_) == set([plus, times_two, trans_with_globals])
