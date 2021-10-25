@@ -7,7 +7,9 @@ import inspect
 import torch
 
 from lf.dumptools import var2mod, inspector
-from lf.transform import AtomicTransform, FunctionTransform, TorchModuleTransform, _notset
+from lf.transform import (
+    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+)
 
 
 def _set_local_varname(frame, event, _args):
@@ -22,7 +24,7 @@ def _set_local_varname(frame, event, _args):
 
 def _wrap_function(fun):
     """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
-    call_info = inspector.caller_info(1)
+    call_info = inspector.CallInfo(drop_n=1)
     caller = inspect.stack()[2]
     if call_info.function != '<module>':
         inspector.trace_this(_set_local_varname, caller.frame)
@@ -55,21 +57,19 @@ def _wrap_class(cls):
     if issubclass(cls, torch.nn.Module):
         trans_class = TorchModuleTransform
     else:
-        trans_class = AtomicTransform
+        trans_class = ClassTransform
 
+    module = cls.__module__
     # make cls inherit from AtomicTransform
     cls = type(cls.__name__, (cls, trans_class), {})
 
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):
         old__init__(self, *args, **kwargs)
-        trans_class.__init__(
-            self,
-            inspector.get_call_segment_from_frame(inspector.caller()),
-            inspector.caller_info()
-        )
+        trans_class.__init__(self)
 
     cls.__init__ = __init__
+    cls.__module__ = module
     return cls
 
 
@@ -77,7 +77,7 @@ def _wrap_lambda(fun):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
     become obsolete with python 3.11 (see _wrap_class). """
     # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
-    caller_frame = inspector.caller().frame
+    caller_frame = inspector.caller_frame()
     # get the source
     try:
         full_source = caller_frame.f_globals['_lf_source']
@@ -117,7 +117,7 @@ def _wrap_lambda(fun):
     if call is None:
         raise RuntimeError('Lambda not found.')
 
-    wrapper = FunctionTransform(fun, inspector.caller_info(), call)
+    wrapper = FunctionTransform(fun, inspector.CallInfo(), call)
     functools.update_wrapper(wrapper, fun)
     return wrapper
 

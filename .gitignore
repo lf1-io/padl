@@ -14,6 +14,7 @@ notebooks/.ipynb_checkpoints
 data
 EXPLAINED.md
 .ipynb_checkpoints/
+*.ipynb
 /*.ipynb
 
 # Linting report
