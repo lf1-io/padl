@@ -277,12 +277,12 @@ class TestFunctionTransform:
         assert self.transform_1.infer_apply(5) == 6
 
     def test_eval_apply(self):
-        out = list(self.transform_1.eval_apply([5, 6], flatten=False))
+        out = list(self.transform_1.eval_apply([5, 6]))
         assert len(out) == 2
         assert out[0] == 6
         assert out[1] == 7
 
-        out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}], flatten=False))
+        out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}]))
         assert len(out) == 2
         assert out[0] == 'hello'
         assert out[1] == 'dog'
