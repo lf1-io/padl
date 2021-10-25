@@ -26,7 +26,7 @@ _notset = _Notset()
 
 
 def _isinstance_of_namedtuple(arg):
-    """Check if input is instance of namedtuple"""
+    """Check if input *arg* is instance of namedtuple"""
     typ = type(arg)
     base = typ.__bases__
     if len(base) != 1 or base[0] != tuple:
@@ -41,7 +41,7 @@ class Transform:
     """Transform base class.
 
     :param call_info:
-    :param name: name of the transform
+    :param lf_name: name of the transform
     """
     _lf_stage = None
 
@@ -90,7 +90,7 @@ class Transform:
     def lf_post_load(self, path, i):
         """Method that is called on each transform after loading.
 
-        :param path: The save path.
+        :param path: The load path.
         :param i: Subtransform index.
         """
 
@@ -468,17 +468,31 @@ class Transform:
         return loader
 
     def infer_apply(self, arg):
-        """Call transform within the infer context"""
+        """Call transform within the infer context
+
+        :param arg: argument used to call transform
+        """
         with self.lf_set_stage('infer'), torch.no_grad():
             return self._lf_call_transform(arg)
 
     def eval_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
-        """Call transform within the eval context"""
+        """Call transform within the eval context
+
+        :param arg: argument used to call transform
+        :param loader_kwargs: key word arguments to pass to the dataloader
+        :param verbose: if *True* show a progress bar
+        :param flatten: if *True* flatten the output
+        """
         return self._lf_callyield(arg, 'eval', loader_kwargs=loader_kwargs,
                                   verbose=verbose, flatten=flatten)
 
     def train_apply(self, arg, loader_kwargs=None, verbose=False, flatten=False):
-        """Call transform within the train context"""
+        """Call transform within the train context
+
+        :param arg: argument used to call transform
+        :param loader_kwargs: key word arguments to pass to the dataloader
+        :param verbose: if *True* show a progress bar
+        :param flatten: if *True* flatten the output"""
         return self._lf_callyield(arg, 'train', loader_kwargs=loader_kwargs,
                                   verbose=verbose, flatten=flatten)
 
@@ -489,7 +503,7 @@ class AtomicTransform(Transform):
 
     :param call:
     :param call_info:
-    :param name: name of the transform
+    :param lf_name: name of the transform
     """
 
     def __init__(self, call, call_info=None, lf_name=None):
@@ -516,7 +530,7 @@ class FunctionTransform(AtomicTransform):
 
     :param function: function to call
     :param call_info:
-    :param name: name of the transform
+    :param lf_name: name of the transform
     :param call:
     """
     def __init__(self, function, call_info, lf_name=None, call=None):
@@ -534,6 +548,10 @@ class FunctionTransform(AtomicTransform):
 
 
 class ClassTransform(AtomicTransform):
+    """Class Transform
+
+    :param lf_name: name of the transform
+    """
     def __init__(self, lf_name=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo)
@@ -547,13 +565,23 @@ class ClassTransform(AtomicTransform):
 
 
 class TorchModuleTransform(ClassTransform):
+    """Torch Module Transform"""
+
     def lf_pre_save(self, path, i):
+        """
+        :param path: The save path.
+        :param i: Sublayer index.
+        """
         path = Path(path)
         checkpoint_path = path / f'{path.stem}_{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
     def lf_post_load(self, path, i):
+        """
+        :param path: The load path.
+        :param i: Sublayer index.
+        """
         path = Path(path)
         checkpoint_path = path / f'{path.stem}_{i}.pt'
         print('loading torch module from', checkpoint_path)
@@ -565,7 +593,7 @@ class CompoundTransform(Transform):
 
     :param transforms: list of transforms
     :param call_info:
-    :param name: name of CompoundTransform
+    :param lf_name: name of CompoundTransform
     :param lf_group:
     """
     op = NotImplemented
@@ -637,7 +665,7 @@ class CompoundTransform(Transform):
     def _flatten_list(cls, transform_list: List[Transform]):
         """Flatten *list_* such that members of *cls* are not nested.
 
-        :param list_: List of transforms.
+        :param transform_list: List of transforms.
         """
         list_flat = []
 
@@ -699,8 +727,9 @@ class Compose(CompoundTransform):
     Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
 
     :param transforms: List of transforms to compose.
-    :param flatten: If *True* flatten transforms -
-        Compose([Compose([a,b]), c]) becomes Compose([a, b, c])
+    :param call_info:
+    :param lf_name: name of the Compose transform
+    :param lf_group:
     :return: output from series of transforms
     """
     op = '>>'
@@ -803,8 +832,9 @@ class Rollout(CompoundTransform):
     Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
 
     :param transforms: List of transforms to rollout.
-    :param flatten: If *True* flatten transforms -
-        Rollout([Rollout([a,b]), c]) becomes Rollout([a, b, c])
+    :param call_info:
+    :param lf_name: name of the Rollout transform
+    :param lf_group:
     :return: namedtuple of outputs
     """
     op = '+'
@@ -845,7 +875,6 @@ class Rollout(CompoundTransform):
         return self._lf_preprocess
 
     def _lf_forward_part(self):
-        """Forward part"""
         # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
@@ -857,7 +886,6 @@ class Rollout(CompoundTransform):
 
     @property
     def lf_postprocess(self):
-        """Post process part"""
         if self._lf_postprocess is None:
             t_list = [x.lf_postprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
@@ -875,8 +903,9 @@ class Parallel(CompoundTransform):
     Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
 
     :param transforms: List of transforms to parallelize.
-    :param flatten: If *True* flatten transforms -
-        Parallel([Parallel([a,b]), c]) becomes Parallel([a, b, c])
+    :param call_info:
+    :param lf_name: name of the Parallel transform
+    :param lf_group:
     :return: namedtuple of outputs
     """
     op = '/'
