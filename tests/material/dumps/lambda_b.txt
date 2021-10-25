@@ -1,0 +1,16 @@
+from lf import trans
+
+
+CONST = 1
+
+
+def k(o):
+    return o * 7
+
+
+@trans
+def y(y):
+    return CONST + k(y)
+
+
+_lf_main = trans(lambda x: y(x))

@@ -117,7 +117,7 @@ def _wrap_lambda(fun):
     if call is None:
         raise RuntimeError('Lambda not found.')
 
-    wrapper = FunctionTransform(fun, inspector.CallInfo(), call)
+    wrapper = FunctionTransform(fun, inspector.CallInfo(), call=call)
     functools.update_wrapper(wrapper, fun)
     return wrapper
 

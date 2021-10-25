@@ -134,8 +134,7 @@ class Transform:
 
     def _lf_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
-        (in the scope where *self* was originally created).
-        """
+        (in the scope where *self* was originally created). """
         start_source = f'{name or "_lf_dummy"} = {self.lf_evaluable_repr()}'
         start_node = ast.parse(start_source)
         start_globals = {
@@ -640,6 +639,17 @@ class CompoundTransform(Transform):
             scopemap = {}
 
         start = self._lf_codegraph_startnode(name)
+
+        if self._lf_group:
+            (source, node), scope = thingfinder.find_in_scope('group', self._lf_call_info.scope)
+
+            groupnode = var2mod.CodeNode(
+                source=source,
+                ast_node=node,
+                globals_=[]
+            )
+            graph['group', scope] = groupnode
+            scopemap['group', scope] = scope
 
         if name is not None:
             assert scope is not None
