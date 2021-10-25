@@ -151,13 +151,15 @@ def get_source(filename: str):
 def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*. """
     for i in range(lineno):
-        block, lineno_in_block = get_surrounding_block(source, lineno - i)
+        try:
+            block, lineno_in_block = get_surrounding_block(source, lineno - i)
+        except ValueError:
+            continue
         try:
             return _get_statement_from_block(block, lineno_in_block + i)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
-
 
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
@@ -169,12 +171,24 @@ def _get_statement_from_block(block: str, lineno_in_block: int):
     return '\n'.join(stmts)
 
 
-def get_surrounding_block(source, lineno: int):
+def get_surrounding_block(source: str, lineno: int):
+    """Get the code block surrounding the line at *lineno* in *source*.
+
+    The code block surrounding a line is the largest block of lines with the same or larger
+    indentation as the line itself.
+
+    Raises a `ValueError` if the line at *lineno* is empty.
+
+    :param source: The source to extract the block from.
+    :param lineno: Number of the line for extracting the block.
+    :returns: A tuple containing the block itself and the line number of the target line
+        within the block.
+    """
     lines = source.split('\n')
     before, after = lines[:lineno-1], lines[lineno:]
     white = thingfinder._count_leading_whitespace(lines[lineno-1])
     if white is None:
-        return ''
+        raise ValueError('Line is empty.')
     block = [lines[lineno-1][white:]]
     lineno_in_block = 1
     while before:
