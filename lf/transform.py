@@ -323,22 +323,28 @@ class Transform:
                 output = batch
 
             if use_post:
-                # TODO: unbatch not needed anymore since it is part of the post transform (Issue 19)
-                # output = unbatch(output)
-                # output = [
-                #     post._lf_call_transform(output[i])
-                #     for i in range(len(output))
-                # ]
                 output = post._lf_call_transform(output, stage)
 
             if flatten:
-                # TODO Should we put the unbatch step inside of _yield_flatten_data?
-                # if not use_post:
-                #     output = unbatch(output)
-                yield from self._yield_flatten_data(output, verbose, pbar)
+                if not use_post:
+                    output = Unbatchify()(batch)
+                yield from self._lf_yield_flatten_data(output, verbose, pbar)
                 continue
 
             yield output
+
+    @staticmethod
+    def _lf_yield_flatten_data(batch, verbose, pbar):
+        """Yield from the flattened data.
+
+        :param batch: unbatched data type
+        :param verbose: If *true* show a progress bar.
+        :param pbar: tqdm progress bar
+        """
+        for datapoint in batch:
+            yield datapoint
+            if verbose:
+                pbar.update(1)
 
     @property
     def lf_device(self):
@@ -967,6 +973,58 @@ class Identity(ClassTransform):
 
     def __call__(self, args):
         return args
+
+
+class Unbatchify(ClassTransform):
+    """Remove batch dimension (inverse of Batchify).
+
+    :param dim: batching dimension
+    """
+
+    def __init__(self, dim=0, lf_name=None):
+        super().__init__(lf_name=lf_name)
+        self.dim = dim
+        self._lf_component = {'postprocess'}
+
+    def __call__(self, args):
+        assert self.lf_stage is not None,\
+            'Stage is not set, use infer_apply, eval_apply or train_apply'
+
+        if self.lf_stage != 'infer':
+            return args
+        if isinstance(args, tuple):
+            return tuple([self(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.squeeze(self.dim)
+
+        raise TypeError('only tensors and tuples of tensors recursively supported...')
+
+
+class Batchify(ClassTransform):
+    """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
+    tensors and, recursively, tuples thereof.
+
+    :param dim: batching dimension
+    """
+
+    def __init__(self, dim=0, lf_name=None):
+        super().__init__(lf_name=lf_name)
+        self.dim = dim
+        self._lf_component = {'preprocess'}
+
+    def __call__(self, args):
+        assert self.lf_stage is not None,\
+            'Stage is not set, use infer_apply, eval_apply or train_apply'
+
+        if self.lf_stage != 'infer':
+            return args
+        if type(args) in {tuple, list}:
+            return tuple([self(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.unsqueeze(self.dim)
+        if type(args) in [float, int]:
+            return torch.tensor([args])
+        raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
 def save(transform: Transform, path):

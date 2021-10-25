@@ -1,7 +1,7 @@
 import pytest
 import torch
 from lf import transform as lf, trans
-from lf.util_transforms import Batchify, Unbatchify
+from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
 
 
