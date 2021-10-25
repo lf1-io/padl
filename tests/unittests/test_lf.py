@@ -116,6 +116,12 @@ class TestRollout:
     def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
 
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(2) == (3, 4, 4)
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
+
     def test_context(self):
         assert self.transform_1.lf_stage is None
         with self.transform_1.lf_set_stage('train'):
@@ -201,7 +207,7 @@ class TestModel:
 
     def test_lf_preprocess(self):
         assert isinstance(self.model_1.lf_preprocess, lf.Parallel)
-        assert isinstance(self.model_2.lf_preprocess, lf.Parallel)
+        assert isinstance(self.model_2.lf_preprocess, lf.Rollout)
 
     def test_lf_forward(self):
         assert isinstance(self.model_1.lf_forward, lf.Parallel)
