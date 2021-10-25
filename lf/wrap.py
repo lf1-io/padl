@@ -58,7 +58,7 @@ def _wrap_class(cls):
         trans_class = AtomicTransform
 
     # make cls inherit from AtomicTransform
-    cls = type(cls.__name__, (cls, trans_class), {})
+    cls = type(cls.__name__, (trans_class, cls), {})
 
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):

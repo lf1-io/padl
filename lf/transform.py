@@ -272,9 +272,6 @@ class Transform:
     def lf_set_varname(self, val):
         self._lf_varname = val
 
-    def __call__(self, arg):
-        return NotImplementedError
-
     def _lf_call_transform(self, arg):
         """Call transform with possibility to pass multiple arguments"""
         signature_parameters = inspect.signature(self).parameters
@@ -510,6 +507,10 @@ class AtomicTransform(Transform):
                     if child_transform not in res:
                         res.append(child_transform)
         return res
+
+    def lf_bodystr(self):
+        body_msg = thingfinder.find(self.__class__.__name__)[0].split('trans\n')[-1]
+        return body_msg[:200] + ('  ...' if len(body_msg) > 200 else '')
 
 
 class FunctionTransform(AtomicTransform):
