@@ -291,7 +291,7 @@ class Transform:
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
-        if stage == 'eval':  # TODO: move to lf_set_stage?
+        if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
             torch_context = torch.no_grad()
         else:
             torch_context = contextlib.suppress()
@@ -478,8 +478,7 @@ class Transform:
 
         This expects a single argument and returns a single output.
         """
-        with self.lf_set_stage('infer'), torch.no_grad():
-            return self._lf_call_transform(arg)
+        return self._lf_call_transform(arg, stage='infer')
 
     def eval_apply(self, args: Iterable, loader_kwargs: Optional[dict] = None,
                    verbose: bool = False, flatten: bool = False):
