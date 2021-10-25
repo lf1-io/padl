@@ -626,11 +626,14 @@ class CompoundTransform(Transform):
             x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
             for x in self.transforms
         ]
-        return (
+        result = (
             '(\n    ' + ' ' * indent
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
+        if self._lf_group:
+            result = 'group' + result
+        return result
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
