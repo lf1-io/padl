@@ -328,7 +328,7 @@ class Transform:
         if use_preprocess:
             iterator = SimpleIterator(
                 args,
-                lambda *args: self.lf_preprocess.lf_to('cpu')._lf_call_transform(*args, stage)  # TODO: change device handling
+                lambda *args: self.lf_preprocess._lf_call_transform(*args, stage)
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
@@ -416,13 +416,6 @@ class Transform:
         :param device: device on which to map {'cpu', 'gpu'}
         """
         self._lf_device = device
-        # for item in self.__dict__:
-        #     obj_ = self._lf_getattribute_object(item)
-        #     if isinstance(obj_, Transform):
-        #         obj_.lf_to(device)
-        #     elif isinstance(obj_, list) and obj_ and isinstance(obj_[0], Transform):
-        #         for a_trans in obj_:
-        #             a_trans.lf_to(device)
         return self
 
     @property
@@ -800,13 +793,13 @@ class Compose(CompoundTransform):
     def _lf_list_of_forward_parts(self):
         """Accumulate all forward parts of the transforms"""
         ts_ = []
-        for a_trans, component in zip(self.transforms, self._lf_component_list):
+        for transform_, component in zip(self.transforms, self._lf_component_list):
             if 'forward' in component:
                 # TODO I don't think special case is needed anymore
                 if len(component) == 1:
-                    ts_.append(a_trans)
+                    ts_.append(transform_)
                 else:
-                    ts_.append(a_trans.lf_forward)
+                    ts_.append(transform_.lf_forward)
         return ts_
 
     def _lf_forward_part(self):
