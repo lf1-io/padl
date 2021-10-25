@@ -207,6 +207,15 @@ class TestModel:
     def test_lf_postprocess(self):
         assert isinstance(self.model_1.lf_postprocess, lf.Parallel)
 
+    def test_infer_apply(self):
+        # namedtuple(out_0=tensor(13), out_1=tensor(13))
+        assert self.model_1.infer_apply((5, 5)) == (13, 13)
+
+    def test_eval_apply(self):
+        # [namedtuple(out_0=tensor([13]), out_1=tensor([13])),
+        #  namedtuple(out_0=tensor([13]), out_1=tensor([13]))]
+        assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
+
 
 class TestFunctionTransform:
     @pytest.fixture(autouse=True, scope='class')
