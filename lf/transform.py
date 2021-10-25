@@ -771,8 +771,8 @@ class Compose(CompoundTransform):
     @staticmethod
     def _lf_add_format_to_str(name):
         res = '\33[32m        🠳  \33[0m\n'
-        res += '    ' + '\n\33[32m        🠳  \33[0m\n    '.join(
-            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\n\33[32m        🠳  \33[0m\n'.join(
+            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
         res += '\33[32m        🠳  \33[0m\n'
         return res
 
@@ -851,8 +851,8 @@ class Rollout(CompoundTransform):
     @staticmethod
     def _lf_add_format_to_str(name):
         res = '\33[32m        🠳  \33[0m\n'
-        res += '    ' + '\n\33[32m        ＋  \33[0m\n    '.join(
-            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\n\33[32m        ✚  \33[0m\n'.join(
+            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
         res += '\33[32m        🠳  \33[0m\n'
         return res
 
@@ -918,8 +918,8 @@ class Parallel(CompoundTransform):
     @staticmethod
     def _lf_add_format_to_str(name):
         res = '\33[32m        🠳  \33[0m\n'
-        res += '    ' + '\n\33[32m        ╱  \33[0m\n    '.join(
-            ['\33[1m' + x + '\33[0m' for x in name.split('\n')[:-1]]) + '\n'
+        res += '\n\33[32m        ╱  \33[0m\n'.join(
+            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
         res += '\33[32m        🠳  \33[0m\n'
         return res
 
