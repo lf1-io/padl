@@ -151,7 +151,10 @@ def get_source(filename: str):
 def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*. """
     for i in range(lineno):
-        block, lineno_in_block = get_surrounding_block(source, lineno - i)
+        try:
+            block, lineno_in_block = get_surrounding_block(source, lineno - i)
+        except ValueError:
+            continue
         try:
             return _get_statement_from_block(block, lineno_in_block + i)
         except SyntaxError:
@@ -174,7 +177,7 @@ def get_surrounding_block(source, lineno: int):
     before, after = lines[:lineno-1], lines[lineno:]
     white = thingfinder._count_leading_whitespace(lines[lineno-1])
     if white is None:
-        return ''
+        raise ValueError('Line is empty.')
     block = [lines[lineno-1][white:]]
     lineno_in_block = 1
     while before:
