@@ -66,6 +66,15 @@ class TestParallel:
         assert lf._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
+    def test_lf_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+
+    def test_lf_forward(self):
+        assert isinstance(self.transform_1.lf_forward, lf.Parallel)
+
+    def test_lf_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+
     def test_context(self):
         assert self.transform_1.lf_stage is None
         with self.transform_1.lf_set_stage('train'):
