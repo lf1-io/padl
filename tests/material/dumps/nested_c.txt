@@ -1,0 +1,40 @@
+from lf import trans
+
+
+a = 1
+b = 2
+CONST = 1
+
+
+def k(o):
+    return o * 7
+
+
+@trans
+def x(y):
+    return CONST + 1
+
+
+@trans
+def y(y):
+    return CONST + k(y)
+
+
+c = x
+
+
+@trans
+class MyClassTransform:
+        def __init__(self, a, b, c):
+            self.a = a
+            self.b = b
+            self.c = c
+
+        def calculate(self, input_):
+            return self.a * self.b + input_
+
+        def __call__(self, input_):
+            return self.calculate(input_) + y(input_) + self.c(input_)
+
+
+_lf_main = MyClassTransform(a, b, c)
