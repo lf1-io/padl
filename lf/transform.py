@@ -297,9 +297,6 @@ class Transform:
         use_preprocess = not preprocess.lf_is_identity
         use_forward = not forward.lf_is_identity
         use_post = not post.lf_is_identity
-        print(f'preprocess: {preprocess}')
-        print(f'forward: {forward}')
-        print(f'post: {post}')
 
         if use_preprocess:
             iterator = SimpleIterator(
