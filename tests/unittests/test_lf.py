@@ -306,3 +306,8 @@ class TestFunctionTransform:
     def test_all_transforms(self):
         all_ = trans_with_globals.lf_all_transforms()
         assert set(all_) == set([plus, times_two, trans_with_globals])
+
+
+def test_name():
+    assert (plus_one - 'p1')._lf_name == 'p1'
+    assert plus_one._lf_name is None

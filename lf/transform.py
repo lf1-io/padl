@@ -1,5 +1,6 @@
 """The Transform class and some of its children. """
 import ast
+from copy import copy
 from collections import Counter, namedtuple
 import contextlib
 import inspect
@@ -98,18 +99,15 @@ class Transform:
         """
         return Parallel([self, other])
 
-    def __sub__(self, transform_name: str) -> "Transform":
+    def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
 
         Example:
             named_t = t - 'rescale image'
         """
-        return self.lf_clone(lf_name=transform_name)
-
-    def lf_clone(self, **kwargs) -> "Transform":
-        """Clone the transform."""
-        # pylint: disable=unused-argument,no-self-use
-        return NotImplemented
+        named_copy = copy(self)
+        named_copy._lf_name = name
+        return named_copy
 
     def lf_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
@@ -284,9 +282,6 @@ class Transform:
 
     def _lf_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
         self._lf_varname = val
-
-    def __call__(self, arg):  # TODO: should this default to eval_apply?
-        return NotImplementedError
 
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
@@ -643,11 +638,14 @@ class CompoundTransform(Transform):
             x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
             for x in self.transforms
         ]
-        return (
+        result = (
             '(\n    ' + ' ' * indent
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
+        if self._lf_group:
+            result = 'group' + result
+        return result
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
