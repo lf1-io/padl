@@ -180,7 +180,18 @@ class TestCompose:
         assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
 
     def test_train_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
+        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
+        for batch in list(self.transform_5.eval_apply(
+            [1, 2, 1, 2],
+            loader_kwargs={'batch_size': 2},
+            flatten=False)
+        ):
+            assert torch.all(batch == torch.tensor([9, 13]))
+        assert list(self.transform_5.train_apply(
+            [1, 2, 1, 2],
+            loader_kwargs={'batch_size': 2},
+            flatten=True)
+        ) == [torch.tensor([9]), torch.tensor([13]), torch.tensor([9]), torch.tensor([13])]
 
     def test_context(self):
         assert self.transform_1.lf_stage is None
