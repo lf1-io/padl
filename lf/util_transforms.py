@@ -12,6 +12,7 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, lf_name=None):
         super().__init__(lf_name=lf_name)
         self.dim = dim
+        self._lf_component = {'postprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
@@ -37,6 +38,7 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0, lf_name=None):
         super().__init__(lf_name=lf_name)
         self.dim = dim
+        self._lf_component = {'preprocess'}
 
     def __call__(self, args):
         assert self.lf_stage is not None,\
