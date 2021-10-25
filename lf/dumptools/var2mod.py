@@ -286,8 +286,8 @@ def _topsort(graph):
 
 # sort precedence
 _PRECEDENCE = {
-    ast.Import: lambda _k, v: '1' + v[2].names[0].name.lower(),
-    ast.ImportFrom: lambda _k, v: '1' + v[2].module.lower(),
+    ast.Import: lambda k, v: '1' + v[2].names[0].name.lower() + k.lower(),
+    ast.ImportFrom: lambda k, v: '1' + v[2].module.lower() + k.lower(),
     ast.Assign: lambda k, _v: '2' + k.lower()
 }
 
