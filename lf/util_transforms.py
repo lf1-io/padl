@@ -1,6 +1,6 @@
 import torch
 
-from lf.transform import ClassTransform
+from lf.transform import Transform, ClassTransform
 
 
 class Unbatchify(ClassTransform):
@@ -14,10 +14,10 @@ class Unbatchify(ClassTransform):
         self.dim = dim
 
     def __call__(self, args):
-        assert self.lf_stage is not None,\
+        assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if self.lf_stage != 'infer':
+        if Transform.lf_stage != 'infer':
             return args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
@@ -39,10 +39,10 @@ class Batchify(ClassTransform):
         self.dim = dim
 
     def __call__(self, args):
-        assert self.lf_stage is not None,\
+        assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if self.lf_stage != 'infer':
+        if Transform.lf_stage != 'infer':
             return args
         if type(args) in {tuple, list}:
             return tuple([self(x) for x in args])
