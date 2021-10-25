@@ -237,9 +237,10 @@ class TestModel:
         )
         request.cls.model_1 = (transform_1 / transform_2)
         request.cls.model_2 = (transform_1 + transform_2)
+        # TODO Should this continue to work, or should we enforce needing two Batchify's?
         request.cls.model_3 = (
             plus_one + times_two
-            >> Batchify() / Batchify()
+            >> Batchify()  # / Batchify()
             >> plus_one / times_two
         )
 

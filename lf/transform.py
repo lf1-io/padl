@@ -1008,7 +1008,7 @@ class Unbatchify(ClassTransform):
 
         if Transform.lf_stage != 'infer':
             return args
-        if isinstance(args, tuple):
+        if isinstance(args, (tuple, type(namedtuple))):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.squeeze(self.dim)
@@ -1034,11 +1034,11 @@ class Batchify(ClassTransform):
 
         if Transform.lf_stage != 'infer':
             return args
-        if type(args) in {tuple, list}:
+        if isinstance(args, (tuple, list, type(namedtuple))):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
-        if type(args) in [float, int]:
+        if isinstance(args, (float, int)):
             return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
