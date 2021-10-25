@@ -1,4 +1,5 @@
 import pytest
+import torch
 from lf import transform as lf, trans
 from lf.util_transforms import Batchify, Unbatchify
 from collections import namedtuple
@@ -160,6 +161,13 @@ class TestCompose:
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
+        assert self.transform_5.infer_apply(1) == torch.tensor(5)
+
+    def test_eval_apply(self):
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([5]), torch.tensor([5])]
+
+    def test_train_apply(self):
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([5]), torch.tensor([5])]
 
     def test_context(self):
         assert self.transform_1.lf_stage is None
@@ -168,6 +176,35 @@ class TestCompose:
             assert self.transform_1.lf_preprocess.lf_stage == 'eval'
             assert self.transform_1.lf_forward.lf_stage == 'eval'
             assert self.transform_1.lf_postprocess.lf_stage == 'eval'
+
+
+class TestModel:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        transform_1 = (
+            plus_one
+            >> Batchify()
+            >> times_two
+            >> Unbatchify()
+            >> plus_one
+        )
+        transform_2 = (
+            plus_one
+            >> Batchify()
+            >> times_two
+            >> Unbatchify()
+            >> plus_one
+        )
+        request.cls.model_1 = (transform_1 / transform_2)
+
+    def test_lf_preprocess(self):
+        assert isinstance(self.model_1.lf_preprocess, lf.Parallel)
+
+    def test_lf_forward(self):
+        assert isinstance(self.model_1.lf_forward, lf.Parallel)
+
+    def test_lf_postprocess(self):
+        assert isinstance(self.model_1.lf_postprocess, lf.Parallel)
 
 
 class TestFunctionTransform:

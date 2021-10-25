@@ -267,7 +267,6 @@ class Transform:
 
     def _lf_call_transform(self, arg, stage=None):
         """Call transform with possibility to pass multiple arguments"""
-        print('stage', stage)
 
         if stage == 'eval':
             torch_context = torch.no_grad()
@@ -277,7 +276,6 @@ class Transform:
         signature_parameters = inspect.signature(self).parameters
 
         with self.lf_set_stage(stage), torch_context:
-            print('in', self.lf_stage)
             if len(signature_parameters) == 1:
                 return self(arg)
             return self(*arg)
@@ -297,8 +295,11 @@ class Transform:
         post = self.lf_postprocess
 
         use_preprocess = not preprocess.lf_is_identity
-        use_post = not post.lf_is_identity
         use_forward = not forward.lf_is_identity
+        use_post = not post.lf_is_identity
+        print(f'preprocess: {preprocess}')
+        print(f'forward: {forward}')
+        print(f'post: {post}')
 
         if use_preprocess:
             iterator = SimpleIterator(
@@ -796,14 +797,15 @@ class Compose(CompoundTransform):
     @property
     def lf_preprocess(self):
         if self._lf_preprocess is None:
-            t = [
-                t.lf_preprocess for t, comp in zip(self.transforms, self._lf_component_list) if 'preprocess' in comp
+            t_list = [
+                t for t, comp in zip(self.transforms, self._lf_component_list) if 'preprocess' in comp
             ]
+            print(f't_list: {t_list}')
 
-            if len(t) == 1:
-                self._lf_preprocess = t[0].lf_preprocess
-            elif t:
-                self._lf_preprocess = Compose(t, call_info=self._lf_call_info)
+            if len(t_list) == 1:
+                self._lf_preprocess = t_list[0].lf_preprocess
+            elif t_list:
+                self._lf_preprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_preprocess = Identity()
 
@@ -812,14 +814,14 @@ class Compose(CompoundTransform):
     @property
     def lf_postprocess(self):
         if self._lf_postprocess is None:
-            t = [
+            t_list = [
                 t for t, d in zip(self.transforms, self._lf_component_list) if 'postprocess' in d
             ]
 
-            if len(t) == 1:
-                self._lf_postprocess = t[0].lf_postprocess
-            elif t:
-                self._lf_postprocess = Compose(t, call_info=self._lf_call_info)
+            if len(t_list) == 1:
+                self._lf_postprocess = t_list[0].lf_postprocess
+            elif t_list:
+                self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_postprocess = Identity()
 
