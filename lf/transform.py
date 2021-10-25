@@ -350,23 +350,10 @@ class Transform:
             if flatten:
                 if not use_post:
                     output = Unbatchify()(batch)
-                yield from self._lf_yield_flatten_data(output, verbose, pbar)
+                yield from output
                 continue
 
             yield output
-
-    @staticmethod
-    def _lf_yield_flatten_data(batch, verbose, pbar):
-        """Yield from the flattened data.
-
-        :param batch: unbatched data type
-        :param verbose: If *true* show a progress bar.
-        :param pbar: tqdm progress bar
-        """
-        for datapoint in batch:
-            yield datapoint
-            if verbose:
-                pbar.update(1)
 
     @property
     def lf_device(self) -> str:  # TODO: remove?
@@ -468,12 +455,12 @@ class Transform:
         )
         return loader
 
-    def infer_apply(self, args):  # TODO: *arg? **kwarg?
+    def infer_apply(self, arg):  # TODO: *arg? **kwarg?
         """Call transform within the infer context.
 
         This expects a single argument and returns a single output.
         """
-        return self._lf_call_transform(args, stage='infer')
+        return self._lf_call_transform(arg, stage='infer')
 
     def eval_apply(self, args: Iterable, loader_kwargs: Optional[dict] = None,
                    verbose: bool = False, flatten: bool = False):
