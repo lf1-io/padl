@@ -129,6 +129,15 @@ class TestCompose:
     def test_output(self):
         assert self.transform_4(1) == 4
 
+    def test_lf_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+
+    def test_lf_forward(self):
+        assert isinstance(self.transform_1.lf_forward, lf.Compose)
+
+    def test_lf_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
 
@@ -147,10 +156,13 @@ class TestFunctionTransform:
         request.cls.transform_1 = plus_one
         request.cls.transform_2 = get_info
 
-    def test_preprocess(self):
+    def test_lf_preprocess(self):
         assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
 
-    def test_postprocess(self):
+    def test_lf_forward(self):
+        assert isinstance(self.transform_1.lf_forward, lf.FunctionTransform)
+
+    def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
 
     def test_infer_apply(self):
