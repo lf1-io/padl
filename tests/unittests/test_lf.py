@@ -1,5 +1,6 @@
 import pytest
 from lf import transform as lf, trans
+from lf.util_transforms import Batchify, Unbatchify
 from collections import namedtuple
 
 
@@ -130,6 +131,13 @@ class TestCompose:
         request.cls.transform_2 = plus_one >> (times_two >> times_two)
         request.cls.transform_3 = plus_one >> times_two >> times_two
         request.cls.transform_4 = plus_one >> plus_one >> plus_one
+        request.cls.transform_5 = (
+            plus_one
+            >> Batchify()
+            >> times_two
+            >> Unbatchify()
+            >> plus_one
+        )
 
     def test_associative(self):
         in_ = 123
@@ -140,12 +148,15 @@ class TestCompose:
 
     def test_lf_preprocess(self):
         assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+        assert isinstance(self.transform_5.lf_preprocess, lf.Compose)
 
     def test_lf_forward(self):
         assert isinstance(self.transform_1.lf_forward, lf.Compose)
+        assert isinstance(self.transform_5.lf_forward, lf.FunctionTransform)
 
     def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+        assert isinstance(self.transform_5.lf_postprocess, lf.Compose)
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
