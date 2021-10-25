@@ -259,7 +259,6 @@ class TestModel:
     def test_lf_forward(self):
         assert isinstance(self.model_1.lf_forward, lf.Parallel)
         assert isinstance(self.model_2.lf_forward, lf.Parallel)
-        # assert isinstance(self.model_4.lf_forward, lf.Identity)
 
     def test_lf_postprocess(self):
         assert isinstance(self.model_1.lf_postprocess, lf.Parallel)

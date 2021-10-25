@@ -455,41 +455,41 @@ class Transform:
         )
         return loader
 
-    def infer_apply(self, arg):  # TODO: *arg? **kwarg?
+    def infer_apply(self, input):  # TODO: *arg? **kwarg?
         """Call transform within the infer context.
 
         This expects a single argument and returns a single output.
         """
-        return self._lf_call_transform(arg, stage='infer')
+        return self._lf_call_transform(input, stage='infer')
 
-    def eval_apply(self, args: Iterable, loader_kwargs: Optional[dict] = None,
+    def eval_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
                    verbose: bool = False, flatten: bool = False):
         """Call transform within the eval context.
 
         This expects an iterable input and returns a generator.
 
-        :param args: The arguments - an iterable (e.g. list) of inputs.
+        :param inputs: The arguments - an iterable (e.g. list) of inputs.
         :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(args, 'eval', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'eval', loader_kwargs=loader_kwargs,
                                   verbose=verbose, flatten=flatten)
 
-    def train_apply(self, args: Iterable, loader_kwargs: Optional[dict] = None,
+    def train_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
                     verbose: bool = False, flatten: bool = False):
         """Call transform within the train context.
 
         This expects an iterable input and returns a generator.
 
-        :param args: The arguments - an iterable (e.g. list) of inputs.
+        :param inputs: The arguments - an iterable (e.g. list) of inputs.
         :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(args, 'train', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'train', loader_kwargs=loader_kwargs,
                                   verbose=verbose, flatten=flatten)
 
 
