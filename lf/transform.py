@@ -871,7 +871,7 @@ class Rollout(CompoundTransform):
             t_list = [x.lf_preprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_preprocess = Identity()
-            elif len(list(self._lf_component)) >= 2 and 'postprocess' in self._lf_component:
+            elif len(list(self._lf_component)) >= 2 and 'preprocess' in self._lf_component:
                 self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_preprocess = Rollout(t_list, call_info=self._lf_call_info)
