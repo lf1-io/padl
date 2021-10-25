@@ -1008,7 +1008,7 @@ class Unbatchify(ClassTransform):
 
         if Transform.lf_stage != 'infer':
             return args
-        if isinstance(args, (tuple, type(namedtuple))):
+        if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.squeeze(self.dim)
@@ -1034,7 +1034,7 @@ class Batchify(ClassTransform):
 
         if Transform.lf_stage != 'infer':
             return args
-        if isinstance(args, (tuple, list, type(namedtuple))):
+        if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
