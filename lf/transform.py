@@ -773,26 +773,21 @@ class Compose(CompoundTransform):
     #     # return len(self.trans_list[0])
     #     return len(self.transforms)
 
-    def _lf_list_of_forward_parts(self):
-        """Accumulate all forward parts of the transforms"""
-        ts_ = []
-        for transform_, component in zip(self.transforms, self._lf_component_list):
-            if 'forward' in component:
-                if len(component) == 1:
-                    ts_.append(transform_)
-                else:
-                    ts_.append(transform_.lf_forward)
-        return ts_
-
     def _lf_forward_part(self):
         """Forward part of transforms"""
         if self._lf_forward is None:
-            ts_ = self._lf_list_of_forward_parts()
+            t_list = []
+            for transform_, component in zip(self.transforms, self._lf_component_list):
+                if 'forward' in component:
+                    if len(component) == 1:
+                        t_list.append(transform_)
+                    else:
+                        t_list.append(transform_.lf_forward)
 
-            if len(ts_) == 1:
-                self._lf_forward = ts_[0]
-            elif ts_:
-                self._lf_forward = Compose(ts_, call_info=self._lf_call_info)
+            if len(t_list) == 1:
+                self._lf_forward = t_list[0]
+            elif t_list:
+                self._lf_forward = Compose(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_forward = Identity()
 
