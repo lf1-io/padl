@@ -185,13 +185,14 @@ class TestCompose:
         assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
 
     def test_train_apply(self):
+        # default
         assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
-        for batch in list(self.transform_5.eval_apply(
-            [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
-            flatten=False)
+        # loader kwargs
+        for batch in list(self.transform_5.train_apply(
+            [1, 2, 1, 2], loader_kwargs={'batch_size': 2})
         ):
             assert torch.all(batch == torch.tensor([9, 13]))
+        # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             loader_kwargs={'batch_size': 2},
