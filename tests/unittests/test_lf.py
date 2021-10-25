@@ -136,6 +136,7 @@ class TestCompose:
             plus_one
             >> Batchify()
             >> times_two
+            >> times_two
             >> Unbatchify()
             >> plus_one
         )
@@ -153,7 +154,7 @@ class TestCompose:
 
     def test_lf_forward(self):
         assert isinstance(self.transform_1.lf_forward, lf.Compose)
-        assert isinstance(self.transform_5.lf_forward, lf.FunctionTransform)
+        assert isinstance(self.transform_5.lf_forward, lf.Compose)
 
     def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
@@ -161,13 +162,13 @@ class TestCompose:
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
-        assert self.transform_5.infer_apply(1) == torch.tensor(5)
+        assert self.transform_5.infer_apply(1) == torch.tensor(9)
 
     def test_eval_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([5]), torch.tensor([5])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
 
     def test_train_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([5]), torch.tensor([5])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
 
     def test_context(self):
         assert self.transform_1.lf_stage is None

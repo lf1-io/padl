@@ -773,7 +773,7 @@ class Compose(CompoundTransform):
         ts_ = []
         for a_trans, component in zip(self.transforms, self._lf_component_list):
             if 'forward' in component:
-                # TODO Why is there a special case here?
+                # TODO I don't think special case is needed anymore
                 if len(component) == 1:
                     ts_.append(a_trans)
                 else:
@@ -800,9 +800,9 @@ class Compose(CompoundTransform):
             t_list = [
                 t for t, comp in zip(self.transforms, self._lf_component_list) if 'preprocess' in comp
             ]
-            print(f't_list: {t_list}')
 
             if len(t_list) == 1:
+                # TODO Test this line, I think this will cause an error
                 self._lf_preprocess = t_list[0].lf_preprocess
             elif t_list:
                 self._lf_preprocess = Compose(t_list, call_info=self._lf_call_info)
@@ -815,10 +815,11 @@ class Compose(CompoundTransform):
     def lf_postprocess(self):
         if self._lf_postprocess is None:
             t_list = [
-                t for t, d in zip(self.transforms, self._lf_component_list) if 'postprocess' in d
+                t for t, comp in zip(self.transforms, self._lf_component_list) if 'postprocess' in comp
             ]
 
             if len(t_list) == 1:
+                # TODO Test this line, I think this will cause an error
                 self._lf_postprocess = t_list[0].lf_postprocess
             elif t_list:
                 self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
@@ -868,7 +869,6 @@ class Rollout(CompoundTransform):
     def lf_preprocess(self):
         if self._lf_preprocess is None:
             t_list = [x.lf_preprocess for x in self.transforms]
-            print(t_list)
             if all([isinstance(t, Identity) for t in t_list]):
                 self._lf_preprocess = Identity()
             elif len(list(self._lf_component)) >= 2 and 'postprocess' in self._lf_component:
