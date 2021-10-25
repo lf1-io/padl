@@ -613,7 +613,6 @@ class CompoundTransform(Transform):
         transforms = self._flatten_list(transforms)
         self.transforms = transforms
 
-        # self._lf_component_list = None
         self._lf_component_list = [t.lf_component for t in self.transforms]
         try:
             self._lf_component = set.union(*self._lf_component_list)
@@ -779,7 +778,6 @@ class Compose(CompoundTransform):
         ts_ = []
         for transform_, component in zip(self.transforms, self._lf_component_list):
             if 'forward' in component:
-                # TODO I don't think special case is needed anymore
                 if len(component) == 1:
                     ts_.append(transform_)
                 else:
@@ -803,9 +801,13 @@ class Compose(CompoundTransform):
     @property
     def lf_preprocess(self):
         if self._lf_preprocess is None:
-            t_list = [
-                t for t, comp in zip(self.transforms, self._lf_component_list) if 'preprocess' in comp
-            ]
+            t_list = []
+            for transform_, component in zip(self.transforms, self._lf_component_list):
+                if 'preprocess' in component:
+                    if len(component) == 1:
+                        t_list.append(transform_)
+                    else:
+                        t_list.append(transform_.lf_preprocess)
 
             if len(t_list) == 1:
                 # TODO Test this line, I think this will cause an error
@@ -820,9 +822,13 @@ class Compose(CompoundTransform):
     @property
     def lf_postprocess(self):
         if self._lf_postprocess is None:
-            t_list = [
-                t for t, comp in zip(self.transforms, self._lf_component_list) if 'postprocess' in comp
-            ]
+            t_list = []
+            for transform_, component in zip(self.transforms, self._lf_component_list):
+                if 'postprocess' in component:
+                    if len(component) == 1:
+                        t_list.append(transform_)
+                    else:
+                        t_list.append(transform_.lf_postprocess)
 
             if len(t_list) == 1:
                 # TODO Test this line, I think this will cause an error
@@ -947,7 +953,10 @@ class Parallel(CompoundTransform):
     def _lf_forward_part(self):
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
-            self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_forward
 
     @property

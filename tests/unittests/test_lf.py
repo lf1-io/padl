@@ -1,6 +1,6 @@
 import pytest
 import torch
-from lf import transform as lf, trans
+from lf import transform as lf, trans, Identity
 from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
 
@@ -239,31 +239,44 @@ class TestModel:
         request.cls.model_2 = (transform_1 + transform_2)
         request.cls.model_3 = (
             plus_one + times_two
-            >> Batchify()  # / Batchify()
+            >> plus_one / Batchify()
+            >> Batchify() / times_two
+        )
+        request.cls.model_4 = (
+            plus_one + times_two
+            >> Batchify()
+            # Testing if lf_forward is Identity() and not (Identity(), Identity())
+            >> Identity() / Identity()
+            >> Unbatchify()
             >> plus_one / times_two
         )
 
     def test_lf_preprocess(self):
         assert isinstance(self.model_1.lf_preprocess, lf.Parallel)
         assert isinstance(self.model_2.lf_preprocess, lf.Rollout)
+        assert isinstance(self.model_4.lf_preprocess, lf.Compose)
 
     def test_lf_forward(self):
         assert isinstance(self.model_1.lf_forward, lf.Parallel)
         assert isinstance(self.model_2.lf_forward, lf.Parallel)
+        # assert isinstance(self.model_4.lf_forward, lf.Identity)
 
     def test_lf_postprocess(self):
         assert isinstance(self.model_1.lf_postprocess, lf.Parallel)
         assert isinstance(self.model_2.lf_postprocess, lf.Parallel)
+        assert isinstance(self.model_4.lf_postprocess, lf.Compose)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
         assert self.model_2.infer_apply(5) == (13, 13)
         assert self.model_3.infer_apply(5) == (7, 20)
+        assert self.model_4.infer_apply(5) == (7, 20)
 
     def test_eval_apply(self):
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
         assert list(self.model_2.eval_apply([5, 5])) == [(13, 13), (13, 13)]
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
+        assert list(self.model_4.eval_apply([5, 6])) == [(7, 20), (8, 24)]
 
 
 class TestFunctionTransform:
