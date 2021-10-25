@@ -244,6 +244,12 @@ class Transform:
         res += '\33[32m        🠳  \33[0m\n'
         return res
 
+    def _lf_compact_name(self):
+        if isinstance(self, CompoundTransform):
+            return self.lf_bodystr(is_child=True)
+        else:
+            return self.lf_shortname(is_child=True)
+
     def lf_repr(self, indent=0):
         top_message = self.lf_shortname()
         bottom_message = self.lf_bodystr()
@@ -599,13 +605,13 @@ class CompoundTransform(Transform):
             varname = transform.lf_varname()
             transform._lf_build_codegraph(graph, scopemap, varname,
                                           self._lf_call_info.scope)
-
         return graph, scopemap
 
-    def lf_bodystr(self):
+    def lf_bodystr(self, is_child=False):
         body_str = ''
+        sep = f' {self.op} ' if is_child else '\n'
         for i, subtrans in enumerate(self.transforms):
-            body_str += subtrans.lf_shortname(is_child=True) + '\n'
+            body_str += subtrans._lf_compact_name() + sep
         return body_str
 
     ''' 
