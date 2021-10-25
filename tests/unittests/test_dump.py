@@ -1,4 +1,4 @@
-from lf import trans
+from lf import trans, group
 
 
 CONST = 1
@@ -57,3 +57,10 @@ def test_compound_dump_a():
 
 def test_compound_dump_b():
     assert c_b.lf_dumps() == read_dump('compound_b')
+
+
+g_a = x + group(y + x + x)
+
+
+def test_grouped_dump_a():
+    assert g_a.lf_dumps() == read_dump('grouped_a')
