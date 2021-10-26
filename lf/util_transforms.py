@@ -12,29 +12,26 @@ class IfInStage(BuiltinTransform):
     def __init__(self, if_, target_stage, else_=None):
 
         super().__init__('lf.IfInStage()')
+
+        assert target_stage in ('train', 'eval', 'infer'), "Target stage can only be train, " \
+                                                           "eval or infer"
+
         if else_ is None:
             else_ = Identity()
+
         self.if_ = if_
         self.else_ = else_
         self.target_stage = target_stage
 
         self._lf_component = set.union(*[t.lf_component for t in [self.if_, self.else_]])
 
-    @property
-    def lf_has_stage_switch(self):
-        return True
-
     def __call__(self, *args):
+        assert Transform.lf_stage is not None,\
+            'Stage is not set, use infer_apply, eval_apply or train_apply'
+
         if Transform.lf_stage == self.target_stage:
             return self.if_(*args)
         return self.else_(*args)
-
-    def repr(self):
-        lines = ['If{}{}:'.format(self.target_stage[0].upper(), self.target_stage[1:])]
-        lines.extend(['    ' + x for x in self.if_.repr().split('\n')])
-        lines.append('Else:')
-        lines.extend(['    ' + x for x in self.else_.repr().split('\n')])
-        return '\n'.join(lines)
 
     @property
     def lf_preprocess(self):
