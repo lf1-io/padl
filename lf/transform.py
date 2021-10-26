@@ -1115,9 +1115,9 @@ class Batchify(BuiltinTransform):
         self.dim = dim
         self._lf_component = {'preprocess'}
 
-    def _infer_move_to_device(self, args):
+    def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
-            return tuple([self._infer_move_to_device(x) for x in args])
+            return tuple([self._move_to_device(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.to(self.lf_device)
         return args
@@ -1127,7 +1127,7 @@ class Batchify(BuiltinTransform):
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
         if Transform.lf_stage != 'infer':
-            return self._infer_move_to_device(args)
+            return self._move_to_device(args)
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
