@@ -59,7 +59,6 @@ class Transform:
         self._lf_name = lf_name
         self._lf_component = {'forward'}
         self._lf_device = 'gpu'
-        self.args = {'arg_number_1': 649, 'arg_number_2': 'hola', 'arg_number_3': 'I hope this does not appear'}
         self._lf_layers = None
 
     @property
@@ -250,23 +249,15 @@ class Transform:
             return t + end
         return t + f'[{varname}]' + end
 
-    def lf_bodystr(self, ignore_args=['arg_number_3']):
-        #if self.__lf_name is not None:
-        #    return f'{type(self).__name__}[{self.lf_name}]'
-        a_str = f'{self.__class__.__name__}'
-        args = [
-            (k, str(v)[:20] + ('...' if len(str(v)) > 20 else ''))
-            for k, v in self.args.items() if k not in ignore_args
-        ]
-        a_str += '(' + ', '.join(f'{k}={v}' for k, v in args) + ')'
-        return a_str
-
     @staticmethod
     def _lf_add_format_to_str(name):
         res = '\33[32m        🠳  \33[0m\n'
         res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
         res += '\33[32m        🠳  \33[0m\n'
         return res
+
+    def lf_bodystr(self):
+        return NotImplemented
 
     def _lf_compact_name(self):
         if isinstance(self, CompoundTransform):
@@ -696,11 +687,15 @@ class CompoundTransform(Transform):
         return graph, scopemap
 
     def lf_bodystr(self, is_child=False):
-        body_str = ''
         sep = f' {self.op} ' if is_child else '\n'
-        for i, subtrans in enumerate(self.transforms):
-            body_str += subtrans._lf_compact_name() + sep
-        return body_str
+        return sep.join(t._lf_compact_name() for t in self.transforms)
+
+    def _lf_add_format_to_str(self, name):
+        res = '\33[32m        🠳  \33[0m\n'
+        res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
+            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
+        res += '\33[32m        🠳  \33[0m\n'
+        return res
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
@@ -774,6 +769,7 @@ class Compose(CompoundTransform):
     :return: output from series of transforms
     """
     op = '>>'
+    display_op = '🠳'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -869,14 +865,6 @@ class Compose(CompoundTransform):
                 self._lf_postprocess = Identity()
         return self._lf_postprocess
 
-    @staticmethod
-    def _lf_add_format_to_str(name):
-        res = '\33[32m        🠳  \33[0m\n'
-        res += '\n\33[32m        🠳  \33[0m\n'.join(
-            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
-        res += '\33[32m        🠳  \33[0m\n'
-        return res
-
 
 class Rollout(CompoundTransform):
     """Apply a list of transform to same input and get tuple output
@@ -890,6 +878,7 @@ class Rollout(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '+'
+    display_op = '✚'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -946,14 +935,6 @@ class Rollout(CompoundTransform):
                 self._lf_postprocess = Rollout(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
 
-    @staticmethod
-    def _lf_add_format_to_str(name):
-        res = '\33[32m        🠳  \33[0m\n'
-        res += '\n\33[32m        ✚  \33[0m\n'.join(
-            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
-        res += '\33[32m        🠳  \33[0m\n'
-        return res
-
 
 class Parallel(CompoundTransform):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
@@ -967,6 +948,7 @@ class Parallel(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '/'
+    display_op = '╱'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -1013,14 +995,6 @@ class Parallel(CompoundTransform):
             else:
                 self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
         return self._lf_postprocess
-
-    @staticmethod
-    def _lf_add_format_to_str(name):
-        res = '\33[32m        🠳  \33[0m\n'
-        res += '\n\33[32m        ╱  \33[0m\n'.join(
-            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n')[:-1])]) + '\n'
-        res += '\33[32m        🠳  \33[0m\n'
-        return res
 
 
 class BuiltinTransform(AtomicTransform):
