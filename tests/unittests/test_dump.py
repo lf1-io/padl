@@ -92,7 +92,8 @@ def test_dump_b():
 
 
 def test_dump_class_a():
-    MyClassTransform(1, 2, x).lf_dumps() == read_dump('class_a')
+    t = MyClassTransform(1, 2, x)
+    assert t.lf_dumps() == read_dump('class_a')
 
 
 lambda_a = trans(lambda x: x)
