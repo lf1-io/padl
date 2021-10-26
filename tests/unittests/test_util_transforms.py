@@ -31,3 +31,8 @@ class TestIfInStage:
         assert list(self.transform_1.eval_apply([1, 2])) == [3, 4]
         assert list(self.transform_2.eval_apply([1, 2])) == [4, 6]
         assert list(self.transform_3.eval_apply([1, 2])) == [2, 3]
+
+    def test_train_apply(self):
+        assert list(self.transform_1.train_apply([1, 2])) == [4, 6]
+        assert list(self.transform_2.train_apply([1, 2])) == [2, 3]
+        assert list(self.transform_3.train_apply([1, 2])) == [2, 3]
