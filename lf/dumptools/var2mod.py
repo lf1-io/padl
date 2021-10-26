@@ -346,6 +346,20 @@ class CodeNode:
     globals_: set
     ast_node: ast.AST
 
+    @classmethod
+    def from_source(cls, source, scope):
+        node = ast.parse(source).body[0]
+        globals_ = {
+            (var, scope)
+            for var in find_globals(node)
+        }
+
+        return cls(
+            source=source,
+            ast_node=node,
+            globals_=globals_
+        )
+
 
 def dumps_graph(graph):
     sorted_ = _sort(graph)

@@ -241,7 +241,6 @@ class Scope:
         # ...
         values, keywords = _get_call_signature(call_source)
         args = function_defs[-1].args
-        values, keywords = _get_call_signature(call_source)
         assignments = _get_call_assignments(args, def_source, values, keywords)
         call_assignments = []
         for k, v in assignments.items():

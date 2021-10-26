@@ -136,7 +136,7 @@ class Transform:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
         start_source = f'{name or "_lf_dummy"} = {self.lf_evaluable_repr()}'
-        start_node = ast.parse(start_source)
+        start_node = ast.parse(start_source).body[0]
         start_globals = {
             (var, self._lf_call_info.scope)  # this should be the current scope ...?
             for var in var2mod.find_globals(start_node)
@@ -630,7 +630,7 @@ class CompoundTransform(Transform):
             + '\n' + ' ' * indent + ')'
         )
         if self._lf_group:
-            result = 'group' + result
+            result = 'lf.group' + result
         return result
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
@@ -641,16 +641,9 @@ class CompoundTransform(Transform):
 
         start = self._lf_codegraph_startnode(name)
 
-        if self._lf_group:
-            (source, node), scope = thingfinder.find_in_scope('group', self._lf_call_info.scope)
-
-            groupnode = var2mod.CodeNode(
-                source=source,
-                ast_node=node,
-                globals_=[]
-            )
-            graph['group', scope] = groupnode
-            scopemap['group', scope] = scope
+        if self._lf_group and 'lf' not in graph:
+            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
+            scopemap['lf', scope] = scope
 
         if name is not None:
             assert scope is not None
@@ -937,8 +930,8 @@ class Parallel(CompoundTransform):
     def __call__(self, arg):
         """Call method for Parallel
 
-        :param arg: Argument to call with
-        :return: namedtuple of output
+        :param arg: Argument to call with.
+        :return: Namedtuple of output.
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
@@ -983,36 +976,24 @@ class BuiltinTransform(AtomicTransform):
     def _lf_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
-                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
+                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:  # TODO: refactor
         if graph is None:
             graph = {}
         if scopemap is None:
             scopemap = {}
 
-        empty_scope = thingfinder.Scope.empty()
-        if ('lf', empty_scope) not in graph:
-            lf_source = 'import lf'
-            graph['lf', empty_scope] = var2mod.CodeNode(
-                source=lf_source,
-                ast_node=ast.parse(lf_source),
-                globals_=[]
-            )
-            scopemap['lf', empty_scope] = empty_scope
+        if scope is None:
+            scope = thingfinder.Scope.empty()
+        if ('lf', scope) not in graph:
+            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
+            scopemap['lf', scope] = scope
 
         start_source = f'{name or "_lf_dummy"} = {self._lf_call}'
-        start_node = ast.parse(start_source)
-        start_globals = {
-            (var, self._lf_call_info.scope)  # this should be the current scope ...?
-            for var in var2mod.find_globals(start_node)
-        }
 
-        graph[self.__class__.__name__, empty_scope] = var2mod.CodeNode(
-            source=start_source,
-            ast_node=start_node,
-            globals_=start_globals
-        )
+        graph[self.__class__.__name__, scope] = \
+            var2mod.CodeNode.from_source(start_source, scope)
 
-        scopemap[self.__class__.__name__, empty_scope] = empty_scope
+        scopemap[self.__class__.__name__, scope] = scope
 
         return graph, scopemap
 
@@ -1034,7 +1015,7 @@ class Identity(BuiltinTransform):
         return args
 
 
-class Unbatchify(BuiltinTransform):
+class Unbatchify(ClassTransform):
     """Remove batch dimension (inverse of Batchify).
 
     :param dim: batching dimension
@@ -1059,7 +1040,7 @@ class Unbatchify(BuiltinTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(BuiltinTransform):
+class Batchify(ClassTransform):
     """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
     tensors and, recursively, tuples thereof.
 
