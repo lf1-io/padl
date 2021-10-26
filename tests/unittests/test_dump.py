@@ -39,24 +39,6 @@ class MyClassTransform:
         return self.calculate(input_) + y(input_) + self.c(input_)
 
 
-<<<<<<< HEAD
-def maketransformclass():
-    @trans
-    class MyClassTransform:
-        def __init__(self, a, b, c):
-            self.a = a
-            self.b = b
-            self.c = c
-
-        def calculate(self, input_):
-            return self.a * self.b + input_
-
-        def __call__(self, input_):
-            return self.calculate(input_) + y(input_) + self.c(input_)
-
-    return MyClassTransform
-
-
 def makeclasstransform(a, b, c):
     @trans
     class MyClassTransform:
@@ -74,8 +56,6 @@ def makeclasstransform(a, b, c):
     return MyClassTransform(a, b, c)
 
 
-=======
->>>>>>> 079dbdceff6ba65c0be61e1844cce55b1582907f
 def read_dump(name):
     with open(f'tests/material/dumps/{name}.txt') as f:
         return f.read()

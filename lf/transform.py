@@ -221,7 +221,7 @@ class Transform:
         # pylint: disable=unused-argument,no-self-use
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
-        return type(self).__name__
+        return NotImplemented
 
     def lf_all_transforms(self):
         """Return a list of all transforms needed for executing the transform.
@@ -251,9 +251,9 @@ class Transform:
 
     @staticmethod
     def _lf_add_format_to_str(name):
-        res = '\33[32m        🠳  \33[0m\n'
+        res = '\33[32m        ⬇  \33[0m\n'
         res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
-        res += '\33[32m        🠳  \33[0m\n'
+        res += '\33[32m        ⬇  \33[0m\n'
         return res
 
     def lf_bodystr(self):
@@ -265,13 +265,10 @@ class Transform:
         else:
             return self.lf_shortname(is_child=True)
 
-    def lf_repr(self, indent=0):
+    def __repr__(self) -> str:
         top_message = self.lf_shortname()
         bottom_message = self.lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
-
-    def __repr__(self) -> str:
-        return self.lf_repr()
 
     def _lf_find_varname(self, scopedict: dict) -> Optional[str]:
         """Find the name of the variable name the transform was last assigned to.
@@ -567,9 +564,7 @@ class FunctionTransform(AtomicTransform):
         self.source = inspect.getsource(function)
 
     def lf_bodystr(self):
-        body_msg = self.source.split('trans\n')[-1]
-        body_msg = body_msg.split('@lf.trans\n')[-1]
-        body_msg = body_msg.split('@lf.wrap.trans\n')[-1]
+        body_msg = self.source
         return body_msg[:100] + ('  ...' if len(body_msg) > 100 else '')
 
     @property
@@ -599,9 +594,7 @@ class ClassTransform(AtomicTransform):
         )
 
     def lf_bodystr(self):
-        body_msg = thingfinder.find(self.__class__.__name__)[0].split('@trans\n')[-1]
-        body_msg = body_msg.split('@lf.trans\n')[-1]
-        body_msg = body_msg.split('@lf.wrap.trans\n')[-1]
+        body_msg = thingfinder.find(self.__class__.__name__)[0]
         return body_msg[:200] + ('  ...' if len(body_msg) > 200 else '')
 
 
@@ -691,10 +684,10 @@ class CompoundTransform(Transform):
         return sep.join(t._lf_compact_name() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
-        res = '\33[32m        🠳  \33[0m\n'
+        res = '\33[32m        ⬇  \33[0m\n'
         res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-            [f'\33[1m{i}:    ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        res += '\33[32m        🠳  \33[0m\n'
+            [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
+        res += '\33[32m        ⬇  \33[0m\n'
         return res
 
     @classmethod
@@ -769,7 +762,7 @@ class Compose(CompoundTransform):
     :return: output from series of transforms
     """
     op = '>>'
-    display_op = '🠳'
+    display_op = '↓'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
