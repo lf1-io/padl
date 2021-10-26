@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.exceptions import WrongDeviceError
 
 
 class _Notset:
@@ -58,7 +59,7 @@ class Transform:
         self._lf_varname = _notset
         self._lf_name = lf_name
         self._lf_component = {'forward'}
-        self._lf_device = 'gpu'
+        self._lf_device = 'cpu'
         self._lf_layers = None
 
     @property
@@ -282,7 +283,26 @@ class Transform:
     def _lf_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
         self._lf_varname = val
 
-    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
+    def __call__(self, arg):
+        return NotImplementedError
+
+    def _lf_forward_device_check(self):
+        """Check all transform in forward are in correct device
+
+        All transforms in forward need to be in same device as specified for
+        the whole CompoundTransform.
+
+        :return: Bool
+        """
+        return_val = True
+        if isinstance(self, CompoundTransform):
+            for transform_ in self.lf_forward.transforms:
+                if self.lf_device != transform_.lf_device:
+                    raise WrongDeviceError(self, transform_)
+                return_val = transform_._lf_forward_device_check()
+        return return_val
+
+    def _lf_call_transform(self, arg, stage=None):
         """Call transform with possibility to pass multiple arguments"""
 
         if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
@@ -310,6 +330,8 @@ class Transform:
         :returns: A generator that allows iterating over the output.
         """
         assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
+
+        device_check = self._lf_forward_device_check()
 
         preprocess = self.lf_preprocess
         forward = self.lf_forward
@@ -381,7 +403,6 @@ class Transform:
     def lf_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
         f = self._lf_forward_part()
-        f.lf_to(self.lf_device)  # TODO: do this?
         return f
 
     @property
@@ -394,7 +415,7 @@ class Transform:
     def lf_to(self, device: str):  # TODO: change
         """Set the transform's device to *device*.
 
-        :param device: device on which to map {'cpu', 'gpu'}
+        :param device: device on which to map {'cpu', 'cuda', 'cuda:N'}
         """
         self._lf_device = device
         return self
@@ -591,6 +612,14 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
+    def lf_to(self, device):
+        """Move transform to device
+
+        :param device: device to move to
+        :return:
+        """
+        return NotImplementedError
+
 
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
@@ -714,7 +743,7 @@ class CompoundTransform(Transform):
         """Get deduplicated keys from list of transforms
 
         Names are updated as below.
-        [None, None, 'a', 'a', 'b', 'c'] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'c']
+        [None, None, 'a', 'a', 'b', None] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'out_5']
 
         :param transforms: list of transforms
         :return: list of keys
@@ -783,6 +812,17 @@ class Compose(CompoundTransform):
     #     # TODO Previously was length of first element of trans_list. Any reason why?
     #     # return len(self.trans_list[0])
     #     return len(self.transforms)
+
+    def _lf_list_of_forward_parts(self):
+        """Accumulate all forward parts of the transforms"""
+        ts_ = []
+        for a_trans, component in zip(self.transforms, self._lf_component_list):
+            if 'forward' in component:
+                if len(component) == 1:
+                    ts_.append(a_trans)
+                else:
+                    ts_.append(a_trans.lf_forward)
+        return ts_
 
     def _lf_forward_part(self):
         """Forward part of transforms"""
@@ -1035,7 +1075,9 @@ class Identity(BuiltinTransform):
 
 
 class Unbatchify(BuiltinTransform):
-    """Remove batch dimension (inverse of Batchify).
+    """Mark start of postprocessing
+
+    Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
 
     :param dim: batching dimension
     """
@@ -1054,14 +1096,17 @@ class Unbatchify(BuiltinTransform):
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.squeeze(self.dim)
+            return args.squeeze(self.dim).to('cpu')
 
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
 class Batchify(BuiltinTransform):
-    """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
-    tensors and, recursively, tuples thereof.
+    """Mark end of preprocessing.
+
+    Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    recursively, tuples thereof. Batchify also moves the input tensors to device specified
+    for the transform.
 
     :param dim: batching dimension
     """
@@ -1080,9 +1125,9 @@ class Batchify(BuiltinTransform):
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.unsqueeze(self.dim)
+            return args.unsqueeze(self.dim).to(self.lf_device)
         if isinstance(args, (float, int)):
-            return torch.tensor([args])
+            return torch.tensor([args]).to(self.lf_device)
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
