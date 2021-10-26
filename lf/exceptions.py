@@ -4,8 +4,8 @@
 class WrongDeviceError(Exception):
     """Devices do not match for all transforms
 
-    :param mother_transform:
-    :param child_transform:
+    :param mother_transform: main transform that contains child transform
+    :param child_transform: transform that is contained in mother transform
     """
     def __init__(self, mother_transform, child_transform):
         self.mother_name = mother_transform.lf_name if mother_transform.lf_name is not None else mother_transform

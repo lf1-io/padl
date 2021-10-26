@@ -283,9 +283,6 @@ class Transform:
     def _lf_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
         self._lf_varname = val
 
-    def __call__(self, arg):
-        return NotImplementedError
-
     def _lf_forward_device_check(self):
         """Check all transform in forward are in correct device
 
@@ -302,7 +299,7 @@ class Transform:
                 return_val = transform_._lf_forward_device_check()
         return return_val
 
-    def _lf_call_transform(self, arg, stage=None):
+    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
         if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
@@ -613,12 +610,13 @@ class TorchModuleTransform(ClassTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
     def lf_to(self, device):
-        """Move transform to device
+        """Move layers to device
 
         :param device: device to move to
-        :return:
         """
-        return NotImplementedError
+        for layer in self.lf_layers:
+            layer.to(device)
+        return self
 
 
 class CompoundTransform(Transform):
