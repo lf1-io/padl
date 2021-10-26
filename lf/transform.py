@@ -897,7 +897,9 @@ class Rollout(CompoundTransform):
         # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
-            if len(list(self._lf_component)) >= 2 and 'forward' in self._lf_component:
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            elif 'preprocess' in self._lf_component and 'forward' in self._lf_component:
                 self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
@@ -1040,8 +1042,8 @@ class Unbatchify(BuiltinTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
 
@@ -1066,8 +1068,8 @@ class Batchify(BuiltinTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Batchify()')
         self.dim = dim
         self._lf_component = {'preprocess'}
 
