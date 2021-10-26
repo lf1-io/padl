@@ -326,7 +326,7 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
 
-        device_check = self._lf_forward_device_check()
+        self._lf_forward_device_check()
 
         preprocess = self.lf_preprocess
         forward = self.lf_forward

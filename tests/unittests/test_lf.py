@@ -331,6 +331,10 @@ class TestFunctionTransform:
         all_ = trans_with_globals.lf_all_transforms()
         assert set(all_) == set([plus, times_two, trans_with_globals])
 
+    def test_lf_to(self):
+        self.transform_1.lf_to('cpu')
+        assert self.transform_1.lf_device == 'cpu'
+
 
 def test_name():
     assert (plus_one - 'p1')._lf_name == 'p1'
