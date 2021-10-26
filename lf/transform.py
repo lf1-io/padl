@@ -1079,7 +1079,7 @@ class Unbatchify(BuiltinTransform):
     :param cpu: if true, moves output to cpu after unbatchify
     """
 
-    def __init__(self, dim=0, cpu=False):
+    def __init__(self, dim=0, cpu=True):
         super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
