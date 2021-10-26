@@ -15,6 +15,7 @@ class PatchedModule:
             return trans(x)
         if isinstance(x, ModuleType):
             return PatchedModule(x)
+        return x
 
 
 class Patcher:
