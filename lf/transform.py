@@ -260,7 +260,7 @@ class Transform:
         return NotImplemented
 
     def _lf_compact_name(self):
-        if isinstance(self, CompoundTransform):
+        if isinstance(self, CompoundTransform) and self._lf_name is None:
             return self.lf_bodystr(is_child=True)
         else:
             return self.lf_shortname(is_child=True)
