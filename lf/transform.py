@@ -1076,12 +1076,14 @@ class Unbatchify(BuiltinTransform):
     Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
 
     :param dim: batching dimension
+    :param cpu: if true, moves output to cpu after unbatchify
     """
 
-    def __init__(self, dim=0):
+    def __init__(self, dim=0, cpu=False):
         super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
+        self.cpu = cpu
 
     def __call__(self, args):
         assert Transform.lf_stage is not None,\
@@ -1092,7 +1094,8 @@ class Unbatchify(BuiltinTransform):
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.squeeze(self.dim).to('cpu')
+            args = args.squeeze(self.dim)
+            return args.to('cpu') if self.cpu else args
 
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
@@ -1112,12 +1115,19 @@ class Batchify(BuiltinTransform):
         self.dim = dim
         self._lf_component = {'preprocess'}
 
+    def _infer_move_to_device(self, args):
+        if isinstance(args, (tuple, list)):
+            return tuple([self._infer_move_to_device(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.to(self.lf_device)
+        return args
+
     def __call__(self, args):
         assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
         if Transform.lf_stage != 'infer':
-            return args
+            return self._infer_move_to_device(args)
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
