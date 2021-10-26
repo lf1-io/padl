@@ -9,17 +9,8 @@ def k(o):
 
 
 @trans
-def x(y):
-    return CONST + 1
-
-
-@trans
 def y(y):
     return CONST + k(y)
 
 
-_lf_main = (
-    x
-    >> y
-    >> x
-)
+_lf_main = trans(lambda x: y(x))

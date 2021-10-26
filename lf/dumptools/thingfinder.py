@@ -3,6 +3,7 @@ import inspect
 import linecache
 from math import inf
 import sys
+from warnings import warn
 
 
 class _ThingFinder(ast.NodeVisitor):
@@ -215,6 +216,10 @@ class Scope:
     def toplevel(cls, module):
         """Create a top-level scope (i.e. module level, no nesting). """
         return cls(module, '', [])
+
+    @classmethod
+    def empty(cls):
+        return cls(None, '', [])
 
     @classmethod
     def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0):

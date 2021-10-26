@@ -1,6 +1,6 @@
 import ast
 import builtins
-from collections import namedtuple
+from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
 import sys
@@ -174,14 +174,17 @@ class _Renamer(ast.NodeTransformer):
                                   'name': name})
 
     def visit_ClassDef(self, node):
-        if self.rename_locals:
-            for child_node in ast.iter_child_nodes(node):
-                self.visit(child_node)
-            return node
-        globals_ = find_globals(node)
-        if self.from_ not in globals_:
-            return node
-        return ast.ClassDef(**{**node.__dict__, 'body': rename(node.body, self.from_, self.to)})
+        if self.rename_locals and node.name == self.from_:
+            name = self.to
+        else:
+            name = node.name
+        if not self.rename_locals:
+            globals_ = find_globals(node)
+            if self.from_ not in globals_:
+                return node
+        return ast.ClassDef(**{**node.__dict__,
+                               'body': rename(node.body, self.from_, self.to),
+                               'name': name})
 
 
 def rename(tree, from_, to, rename_locals=False):
@@ -286,8 +289,8 @@ def _topsort(graph):
 
 # sort precedence
 _PRECEDENCE = {
-    ast.Import: lambda _k, v: '1' + v[2].names[0].name.lower(),
-    ast.ImportFrom: lambda _k, v: '1' + v[2].module.lower(),
+    ast.Import: lambda k, v: '1' + v[2].names[0].name.lower() + k.lower(),
+    ast.ImportFrom: lambda k, v: '1' + v[2].module.lower() + k.lower(),
     ast.Assign: lambda k, _v: '2' + k.lower()
 }
 
@@ -308,11 +311,15 @@ def _sort(graph):
     return res
 
 
-def unscope(name, scope):
-    return scope.unscoped(name)
-
-
 def unscope_graph(graph, scopemap):
+    """Create a version of *graph* where all non-top level variables are renamed (by prepending
+    the scope) to prevent conflicts."""
+    counts = Counter(x[0] for x in graph)
+    to_rename = set(k for k, c in counts.items() if c > 1)
+    def unscope(name, scope):
+        if name in to_rename:
+            return scope.unscoped(name)
+        return name
     res = {}
     for k, v in graph.items():
         changed = False
@@ -323,7 +330,7 @@ def unscope_graph(graph, scopemap):
         rename(tree, k[0], k_unscoped, rename_locals=True)
         vars_ = set()
         for var in list(v.globals_):
-            var_unscoped = scopemap[var].unscoped(var[0])
+            var_unscoped = unscope(var[0], scopemap[var])
             changed = changed or var_unscoped != var[0]
             rename(tree, var[0], var_unscoped)
             vars_.add(var_unscoped)
