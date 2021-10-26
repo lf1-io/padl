@@ -1085,12 +1085,19 @@ class Unbatchify(BuiltinTransform):
         self._lf_component = {'postprocess'}
         self.cpu = cpu
 
+    def _move_to_device(self, args):
+        if isinstance(args, (tuple, list)):
+            return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.to('cpu')
+        return args
+
     def __call__(self, args):
         assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
         if Transform.lf_stage != 'infer':
-            return args
+            return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
