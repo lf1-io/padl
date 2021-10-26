@@ -3,6 +3,7 @@ import torch
 from lf import transform as lf, trans, Identity
 from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
+from lf.exceptions import WrongDeviceError
 
 
 @trans
@@ -323,3 +324,20 @@ class TestFunctionTransform:
 def test_name():
     assert (plus_one - 'p1')._lf_name == 'p1'
     assert plus_one._lf_name is None
+
+
+class TestTransformDeviceCheck:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = (plus_one >> times_two) >> times_two
+        request.cls.transform_2 = plus_one >> (times_two >> times_two)
+
+    def test_device_check(self):
+        self.transform_1.lf_to('gpu')
+        self.transform_1.transforms[1].lf_to('cpu')
+
+        with pytest.raises(WrongDeviceError):
+            self.transform_1._lf_forward_device_check()
+
+        self.transform_2.lf_to('gpu')
+        assert self.transform_2._lf_forward_device_check()
