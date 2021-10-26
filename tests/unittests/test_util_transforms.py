@@ -1,7 +1,6 @@
 import pytest
-import torch
-from lf import transform as lf, trans, Identity
-from lf.transform import Batchify, Unbatchify
+from lf import trans
+from lf.transform import Batchify
 from lf.util_transforms import IfTrain, IfEval, IfInfer
 
 
