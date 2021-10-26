@@ -8,6 +8,7 @@ from itertools import chain
 from pathlib import Path
 import types
 from typing import Iterable, List, Literal, Optional, Set, Tuple, Union
+from warnings import warn
 
 import numpy as np
 import torch
@@ -543,7 +544,11 @@ class FunctionTransform(AtomicTransform):
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
-        closurevars = inspect.getclosurevars(self.function)
+        try:
+            closurevars = inspect.getclosurevars(self.function)
+        except TypeError as exc:
+            warn(f"Couln't get closurevars ({exc}). This is usually fine.")
+            return {}, {}
         return closurevars.globals, closurevars.nonlocals
 
     def __call__(self, *args, **kwargs):
@@ -556,9 +561,9 @@ class ClassTransform(AtomicTransform):
     :param lf_name: Name of the transform.
     """
 
-    def __init__(self, lf_name=None):
+    def __init__(self, lf_name=None, ignore_scope=False):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
-        call_info = inspector.CallInfo(caller_frameinfo)
+        call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_call_segment_from_frame(caller_frameinfo.frame)
         AtomicTransform.__init__(
             self,
