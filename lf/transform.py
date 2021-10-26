@@ -291,13 +291,11 @@ class Transform:
 
         :return: Bool
         """
-        return_val = True
-        if isinstance(self, CompoundTransform):
-            for transform_ in self.lf_forward.transforms:
-                if self.lf_device != transform_.lf_device:
-                    raise WrongDeviceError(self, transform_)
-                return_val = transform_._lf_forward_device_check()
-        return return_val
+        for layer in self.lf_layers:
+            for parameters in layer.parameters():
+                if parameters.device.type != self.lf_device:
+                    raise WrongDeviceError(self, layer)
+        return True
 
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
@@ -415,6 +413,8 @@ class Transform:
         :param device: device on which to map {'cpu', 'cuda', 'cuda:N'}
         """
         self._lf_device = device
+        for layer in self.lf_layers:
+            layer.to(device)
         return self
 
     @property
@@ -609,15 +609,6 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
-    def lf_to(self, device):
-        """Move layers to device
-
-        :param device: device to move to
-        """
-        for layer in self.lf_layers:
-            layer.to(device)
-        return self
-
 
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
@@ -714,6 +705,21 @@ class CompoundTransform(Transform):
         for transform_ in self.transforms:
             transform_.lf_to(device)
         return self
+
+    def _lf_forward_device_check(self):
+        """Check all transform in forward are in correct device
+
+        All transforms in forward need to be in same device as specified for
+        the whole CompoundTransform.
+
+        :return: Bool
+        """
+        return_val = True
+        for transform_ in self.lf_forward.transforms:
+            if self.lf_device != transform_.lf_device:
+                raise WrongDeviceError(self, transform_)
+            return_val = transform_._lf_forward_device_check()
+        return return_val
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
