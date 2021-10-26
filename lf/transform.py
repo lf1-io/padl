@@ -707,6 +707,16 @@ class CompoundTransform(Transform):
             res += f' [{self.lf_varname()}]'
         return res
 
+    def lf_to(self, device: str):
+        """Set the transform's device to *device*
+
+        :param device: device on which to send {'cpu', cuda', 'cuda:N'}
+        """
+        self._lf_device = device
+        for transform_ in self.transforms:
+            transform_.lf_to(device)
+        return self
+
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
         """Flatten *list_* such that members of *cls* are not nested.
@@ -923,7 +933,6 @@ class Rollout(CompoundTransform):
         return self._lf_preprocess
 
     def _lf_forward_part(self):
-        # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
             if len(list(self._lf_component)) >= 2 and 'forward' in self._lf_component:
