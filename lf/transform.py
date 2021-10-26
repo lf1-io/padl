@@ -1105,7 +1105,7 @@ class Batchify(BuiltinTransform):
     Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
     recursively, tuples thereof. Batchify also moves the input tensors to device specified
     for the transform.
-
+    
     :param dim: batching dimension
     """
 
