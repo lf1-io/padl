@@ -551,10 +551,11 @@ class FunctionTransform(AtomicTransform):
 
 
 class ClassTransform(AtomicTransform):
-    """Class Transform
+    """Class Transform.
 
-    :param lf_name: name of the transform
+    :param lf_name: Name of the transform.
     """
+
     def __init__(self, lf_name=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo)
@@ -975,14 +976,55 @@ class Parallel(CompoundTransform):
         return self._lf_postprocess
 
 
-class Identity(ClassTransform):
+class BuiltinTransform(AtomicTransform):
+    def __init__(self, call):
+        super().__init__(call)
+
+    def _lf_build_codegraph(self, graph: Optional[dict] = None,
+                            scopemap: Optional[dict] = None,
+                            name: Optional[str] = None,
+                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        empty_scope = thingfinder.Scope.empty()
+        if ('lf', empty_scope) not in graph:
+            lf_source = 'import lf'
+            graph['lf', empty_scope] = var2mod.CodeNode(
+                source=lf_source,
+                ast_node=ast.parse(lf_source),
+                globals_=[]
+            )
+            scopemap['lf', empty_scope] = empty_scope
+
+        start_source = f'{name or "_lf_dummy"} = {self._lf_call}'
+        start_node = ast.parse(start_source)
+        start_globals = {
+            (var, self._lf_call_info.scope)  # this should be the current scope ...?
+            for var in var2mod.find_globals(start_node)
+        }
+
+        graph[self.__class__.__name__, empty_scope] = var2mod.CodeNode(
+            source=start_source,
+            ast_node=start_node,
+            globals_=start_globals
+        )
+
+        scopemap[self.__class__.__name__, empty_scope] = empty_scope
+
+        return graph, scopemap
+
+
+class Identity(BuiltinTransform):
     """Do nothing.
 
     :param lf_name: name of the transform
     """
 
-    def __init__(self, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self):
+        super().__init__('lf.Identity()')
 
     @property
     def lf_is_identity(self):
@@ -992,7 +1034,7 @@ class Identity(ClassTransform):
         return args
 
 
-class Unbatchify(ClassTransform):
+class Unbatchify(BuiltinTransform):
     """Remove batch dimension (inverse of Batchify).
 
     :param dim: batching dimension
@@ -1017,7 +1059,7 @@ class Unbatchify(ClassTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(ClassTransform):
+class Batchify(BuiltinTransform):
     """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
     tensors and, recursively, tuples thereof.
 
