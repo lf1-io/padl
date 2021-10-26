@@ -11,5 +11,4 @@ class WrongDeviceError(Exception):
         self.mother_name = mother_transform.lf_name if mother_transform.lf_name is not None else mother_transform
         self.child_name = child_transform.lf_name if child_transform.lf_name is not None else child_transform
 
-        self.message = f"{self.mother_name} is in '{mother_transform.lf_device}', while {self.child_name} is in '{child_transform.lf_device}'"
-        super().__init__(self.message)
+        super().__init__(f"{self.mother_name} is in '{mother_transform.lf_device}', while {self.child_name} is in '{child_transform.lf_device}'")
