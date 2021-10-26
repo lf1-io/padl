@@ -40,6 +40,17 @@ def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
 
 
+@trans
+class Polynomial(torch.nn.Module):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = torch.nn.Parameter(torch.tensor(float(a)))
+        self.b = torch.nn.Parameter(torch.tensor(float(b)))
+
+    def forward(self, x):
+        return x**self.a + x**self.b
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -341,3 +352,21 @@ class TestTransformDeviceCheck:
 
         self.transform_2.lf_to('gpu')
         assert self.transform_2._lf_forward_device_check()
+
+
+class TestTorchModuleTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = Polynomial(2, 3)
+
+    def test_output(self):
+        output = self.transform_1(1)
+        assert output == 2
+
+    def test_device(self):
+        self.transform_1.lf_to('cpu')
+        device = next(self.transform_1.lf_layers[0].parameters()).device.type
+        assert device =='cpu'
+
+    def test_lf_layers(self):
+        assert len(self.transform_1.lf_layers) > 0
