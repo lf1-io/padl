@@ -1082,8 +1082,8 @@ class Unbatchify(BuiltinTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
 
@@ -1111,8 +1111,8 @@ class Batchify(BuiltinTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Batchify()')
         self.dim = dim
         self._lf_component = {'preprocess'}
 
