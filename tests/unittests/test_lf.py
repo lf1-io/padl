@@ -370,7 +370,7 @@ class TestTorchModuleTransform:
     def test_device(self):
         self.transform_1.lf_to('cpu')
         device = next(self.transform_1.lf_layers[0].parameters()).device.type
-        assert device =='cpu'
+        assert device == 'cpu'
 
     def test_lf_layers(self):
         assert len(self.transform_1.lf_layers) > 0
