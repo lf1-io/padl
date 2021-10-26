@@ -76,6 +76,10 @@ class _VarFinder(ast.NodeVisitor):
         """Special case: exclude args from globals. """
         for arg in node.args.args:
             self.locals.add(arg.arg)
+        if node.args.vararg is not None:
+            self.locals.add(node.args.vararg.arg)
+        if node.args.kwarg is not None:
+            self.locals.add(node.args.kwarg.arg)
         for n in ast.iter_child_nodes(node):
             self.visit(n)
         return Vars(self.globals, self.locals)

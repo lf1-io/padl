@@ -3,11 +3,20 @@ import inspect
 import sys
 from types import ModuleType
 
-from lf import trans
 from lf.wrap import _wrap_class, _wrap_function
 
 
 class PatchedModule:
+    """Class that patches a module, such that all functions and classes in that module come out
+    wrapped as Transforms.
+
+    Example:
+
+        >>> from lf.importer import numpy as np
+        >>> isinstance(np.random.rand, Transform)
+        True
+    """
+
     def __init__(self, module, parents=None):
         self.module = module
         if parents is None:
@@ -29,13 +38,13 @@ class PatchedModule:
         return f'Transform patched: {self.module}'
 
 
-class Patcher:
+class PatchFactory:
     def __getattr__(self, name):
         try:
-            m = importlib.import_module(name)
-            return PatchedModule(m)
+            module = importlib.import_module(name)
+            return PatchedModule(module)
         except ModuleNotFoundError:
             pass
 
 
-sys.modules[__name__] = Patcher()
+sys.modules[__name__] = PatchFactory()

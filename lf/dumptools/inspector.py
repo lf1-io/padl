@@ -283,7 +283,8 @@ def get_call_segment_from_frame(caller_frame: types.FrameType) -> str:
 
     # get all segments in the source that correspond to calls and might thus
     # potentially be the class init
-    candidate_segments = var2mod.Finder(ast.Call).get_source_segments(source)
+    candidate_segments = (var2mod.Finder(ast.Call).get_source_segments(source)
+                          + var2mod.Finder(ast.Name).get_source_segments(source))
     # for each candidate, disassemble and compare the instructions to what we
     # actually have, a match means this is the correct statement
     if not candidate_segments:

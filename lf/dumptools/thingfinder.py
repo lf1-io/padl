@@ -198,7 +198,8 @@ def _get_call_assignments(args, source, values, keywords):
 
 def _get_call_signature(source: str):
     call = ast.parse(source).body[0].value
-    assert isinstance(call, ast.Call)
+    if not isinstance(call, ast.Call):
+        return [], {}
     args = [ast.get_source_segment(source, arg) for arg in call.args]
     kwargs = {
         kw.arg: ast.get_source_segment(source, kw.value) for kw in call.keywords

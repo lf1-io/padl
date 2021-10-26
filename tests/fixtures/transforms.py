@@ -1,8 +1,8 @@
 from pytest import fixture
-import os
+import shutil
 
 
 @fixture
 def cleanup_checkpoint():
     yield
-    os.remove('test.lf')
+    shutil.rmtree('test.lf')
