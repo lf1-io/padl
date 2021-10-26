@@ -39,6 +39,23 @@ class MyClassTransform:
         return self.calculate(input_) + y(input_) + self.c(input_)
 
 
+def maketransformclass():
+    @trans
+    class MyClassTransform:
+        def __init__(self, a, b, c):
+            self.a = a
+            self.b = b
+            self.c = c
+
+        def calculate(self, input_):
+            return self.a * self.b + input_
+
+        def __call__(self, input_):
+            return self.calculate(input_) + y(input_) + self.c(input_)
+
+    return MyClassTransform
+
+
 def makeclasstransform(a, b, c):
     @trans
     class MyClassTransform:
@@ -77,22 +94,6 @@ def test_dump_b():
 def test_dump_class_a():
     t = MyClassTransform(1, 2, x)
     assert t.lf_dumps() == read_dump('class_a')
-
-
-lambda_a = trans(lambda x: x)
-lambda_b = trans(lambda x: y(x))
-
-
-def test_lambda_a():
-    assert lambda_a.lf_dumps() == read_dump('lambda_a')
-
-
-def test_lambda_b():
-    assert lambda_b.lf_dumps() == read_dump('lambda_b')
-
-
-def test_dump_class_a():
-    MyClassTransform(1, 2, x).lf_dumps() == read_dump('class_a')
 
 
 lambda_a = trans(lambda x: x)
