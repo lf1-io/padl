@@ -2,14 +2,15 @@ from lf.transform import BuiltinTransform, Identity, Transform
 
 
 class IfInStage(BuiltinTransform):
-    """Perform *t* if self.stage is *target_stage*, else perform *else_*."""
+    """Perform *if_* if self.stage is *target_stage*, else perform *else_*.
+
+    :param if_: transform for the if part
+    :param target_stage: stage {'train', 'eval', 'infer'}
+    :param else_: transform for the else_ part
+    """
 
     def __init__(self, if_, target_stage, else_=None):
-        """
-        :param if_: transform for the if part
-        :param target_stage: stage {'train', 'eval', 'infer'}
-        :param else_: transform for the else_ part
-        """
+
         super().__init__('lf.IfInStage()')
         if else_ is None:
             else_ = Identity()
