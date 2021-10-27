@@ -1,5 +1,6 @@
 """The Transform class and some of its children. """
 import ast
+import re
 from copy import copy
 from collections import Counter, namedtuple
 import contextlib
@@ -240,6 +241,25 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
+    def lf_shortname(self):
+        title = self._lf_title()
+        if self.lf_name is not None:
+            return title + f'[{self.lf_name}]'
+        varname = self.lf_varname()
+        if varname is None or varname == title:
+            return title
+        return title + f'[{varname}]'
+
+    @staticmethod
+    def _lf_add_format_to_str(name):
+        res = '\33[32m        ⬇  \33[0m\n'
+        res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
+        res += '\33[32m        ⬇  \33[0m\n'
+        return res
+
+    def lf_bodystr(self):
+        return NotImplemented
+
     def lf_repr(self, indent: int = 0) -> str:
         # pylint: disable=unused-argument
         varname = self.lf_varname()
@@ -249,7 +269,9 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        return self.lf_repr()
+        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        bottom_message = self.lf_bodystr()
+        return top_message + self._lf_add_format_to_str(bottom_message)
 
     def _lf_find_varname(self, scopedict: dict) -> Optional[str]:
         """Find the name of the variable name the transform was last assigned to.
@@ -537,6 +559,9 @@ class AtomicTransform(Transform):
             var_transforms = {}
         return var_transforms.get(self, self._lf_call)
 
+    def _lf_title(self):
+        return self._lf_call
+
     def lf_all_transforms(self):
         res = [self]
         globals_dict, nonlocals_dict = self._lf_closurevars
@@ -564,6 +589,20 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
+
+    @property
+    def source(self, length=20):
+        try:
+            body_msg = inspect.getsource(self.function)
+            body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
+            lines = re.split('(\n)', body_msg)
+            lines = ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+            return lines
+        except TypeError:
+            return self._lf_call
+
+    def lf_bodystr(self, length=20):
+        return self.source
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
@@ -594,6 +633,19 @@ class ClassTransform(AtomicTransform):
             call_info=call_info,
             lf_name=lf_name
         )
+
+    @property
+    def source(self, length=40):
+        try:
+            body_msg = thingfinder.find(self.__class__.__name__)[0]
+            body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
+            lines = re.split('(\n)', body_msg)
+            return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+        except thingfinder.ThingNotFound:
+            return self._lf_call
+
+    def lf_bodystr(self, length=20):
+        return self.source
 
 
 class TorchModuleTransform(ClassTransform):
@@ -702,7 +754,6 @@ class CompoundTransform(Transform):
             varname = transform.lf_varname()
             transform._lf_build_codegraph(graph, scopemap, varname,
                                           self._lf_call_info.scope)
-
         return graph, scopemap
 
     def lf_repr(self, indent=0):
@@ -717,6 +768,26 @@ class CompoundTransform(Transform):
         )
         if self.lf_varname() is not None and self.lf_varname() is not _notset:
             res += f' [{self.lf_varname()}]'
+        return res
+
+    def lf_shortname(self):
+        if self._lf_name is None:
+            return self.lf_bodystr(is_child=True)
+        else:
+            return super().lf_shortname()
+
+    def _lf_title(self):
+        return self.__class__.__name__
+
+    def lf_bodystr(self, is_child=False):
+        sep = f' {self.op} ' if is_child else '\n'
+        return sep.join(t.lf_shortname() for t in self.transforms)
+
+    def _lf_add_format_to_str(self, name):
+        res = '\33[32m        ⬇  \33[0m\n'
+        res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
+            [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
+        res += '\33[32m        ⬇  \33[0m\n'
         return res
 
     def lf_to(self, device: str):
@@ -823,6 +894,7 @@ class Compose(CompoundTransform):
     :return: output from series of transforms
     """
     op = '>>'
+    display_op = '↓'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -914,7 +986,6 @@ class Compose(CompoundTransform):
                 self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_postprocess = Identity()
-
         return self._lf_postprocess
 
 
@@ -930,6 +1001,7 @@ class Rollout(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '+'
+    display_op = '✚'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -1000,6 +1072,7 @@ class Parallel(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '/'
+    display_op = '╱'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
