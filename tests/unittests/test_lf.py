@@ -343,8 +343,8 @@ class TestModel:
         m3 = lf.load('test.lf')
         assert m3.infer_apply(5) == (7, 20)
         self.model_4.lf_save('test.lf')
-        # m4 = lf.load('test.lf') # TODO This Fails
-        # assert m4.infer_apply(5) == (8, 20)
+        m4 = lf.load('test.lf') # TODO This Fails
+        assert m4.infer_apply(5) == (8, 20)
 
 
 class TestFunctionTransform:
