@@ -76,6 +76,10 @@ class _VarFinder(ast.NodeVisitor):
         """Special case: exclude args from globals. """
         for arg in node.args.args:
             self.locals.add(arg.arg)
+        if node.args.vararg is not None:
+            self.locals.add(node.args.vararg.arg)
+        if node.args.kwarg is not None:
+            self.locals.add(node.args.kwarg.arg)
         for n in ast.iter_child_nodes(node):
             self.visit(n)
         return Vars(self.globals, self.locals)
@@ -345,6 +349,20 @@ class CodeNode:
     source: str
     globals_: set
     ast_node: ast.AST
+
+    @classmethod
+    def from_source(cls, source, scope):
+        node = ast.parse(source).body[0]
+        globals_ = {
+            (var, scope)
+            for var in find_globals(node)
+        }
+
+        return cls(
+            source=source,
+            ast_node=node,
+            globals_=globals_
+        )
 
 
 def dumps_graph(graph):
