@@ -923,12 +923,6 @@ class Compose(CompoundTransform):
             arg = transform_._lf_call_transform(arg)
         return arg
 
-    # TODO Finish adding
-    # def __len__(self):
-    #     # TODO Previously was length of first element of trans_list. Any reason why?
-    #     # return len(self.trans_list[0])
-    #     return len(self.transforms)
-
     def _lf_forward_part(self):
         """Forward part of transforms"""
         if self._lf_forward is None:
@@ -1019,12 +1013,6 @@ class Rollout(CompoundTransform):
             out.append(transform_._lf_call_transform(arg))
         out = self._lf_output_format(*out)
         return out
-
-    # TODO Finish adding
-    # def __len__(self):
-    #     lens = [len(x) for x in self.transforms]
-    #     assert len(set(lens)) == 1
-    #     return lens[0]
 
     @property
     def lf_preprocess(self):
@@ -1210,7 +1198,7 @@ class Batchify(BuiltinTransform):
     Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
     recursively, tuples thereof. Batchify also moves the input tensors to device specified
     for the transform.
-    
+
     :param dim: batching dimension
     """
 
