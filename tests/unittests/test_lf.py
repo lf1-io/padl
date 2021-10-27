@@ -183,7 +183,7 @@ class TestCompose:
         request.cls.transform_5 = (
             plus_one
             >> Batchify()
-            >> times_two
+            >> times_two - 'named_times_two'
             >> times_two
             >> Unbatchify()
             >> plus_one
@@ -261,6 +261,16 @@ class TestCompose:
         self.transform_5.lf_save('test.lf')
         t5 = lf.load('test.lf')
         assert t5.infer_apply(1) == torch.tensor(9)
+
+    def test_getitem(self):
+        assert isinstance(self.transform_5[0], lf.Transform)
+        assert isinstance(self.transform_5[0:2], lf.CompoundTransform)
+        assert isinstance(self.transform_5[0:2], lf.Compose)
+        assert isinstance(self.transform_5['named_times_two'], lf.Transform)
+        with pytest.raises(ValueError):
+            self.transform_5['other_name']
+        with pytest.raises(TypeError):
+            self.transform_5[2.1]
 
 
 class TestModel:
@@ -428,6 +438,10 @@ class TestTorchModuleTransform:
 
     def test_lf_layers(self):
         assert len(self.transform_1.lf_layers) > 0
+
+    def test_lf_parameters(self):
+        params = list(self.transform_1.lf_parameters())
+        assert len(params) == 2
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
