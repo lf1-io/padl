@@ -4,6 +4,7 @@ from lf import transform as lf, trans, Identity
 from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
 from lf.exceptions import WrongDeviceError
+from tests.fixtures.transforms import cleanup_checkpoint
 
 
 @trans
@@ -108,7 +109,7 @@ class TestParallel:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
@@ -161,7 +162,7 @@ class TestRollout:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
@@ -245,7 +246,7 @@ class TestCompose:
         all_ = c.lf_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
@@ -317,7 +318,7 @@ class TestModel:
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
         assert list(self.model_4.eval_apply([5, 6])) == [(7, 20), (8, 24)]
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.model_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.model_2.lf_save('test.lf')
@@ -373,7 +374,7 @@ class TestFunctionTransform:
         self.transform_1.lf_to('cpu')
         assert self.transform_1.lf_device == 'cpu'
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
@@ -419,6 +420,6 @@ class TestTorchModuleTransform:
     def test_lf_layers(self):
         assert len(self.transform_1.lf_layers) > 0
 
-    def test_lf_save_and_load(self):
+    def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
