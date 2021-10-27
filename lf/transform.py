@@ -7,7 +7,9 @@ import inspect
 from itertools import chain
 from pathlib import Path
 import types
-from typing import Iterable, List, Literal, Optional, Set, Tuple, Union
+from typing import Iterable, List, Literal, Optional, Set, Tuple, Union, Iterator
+
+
 from warnings import warn
 
 import numpy as np
@@ -431,6 +433,11 @@ class Transform:
             if isinstance(subtrans, torch.nn.Module):
                 layers.append(subtrans)
         return layers
+
+    def lf_parameters(self) -> Iterator:
+        """ Iterate over parameters. """
+        for layer in self.lf_layers:
+            yield from layer.parameters()
 
     @contextlib.contextmanager
     def lf_set_stage(self, stage: Optional[str]=None):
