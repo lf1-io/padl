@@ -584,13 +584,20 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
-        self.source = inspect.getsource(function)
+
+    @property
+    def source(self, length=20):
+        try:
+            body_msg = inspect.getsource(self.function)
+            body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
+            lines = re.split('(\n)', body_msg)
+            lines = ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+            return lines
+        except TypeError:
+            return self._lf_call
 
     def lf_bodystr(self, length=20):
-        body_msg = self.source
-        body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
-        lines = re.split('(\n)', body_msg)
-        return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+        return self.source
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
@@ -622,11 +629,18 @@ class ClassTransform(AtomicTransform):
             lf_name=lf_name
         )
 
+    @property
+    def source(self, length=40):
+        try:
+            body_msg = thingfinder.find(self.__class__.__name__)[0]
+            body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
+            lines = re.split('(\n)', body_msg)
+            return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+        except thingfinder.ThingNotFound:
+            return self._lf_call
+
     def lf_bodystr(self, length=20):
-        body_msg = thingfinder.find(self.__class__.__name__)[0]
-        body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
-        lines = re.split('(\n)', body_msg)
-        return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+        return self.source
 
 
 class TorchModuleTransform(ClassTransform):
