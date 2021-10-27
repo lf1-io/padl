@@ -1,6 +1,6 @@
 from lf.wrap import trans
 
-from lf.transform import *
+from lf.transform import Batchify, Unbatchify, Identity, group
 identity = Identity()
 batch = Batchify()
 unbatch = Unbatchify()

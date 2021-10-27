@@ -1,8 +1,5 @@
-from lf import trans
 from lf.transform import AtomicTransform
 from lf.dumptools import inspector
-
-from lf.wrap import _wrap_class
 
 
 def _maketrans(attr):
@@ -14,7 +11,6 @@ def _maketrans(attr):
         """
 
         def __init__(self, *args, **kwargs):
-            call_info = inspector.CallInfo()
             self.__args = args
             self.__kwargs = kwargs
             caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
