@@ -41,6 +41,35 @@ def _isinstance_of_namedtuple(arg):
     return all(isinstance(field, str) for field in fields)
 
 
+def create_arrow(start_left,  finish_right, n_initial_rows, n_final_rows):
+    initial = ''
+    for _ in range(n_initial_rows - 1):
+        initial += ' ' * start_left + '|' + '\n'
+    final = ''
+    for _ in range(n_final_rows - 1):
+        final += ' ' * (start_left + finish_right) + '|' + '\n'
+    return initial + ' ' * start_left + '|' \
+        + '_' * (finish_right - 1) + '\n' \
+        + final \
+        + ' ' * (start_left + finish_right) + '▼'
+
+
+def combine_arrows(arrows):
+    arrows = [x.split('\n') for x in arrows]
+    length = max([len(x) for x in arrows])
+    lines = []
+    for i in range(length):
+        parts = [x[i] for x in arrows if len(x) >= i + 1]
+        line = list(' ' * max([len(x) for x in parts]))
+        for j in range(len(line)):
+            for part in parts:
+                if len(part) >= j + 1:
+                    if part[j] != ' ':
+                        line[j] = part[j]
+        lines.append(''.join(line))
+    return '\n'.join(lines)
+
+
 Stage = Literal['infer', 'eval', 'train']
 Component = Literal['preprocess', 'forward', 'postprocess']
 
@@ -85,6 +114,22 @@ class Transform:
             t = a >> b >> c
         """
         return Compose([self, other])
+
+    @property
+    def n_display_inputs(self):
+        return len(self._get_signature())
+
+    @property
+    def n_display_outputs(self):
+        return 1
+
+    @property
+    def display_width(self):
+        return len(self.lf_shortname())
+
+    @property
+    def children_widths(self):
+        return [self.display_width]
 
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*.
@@ -918,6 +963,39 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._lf_component_list[i] = {'postprocess'}
 
+    @property
+    def n_display_inputs(self):
+        return self.transforms[0].n_display_inputs
+
+    @property
+    def n_display_outputs(self):
+        return self.transforms[-1].n_display_outputs
+
+    # def lf_bodystr(self, is_child=False):
+    #     sep = f' {self.op} ' if is_child else '\n'
+    #     return sep.join(t.lf_shortname() for t in self.transforms)
+
+    def test_lf_add_format_to_str(self):
+        name = self.lf_bodystr()
+        rows = name.split('\n')
+        assert len(rows) == len(self.transforms)
+        output = [rows[0]]
+        for i, (r, t) in enumerate(zip(rows, self.transforms[1:])):
+            output.append(t.n_display_inputs)
+            widths = [0]
+            for i, w in enumerate(t.children_widths):
+                output.append(create_arrow(i, sum(widths) - i, len(t.children_widths) - i, i + 1))
+                widths.append(w)
+            output.append(r)
+            output.append(t.n_display_outputs)
+        return output
+
+        # res = '\33[32m        ⬇  \33[0m\n'
+        # res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
+        #     [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
+        # res += '\33[32m        ⬇  \33[0m\n'
+        # return res
+        #
     def __call__(self, arg):
         """Call method for Compose
 
@@ -1013,6 +1091,18 @@ class Rollout(CompoundTransform):
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
 
+    @property
+    def n_display_inputs(self):
+        return len(self.transforms)
+
+    @property
+    def n_display_outputs(self):
+        return len(self.transforms)
+
+    @property
+    def children_widths(self):
+        return [t.display_width for t in self.transforms]
+
     def __call__(self, arg):
         """Call method for Rollout
 
@@ -1083,6 +1173,18 @@ class Parallel(CompoundTransform):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
+
+    @property
+    def n_display_inputs(self):
+        return len(self.transforms)
+
+    @property
+    def n_display_inputs(self):
+        return len(self.transforms)
+
+    @property
+    def children_widths(self):
+        return [t.display_width for t in self.transforms]
 
     def __call__(self, arg):
         """Call method for Parallel
