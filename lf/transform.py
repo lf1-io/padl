@@ -329,15 +329,18 @@ class Transform:
             torch_context = contextlib.suppress()
 
         signature_count = 0
+        var_positional_count = 0
         for param in inspect.signature(self).parameters.values():
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
-                    param.POSITIONAL_ONLY,
-                    param.VAR_POSITIONAL):
+                    param.POSITIONAL_ONLY):
                 signature_count += 1
+            if param.kind == param.VAR_POSITIONAL:
+                signature_count += 1
+                var_positional_count += 1
 
         with self.lf_set_stage(stage), torch_context:
-            if signature_count > 1 and isinstance(arg, (list, tuple)):
+            if (var_positional_count > 0 or signature_count > 1) and isinstance(arg, (list, tuple)):
                 return self(*arg)
             return self(arg)
 
