@@ -1,4 +1,4 @@
-from lf import group
+import lf
 from lf import trans
 
 
@@ -21,7 +21,7 @@ def y(y):
 
 _lf_main = (
     x
-    + group(
+    + lf.group(
         y
         + x
         + x
