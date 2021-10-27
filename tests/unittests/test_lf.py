@@ -108,6 +108,11 @@ class TestParallel:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
+    def test_lf_save(self):
+        self.transform_1.lf_save('test.lf')
+        self.transform_2.lf_save('test.lf')
+        self.transform_3.lf_save('test.lf')
+
 
 class TestRollout:
     @pytest.fixture(autouse=True, scope='class')
@@ -152,6 +157,11 @@ class TestRollout:
             assert self.transform_1.lf_preprocess.lf_stage == 'train'
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
+
+    def test_lf_save(self):
+        self.transform_1.lf_save('test.lf')
+        self.transform_2.lf_save('test.lf')
+        self.transform_3.lf_save('test.lf')
 
 
 class TestCompose:
@@ -228,6 +238,13 @@ class TestCompose:
         c = plus_one >> times_two >> trans_with_globals
         all_ = c.lf_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
+
+    def test_lf_save(self):
+        self.transform_1.lf_save('test.lf')
+        self.transform_2.lf_save('test.lf')
+        self.transform_3.lf_save('test.lf')
+        self.transform_4.lf_save('test.lf')
+        self.transform_5.lf_save('test.lf')
 
 
 class TestModel:
@@ -335,6 +352,10 @@ class TestFunctionTransform:
         self.transform_1.lf_to('cpu')
         assert self.transform_1.lf_device == 'cpu'
 
+    def test_lf_save(self):
+        self.transform_1.lf_save('test.lf')
+        self.transform_2.lf_save('test.lf')
+
 
 def test_name():
     assert (plus_one - 'p1')._lf_name == 'p1'
@@ -374,3 +395,6 @@ class TestTorchModuleTransform:
 
     def test_lf_layers(self):
         assert len(self.transform_1.lf_layers) > 0
+
+    def test_lf_save(self):
+        self.transform_1.lf_save('test.lf')

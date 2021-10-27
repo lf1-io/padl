@@ -1,8 +1,5 @@
-from lf import trans
 from lf.transform import AtomicTransform
 from lf.dumptools import inspector
-
-from lf.wrap import _wrap_class
 
 
 def _maketrans(attr):
