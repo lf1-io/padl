@@ -245,7 +245,7 @@ class TestCompose:
         all_ = c.lf_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
 
-    def test_lf_save(self):
+    def test_lf_save_and_load(self):
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
@@ -317,6 +317,16 @@ class TestModel:
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
         assert list(self.model_4.eval_apply([5, 6])) == [(7, 20), (8, 24)]
 
+    def test_lf_save_and_load(self):
+        self.model_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.model_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.model_3.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.model_4.lf_save('test.lf')
+        _ = lf.load('test.lf')
+
 
 class TestFunctionTransform:
     @pytest.fixture(autouse=True, scope='class')
@@ -363,9 +373,11 @@ class TestFunctionTransform:
         self.transform_1.lf_to('cpu')
         assert self.transform_1.lf_device == 'cpu'
 
-    def test_lf_save(self):
+    def test_lf_save_and_load(self):
         self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
 
 
 def test_name():
@@ -407,5 +419,6 @@ class TestTorchModuleTransform:
     def test_lf_layers(self):
         assert len(self.transform_1.lf_layers) > 0
 
-    def test_lf_save(self):
+    def test_lf_save_and_load(self):
         self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
