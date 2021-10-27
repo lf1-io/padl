@@ -3,6 +3,7 @@ import torch
 from lf import transform as lf, trans, Identity
 from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
+from lf.exceptions import WrongDeviceError
 
 
 @trans
@@ -37,6 +38,17 @@ def simple_func(x):
 @trans
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
+
+
+@trans
+class Polynomial(torch.nn.Module):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = torch.nn.Parameter(torch.tensor(float(a)))
+        self.b = torch.nn.Parameter(torch.tensor(float(b)))
+
+    def forward(self, x):
+        return x**self.a + x**self.b
 
 
 def test_isinstance_of_namedtuple():
@@ -319,7 +331,46 @@ class TestFunctionTransform:
         all_ = trans_with_globals.lf_all_transforms()
         assert set(all_) == set([plus, times_two, trans_with_globals])
 
+    def test_lf_to(self):
+        self.transform_1.lf_to('cpu')
+        assert self.transform_1.lf_device == 'cpu'
+
 
 def test_name():
     assert (plus_one - 'p1')._lf_name == 'p1'
     assert plus_one._lf_name is None
+
+
+class TestTransformDeviceCheck:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = (plus_one >> times_two) >> times_two
+        request.cls.transform_2 = plus_one >> (times_two >> times_two)
+
+    def test_device_check(self):
+        self.transform_1.lf_to('gpu')
+        self.transform_1.transforms[1].lf_to('cpu')
+
+        with pytest.raises(WrongDeviceError):
+            self.transform_1._lf_forward_device_check()
+
+        self.transform_2.lf_to('gpu')
+        assert self.transform_2._lf_forward_device_check()
+
+
+class TestTorchModuleTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = Polynomial(2, 3)
+
+    def test_output(self):
+        output = self.transform_1(1)
+        assert output == 2
+
+    def test_device(self):
+        self.transform_1.lf_to('cpu')
+        device = next(self.transform_1.lf_layers[0].parameters()).device.type
+        assert device == 'cpu'
+
+    def test_lf_layers(self):
+        assert len(self.transform_1.lf_layers) > 0
