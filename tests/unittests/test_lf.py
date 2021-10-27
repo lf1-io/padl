@@ -220,7 +220,7 @@ class TestCompose:
         assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
-            [1, 2, 1, 2], loader_kwargs={'batch_size': 2})
+            [1, 2, 1, 2], loader_kwargs={'batch_size': 2}, verbose=True)
         ):
             assert torch.all(batch == torch.tensor([9, 13]))
         # flatten = True
@@ -331,6 +331,12 @@ class TestModel:
         assert list(self.model_2.eval_apply([5, 5])) == [(13, 13), (13, 13)]
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
         assert list(self.model_4.eval_apply([5, 6])) == [(8, 20), (9, 24)]
+
+    def test_train_apply(self):
+        assert list(self.model_1.train_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
+        assert list(self.model_2.train_apply([5, 5])) == [(13, 13), (13, 13)]
+        assert list(self.model_3.train_apply([5, 6])) == [(7, 20), (8, 24)]
+        assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.model_1.lf_save('test.lf')
