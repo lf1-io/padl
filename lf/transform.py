@@ -658,9 +658,9 @@ class CompoundTransform(Transform):
         """
         if isinstance(item, int):
             return self.transforms[item]
-        elif isinstance(item, slice):
+        if isinstance(item, slice):
             return type(self)(self.transforms[item])
-        elif isinstance(item, str):
+        if isinstance(item, str):
             for transform_ in self.transforms:
                 if transform_.lf_name == item:
                     return transform_
