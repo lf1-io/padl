@@ -324,13 +324,17 @@ class TestModel:
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.model_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        m1 = lf.load('test.lf')
+        assert m1.infer_apply((5, 5)) == (13, 13)
         self.model_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        m2 = lf.load('test.lf')
+        assert m2.infer_apply(5) == (13, 13)
         self.model_3.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        m3 = lf.load('test.lf')
+        assert m3.infer_apply(5) == (7, 20)
         self.model_4.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        m4 = lf.load('test.lf')
+        assert m4.infer_apply(5) == (7, 20)
 
 
 class TestFunctionTransform:
@@ -380,7 +384,8 @@ class TestFunctionTransform:
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(5) == 6
         self.transform_2.lf_save('test.lf')
         _ = lf.load('test.lf')
 
