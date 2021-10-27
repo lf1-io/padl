@@ -786,9 +786,9 @@ class Compose(CompoundTransform):
         """Forward part of transforms"""
         if self._lf_forward is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'forward' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'forward' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_forward)
@@ -806,16 +806,15 @@ class Compose(CompoundTransform):
     def lf_preprocess(self):
         if self._lf_preprocess is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'preprocess' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'preprocess' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_preprocess)
 
             if len(t_list) == 1:
-                # TODO Test this line, I think this will cause an error
-                self._lf_preprocess = t_list[0].lf_preprocess
+                self._lf_preprocess = t_list[0]
             elif t_list:
                 self._lf_preprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
@@ -827,16 +826,15 @@ class Compose(CompoundTransform):
     def lf_postprocess(self):
         if self._lf_postprocess is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'postprocess' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'postprocess' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_postprocess)
 
             if len(t_list) == 1:
-                # TODO Test this line, I think this will cause an error
-                self._lf_postprocess = t_list[0].lf_postprocess
+                self._lf_postprocess = t_list[0]
             elif t_list:
                 self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
@@ -892,10 +890,11 @@ class Rollout(CompoundTransform):
         return self._lf_preprocess
 
     def _lf_forward_part(self):
-        # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
-            if len(list(self._lf_component)) >= 2 and 'forward' in self._lf_component:
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            elif 'preprocess' in self._lf_component and 'forward' in self._lf_component:
                 self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
@@ -1026,8 +1025,8 @@ class Unbatchify(ClassTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
 
@@ -1052,8 +1051,8 @@ class Batchify(ClassTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Batchify()')
         self.dim = dim
         self._lf_component = {'preprocess'}
 
