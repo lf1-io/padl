@@ -10,6 +10,7 @@ checkpoints
 notebooks/.ipynb_checkpoints
 *.pyc
 *.swp
+*.lf
 .shu
 data
 EXPLAINED.md

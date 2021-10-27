@@ -32,6 +32,16 @@ def get_info(x):
     return x['info']
 
 
+@trans
+def complex_signature_func_1(a, b=10):
+    return a+b
+
+
+@trans
+def complex_signature_func_2(*a, b= 10):
+    return sum(a) + b
+
+
 def simple_func(x):
     return x
 
@@ -63,6 +73,36 @@ def test_isinstance_of_namedtuple():
     assert not lf._isinstance_of_namedtuple(list(tup))
     assert not lf._isinstance_of_namedtuple(1.)
     assert not lf._isinstance_of_namedtuple('something')
+
+
+class TestLFCallTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = plus_one >> (times_two + times_two)
+        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
+        request.cls.transform_3 = plus_one + times_two >> plus
+        request.cls.transform_4 = plus_one + times_two >> complex_signature_func_1
+        request.cls.transform_5 = plus_one >> complex_signature_func_1
+        request.cls.transform_6 = plus_one + times_two >> complex_signature_func_2
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(1)
+        assert self.transform_2.infer_apply(10)
+        assert self.transform_3.infer_apply(1.4)
+        assert self.transform_4.infer_apply(201)
+        assert self.transform_5.infer_apply(11.1)
+        assert self.transform_6.infer_apply(19)
+
+    def test_save_load(self, cleanup_checkpoint):
+        for transform_ in [self.transform_1,
+                           self.transform_2,
+                           self.transform_3,
+                           self.transform_4,
+                           self.transform_5,
+                           self.transform_6]:
+            transform_.lf_save('test.lf')
+            t_ = lf.load('test.lf')
+            assert t_.infer_apply(1)
 
 
 class TestParallel:
@@ -437,6 +477,9 @@ class TestTorchModuleTransform:
     def test_output(self):
         output = self.transform_1(1)
         assert output == 2
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(1)
 
     def test_device(self):
         self.transform_1.lf_to('cpu')
