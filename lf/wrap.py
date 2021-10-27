@@ -31,9 +31,12 @@ def _wrap_function(fun, ignore_scope=False):
         inspector.trace_this(_set_local_varname, caller.frame)
 
     try:
-        call = inspector.get_attribute_segment_from_frame(caller.frame)
+        call = inspector.get_segment_from_frame(caller.frame, 'call')
     except RuntimeError:
-        call = None
+        try:
+            call = inspector.get_segment_from_frame(caller.frame, 'attribute')
+        except RuntimeError:
+            call = None
     wrapper = FunctionTransform(fun, call_info, call=call)
     functools.update_wrapper(wrapper, fun)
     return wrapper

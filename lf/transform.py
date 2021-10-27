@@ -573,7 +573,7 @@ class AtomicTransform(Transform):
 
     def _lf_title(self):
         return self._lf_call
-        
+
     @property
     def lf_direct_subtransforms(self):
         # pylint: disable=no-self-use
@@ -633,7 +633,7 @@ class ClassTransform(AtomicTransform):
     def __init__(self, lf_name=None, ignore_scope=False):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
-        call = inspector.get_call_segment_from_frame(caller_frameinfo.frame)
+        call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
         AtomicTransform.__init__(
             self,
             call=call,
@@ -1158,7 +1158,7 @@ class Identity(BuiltinTransform):
         return args
 
 
-class Unbatchify(BuiltinTransform):
+class Unbatchify(ClassTransform):
     """Mark start of postprocessing
 
     Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
@@ -1195,7 +1195,7 @@ class Unbatchify(BuiltinTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(BuiltinTransform):
+class Batchify(ClassTransform):
     """Mark end of preprocessing.
 
     Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
