@@ -226,13 +226,25 @@ class Transform:
         creates the transform. """
         return NotImplemented
 
-    def lf_all_transforms(self):
+    def lf_all_transforms(self, result=None):
         """Return a list of all transforms needed for executing the transform.
 
         This includes the transform itself, the subtransforms of a compount transform or
         transforms a function-transform depends on as a global. """
+        if result is None:
+            result = []
+        if self in result:
+            return result
+        result.append(self)
+        for transform in self.lf_direct_subtransforms:
+            transform.lf_all_transforms(result)
+        return result
+
+    @property
+    def lf_direct_subtransforms(self):
+        """Iterate over the direct subtransforms of this. """
         # pylint: disable=no-self-use
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_dumps(self) -> str:
         """Dump the transform as python code. """
@@ -561,19 +573,14 @@ class AtomicTransform(Transform):
 
     def _lf_title(self):
         return self._lf_call
-
-    def lf_all_transforms(self):
-        res = [self]
+        
+    @property
+    def lf_direct_subtransforms(self):
+        # pylint: disable=no-self-use
         globals_dict, nonlocals_dict = self._lf_closurevars
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
-            try:
-                children = v.lf_all_transforms()
-            except AttributeError:
-                continue
-            for child_transform in children:
-                if child_transform not in res:
-                    res.append(child_transform)
-        return res
+            if isinstance(v, Transform):
+                yield v
 
 
 class FunctionTransform(AtomicTransform):
@@ -841,13 +848,9 @@ class CompoundTransform(Transform):
 
         return list_flat
 
-    def lf_all_transforms(self):
-        res = [self]
-        for transform in self.transforms:
-            for child_transform in transform.lf_all_transforms():
-                if child_transform not in res:
-                    res.append(child_transform)
-        return res
+    @property
+    def lf_direct_subtransforms(self):
+        yield from self.transforms
 
     def grouped(self):
         """Return a grouped version of *self*. """
@@ -1165,7 +1168,7 @@ class Unbatchify(BuiltinTransform):
     """
 
     def __init__(self, dim=0, cpu=True):
-        super().__init__('lf.Unbatchify()')
+        super().__init__()
         self.dim = dim
         self._lf_component = {'postprocess'}
         self.cpu = cpu
@@ -1203,7 +1206,7 @@ class Batchify(BuiltinTransform):
     """
 
     def __init__(self, dim=0):
-        super().__init__('lf.Batchify()')
+        super().__init__()
         self.dim = dim
         self._lf_component = {'preprocess'}
 
