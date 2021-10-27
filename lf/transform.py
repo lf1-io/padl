@@ -642,6 +642,27 @@ class CompoundTransform(Transform):
         except (AttributeError, TypeError):
             self._lf_component = None
 
+    def __getitem__(self, item):
+        """Get item
+
+        If int, gets item'th transform in this CompoundTrasform.
+        If slice, gets sliced transform of same type
+        If str, gets first transform with name item
+
+        :param item: Should be of type {int, slice, str}
+        """
+        if isinstance(item, int):
+            return self.transforms[item]
+        elif isinstance(item, slice):
+            return type(self)(self.transforms[item])
+
+        if isinstance(item, str):
+            for transform_ in self.transforms:
+                if transform_.lf_name == item:
+                    return transform_
+            raise ValueError(f"{item}: Transform with lf_name '{item}' not found")
+        raise TypeError('Unknown type for get item: expected type {int, slice, str}')
+
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
             x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
