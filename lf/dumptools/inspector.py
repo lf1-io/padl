@@ -163,7 +163,10 @@ def get_statement(source: str, lineno: int):
         except ValueError:
             continue
         try:
-            return _get_statement_from_block(block, lineno_in_block + i)
+            try:
+                return _get_statement_from_block(block, lineno_in_block + i)
+            except SyntaxError:
+                return _get_statement_from_block('(' + block + ')', lineno_in_block + i)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
