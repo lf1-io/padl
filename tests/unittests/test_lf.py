@@ -111,7 +111,8 @@ class TestParallel:
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
         self.transform_2.lf_save('test.lf')
         _ = lf.load('test.lf') # TODO This fails
         self.transform_3.lf_save('test.lf')
@@ -164,7 +165,8 @@ class TestRollout:
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(2) == (3, 4, 4)
         self.transform_2.lf_save('test.lf')
         _ = lf.load('test.lf') # TODO Fails
         self.transform_3.lf_save('test.lf')
@@ -254,9 +256,11 @@ class TestCompose:
         self.transform_3.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_4.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t4 = lf.load('test.lf')
+        assert t4.infer_apply(1) == 4
         self.transform_5.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t5 = lf.load('test.lf')
+        assert t5.infer_apply(1) == torch.tensor(9)
 
 
 class TestModel:
