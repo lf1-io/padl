@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.exceptions import WrongDeviceError
 
 
 class _Notset:
@@ -59,7 +60,7 @@ class Transform:
         self._lf_varname = _notset
         self._lf_name = lf_name
         self._lf_component = {'forward'}
-        self._lf_device = 'gpu'
+        self._lf_device = 'cpu'
         self._lf_layers = None
 
     @property
@@ -283,6 +284,20 @@ class Transform:
     def _lf_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
         self._lf_varname = val
 
+    def _lf_forward_device_check(self):
+        """Check all transform in forward are in correct device
+
+        All transforms in forward need to be in same device as specified for
+        the whole CompoundTransform.
+
+        :return: Bool
+        """
+        for layer in self.lf_forward.lf_layers:
+            for parameters in layer.parameters():
+                if parameters.device.type != self.lf_device:
+                    raise WrongDeviceError(self, layer)
+        return True
+
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
@@ -313,6 +328,8 @@ class Transform:
         :returns: A generator that allows iterating over the output.
         """
         assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
+
+        self._lf_forward_device_check()
 
         preprocess = self.lf_preprocess
         forward = self.lf_forward
@@ -385,7 +402,6 @@ class Transform:
     def lf_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
         f = self._lf_forward_part()
-        f.lf_to(self.lf_device)  # TODO: do this?
         return f
 
     @property
@@ -398,9 +414,11 @@ class Transform:
     def lf_to(self, device: str):  # TODO: change
         """Set the transform's device to *device*.
 
-        :param device: device on which to map {'cpu', 'gpu'}
+        :param device: device on which to map {'cpu', 'cuda', 'cuda:N'}
         """
         self._lf_device = device
+        for layer in self.lf_layers:
+            layer.to(device)
         return self
 
     @property
@@ -692,6 +710,38 @@ class CompoundTransform(Transform):
             res += f' [{self.lf_varname()}]'
         return res
 
+    def lf_to(self, device: str):
+        """Set the transform's device to *device*
+
+        :param device: device on which to send {'cpu', cuda', 'cuda:N'}
+        """
+        self._lf_device = device
+        for transform_ in self.transforms:
+            transform_.lf_to(device)
+        return self
+
+    def _lf_forward_device_check(self):
+        """Check all transform in forward are in correct device
+
+        All transforms in forward need to be in same device as specified for
+        the whole CompoundTransform.
+
+        :return: Bool
+        """
+        return_val = True
+
+        if isinstance(self.lf_forward, type(self)):
+            for transform_ in self.lf_forward.transforms:
+                if self.lf_device != transform_.lf_device:
+                    raise WrongDeviceError(self, transform_)
+                return_val = transform_._lf_forward_device_check()
+            return return_val
+
+        if self.lf_device != self.lf_forward.lf_device:
+            raise WrongDeviceError(self, self.lf_forward)
+
+        return self.lf_forward._lf_forward_device_check()
+
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
         """Flatten *list_* such that members of *cls* are not nested.
@@ -728,7 +778,7 @@ class CompoundTransform(Transform):
         """Get deduplicated keys from list of transforms
 
         Names are updated as below.
-        [None, None, 'a', 'a', 'b', 'c'] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'c']
+        [None, None, 'a', 'a', 'b', None] -> ['out_0', 'out_1', 'a_0', 'a_1', 'b', 'out_5']
 
         :param transforms: list of transforms
         :return: list of keys
@@ -1035,35 +1085,50 @@ class Identity(BuiltinTransform):
         return args
 
 
-class Unbatchify(ClassTransform):
-    """Remove batch dimension (inverse of Batchify).
+class Unbatchify(BuiltinTransform):
+    """Mark start of postprocessing
+
+    Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
 
     :param dim: batching dimension
+    :param cpu: if true, moves output to cpu after unbatchify
     """
 
-    def __init__(self, dim=0):
+    def __init__(self, dim=0, cpu=True):
         super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
+        self.cpu = cpu
+
+    def _move_to_device(self, args):
+        if isinstance(args, (tuple, list)):
+            return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.to('cpu')
+        return args
 
     def __call__(self, args):
         assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
         if Transform.lf_stage != 'infer':
-            return args
+            return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.squeeze(self.dim)
+            args = args.squeeze(self.dim)
+            return args.to('cpu') if self.cpu else args
 
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(ClassTransform):
-    """Add a batch dimension at dimension *dim*. During inference, this unsqueezes
-    tensors and, recursively, tuples thereof.
+class Batchify(BuiltinTransform):
+    """Mark end of preprocessing.
 
+    Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    recursively, tuples thereof. Batchify also moves the input tensors to device specified
+    for the transform.
+    
     :param dim: batching dimension
     """
 
@@ -1072,18 +1137,25 @@ class Batchify(ClassTransform):
         self.dim = dim
         self._lf_component = {'preprocess'}
 
+    def _move_to_device(self, args):
+        if isinstance(args, (tuple, list)):
+            return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, torch.Tensor):
+            return args.to(self.lf_device)
+        return args
+
     def __call__(self, args):
         assert Transform.lf_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
         if Transform.lf_stage != 'infer':
-            return args
+            return self._move_to_device(args)
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.unsqueeze(self.dim)
+            return args.unsqueeze(self.dim).to(self.lf_device)
         if isinstance(args, (float, int)):
-            return torch.tensor([args])
+            return torch.tensor([args]).to(self.lf_device)
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
