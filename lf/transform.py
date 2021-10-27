@@ -350,6 +350,7 @@ class Transform:
                 output = post._lf_call_transform(output, stage)
 
             if flatten:
+                pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
                 yield from output
@@ -416,6 +417,10 @@ class Transform:
                 layers.append(subtrans)
         return layers
 
+    def lf_parameters(self):
+        for layer in self.lf_layers:
+            yield from layer.parameters()
+
     @contextlib.contextmanager
     def lf_set_stage(self, stage: Optional[str]=None):
         """Set of stage of Transform
@@ -457,7 +462,7 @@ class Transform:
         )
         return loader
 
-    def infer_apply(self, input):  # TODO: *arg? **kwarg?
+    def infer_apply(self, input):
         """Call transform within the infer context.
 
         This expects a single argument and returns a single output.
@@ -627,6 +632,13 @@ class CompoundTransform(Transform):
             self._lf_component = set.union(*self._lf_component_list)
         except (AttributeError, TypeError):
             self._lf_component = None
+
+    def __getitem__(self, item):
+        items = self.transforms[item]
+        if isinstance(items, list):
+            return type(self)(items)
+        else:
+            return items
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
@@ -1023,9 +1035,6 @@ class Identity(BuiltinTransform):
         return args
 
 
-identity = Identity()
-
-
 class Unbatchify(ClassTransform):
     """Remove batch dimension (inverse of Batchify).
 
@@ -1049,9 +1058,6 @@ class Unbatchify(ClassTransform):
             return args.squeeze(self.dim)
 
         raise TypeError('only tensors and tuples of tensors recursively supported...')
-
-
-unbatch = Unbatchify()
 
 
 class Batchify(ClassTransform):
@@ -1079,9 +1085,6 @@ class Batchify(ClassTransform):
         if isinstance(args, (float, int)):
             return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
-
-
-batch = Batchify()
 
 
 def save(transform: Transform, path):
