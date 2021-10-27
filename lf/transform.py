@@ -251,6 +251,12 @@ class Transform:
         return title + f'[{varname}]'
 
     @staticmethod
+    def _add_parentheses_if_needed(subtrans, name):
+        if isinstance(subtrans, CompoundTransform) and subtrans._lf_name is None:
+            return '(' + name + ')'
+        return name
+
+    @staticmethod
     def _lf_add_format_to_str(name):
         res = '\33[32m        ⬇  \33[0m\n'
         res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
@@ -756,6 +762,8 @@ class CompoundTransform(Transform):
 
     def lf_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
+        if is_child:
+            return sep.join(Transform._add_parentheses_if_needed(t, t.lf_shortname()) for t in self.transforms)
         return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
@@ -868,7 +876,7 @@ class Compose(CompoundTransform):
     :param lf_group:
     :return: output from series of transforms
     """
-    op = '>>'
+    op = '>'
     display_op = '↓'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
