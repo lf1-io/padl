@@ -290,12 +290,14 @@ class Transform:
         else:
             torch_context = contextlib.suppress()
 
-        signature_parameters = inspect.signature(self).parameters
-
+        signature_parameters = self._get_signature()
         with self.lf_set_stage(stage), torch_context:
             if len(signature_parameters) == 1:
                 return self(arg)
             return self(*arg)
+
+    def _get_signature(self):
+        return inspect.signature(self).parameters
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
                       verbose: bool = False, flatten: bool = False):  # TODO: different name?
@@ -569,6 +571,8 @@ class ClassTransform(AtomicTransform):
 
 class TorchModuleTransform(ClassTransform):
     """Torch Module Transform"""
+    def _get_signature(self):
+        return inspect.signature(self.forward).parameters
 
     def lf_pre_save(self, path, i):
         """
@@ -992,6 +996,9 @@ class Identity(ClassTransform):
         return args
 
 
+identity = Identity()
+
+
 class Unbatchify(ClassTransform):
     """Remove batch dimension (inverse of Batchify).
 
@@ -1015,6 +1022,9 @@ class Unbatchify(ClassTransform):
             return args.squeeze(self.dim)
 
         raise TypeError('only tensors and tuples of tensors recursively supported...')
+
+
+unbatch = Unbatchify()
 
 
 class Batchify(ClassTransform):
@@ -1042,6 +1052,9 @@ class Batchify(ClassTransform):
         if isinstance(args, (float, int)):
             return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
+
+
+batch = Batchify()
 
 
 def save(transform: Transform, path):
