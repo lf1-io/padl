@@ -8,8 +8,6 @@ from itertools import chain
 from pathlib import Path
 import types
 from typing import Iterable, List, Literal, Optional, Set, Tuple, Union, Iterator
-
-
 from warnings import warn
 
 import numpy as np
