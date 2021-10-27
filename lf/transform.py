@@ -7,7 +7,7 @@ import inspect
 from itertools import chain
 from pathlib import Path
 import types
-from typing import Iterable, List, Literal, Optional, Set, Tuple, Union
+from typing import Iterable, List, Literal, Optional, Set, Tuple, Union, Iterator
 from warnings import warn
 
 import numpy as np
@@ -435,7 +435,8 @@ class Transform:
                 layers.append(subtrans)
         return layers
 
-    def lf_parameters(self):
+    def lf_parameters(self) -> Iterator:
+        """ Iterate over parameters. """
         for layer in self.lf_layers:
             yield from layer.parameters()
 
@@ -651,12 +652,25 @@ class CompoundTransform(Transform):
         except (AttributeError, TypeError):
             self._lf_component = None
 
-    def __getitem__(self, item):
-        items = self.transforms[item]
-        if isinstance(items, list):
-            return type(self)(items)
-        else:
-            return items
+    def __getitem__(self, item : Union[int, slice, str]) -> Transform:
+        """Get item
+
+        If int, gets item'th transform in this CompoundTransform.
+        If slice, gets sliced transform of same type
+        If str, gets first transform with name item
+
+        :param item: Should be of type {int, slice, str}
+        """
+        if isinstance(item, int):
+            return self.transforms[item]
+        if isinstance(item, slice):
+            return type(self)(self.transforms[item])
+        if isinstance(item, str):
+            for transform_ in self.transforms:
+                if transform_.lf_name == item:
+                    return transform_
+            raise ValueError(f"{item}: Transform with lf_name '{item}' not found")
+        raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
