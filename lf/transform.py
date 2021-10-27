@@ -1,5 +1,6 @@
 """The Transform class and some of its children. """
 import ast
+import re
 from copy import copy
 from collections import Counter, namedtuple
 import contextlib
@@ -238,16 +239,14 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
-    def lf_shortname(self, is_child=False):
-        evaluable_repr = self.lf_evaluable_repr()
-        t = evaluable_repr if is_child else '\33[1m' + evaluable_repr
-        end = '' if is_child else ':\33[0m\n\n'
+    def lf_shortname(self):
+        title = self._lf_title()
         if self.lf_name is not None:
-            return t + f'[{self.lf_name}]' + end
+            return title + f'[{self.lf_name}]'
         varname = self.lf_varname()
-        if varname is None or varname == evaluable_repr:
-            return t + end
-        return t + f'[{varname}]' + end
+        if varname is None or varname == title:
+            return title
+        return title + f'[{varname}]'
 
     @staticmethod
     def _lf_add_format_to_str(name):
@@ -259,14 +258,16 @@ class Transform:
     def lf_bodystr(self):
         return NotImplemented
 
-    def _lf_compact_name(self):
-        if isinstance(self, CompoundTransform) and self._lf_name is None:
-            return self.lf_bodystr(is_child=True)
-        else:
-            return self.lf_shortname(is_child=True)
+    def lf_repr(self, indent: int = 0) -> str:
+        # pylint: disable=unused-argument
+        varname = self.lf_varname()
+        evaluable_repr = self.lf_evaluable_repr()
+        if varname is None or varname == evaluable_repr:
+            return f'{evaluable_repr}'
+        return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = self.lf_shortname()
+        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
         bottom_message = self.lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
@@ -534,6 +535,9 @@ class AtomicTransform(Transform):
             var_transforms = {}
         return var_transforms.get(self, self._lf_call)
 
+    def _lf_title(self):
+        return self._lf_call
+
     def lf_all_transforms(self):
         res = [self]
         globals_dict, nonlocals_dict = self._lf_closurevars
@@ -563,9 +567,11 @@ class FunctionTransform(AtomicTransform):
         self.function = function
         self.source = inspect.getsource(function)
 
-    def lf_bodystr(self):
+    def lf_bodystr(self, length=20):
         body_msg = self.source
-        return body_msg[:100] + ('  ...' if len(body_msg) > 100 else '')
+        body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
+        lines = re.split('(\n)', body_msg)
+        return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
@@ -593,9 +599,11 @@ class ClassTransform(AtomicTransform):
             lf_name=lf_name
         )
 
-    def lf_bodystr(self):
+    def lf_bodystr(self, length=20):
         body_msg = thingfinder.find(self.__class__.__name__)[0]
-        return body_msg[:200] + ('  ...' if len(body_msg) > 200 else '')
+        body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
+        lines = re.split('(\n)', body_msg)
+        return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
 
 
 class TorchModuleTransform(ClassTransform):
@@ -649,6 +657,20 @@ class CompoundTransform(Transform):
         except (AttributeError, TypeError):
             self._lf_component = None
 
+    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+        sub_reprs = [
+            x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
+            for x in self.transforms
+        ]
+        result = (
+            '(\n    ' + ' ' * indent
+            + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
+            + '\n' + ' ' * indent + ')'
+        )
+        if self._lf_group:
+            result = 'lf.group' + result
+        return result
+
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
             graph = {}
@@ -679,9 +701,32 @@ class CompoundTransform(Transform):
                                           self._lf_call_info.scope)
         return graph, scopemap
 
+    def lf_repr(self, indent=0):
+        sub_reprs = [
+            x.lf_repr(indent + 4)
+            for x in self.transforms
+        ]
+        res = (
+            '(\n    ' + ' ' * indent
+            + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
+            + '\n' + ' ' * indent + ')'
+        )
+        if self.lf_varname() is not None and self.lf_varname() is not _notset:
+            res += f' [{self.lf_varname()}]'
+        return res
+
+    def lf_shortname(self):
+        if self._lf_name is None:
+            return self.lf_bodystr(is_child=True)
+        else:
+            return super().lf_shortname()
+
+    def _lf_title(self):
+        return self.__class__.__name__
+
     def lf_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
-        return sep.join(t._lf_compact_name() for t in self.transforms)
+        return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
         res = '\33[32m        ⬇  \33[0m\n'
