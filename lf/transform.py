@@ -8,6 +8,7 @@ from itertools import chain
 from pathlib import Path
 import types
 from typing import Iterable, List, Literal, Optional, Set, Tuple, Union
+from warnings import warn
 
 import numpy as np
 import torch
@@ -136,7 +137,7 @@ class Transform:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
         start_source = f'{name or "_lf_dummy"} = {self.lf_evaluable_repr()}'
-        start_node = ast.parse(start_source)
+        start_node = ast.parse(start_source).body[0]
         start_globals = {
             (var, self._lf_call_info.scope)  # this should be the current scope ...?
             for var in var2mod.find_globals(start_node)
@@ -545,7 +546,11 @@ class FunctionTransform(AtomicTransform):
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
-        closurevars = inspect.getclosurevars(self.function)
+        try:
+            closurevars = inspect.getclosurevars(self.function)
+        except TypeError as exc:
+            warn(f"Couln't get closurevars ({exc}). This is usually fine.")
+            return {}, {}
         return closurevars.globals, closurevars.nonlocals
 
     def __call__(self, *args, **kwargs):
@@ -553,13 +558,14 @@ class FunctionTransform(AtomicTransform):
 
 
 class ClassTransform(AtomicTransform):
-    """Class Transform
+    """Class Transform.
 
-    :param lf_name: name of the transform
+    :param lf_name: Name of the transform.
     """
-    def __init__(self, lf_name=None):
+
+    def __init__(self, lf_name=None, ignore_scope=False):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
-        call_info = inspector.CallInfo(caller_frameinfo)
+        call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_call_segment_from_frame(caller_frameinfo.frame)
         AtomicTransform.__init__(
             self,
@@ -633,7 +639,7 @@ class CompoundTransform(Transform):
             + '\n' + ' ' * indent + ')'
         )
         if self._lf_group:
-            result = 'group' + result
+            result = 'lf.group' + result
         return result
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
@@ -644,16 +650,9 @@ class CompoundTransform(Transform):
 
         start = self._lf_codegraph_startnode(name)
 
-        if self._lf_group:
-            (source, node), scope = thingfinder.find_in_scope('group', self._lf_call_info.scope)
-
-            groupnode = var2mod.CodeNode(
-                source=source,
-                ast_node=node,
-                globals_=[]
-            )
-            graph['group', scope] = groupnode
-            scopemap['group', scope] = scope
+        if self._lf_group and 'lf' not in graph:
+            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
+            scopemap['lf', scope] = scope
 
         if name is not None:
             assert scope is not None
@@ -791,9 +790,9 @@ class Compose(CompoundTransform):
         """Forward part of transforms"""
         if self._lf_forward is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'forward' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'forward' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_forward)
@@ -811,16 +810,15 @@ class Compose(CompoundTransform):
     def lf_preprocess(self):
         if self._lf_preprocess is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'preprocess' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'preprocess' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_preprocess)
 
             if len(t_list) == 1:
-                # TODO Test this line, I think this will cause an error
-                self._lf_preprocess = t_list[0].lf_preprocess
+                self._lf_preprocess = t_list[0]
             elif t_list:
                 self._lf_preprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
@@ -832,16 +830,15 @@ class Compose(CompoundTransform):
     def lf_postprocess(self):
         if self._lf_postprocess is None:
             t_list = []
-            for transform_, component in zip(self.transforms, self._lf_component_list):
-                if 'postprocess' in component:
-                    if len(component) == 1:
+            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+                if 'postprocess' in component_set:
+                    if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
                         t_list.append(transform_.lf_postprocess)
 
             if len(t_list) == 1:
-                # TODO Test this line, I think this will cause an error
-                self._lf_postprocess = t_list[0].lf_postprocess
+                self._lf_postprocess = t_list[0]
             elif t_list:
                 self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
             else:
@@ -897,10 +894,11 @@ class Rollout(CompoundTransform):
         return self._lf_preprocess
 
     def _lf_forward_part(self):
-        # TODO Should we set self._lf_forward to Identity() like in lf_preprocess and lf_postprocess
         if self._lf_forward is None:
             t_list = [x.lf_forward for x in self.transforms]
-            if len(list(self._lf_component)) >= 2 and 'forward' in self._lf_component:
+            if all([isinstance(t, Identity) for t in t_list]):
+                self._lf_forward = Identity()
+            elif 'preprocess' in self._lf_component and 'forward' in self._lf_component:
                 self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
             else:
                 self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
@@ -940,8 +938,8 @@ class Parallel(CompoundTransform):
     def __call__(self, arg):
         """Call method for Parallel
 
-        :param arg: Argument to call with
-        :return: namedtuple of output
+        :param arg: Argument to call with.
+        :return: Namedtuple of output.
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
@@ -979,14 +977,43 @@ class Parallel(CompoundTransform):
         return self._lf_postprocess
 
 
-class Identity(ClassTransform):
+class BuiltinTransform(AtomicTransform):
+    def __init__(self, call):
+        super().__init__(call)
+
+    def _lf_build_codegraph(self, graph: Optional[dict] = None,
+                            scopemap: Optional[dict] = None,
+                            name: Optional[str] = None,
+                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:  # TODO: refactor
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        if scope is None:
+            scope = thingfinder.Scope.empty()
+        if ('lf', scope) not in graph:
+            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
+            scopemap['lf', scope] = scope
+
+        start_source = f'{name or "_lf_dummy"} = {self._lf_call}'
+
+        graph[self.__class__.__name__, scope] = \
+            var2mod.CodeNode.from_source(start_source, scope)
+
+        scopemap[self.__class__.__name__, scope] = scope
+
+        return graph, scopemap
+
+
+class Identity(BuiltinTransform):
     """Do nothing.
 
     :param lf_name: name of the transform
     """
 
-    def __init__(self, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self):
+        super().__init__('lf.Identity()')
 
     @property
     def lf_is_identity(self):
@@ -1005,8 +1032,8 @@ class Unbatchify(ClassTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Unbatchify()')
         self.dim = dim
         self._lf_component = {'postprocess'}
 
@@ -1034,8 +1061,8 @@ class Batchify(ClassTransform):
     :param dim: batching dimension
     """
 
-    def __init__(self, dim=0, lf_name=None):
-        super().__init__(lf_name=lf_name)
+    def __init__(self, dim=0):
+        super().__init__('lf.Batchify()')
         self.dim = dim
         self._lf_component = {'preprocess'}
 

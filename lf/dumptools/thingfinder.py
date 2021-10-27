@@ -198,7 +198,8 @@ def _get_call_assignments(args, source, values, keywords):
 
 def _get_call_signature(source: str):
     call = ast.parse(source).body[0].value
-    assert isinstance(call, ast.Call)
+    if not isinstance(call, ast.Call):
+        return [], {}
     args = [ast.get_source_segment(source, arg) for arg in call.args]
     kwargs = {
         kw.arg: ast.get_source_segment(source, kw.value) for kw in call.keywords
@@ -216,6 +217,10 @@ class Scope:
     def toplevel(cls, module):
         """Create a top-level scope (i.e. module level, no nesting). """
         return cls(module, '', [])
+
+    @classmethod
+    def empty(cls):
+        return cls(None, '', [])
 
     @classmethod
     def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0):
@@ -237,7 +242,6 @@ class Scope:
         # ...
         values, keywords = _get_call_signature(call_source)
         args = function_defs[-1].args
-        values, keywords = _get_call_signature(call_source)
         assignments = _get_call_assignments(args, def_source, values, keywords)
         call_assignments = []
         for k, v in assignments.items():
