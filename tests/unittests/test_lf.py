@@ -108,10 +108,13 @@ class TestParallel:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
-    def test_lf_save(self):
+    def test_lf_save_and_load(self):
         self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
+        # _ = lf.load('test.lf') # TODO This fails
         self.transform_3.lf_save('test.lf')
+        # _ = lf.load('test.lf') # TODO This fails
 
 
 class TestRollout:
@@ -158,10 +161,13 @@ class TestRollout:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
-    def test_lf_save(self):
+    def test_lf_save_and_load(self):
         self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
+        # _ = lf.load('test.lf') # TODO Fails
         self.transform_3.lf_save('test.lf')
+        # _ = lf.load('test.lf') # TODO Fails
 
 
 class TestCompose:
@@ -241,10 +247,15 @@ class TestCompose:
 
     def test_lf_save(self):
         self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_3.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_4.lf_save('test.lf')
+        _ = lf.load('test.lf')
         self.transform_5.lf_save('test.lf')
+        _ = lf.load('test.lf')
 
 
 class TestModel:
