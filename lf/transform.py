@@ -291,7 +291,7 @@ class Transform:
 
         :return: Bool
         """
-        for layer in self.lf_layers:
+        for layer in self.lf_forward.lf_layers:
             for parameters in layer.parameters():
                 if parameters.device.type != self.lf_device:
                     raise WrongDeviceError(self, layer)
@@ -715,11 +715,18 @@ class CompoundTransform(Transform):
         :return: Bool
         """
         return_val = True
-        for transform_ in self.lf_forward.transforms:
-            if self.lf_device != transform_.lf_device:
-                raise WrongDeviceError(self, transform_)
-            return_val = transform_._lf_forward_device_check()
-        return return_val
+
+        if isinstance(self.lf_forward, type(self)):
+            for transform_ in self.lf_forward.transforms:
+                if self.lf_device != transform_.lf_device:
+                    raise WrongDeviceError(self, transform_)
+                return_val = transform_._lf_forward_device_check()
+            return return_val
+
+        if self.lf_device != self.lf_forward.lf_device:
+            raise WrongDeviceError(self, self.lf_forward)
+
+        return self.lf_forward._lf_forward_device_check()
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
