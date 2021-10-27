@@ -181,22 +181,57 @@ class _CallFinder(_ThingFinder):
 
 def _get_call_assignments(args, source, values, keywords):
     argnames = [x.arg for x in args.args]
+    pos_only_argnames = [x.arg for x in args.posonlyargs]
+    all_argnames = pos_only_argnames + argnames
     defaults = {
         name: ast.get_source_segment(source, val)
         for name, val in zip(argnames[::-1], args.defaults[::-1])
     }
+    kwonly_defaults = {
+        ast.get_source_segment(source, name): ast.get_source_segment(source, val)
+        for name, val in zip(args.kwonlyargs, args.kw_defaults)
+        if val is not None
+    }
     res = {}
-    for name, val in zip(argnames, values):
+    for name, val in kwonly_defaults.items():
+        try:
+            res[name] = keywords[name]
+        except KeyError:
+            res[name] = val
+
+    for name, val in zip(all_argnames, values):
         res[name] = val
+
+    if args.vararg is not None:
+        res[args.vararg.arg] = '[' + ', '.join(values[len(all_argnames):]) + ']'
+
+    kwargs = {}
     for name, val in keywords.items():
-        res[name] = val
+        if name in res:
+            continue
+        if name in argnames:
+            res[name] = val
+        else:
+            print(name)
+            kwargs[name] = val
+
+    if kwargs and not set(kwargs) == {None}:
+        assert args.kwarg is not None, 'Keyword args given, but no **kwarg present.'
+        res[args.kwarg.arg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
+
     for name, val in defaults.items():
         if name not in res:
             res[name] = val
+
     return res
 
 
 def _get_call_signature(source: str):
+    """Get the call signature of a string containing a call.
+
+    :param source: String containing a call (e.g. "a(2, b, c=100)")
+    :returns: A tuple with a list of positional arguments and a list of keyword arguments.
+    """
     call = ast.parse(source).body[0].value
     if not isinstance(call, ast.Call):
         return [], {}
@@ -223,7 +258,7 @@ class Scope:
         return cls(None, '', [])
 
     @classmethod
-    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0):
+    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0, calling_scope=None):
         tree = ast.parse(def_source)
         branch = _find_branch(tree, lineno)
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
@@ -248,6 +283,7 @@ class Scope:
             src = f'{k} = {v}'
             assignment = ast.parse(src).body[0]
             assignment._source = src
+            assignment._scope = calling_scope
             call_assignments.append(assignment)
 
         scopelist = []
@@ -306,7 +342,12 @@ def find_in_function_def(var_name, source, lineno, call_source):
 def find_in_scope(var_name, scope):
     for _scopename, tree in scope.scopelist:
         try:
-            return find_in_source(var_name, scope.def_source, tree=tree), scope
+            source, node = find_in_source(var_name, scope.def_source, tree=tree)
+            try:
+                scope = node._scope
+            except AttributeError:
+                pass
+            return (source, node), scope
         except ThingNotFound:
             scope = scope.up()
             continue

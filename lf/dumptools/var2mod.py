@@ -74,7 +74,7 @@ class _VarFinder(ast.NodeVisitor):
 
     def _find_in_function_def(self, node):
         """Special case: exclude args from globals. """
-        for arg in node.args.args:
+        for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
             self.locals.add(arg.arg)
         if node.args.vararg is not None:
             self.locals.add(node.args.vararg.arg)

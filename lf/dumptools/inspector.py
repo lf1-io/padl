@@ -46,11 +46,13 @@ class CallInfo:
             call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
             definition_source = get_source(caller_frameinfo.filename)
             fdef_lineno = caller_frameinfo.frame.f_lineno
+            calling_scope = thingfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
             scope = thingfinder.Scope.from_source(definition_source, fdef_lineno,
-                                                  call_source, module, drop_n)
+                                                  call_source, module, drop_n,
+                                                  calling_scope)
             assert len(scope) <= 1, 'scope longer than 1 currently not supported'
             return scope
-        except (SyntaxError, IndexError, RuntimeError) as exc:
+        except (SyntaxError, RuntimeError) as exc:
             warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
             return thingfinder.Scope.toplevel(module)
 

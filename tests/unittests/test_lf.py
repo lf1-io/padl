@@ -114,9 +114,9 @@ class TestParallel:
         t1 = lf.load('test.lf')
         assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
         self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf') # TODO This fails
+        _ = lf.load('test.lf')
         self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf') # TODO This fails
+        _ = lf.load('test.lf')
 
 
 class TestRollout:
@@ -168,9 +168,9 @@ class TestRollout:
         t1 = lf.load('test.lf')
         assert t1.infer_apply(2) == (3, 4, 4)
         self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf') # TODO Fails
+        _ = lf.load('test.lf')
         self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf') # TODO Fails
+        _ = lf.load('test.lf')
 
 
 class TestCompose:

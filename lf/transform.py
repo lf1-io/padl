@@ -164,6 +164,17 @@ class Transform:
         if scopemap is None:
             scopemap = {}
 
+        if scope is None:
+            scope = self._lf_call_info.scope
+
+
+        if name is not None:
+            name_scope_here = name, scope
+        else:
+            name_scope_here = None
+
+        given_name = name
+
         try:
             if self._lf_call == name:
                 name = None
@@ -200,23 +211,25 @@ class Transform:
                 continue
 
             # find how next_var came into being
-            (source, node), scope = thingfinder.find_in_scope(next_var, next_scope)
-            scopemap[next_var, next_scope] = scope
+            (source, node), scope_of_next_var = thingfinder.find_in_scope(next_var, next_scope)
+            scopemap[next_var, next_scope] = scope_of_next_var
 
             # find dependencies
             globals_ = {
-                (var, scope)
+                (var, scope_of_next_var)  # TODO: this
                 for var in var2mod.find_globals(node)
             }
-            graph[next_var, scope] = var2mod.CodeNode(source=source, globals_=globals_,
-                                                      ast_node=node)
+            graph[next_var, scope_of_next_var] = var2mod.CodeNode(source=source, globals_=globals_,
+                                                                  ast_node=node)
             todo.update(globals_)
         # find dependencies done
 
         if name is not None:
             assert scope is not None
             graph[name, scope] = start
-            scopemap[name, scope] = scope
+
+        if given_name is not None:
+            scopemap[given_name, scope] = scope
 
         return graph, scopemap
 
