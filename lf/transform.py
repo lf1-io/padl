@@ -328,12 +328,18 @@ class Transform:
         else:
             torch_context = contextlib.suppress()
 
-        signature_parameters = inspect.signature(self).parameters
+        signature_count = 0
+        for param in inspect.signature(self).parameters.values():
+            if param.kind in (
+                    param.POSITIONAL_OR_KEYWORD,
+                    param.POSITIONAL_ONLY,
+                    param.VAR_POSITIONAL):
+                signature_count += 1
 
         with self.lf_set_stage(stage), torch_context:
-            if len(signature_parameters) == 1:
-                return self(arg)
-            return self(*arg)
+            if signature_count > 1 and isinstance(arg, (list, tuple)):
+                return self(*arg)
+            return self(arg)
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
                       verbose: bool = False, flatten: bool = False):  # TODO: different name?

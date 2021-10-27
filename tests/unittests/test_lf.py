@@ -31,6 +31,11 @@ def get_info(x):
     return x['info']
 
 
+@trans
+def complex_signature_func(a, b=10):
+    return a+b
+
+
 def simple_func(x):
     return x
 
@@ -62,6 +67,23 @@ def test_isinstance_of_namedtuple():
     assert not lf._isinstance_of_namedtuple(list(tup))
     assert not lf._isinstance_of_namedtuple(1.)
     assert not lf._isinstance_of_namedtuple('something')
+
+
+class TestLFCallTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = plus_one >> (times_two + times_two)
+        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
+        request.cls.transform_3 = plus_one + times_two >> plus
+        request.cls.transform_4 = plus_one + times_two >> complex_signature_func
+        request.cls.transform_5 = plus_one >> complex_signature_func
+
+    def test_arg_pass(self):
+        assert self.transform_1.infer_apply(1)
+        assert self.transform_2.infer_apply(10)
+        assert self.transform_3.infer_apply(1.4)
+        assert self.transform_4.infer_apply(201)
+        assert self.transform_5.infer_apply(11.1)
 
 
 class TestParallel:
