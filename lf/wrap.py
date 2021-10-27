@@ -3,6 +3,7 @@ import ast
 import dis
 import functools
 import inspect
+from warnings import warn
 
 import torch
 
@@ -22,21 +23,23 @@ def _set_local_varname(frame, event, _args):
                 continue
 
 
-def _wrap_function(fun):
+def _wrap_function(fun, ignore_scope=False):
     """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
-    call_info = inspector.CallInfo(drop_n=1)
+    call_info = inspector.CallInfo(drop_n=1, ignore_scope=ignore_scope)
     caller = inspect.stack()[2]
-    if call_info.function != '<module>':
+    if call_info.function != '<module>' and not ignore_scope:
         inspector.trace_this(_set_local_varname, caller.frame)
-    closurevars = inspect.getclosurevars(fun)
-    call_info.globals = closurevars.globals
-    call_info.nonlocals = closurevars.nonlocals
-    wrapper = FunctionTransform(fun, call_info)
+
+    try:
+        call = inspector.get_attribute_segment_from_frame(caller.frame)
+    except RuntimeError:
+        call = None
+    wrapper = FunctionTransform(fun, call_info, call=call)
     functools.update_wrapper(wrapper, fun)
     return wrapper
 
 
-def _wrap_class(cls):
+def _wrap_class(cls, ignore_scope=False):
     """Patch __init__ of class such that the initialization statement is stored
     as an attribute `_lf_call`. In addition make class inherit from Transform.
 
@@ -66,14 +69,14 @@ def _wrap_class(cls):
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):
         old__init__(self, *args, **kwargs)
-        trans_class.__init__(self)
+        trans_class.__init__(self, ignore_scope=ignore_scope)
 
     cls.__init__ = __init__
     cls.__module__ = module
     return cls
 
 
-def _wrap_lambda(fun):
+def _wrap_lambda(fun, ignore_scope=False):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
     become obsolete with python 3.11 (see _wrap_class). """
     # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
@@ -117,17 +120,17 @@ def _wrap_lambda(fun):
     if call is None:
         raise RuntimeError('Lambda not found.')
 
-    wrapper = FunctionTransform(fun, inspector.CallInfo(), call=call)
+    wrapper = FunctionTransform(fun, inspector.CallInfo(ignore_scope=ignore_scope), call=call)
     functools.update_wrapper(wrapper, fun)
     return wrapper
 
 
-def trans(fun_or_cls):
+def trans(fun_or_cls, ignore_scope=False):
     """Transform wrapper / decorator. Use to wrap a class or callable. """
     if inspect.isclass(fun_or_cls):
-        return _wrap_class(fun_or_cls)
-    if inspect.isfunction(fun_or_cls):
+        return _wrap_class(fun_or_cls, ignore_scope)
+    if callable(fun_or_cls):
         if fun_or_cls.__name__ == '<lambda>':
-            return _wrap_lambda(fun_or_cls)
-        return _wrap_function(fun_or_cls)
+            return _wrap_lambda(fun_or_cls, ignore_scope)
+        return _wrap_function(fun_or_cls, ignore_scope)
     raise ValueError('Can only wrap classes or callables.')
