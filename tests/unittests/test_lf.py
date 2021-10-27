@@ -112,9 +112,9 @@ class TestParallel:
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
-        # _ = lf.load('test.lf') # TODO This fails
+        _ = lf.load('test.lf') # TODO This fails
         self.transform_3.lf_save('test.lf')
-        # _ = lf.load('test.lf') # TODO This fails
+        _ = lf.load('test.lf') # TODO This fails
 
 
 class TestRollout:
@@ -165,9 +165,9 @@ class TestRollout:
         self.transform_1.lf_save('test.lf')
         _ = lf.load('test.lf')
         self.transform_2.lf_save('test.lf')
-        # _ = lf.load('test.lf') # TODO Fails
+        _ = lf.load('test.lf') # TODO Fails
         self.transform_3.lf_save('test.lf')
-        # _ = lf.load('test.lf') # TODO Fails
+        _ = lf.load('test.lf') # TODO Fails
 
 
 class TestCompose:
