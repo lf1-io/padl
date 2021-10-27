@@ -649,10 +649,10 @@ class CompoundTransform(Transform):
         except (AttributeError, TypeError):
             self._lf_component = None
 
-    def __getitem__(self, item):
+    def __getitem__(self, item : Union[int, slice, str]) -> Transform:
         """Get item
 
-        If int, gets item'th transform in this CompoundTrasform.
+        If int, gets item'th transform in this CompoundTransform.
         If slice, gets sliced transform of same type
         If str, gets first transform with name item
 
