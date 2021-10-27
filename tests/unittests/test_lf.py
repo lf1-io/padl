@@ -445,4 +445,5 @@ class TestTorchModuleTransform:
 
     def test_lf_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1(1) == 2
