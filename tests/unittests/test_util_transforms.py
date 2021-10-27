@@ -1,7 +1,8 @@
 import pytest
-from lf import trans
-from lf.transform import Batchify
+from lf import trans, Batchify
+import lf.transform as lf
 from lf.util_transforms import IfTrain, IfEval, IfInfer
+from tests.fixtures.transforms import cleanup_checkpoint
 
 
 @trans
@@ -14,6 +15,9 @@ def times_two(x):
     return x * 2
 
 
+times_three = trans(lambda x: x * 3)
+
+
 class TestIfInStage:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -21,19 +25,19 @@ class TestIfInStage:
             plus_one
             >> IfTrain(times_two, plus_one)
             >> Batchify()
-            >> trans(lambda x: x * 3)
+            >> times_three
         )
         request.cls.transform_2 = (
             plus_one
             >> IfEval(times_two)
             >> Batchify()
-            >> trans(lambda x: x * 3)
+            >> times_three
         )
         request.cls.transform_3 = (
             plus_one
             >> IfInfer(times_two)
             >> Batchify()
-            >> trans(lambda x: x * 3)
+            >> times_three
         )
 
     def test_infer_apply(self):
@@ -50,3 +54,14 @@ class TestIfInStage:
         assert list(self.transform_1.train_apply([1, 2])) == [12, 18]
         assert list(self.transform_2.train_apply([1, 2])) == [6, 9]
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(1) == 9
+        self.transform_2.lf_save('test.lf')
+        t2 = lf.load('test.lf')
+        assert t2.infer_apply(1) == 6
+        self.transform_3.lf_save('test.lf')
+        t3 = lf.load('test.lf')
+        assert t3.infer_apply(1) == 12

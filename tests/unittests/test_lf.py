@@ -340,7 +340,7 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.model_1.lf_save('test.lf')
+        lf.save(self.model_1, 'test.lf')
         m1 = lf.load('test.lf')
         assert m1.infer_apply((5, 5)) == (13, 13)
         self.model_2.lf_save('test.lf')
