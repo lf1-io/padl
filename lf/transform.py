@@ -660,8 +660,7 @@ class CompoundTransform(Transform):
             return self.transforms[item]
         elif isinstance(item, slice):
             return type(self)(self.transforms[item])
-
-        if isinstance(item, str):
+        elif isinstance(item, str):
             for transform_ in self.transforms:
                 if transform_.lf_name == item:
                     return transform_
