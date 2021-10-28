@@ -241,7 +241,7 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
-    def lf_shortname(self):
+    def _lf_shortname(self):
         title = self._lf_title()
         if self.lf_name is not None:
             return title + f'[{self.lf_name}]'
@@ -261,7 +261,7 @@ class Transform:
         res += '\33[32m        ⬇  \33[0m\n'
         return res
 
-    def lf_bodystr(self):
+    def _lf_bodystr(self):
         return NotImplemented
 
     def lf_repr(self, indent: int = 0) -> str:
@@ -273,8 +273,8 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
-        bottom_message = self.lf_bodystr()
+        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        bottom_message = self._lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
     def _lf_find_varname(self, scopedict: dict) -> Optional[str]:
@@ -605,7 +605,7 @@ class FunctionTransform(AtomicTransform):
         except TypeError:
             return self._lf_call
 
-    def lf_bodystr(self, length=20):
+    def _lf_bodystr(self, length=20):
         return self.source
 
     @property
@@ -648,7 +648,7 @@ class ClassTransform(AtomicTransform):
         except thingfinder.ThingNotFound:
             return self._lf_call
 
-    def lf_bodystr(self, length=20):
+    def _lf_bodystr(self, length=20):
         return self.source
 
 
@@ -779,20 +779,20 @@ class CompoundTransform(Transform):
             return '(' + name + ')'
         return name
 
-    def lf_shortname(self):
+    def _lf_shortname(self):
         if self._lf_name is None:
-            return self.lf_bodystr(is_child=True)
+            return self._lf_bodystr(is_child=True)
         else:
-            return super().lf_shortname()
+            return super()._lf_shortname()
 
     def _lf_title(self):
         return self.__class__.__name__
 
-    def lf_bodystr(self, is_child=False):
+    def _lf_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
         if is_child:
-            return sep.join(t._add_parentheses_if_needed(t.lf_shortname()) for t in self.transforms)
-        return sep.join(t.lf_shortname() for t in self.transforms)
+            return sep.join(t._add_parentheses_if_needed(t._lf_shortname()) for t in self.transforms)
+        return sep.join(t._lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
         res = '\33[32m        ⬇  \33[0m\n'
