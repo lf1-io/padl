@@ -1,4 +1,4 @@
-from lf.transform import ClassTransform, Identity, Transform
+from lf.transforms import ClassTransform, Identity, Transform
 
 
 class IfInStage(ClassTransform):

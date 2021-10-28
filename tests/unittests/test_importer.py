@@ -1,4 +1,4 @@
-from lf.transform import ClassTransform, FunctionTransform
+from lf.transforms import ClassTransform, FunctionTransform
 
 from lf.importer import numpy as np
 from lf.importer import torch
