@@ -4,13 +4,13 @@ from importlib.metadata import version, PackageNotFoundError
 
 def get_packages(nodes):
     """Get a list of package names given a list of ast nodes *nodes*. """
-    result = []
+    result = set()
     for node in nodes:
         if isinstance(node, ast.Import):
             for name in node.names:
-                result.append(name.name.split('.')[0])
+                result.add(name.name.split('.')[0])
         if isinstance(node, ast.ImportFrom):
-            result.append(node.module.split('.')[0])
+            result.add(node.module.split('.')[0])
     return result
 
 
