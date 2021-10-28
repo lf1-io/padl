@@ -629,7 +629,7 @@ class FunctionTransform(AtomicTransform):
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
-            warn(f"Couln't get closurevars ({exc}). This is usually fine.")
+            warn(f"Couldn't get closurevars ({exc}). This is usually fine.")
             return {}, {}
         return closurevars.globals, closurevars.nonlocals
 
@@ -1155,10 +1155,7 @@ class BuiltinTransform(AtomicTransform):
 
 
 class Identity(BuiltinTransform):
-    """Do nothing.
-
-    :param lf_name: name of the transform
-    """
+    """Do nothing."""
 
     def __init__(self):
         super().__init__('lf.Identity()')
@@ -1211,7 +1208,7 @@ class Unbatchify(ClassTransform):
 class Batchify(ClassTransform):
     """Mark end of preprocessing.
 
-    Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
     recursively, tuples thereof. Batchify also moves the input tensors to device specified
     for the transform.
 
