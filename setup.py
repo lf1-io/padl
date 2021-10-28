@@ -8,9 +8,8 @@ ver_path = convert_path('lf/version.py')
 with open(ver_path) as ver_file:
     exec(ver_file.read(), versions)
 
-# TODO Add back
-# with open("README.md", "r", encoding="utf-8") as fh:
-#     long_description = fh.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 
 def parse_requirements(filename):
@@ -24,7 +23,7 @@ setuptools.setup(
     author="LF1",
     author_email="contact@lf1.io",
     description="Abstractions and base classes for AI models based on Pytorch.",
-    # long_description=long_description,  # TODO Add back
+    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lf1-io/lf",
     packages=setuptools.find_packages(),
