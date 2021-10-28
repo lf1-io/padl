@@ -54,11 +54,11 @@ def _create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
         + ' ' * (start_left + finish_right) + '▼'
 
 
-def make_green(x):
+def _make_green(x):
     return f'\33[32m{x}\33[0m'
 
 
-def make_bold(x):
+def _make_bold(x):
     return f'\33[1m{x}\33[0m'
 
 
@@ -81,7 +81,7 @@ def create_reverse_arrow(start_left,  finish_right, n_initial_rows, n_final_rows
     return output
 
 
-def combine_arrows(arrows):
+def _combine_arrows(arrows):
     arrows = [x.split('\n') for x in arrows]
     length = max([len(x) for x in arrows])
     lines = []
@@ -324,9 +324,7 @@ class Transform:
 
     @staticmethod
     def _lf_add_format_to_str(name):
-        res = '\33[32m        ⬇  \33[0m\n'
-        res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
-        res += '\33[32m        ⬇  \33[0m\n'
+        res = '    ' + '\n    '.join([_make_bold(x) for x in name.split('\n')]) + '\n'
         return res
 
     def lf_bodystr(self):
@@ -861,8 +859,8 @@ class CompoundTransform(Transform):
         return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
-        res = f'\n        {make_green(self.display_op)}  \n'.join(
-            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
+        res = f'\n        {_make_green(self.display_op)}  \n'.join(
+            [_make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -999,12 +997,16 @@ class Compose(CompoundTransform):
     def _lf_add_format_to_str(self, name):
         rows = name.split('\n')
         assert len(rows) == len(self.transforms)
-        output = [make_bold('0: ' + rows[0])]
+        output = [_make_bold('0: ' + rows[0])]
+
+        # get maximum widths in "columns"
         children_widths = [t.children_widths for t in self.transforms]
         children_widths_matrix = np.zeros((len(self.transforms),
                                           max([len(x) for x in children_widths])))
         for i, cw in enumerate(children_widths):
             children_widths_matrix[i, :len(cw)] = cw
+
+        # pad the components of rows which are shorter than other parts in same column
         rows = [re.split(r'\/|\+', x) for x in rows]
         max_widths = np.max(children_widths_matrix, 0)
         for i, r in enumerate(rows):
@@ -1017,14 +1019,18 @@ class Compose(CompoundTransform):
             else:
                 rows[i] = r[0]
 
+        # iterate through rows and create arrows depending on numbers of components
         for i, (r, t) in enumerate(zip(rows[1:], self.transforms[1:])):
             widths = [0]
             subarrows = []
+
+            # if subsequent rows have the same number of "children" transforms
             if len(t.children_widths) == len(self.transforms[i].children_widths):
                 for j, w in enumerate(t.children_widths):
                     subarrows.append(_create_arrow(sum(widths) - j + j * 5, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
+            # if previous row has multiple outputs and current row just one input
             elif len(t.children_widths) == 1 and len(self.transforms[i].children_widths) > 1:
                 for j, w in enumerate(self.transforms[i].children_widths):
                     subarrows.append(create_reverse_arrow(
@@ -1032,15 +1038,17 @@ class Compose(CompoundTransform):
                         len(self.transforms[i].children_widths) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
+
+            # if previous row has one output and current row has multiple inputs
             else:
                 for j, w in enumerate(t.children_widths):
                     subarrows.append(_create_arrow(j, sum(widths) - j + j * 4,
                                                    len(t.children_widths) - j, j + 1))
                     widths.append(int(max_widths[j]))
-            mark = combine_arrows(subarrows)
+            mark = _combine_arrows(subarrows)
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
-            output.append(make_green(mark))
-            output.append(make_bold(f'{i + 1}: {r}'))
+            output.append(_make_green(mark))
+            output.append(_make_bold(f'{i + 1}: {r}'))
 
         return '\n'.join(output)
 
