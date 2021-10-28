@@ -1,4 +1,4 @@
-from lf.transform import AtomicTransform
+from lf.transforms import AtomicTransform
 from lf.dumptools import inspector
 
 
