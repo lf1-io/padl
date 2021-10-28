@@ -1220,7 +1220,7 @@ class Unbatchify(ClassTransform):
 class Batchify(ClassTransform):
     """Mark end of preprocessing.
 
-    Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
     recursively, tuples thereof. Batchify also moves the input tensors to device specified
     for the transform.
 
