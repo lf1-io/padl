@@ -1032,10 +1032,10 @@ class Compose(CompoundTransform):
             # if previous row has multiple outputs and current row just one input
             elif i > 0 and len(children_widths[i]) == 1 \
                     and len(children_widths[i - 1]) > 1:
-                for j, w in enumerate(children_widths[i]):
+                for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
                         j, sum(widths) - j + j * 3,
-                        len(children_widths[i]) - j + 1, j + 1
+                        len(children_widths[i - 1]) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
 
