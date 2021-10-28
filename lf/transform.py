@@ -144,7 +144,7 @@ class Transform:
 
     @property
     def n_display_inputs(self):
-        return len(self._get_signature())
+        return len(self.get_signature())
 
     @property
     def n_display_outputs(self):
@@ -425,7 +425,7 @@ class Transform:
 
         signature_count = 0
         var_positional_count = 0
-        for param in self._get_signature().parameters.values():
+        for param in self.get_signature().parameters.values():
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
@@ -439,7 +439,7 @@ class Transform:
                 return self(*arg)
             return self(arg)
 
-    def _get_signature(self):
+    def get_signature(self):
         return inspect.signature(self).parameters
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
@@ -753,7 +753,7 @@ class ClassTransform(AtomicTransform):
 
 class TorchModuleTransform(ClassTransform):
     """Torch Module Transform"""
-    def _get_signature(self):
+    def get_signature(self):
         return inspect.signature(self.forward).parameters
 
     def lf_pre_save(self, path, i):
@@ -1053,14 +1053,14 @@ class Compose(CompoundTransform):
             # if subsequent rows have the same number of "children" transforms
             if len(t.children_widths) == len(self.transforms[i].children_widths):
                 for j, w in enumerate(t.children_widths):
-                    subarrows.append(_create_arrow(sum(widths) - j + j * 5, 0, 0, 0))
+                    subarrows.append(_create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
             elif len(t.children_widths) == 1 and len(self.transforms[i].children_widths) > 1:
                 for j, w in enumerate(self.transforms[i].children_widths):
                     subarrows.append(create_reverse_arrow(
-                        j, sum(widths) - j + j * 4,
+                        j, sum(widths) - j + j * 3,
                         len(self.transforms[i].children_widths) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
@@ -1068,14 +1068,35 @@ class Compose(CompoundTransform):
             # if previous row has one output and current row has multiple inputs
             else:
                 for j, w in enumerate(t.children_widths):
-                    subarrows.append(_create_arrow(j, sum(widths) - j + j * 4,
+                    subarrows.append(_create_arrow(j, sum(widths) - j + j * 3,
                                                    len(t.children_widths) - j, j + 1))
                     widths.append(int(max_widths[j]))
-            mark = _combine_arrows(subarrows)
+
+            # add signature names to the arrows
+            tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
+            if isinstance(t, Rollout) or isinstance(t, Parallel):
+                all_params = []
+                for tt in t.transforms:
+                    all_params.append(list(tt.get_signature().keys()))
+                to_combine = [
+                    ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
+                    if len(params) > 1
+                    else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
+                    for k, params in enumerate(all_params)
+                ]
+                to_format = _combine_arrows(to_combine)
+            else:
+                padder = (len(subarrows) + 1) * ' '
+                params = [x for x in t.get_signature()]
+                to_format = padder + tuple_to_str(params) if len(params) > 1 else padder + params[0]
+            to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
+            to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
+
+            # combine the arrows
+            mark = _combine_arrows(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(_make_green(mark))
             output.append(_make_bold(f'{i + 1}: {r}'))
-
         return '\n'.join(output)
 
     def __call__(self, arg):
