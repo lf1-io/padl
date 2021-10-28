@@ -861,10 +861,6 @@ class CompoundTransform(Transform):
         return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
-        # res = '\33[32m        ⬇  \33[0m\n'
-        # res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-        #     [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        # res += '\33[32m        ⬇  \33[0m\n'
         res = f'\n        {make_green(self.display_op)}  \n'.join(
             [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
@@ -1160,12 +1156,6 @@ class Rollout(CompoundTransform):
             out.append(transform_._lf_call_transform(arg))
         out = self._lf_output_format(*out)
         return out
-
-    # TODO Finish adding
-    # def __len__(self):
-    #     lens = [len(x) for x in self.transforms]
-    #     assert len(set(lens)) == 1
-    #     return lens[0]
 
     @property
     def lf_preprocess(self):
