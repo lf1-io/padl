@@ -31,8 +31,10 @@ setuptools.setup(
     license="Apache 2.0",
     classifiers=[
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "License :: Apache 2.0",
-        "Operating System :: Unix",
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
     python_requires='>=3.8',
     install_requires=parse_requirements('requirements.txt'),
