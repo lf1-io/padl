@@ -1,7 +1,7 @@
-from lf import trans
+from lf import transform
 
 
-@trans
+@transform
 def z(x):
     return x
 

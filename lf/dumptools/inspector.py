@@ -43,14 +43,16 @@ class CallInfo:
         if self.function == '<module>' or ignore_scope:
             return thingfinder.Scope.toplevel(module)
         try:
-            call_source = get_call_segment_from_frame(caller_frameinfo.frame.f_back)
+            call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
             definition_source = get_source(caller_frameinfo.filename)
             fdef_lineno = caller_frameinfo.frame.f_lineno
+            calling_scope = thingfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
             scope = thingfinder.Scope.from_source(definition_source, fdef_lineno,
-                                                  call_source, module, drop_n)
+                                                  call_source, module, drop_n,
+                                                  calling_scope)
             assert len(scope) <= 1, 'scope longer than 1 currently not supported'
             return scope
-        except (SyntaxError, IndexError, RuntimeError) as exc:
+        except (SyntaxError, RuntimeError) as exc:
             warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
             return thingfinder.Scope.toplevel(module)
 
@@ -130,6 +132,12 @@ def _instructions_in_name(x):
     return instructions[:i]
 
 
+def _instructions_in_getitem(x):
+    """Get all instructions up to last CALL FUNCTION. """
+    instructions = list(dis.get_instructions(x))
+    return instructions[:-1]
+
+
 def _instructions_up_to_offset(x, lasti):
     """Get all instructions up to offset *lasti*. """
     instructions = []
@@ -163,7 +171,10 @@ def get_statement(source: str, lineno: int):
         except ValueError:
             continue
         try:
-            return _get_statement_from_block(block, lineno_in_block + i)
+            try:
+                return _get_statement_from_block(block, lineno_in_block + i)
+            except SyntaxError:
+                return _get_statement_from_block('(' + block + ')', lineno_in_block + i)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
@@ -268,56 +279,23 @@ def caller_frame() -> types.FrameType:
 
 
 def get_call_segment_from_frame(caller_frame: types.FrameType) -> str:
-    # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
-    # , for python 3.11 (currently in development) this can be done via co_positions
-    # (see https://www.python.org/dev/peps/pep-0657/),
-    # for now, as 3.11 isn't widely used, this requires the following hack:
-    # extract the source of the class init statement
-    try:
-        full_source = caller_frame.f_globals['_lf_source']
-    except KeyError:
-        full_source = get_source(caller_frame.f_code.co_filename)
-    source = get_statement(full_source, caller_frame.f_lineno)
-    # the source can contain surrounding stuff we need to discard
-    # as we only have the line number (this is what makes this complicated)
-
-    # get all segments in the source that correspond to calls and might thus
-    # potentially be the class init
-    candidate_segments = (var2mod.Finder(ast.Call).get_source_segments(source)
-                          + var2mod.Finder(ast.Name).get_source_segments(source))
-    # for each candidate, disassemble and compare the instructions to what we
-    # actually have, a match means this is the correct statement
-    if not candidate_segments:
-        raise RuntimeError('No calls found.')
-    # disassemble and get the instructions up to the current position
-    target_instrs = _instructions_up_to_offset(caller_frame.f_code,
-                                               caller_frame.f_lasti)
-
-    segment = None
-
-    for segment in candidate_segments:
-
-        instrs = _instructions_up_to_call(segment)
-        if len(instrs) > len(target_instrs):
-            continue
-        for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-            if instr.argval != target_instr.argval:
-                break
-            same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL')
-            both_load = instr.opname in load_ops and target_instr.opname in load_ops
-            if not (same_opname or both_load):
-                break
-        else:
-            break
-
-    if segment is None:
-        raise RuntimeError('Call not found.')
-
-    return segment
+    return get_segment_from_frame(caller_frame, 'call')
 
 
 def get_attribute_segment_from_frame(caller_frame: types.FrameType) -> str:
+    return get_segment_from_frame(caller_frame, 'attribute')
+
+
+def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
+    if segment_type == 'call':
+        node_type = ast.Call
+        instructions_finder = _instructions_up_to_call
+    elif segment_type == 'attribute':
+        node_type = ast.Attribute
+        instructions_finder = _instructions_in_name
+    elif segment_type == 'getitem':
+        node_type = ast.Subscript
+        instructions_finder = _instructions_in_getitem
     # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
     # , for python 3.11 (currently in development) this can be done via co_positions
     # (see https://www.python.org/dev/peps/pep-0657/),
@@ -333,7 +311,7 @@ def get_attribute_segment_from_frame(caller_frame: types.FrameType) -> str:
 
     # get all segments in the source that correspond to calls and might thus
     # potentially be the class init
-    candidate_segments = var2mod.Finder(ast.Attribute).get_source_segments(source)
+    candidate_segments = var2mod.Finder(node_type).get_source_segments(source)
     # for each candidate, disassemble and compare the instructions to what we
     # actually have, a match means this is the correct statement
     if not candidate_segments:
@@ -347,7 +325,7 @@ def get_attribute_segment_from_frame(caller_frame: types.FrameType) -> str:
 
     for segment in sorted(candidate_segments, key=lambda x: -len(x)):
 
-        instrs = _instructions_in_name(segment)
+        instrs = instructions_finder(segment)
         if len(instrs) > len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):

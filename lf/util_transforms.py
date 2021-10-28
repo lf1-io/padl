@@ -1,7 +1,7 @@
-from lf.transform import BuiltinTransform, Identity, Transform
+from lf.transforms import ClassTransform, Identity, Transform
 
 
-class IfInStage(BuiltinTransform):
+class IfInStage(ClassTransform):
     """Perform *if_* if self.stage is *target_stage*, else perform *else_*.
 
     :param if_: transform for the if part
@@ -11,7 +11,7 @@ class IfInStage(BuiltinTransform):
 
     def __init__(self, if_, target_stage, else_=None):
 
-        super().__init__('lf.IfInStage()')
+        super().__init__()
 
         assert target_stage in ('train', 'eval', 'infer'), "Target stage can only be train, " \
                                                            "eval or infer"
