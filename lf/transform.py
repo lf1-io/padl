@@ -41,7 +41,7 @@ def _isinstance_of_namedtuple(arg):
     return all(isinstance(field, str) for field in fields)
 
 
-def create_arrow(start_left,  finish_right, n_initial_rows, n_final_rows):
+def _create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
     initial = ''
     for _ in range(n_initial_rows - 1):
         initial += ' ' * start_left + '|' + '\n'
@@ -52,6 +52,33 @@ def create_arrow(start_left,  finish_right, n_initial_rows, n_final_rows):
         + '_' * (finish_right - 1) + '\n' \
         + final \
         + ' ' * (start_left + finish_right) + '▼'
+
+
+def make_green(x):
+    return f'\33[32m{x}\33[0m'
+
+
+def make_bold(x):
+    return f'\33[1m{x}\33[0m'
+
+
+def create_reverse_arrow(start_left,  finish_right, n_initial_rows, n_final_rows):
+    final = ''
+    for _ in range(n_initial_rows - 1):
+        final += ' ' * start_left + '|' + '\n'
+    initial = ''
+    for _ in range(n_final_rows - 1):
+        initial += ' ' * (start_left + finish_right) + '|' + '\n'
+    underscore_line = list('_' * finish_right)
+    if underscore_line:
+        underscore_line[0] = ' '
+    underscore_line = ''.join(underscore_line)
+    output = initial \
+           + ' ' * start_left + underscore_line + '|' + ' ' + '\n' \
+           + final \
+           + ' ' * start_left + '▼'
+    output = '\n'.join(output.split('\n')[1:])
+    return output
 
 
 def combine_arrows(arrows):
@@ -834,10 +861,12 @@ class CompoundTransform(Transform):
         return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
-        res = '\33[32m        ⬇  \33[0m\n'
-        res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-            [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        res += '\33[32m        ⬇  \33[0m\n'
+        # res = '\33[32m        ⬇  \33[0m\n'
+        # res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
+        #     [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
+        # res += '\33[32m        ⬇  \33[0m\n'
+        res = f'\n        {make_green(self.display_op)}  \n'.join(
+            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -971,31 +1000,54 @@ class Compose(CompoundTransform):
     def n_display_outputs(self):
         return self.transforms[-1].n_display_outputs
 
-    # def lf_bodystr(self, is_child=False):
-    #     sep = f' {self.op} ' if is_child else '\n'
-    #     return sep.join(t.lf_shortname() for t in self.transforms)
-
-    def test_lf_add_format_to_str(self):
-        name = self.lf_bodystr()
+    def _lf_add_format_to_str(self, name):
         rows = name.split('\n')
         assert len(rows) == len(self.transforms)
-        output = [rows[0]]
-        for i, (r, t) in enumerate(zip(rows, self.transforms[1:])):
-            output.append(t.n_display_inputs)
-            widths = [0]
-            for i, w in enumerate(t.children_widths):
-                output.append(create_arrow(i, sum(widths) - i, len(t.children_widths) - i, i + 1))
-                widths.append(w)
-            output.append(r)
-            output.append(t.n_display_outputs)
-        return output
+        output = [make_bold('0: ' + rows[0])]
+        children_widths = [t.children_widths for t in self.transforms]
+        children_widths_matrix = np.zeros((len(self.transforms),
+                                          max([len(x) for x in children_widths])))
+        for i, cw in enumerate(children_widths):
+            children_widths_matrix[i, :len(cw)] = cw
+        rows = [re.split(r'\/|\+', x) for x in rows]
+        max_widths = np.max(children_widths_matrix, 0)
+        for i, r in enumerate(rows):
+            for j in range(len(rows[i])):
+                if len(rows[i][j]) < max_widths[j]:
+                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]) + 2)
+        for i, r in enumerate(rows):
+            if len(r) > 1:
+                rows[i] = self.transforms[i].display_op.join(r)
+            else:
+                rows[i] = r[0]
 
-        # res = '\33[32m        ⬇  \33[0m\n'
-        # res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-        #     [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        # res += '\33[32m        ⬇  \33[0m\n'
-        # return res
-        #
+        for i, (r, t) in enumerate(zip(rows[1:], self.transforms[1:])):
+            widths = [0]
+            subarrows = []
+            if len(t.children_widths) == len(self.transforms[i].children_widths):
+                for j, w in enumerate(t.children_widths):
+                    subarrows.append(_create_arrow(sum(widths) - j + j * 5, 0, 0, 0))
+                    widths.append(int(max_widths[j]))
+
+            elif len(t.children_widths) == 1 and len(self.transforms[i].children_widths) > 1:
+                for j, w in enumerate(self.transforms[i].children_widths):
+                    subarrows.append(create_reverse_arrow(
+                        j, sum(widths) - j + j * 4,
+                        len(self.transforms[i].children_widths) - j + 1, j + 1
+                    ))
+                    widths.append(int(max_widths[j]))
+            else:
+                for j, w in enumerate(t.children_widths):
+                    subarrows.append(_create_arrow(j, sum(widths) - j + j * 4,
+                                                   len(t.children_widths) - j, j + 1))
+                    widths.append(int(max_widths[j]))
+            mark = combine_arrows(subarrows)
+            mark = '\n'.join(['   ' + x for x in mark.split('\n')])
+            output.append(make_green(mark))
+            output.append(make_bold(f'{i + 1}: {r}'))
+
+        return '\n'.join(output)
+
     def __call__(self, arg):
         """Call method for Compose
 
@@ -1005,12 +1057,6 @@ class Compose(CompoundTransform):
         for transform_ in self.transforms:
             arg = transform_._lf_call_transform(arg)
         return arg
-
-    # TODO Finish adding
-    # def __len__(self):
-    #     # TODO Previously was length of first element of trans_list. Any reason why?
-    #     # return len(self.trans_list[0])
-    #     return len(self.transforms)
 
     def _lf_forward_part(self):
         """Forward part of transforms"""
@@ -1084,7 +1130,7 @@ class Rollout(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '+'
-    display_op = '✚'
+    display_op = '+'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -1167,7 +1213,7 @@ class Parallel(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '/'
-    display_op = '╱'
+    display_op = '/'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
