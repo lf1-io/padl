@@ -576,7 +576,7 @@ class Transform:
         This expects an iterable input and returns a generator.
 
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
-        :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
+        :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
@@ -591,7 +591,7 @@ class Transform:
         This expects an iterable input and returns a generator.
 
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
-        :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
+        :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
