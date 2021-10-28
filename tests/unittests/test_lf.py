@@ -535,10 +535,12 @@ class TestTorchModuleTransform:
         assert t1.infer_apply(1) == 2
 
 
+from lf.importer import numpy as inp
+
+
 class TestLFImporter:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        from lf.importer import numpy as inp
         request.cls.transform_1 = inp.sin
         request.cls.transform_2 = (inp.sin >> inp.sin)
         transform_temp = inp.sin
@@ -556,3 +558,13 @@ class TestLFImporter:
         assert self.transform_2.infer_apply(2.4)
         assert self.transform_3.infer_apply(1.1)
         assert self.transform_4.infer_apply(4.1)
+    """
+    def test_save_load(self, cleanup_checkpoint):
+        for transform_ in [self.transform_1,
+                           self.transform_2,
+                           self.transform_3,
+                           self.transform_4,]:
+            transform_.lf_save('test.lf')
+            t_ = lf.load('test.lf')
+            assert t_.infer_apply(1.3)
+    """
