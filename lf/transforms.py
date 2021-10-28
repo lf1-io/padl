@@ -659,6 +659,7 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
+        self._lf_number_of_inputs = None
 
     @property
     def source(self, length=20):
