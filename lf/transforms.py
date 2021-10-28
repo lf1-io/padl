@@ -167,7 +167,6 @@ class Transform:
         if scope is None:
             scope = self._lf_call_info.scope
 
-
         if name is not None:
             name_scope_here = name, scope
         else:
@@ -266,14 +265,18 @@ class Transform:
         unscoped = var2mod.unscope_graph(graph, scopemap)
         return var2mod.dumps_graph(unscoped)
 
-    def lf_shortname(self):
+    def _lf_shortname(self):
         title = self._lf_title()
-        if self.lf_name is not None:
-            return title + f'[{self.lf_name}]'
+        if self._lf_name is not None:
+            return title + f'[{self._lf_name}]'
         varname = self.lf_varname()
         if varname is None or varname == title:
             return title
         return title + f'[{varname}]'
+
+    @staticmethod
+    def _add_parentheses_if_needed(name):
+        return name
 
     @staticmethod
     def _lf_add_format_to_str(name):
@@ -282,7 +285,7 @@ class Transform:
         res += '\33[32m        ⬇  \33[0m\n'
         return res
 
-    def lf_bodystr(self):
+    def _lf_bodystr(self):
         return NotImplemented
 
     def lf_repr(self, indent: int = 0) -> str:
@@ -294,8 +297,8 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
-        bottom_message = self.lf_bodystr()
+        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        bottom_message = self._lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
     def _lf_find_varname(self, scopedict: dict) -> Optional[str]:
@@ -626,12 +629,21 @@ class FunctionTransform(AtomicTransform):
             body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
             lines = re.split('(\n)', body_msg)
             lines = ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+            if len(lines) == 0:
+                body_msg = ''.join(re.split('(lambda)', self._lf_call, 1)[1:])[:-1]
+                return body_msg[:100]
             return lines
         except TypeError:
             return self._lf_call
 
-    def lf_bodystr(self, length=20):
+    def _lf_bodystr(self, length=20):
         return self.source
+
+    def _lf_title(self):
+        title = self._lf_call
+        if '(' in title:
+            return re.split('\(', title)[-1][:-1]
+        return title
 
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
@@ -673,7 +685,15 @@ class ClassTransform(AtomicTransform):
         except thingfinder.ThingNotFound:
             return self._lf_call
 
-    def lf_bodystr(self, length=20):
+    def _lf_title(self):
+        title = self._lf_call
+        if title.count('(') == 2:
+            title = re.split('\(', title)
+            title = re.split('\)', ''.join(title[1:]))[:-1]
+            return '('.join(title) + ')'
+        return title
+
+    def _lf_bodystr(self):
         return self.source
 
 
@@ -727,6 +747,17 @@ class CompoundTransform(Transform):
             self._lf_component = set.union(*self._lf_component_list)
         except (AttributeError, TypeError):
             self._lf_component = None
+
+    def __sub__(self, name: str) -> "Transform":
+        """Create a named clone of the transform.
+
+        Example:
+            named_t = t - 'rescale image'
+        """
+        named_copy = copy(self)
+        named_copy._lf_name = name
+        named_copy._lf_group = True
+        return named_copy
 
     def __getitem__(self, item : Union[int, slice, str]) -> Transform:
         """Get item
@@ -799,18 +830,25 @@ class CompoundTransform(Transform):
             res += f' [{self.lf_varname()}]'
         return res
 
-    def lf_shortname(self):
+    def _add_parentheses_if_needed(self, name):
         if self._lf_name is None:
-            return self.lf_bodystr(is_child=True)
+            return '(' + name + ')'
+        return name
+
+    def _lf_shortname(self):
+        if self._lf_name is None:
+            return self._lf_bodystr(is_child=True)
         else:
-            return super().lf_shortname()
+            return super()._lf_shortname()
 
     def _lf_title(self):
         return self.__class__.__name__
 
-    def lf_bodystr(self, is_child=False):
+    def _lf_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
-        return sep.join(t.lf_shortname() for t in self.transforms)
+        if is_child:
+            return sep.join(t._add_parentheses_if_needed(t._lf_shortname()) for t in self.transforms)
+        return sep.join(t._lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
         res = '\33[32m        ⬇  \33[0m\n'
@@ -1161,6 +1199,12 @@ class BuiltinTransform(AtomicTransform):
         scopemap[self.__class__.__name__, scope] = scope
 
         return graph, scopemap
+
+    def _lf_bodystr(self):
+        return self._lf_call.split('lf.')[-1]
+
+    def _lf_title(self):
+        return self._lf_call.split('lf.')[-1].split('(')[0]
 
 
 class Identity(BuiltinTransform):
