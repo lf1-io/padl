@@ -164,6 +164,17 @@ class Transform:
         if scopemap is None:
             scopemap = {}
 
+        if scope is None:
+            scope = self._lf_call_info.scope
+
+
+        if name is not None:
+            name_scope_here = name, scope
+        else:
+            name_scope_here = None
+
+        given_name = name
+
         try:
             if self._lf_call == name:
                 name = None
@@ -200,23 +211,25 @@ class Transform:
                 continue
 
             # find how next_var came into being
-            (source, node), scope = thingfinder.find_in_scope(next_var, next_scope)
-            scopemap[next_var, next_scope] = scope
+            (source, node), scope_of_next_var = thingfinder.find_in_scope(next_var, next_scope)
+            scopemap[next_var, next_scope] = scope_of_next_var
 
             # find dependencies
             globals_ = {
-                (var, scope)
+                (var, scope_of_next_var)  # TODO: this
                 for var in var2mod.find_globals(node)
             }
-            graph[next_var, scope] = var2mod.CodeNode(source=source, globals_=globals_,
-                                                      ast_node=node)
+            graph[next_var, scope_of_next_var] = var2mod.CodeNode(source=source, globals_=globals_,
+                                                                  ast_node=node)
             todo.update(globals_)
         # find dependencies done
 
         if name is not None:
             assert scope is not None
             graph[name, scope] = start
-            scopemap[name, scope] = scope
+
+        if given_name is not None:
+            scopemap[given_name, scope] = scope
 
         return graph, scopemap
 
@@ -226,13 +239,25 @@ class Transform:
         creates the transform. """
         return NotImplemented
 
-    def lf_all_transforms(self):
+    def lf_all_transforms(self, result=None):
         """Return a list of all transforms needed for executing the transform.
 
         This includes the transform itself, the subtransforms of a compount transform or
         transforms a function-transform depends on as a global. """
+        if result is None:
+            result = []
+        if self in result:
+            return result
+        result.append(self)
+        for transform in self.lf_direct_subtransforms:
+            transform.lf_all_transforms(result)
+        return result
+
+    @property
+    def lf_direct_subtransforms(self):
+        """Iterate over the direct subtransforms of this. """
         # pylint: disable=no-self-use
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_dumps(self) -> str:
         """Dump the transform as python code. """
@@ -332,12 +357,21 @@ class Transform:
         else:
             torch_context = contextlib.suppress()
 
-        signature_parameters = inspect.signature(self).parameters
+        signature_count = 0
+        var_positional_count = 0
+        for param in inspect.signature(self).parameters.values():
+            if param.kind in (
+                    param.POSITIONAL_OR_KEYWORD,
+                    param.POSITIONAL_ONLY):
+                signature_count += 1
+            if param.kind == param.VAR_POSITIONAL:
+                signature_count += 1
+                var_positional_count += 1
 
         with self.lf_set_stage(stage), torch_context:
-            if len(signature_parameters) == 1:
-                return self(arg)
-            return self(*arg)
+            if (var_positional_count > 0 or signature_count > 1) and isinstance(arg, (list, tuple)):
+                return self(*arg)
+            return self(arg)
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
                       verbose: bool = False, flatten: bool = False):  # TODO: different name?
@@ -566,18 +600,13 @@ class AtomicTransform(Transform):
     def _lf_title(self):
         return self._lf_call
 
-    def lf_all_transforms(self):
-        res = [self]
+    @property
+    def lf_direct_subtransforms(self):
+        # pylint: disable=no-self-use
         globals_dict, nonlocals_dict = self._lf_closurevars
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
-            try:
-                children = v.lf_all_transforms()
-            except AttributeError:
-                continue
-            for child_transform in children:
-                if child_transform not in res:
-                    res.append(child_transform)
-        return res
+            if isinstance(v, Transform):
+                yield v
 
 
 class FunctionTransform(AtomicTransform):
@@ -630,7 +659,7 @@ class ClassTransform(AtomicTransform):
     def __init__(self, lf_name=None, ignore_scope=False):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
-        call = inspector.get_call_segment_from_frame(caller_frameinfo.frame)
+        call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
         AtomicTransform.__init__(
             self,
             call=call,
@@ -852,13 +881,9 @@ class CompoundTransform(Transform):
 
         return list_flat
 
-    def lf_all_transforms(self):
-        res = [self]
-        for transform in self.transforms:
-            for child_transform in transform.lf_all_transforms():
-                if child_transform not in res:
-                    res.append(child_transform)
-        return res
+    @property
+    def lf_direct_subtransforms(self):
+        yield from self.transforms
 
     def grouped(self):
         """Return a grouped version of *self*. """
@@ -933,12 +958,6 @@ class Compose(CompoundTransform):
         for transform_ in self.transforms:
             arg = transform_._lf_call_transform(arg)
         return arg
-
-    # TODO Finish adding
-    # def __len__(self):
-    #     # TODO Previously was length of first element of trans_list. Any reason why?
-    #     # return len(self.trans_list[0])
-    #     return len(self.transforms)
 
     def _lf_forward_part(self):
         """Forward part of transforms"""
@@ -1030,12 +1049,6 @@ class Rollout(CompoundTransform):
             out.append(transform_._lf_call_transform(arg))
         out = self._lf_output_format(*out)
         return out
-
-    # TODO Finish adding
-    # def __len__(self):
-    #     lens = [len(x) for x in self.transforms]
-    #     assert len(set(lens)) == 1
-    #     return lens[0]
 
     @property
     def lf_preprocess(self):
@@ -1178,7 +1191,7 @@ class Identity(BuiltinTransform):
         return args
 
 
-class Unbatchify(BuiltinTransform):
+class Unbatchify(ClassTransform):
     """Mark start of postprocessing
 
     Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
@@ -1188,7 +1201,7 @@ class Unbatchify(BuiltinTransform):
     """
 
     def __init__(self, dim=0, cpu=True):
-        super().__init__('lf.Unbatchify()')
+        super().__init__()
         self.dim = dim
         self._lf_component = {'postprocess'}
         self.cpu = cpu
@@ -1215,18 +1228,18 @@ class Unbatchify(BuiltinTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(BuiltinTransform):
+class Batchify(ClassTransform):
     """Mark end of preprocessing.
 
-    Bachify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
     recursively, tuples thereof. Batchify also moves the input tensors to device specified
     for the transform.
-    
+
     :param dim: batching dimension
     """
 
     def __init__(self, dim=0):
-        super().__init__('lf.Batchify()')
+        super().__init__()
         self.dim = dim
         self._lf_component = {'preprocess'}
 
