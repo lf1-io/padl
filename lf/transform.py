@@ -78,6 +78,10 @@ class Transform:
             return self.lf_varname()
         return self._lf_name
 
+    @lf_name.setter
+    def lf_name(self, value):
+        self._lf_name = value
+
     def __rshift__(self, other: "Transform") -> "Compose":
         """Compose with *other*.
 
@@ -166,7 +170,6 @@ class Transform:
 
         if scope is None:
             scope = self._lf_call_info.scope
-
 
         if name is not None:
             name_scope_here = name, scope
@@ -735,6 +738,17 @@ class CompoundTransform(Transform):
         except (AttributeError, TypeError):
             self._lf_component = None
 
+    def __sub__(self, name: str) -> "Transform":
+        """Create a named clone of the transform.
+
+        Example:
+            named_t = t - 'rescale image'
+        """
+        named_copy = copy(self)
+        named_copy._lf_name = name
+        named_copy._lf_group = True
+        return named_copy
+
     def __getitem__(self, item : Union[int, slice, str]) -> Transform:
         """Get item
 
@@ -1175,6 +1189,12 @@ class BuiltinTransform(AtomicTransform):
         scopemap[self.__class__.__name__, scope] = scope
 
         return graph, scopemap
+
+    def _lf_bodystr(self):
+        return self._lf_call.split('lf.')[-1]
+
+    def _lf_title(self):
+        return self._lf_call.split('lf.')[-1].split('(')[0]
 
 
 class Identity(BuiltinTransform):
