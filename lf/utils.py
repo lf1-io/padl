@@ -11,7 +11,6 @@ def _maketrans(attr, getitem=False):
         """
 
         def __init__(self, *args, **kwargs):
-            call_info = inspector.CallInfo()
             self.__args = args
             self.__kwargs = kwargs
             caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
