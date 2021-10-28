@@ -144,7 +144,7 @@ class Transform:
 
     @property
     def n_display_inputs(self):
-        return len(self.get_signature())
+        return len(self.lf_get_signature())
 
     @property
     def n_display_outputs(self):
@@ -425,7 +425,7 @@ class Transform:
 
         signature_count = 0
         var_positional_count = 0
-        for param in self.get_signature().parameters.values():
+        for param in self.lf_get_signature().parameters.values():
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
@@ -439,7 +439,7 @@ class Transform:
                 return self(*arg)
             return self(arg)
 
-    def get_signature(self):
+    def lf_get_signature(self):
         return inspect.signature(self).parameters
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
@@ -753,7 +753,7 @@ class ClassTransform(AtomicTransform):
 
 class TorchModuleTransform(ClassTransform):
     """Torch Module Transform"""
-    def get_signature(self):
+    def lf_get_signature(self):
         return inspect.signature(self.forward).parameters
 
     def lf_pre_save(self, path, i):
@@ -1077,7 +1077,7 @@ class Compose(CompoundTransform):
             if isinstance(t, Rollout) or isinstance(t, Parallel):
                 all_params = []
                 for tt in t.transforms:
-                    all_params.append(list(tt.get_signature().keys()))
+                    all_params.append(list(tt.lf_get_signature().keys()))
                 to_combine = [
                     ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
                     if len(params) > 1
@@ -1087,7 +1087,7 @@ class Compose(CompoundTransform):
                 to_format = _combine_arrows(to_combine)
             else:
                 padder = (len(subarrows) + 1) * ' '
-                params = [x for x in t.get_signature()]
+                params = [x for x in t.lf_get_signature()]
                 to_format = padder + tuple_to_str(params) if len(params) > 1 else padder + params[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
