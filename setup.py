@@ -22,7 +22,7 @@ setuptools.setup(
     name="lf",
     version=versions['__version__'],
     author="LF1",
-    author_email="contact@lf1.io",  # TODO Which email?
+    author_email="contact@lf1.io",
     description="Abstractions and base classes for AI models based on Pytorch.",
     # long_description=long_description,  # TODO Add back
     long_description_content_type="text/markdown",
