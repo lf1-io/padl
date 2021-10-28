@@ -25,15 +25,26 @@ def _set_local_varname(frame, event, _args):
 
 def _wrap_function(fun, ignore_scope=False):
     """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
-    call_info = inspector.CallInfo(drop_n=1, ignore_scope=ignore_scope)
     caller = inspect.stack()[2]
+
+    try:
+        # case trans(f)
+        call = inspector.get_segment_from_frame(caller.frame, 'call')
+    except RuntimeError:
+        try:
+            # case importer.np.trans
+            call = inspector.get_segment_from_frame(caller.frame, 'attribute')
+        except RuntimeError:
+            # decorator case @trans ..
+            call = None
+
+    # if this is the decorator case we drop one leven from the scope (this is the decorated
+    # function itself)
+    drop_n = 1 if call is None else 0
+    call_info = inspector.CallInfo(drop_n=drop_n, ignore_scope=ignore_scope)
     if call_info.function != '<module>' and not ignore_scope:
         inspector.trace_this(_set_local_varname, caller.frame)
 
-    try:
-        call = inspector.get_attribute_segment_from_frame(caller.frame)
-    except RuntimeError:
-        call = None
     wrapper = FunctionTransform(fun, call_info, call=call)
     functools.update_wrapper(wrapper, fun)
     return wrapper

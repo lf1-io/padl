@@ -4,6 +4,7 @@ from lf import transform as lf, trans, Identity
 from lf.transform import Batchify, Unbatchify
 from collections import namedtuple
 from lf.exceptions import WrongDeviceError
+from tests.fixtures.transforms import cleanup_checkpoint
 
 
 @trans
@@ -29,6 +30,16 @@ def plus(x, y):
 @trans
 def get_info(x):
     return x['info']
+
+
+@trans
+def complex_signature_func_1(a, b=10):
+    return a+b
+
+
+@trans
+def complex_signature_func_2(*a, b= 10):
+    return sum(a) + b
 
 
 def simple_func(x):
@@ -62,6 +73,36 @@ def test_isinstance_of_namedtuple():
     assert not lf._isinstance_of_namedtuple(list(tup))
     assert not lf._isinstance_of_namedtuple(1.)
     assert not lf._isinstance_of_namedtuple('something')
+
+
+class TestLFCallTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = plus_one >> (times_two + times_two)
+        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
+        request.cls.transform_3 = plus_one + times_two >> plus
+        request.cls.transform_4 = plus_one + times_two >> complex_signature_func_1
+        request.cls.transform_5 = plus_one >> complex_signature_func_1
+        request.cls.transform_6 = plus_one + times_two >> complex_signature_func_2
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(1)
+        assert self.transform_2.infer_apply(10)
+        assert self.transform_3.infer_apply(1.4)
+        assert self.transform_4.infer_apply(201)
+        assert self.transform_5.infer_apply(11.1)
+        assert self.transform_6.infer_apply(19)
+
+    def test_save_load(self, cleanup_checkpoint):
+        for transform_ in [self.transform_1,
+                           self.transform_2,
+                           self.transform_3,
+                           self.transform_4,
+                           self.transform_5,
+                           self.transform_6]:
+            transform_.lf_save('test.lf')
+            t_ = lf.load('test.lf')
+            assert t_.infer_apply(1)
 
 
 class TestParallel:
@@ -108,6 +149,15 @@ class TestParallel:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
+        self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.transform_3.lf_save('test.lf')
+        _ = lf.load('test.lf')
+
 
 class TestRollout:
     @pytest.fixture(autouse=True, scope='class')
@@ -153,6 +203,15 @@ class TestRollout:
             assert self.transform_1.lf_forward.lf_stage == 'train'
             assert self.transform_1.lf_postprocess.lf_stage == 'train'
 
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(2) == (3, 4, 4)
+        self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.transform_3.lf_save('test.lf')
+        _ = lf.load('test.lf')
+
 
 class TestCompose:
     @pytest.fixture(autouse=True, scope='class')
@@ -167,7 +226,6 @@ class TestCompose:
             >> times_two - 'named_times_two'
             >> times_two
             >> Unbatchify()
-            >> plus_one
         )
 
     def test_associative(self):
@@ -187,29 +245,32 @@ class TestCompose:
 
     def test_lf_postprocess(self):
         assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
-        assert isinstance(self.transform_5.lf_postprocess, lf.Compose)
+        assert isinstance(self.transform_5.lf_postprocess, lf.Unbatchify)
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
-        assert self.transform_5.infer_apply(1) == torch.tensor(9)
+        assert self.transform_5.infer_apply(1) == torch.tensor(8)
 
     def test_eval_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
 
     def test_train_apply(self):
         # default
-        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([9]), torch.tensor([9])]
+        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
-            [1, 2, 1, 2], loader_kwargs={'batch_size': 2})
+            [1, 2, 1, 2],
+            loader_kwargs={'batch_size': 2},
+            verbose=True)
         ):
-            assert torch.all(batch == torch.tensor([9, 13]))
+            assert torch.all(batch == torch.tensor([8, 12]))
         # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             loader_kwargs={'batch_size': 2},
-            flatten=True)
-        ) == [torch.tensor([9]), torch.tensor([13]), torch.tensor([9]), torch.tensor([13])]
+            flatten=True,
+            verbose=True)
+        ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
 
     def test_context(self):
         assert self.transform_1.lf_stage is None
@@ -228,6 +289,20 @@ class TestCompose:
         c = plus_one >> times_two >> trans_with_globals
         all_ = c.lf_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.transform_3.lf_save('test.lf')
+        _ = lf.load('test.lf')
+        self.transform_4.lf_save('test.lf')
+        t4 = lf.load('test.lf')
+        assert t4.infer_apply(1) == 4
+        self.transform_5.lf_save('test.lf')
+        t5 = lf.load('test.lf')
+        assert t5.infer_apply(1) == torch.tensor(8)
 
     def test_getitem(self):
         assert isinstance(self.transform_5[0], lf.Transform)
@@ -267,8 +342,7 @@ class TestModel:
         request.cls.model_4 = (
             plus_one + times_two
             >> Batchify()
-            # Testing if lf_forward is Identity() and not (Identity(), Identity())
-            >> Identity() / Identity()
+            >> Polynomial(1, 0) / Identity()
             >> Unbatchify()
             >> plus_one / times_two
         )
@@ -289,15 +363,35 @@ class TestModel:
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
-        assert self.model_2.infer_apply(5) == (13, 13)
+        assert self.model_2.infer_apply(torch.tensor(5)) == (13, 13)
         assert self.model_3.infer_apply(5) == (7, 20)
-        assert self.model_4.infer_apply(5) == (7, 20)
+        assert self.model_4.infer_apply(5) == (8, 20)
 
     def test_eval_apply(self):
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
-        assert list(self.model_2.eval_apply([5, 5])) == [(13, 13), (13, 13)]
+        assert list(self.model_2.eval_apply(torch.tensor([5, 5]))) == [(13, 13), (13, 13)]
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
-        assert list(self.model_4.eval_apply([5, 6])) == [(7, 20), (8, 24)]
+        assert list(self.model_4.eval_apply([5, 6])) == [(8, 20), (9, 24)]
+
+    def test_train_apply(self):
+        assert list(self.model_1.train_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
+        assert list(self.model_2.train_apply(torch.tensor([5, 5]))) == [(13, 13), (13, 13)]
+        assert list(self.model_3.train_apply([5, 6])) == [(7, 20), (8, 24)]
+        assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        lf.save(self.model_1, 'test.lf')
+        m1 = lf.load('test.lf')
+        assert m1.infer_apply((5, 5)) == (13, 13)
+        self.model_2.lf_save('test.lf')
+        m2 = lf.load('test.lf')
+        assert m2.infer_apply(5) == (13, 13)
+        self.model_3.lf_save('test.lf')
+        m3 = lf.load('test.lf')
+        assert m3.infer_apply(5) == (7, 20)
+        self.model_4.lf_save('test.lf')
+        m4 = lf.load('test.lf') # TODO This Fails
+        assert m4.infer_apply(5) == (8, 20)
 
 
 class TestFunctionTransform:
@@ -345,6 +439,13 @@ class TestFunctionTransform:
         self.transform_1.lf_to('cpu')
         assert self.transform_1.lf_device == 'cpu'
 
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(5) == 6
+        self.transform_2.lf_save('test.lf')
+        _ = lf.load('test.lf')
+
 
 def test_name():
     assert (plus_one - 'p1')._lf_name == 'p1'
@@ -377,6 +478,9 @@ class TestTorchModuleTransform:
         output = self.transform_1(1)
         assert output == 2
 
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(1)
+
     def test_device(self):
         self.transform_1.lf_to('cpu')
         device = next(self.transform_1.lf_layers[0].parameters()).device.type
@@ -388,3 +492,8 @@ class TestTorchModuleTransform:
     def test_lf_parameters(self):
         params = list(self.transform_1.lf_parameters())
         assert len(params) == 2
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1(1) == 2
