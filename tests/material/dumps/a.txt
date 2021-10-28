@@ -1,10 +1,10 @@
-from lf import trans
+from lf import transform
 
 
 CONST = 1
 
 
-@trans
+@transform
 def x(y):
     return CONST + 1
 

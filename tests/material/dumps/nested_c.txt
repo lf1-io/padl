@@ -1,4 +1,4 @@
-from lf import trans
+from lf import transform
 
 
 a = 1
@@ -10,12 +10,12 @@ def k(o):
     return o * 7
 
 
-@trans
+@transform
 def x(y):
     return CONST + 1
 
 
-@trans
+@transform
 def y(y):
     return CONST + k(y)
 
@@ -23,7 +23,7 @@ def y(y):
 c = x
 
 
-@trans
+@transform
 class MyClassTransform:
         def __init__(self, a, b, c):
             self.a = a

@@ -1,4 +1,4 @@
-from lf import trans
+from lf import transform
 
 
 CONST = 1
@@ -8,9 +8,9 @@ def k(o):
     return o * 7
 
 
-@trans
+@transform
 def y(y):
     return CONST + k(y)
 
 
-_lf_main = trans(lambda x: y(x))
+_lf_main = transform(lambda x: y(x))
