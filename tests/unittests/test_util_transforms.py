@@ -1,21 +1,21 @@
 import pytest
-from lf import trans, Batchify
-import lf.transform as lf
+from lf import transform, Batchify
+import lf.transforms as lf
 from lf.util_transforms import IfTrain, IfEval, IfInfer
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
-@trans
+@transform
 def plus_one(x):
     return x + 1
 
 
-@trans
+@transform
 def times_two(x):
     return x * 2
 
 
-times_three = trans(lambda x: x * 3)
+times_three = transform(lambda x: x * 3)
 
 
 class TestIfInStage:
