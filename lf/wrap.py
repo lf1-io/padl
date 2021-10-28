@@ -82,8 +82,10 @@ def _wrap_class(cls, ignore_scope=False):
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):
         old__init__(self, *args, **kwargs)
+        args = signature.bind(None, *args, **kwargs).arguments
+        args.pop(next(iter(args.keys())))
         trans_class.__init__(self, ignore_scope=ignore_scope,
-                             bound_args=signature.bind(None, *args, **kwargs)
+                             arguments=args)
 
 
     cls.__init__ = __init__

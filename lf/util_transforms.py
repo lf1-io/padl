@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from lf.transforms import ClassTransform, Identity, Transform
 
 
@@ -10,8 +12,9 @@ class IfInStage(ClassTransform):
     """
 
     def __init__(self, if_, target_stage, else_=None):
-
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('if_', if_),
+                                                ('target_stage', target_stage),
+                                                ('else_', else_)]))
 
         assert target_stage in ('train', 'eval', 'infer'), "Target stage can only be train, " \
                                                            "eval or infer"
