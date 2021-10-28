@@ -5,6 +5,7 @@ import functools
 import inspect
 from warnings import warn
 
+import numpy as np
 import torch
 
 from lf.dumptools import var2mod, inspector
@@ -46,6 +47,11 @@ def _wrap_function(fun, ignore_scope=False):
         inspector.trace_this(_set_local_varname, caller.frame)
 
     wrapper = FunctionTransform(fun, call_info, call=call)
+
+    # Special checks
+    if isinstance(fun, np.ufunc):
+        wrapper._lf_number_of_inputs = fun.nin
+
     functools.update_wrapper(wrapper, fun)
     return wrapper
 
