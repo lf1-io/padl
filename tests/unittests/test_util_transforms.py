@@ -64,7 +64,7 @@ class TestIfInStage:
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
         assert list(self.transform_4.train_apply([1, 2])) == [12, 18]
 
-    def test_save_and_load(self):
+    def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
         assert t1.infer_apply(1) == 9
