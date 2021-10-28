@@ -28,10 +28,10 @@ setuptools.setup(
     url="https://github.com/lf1-io/lf",
     packages=setuptools.find_packages(),
     setup_requires=[],
-    license="BSD-3C",
+    license="Apache 2.0",
     classifiers=[
         "Programming Language :: Python :: 3.8",
-        "License :: BSD-3C",
+        "License :: Apache 2.0",
         "Operating System :: Unix",
     ],
     python_requires='>=3.8',
