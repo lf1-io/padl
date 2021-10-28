@@ -566,8 +566,8 @@ class Transform:
         """
         return self._lf_call_transform(input, stage='infer')
 
-    def eval_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
-                   verbose: bool = False, flatten: bool = False):
+    def eval_apply(self, inputs: Iterable,
+                   verbose: bool = False, flatten: bool = False, **kwargs):
         """Call transform within the eval context.
 
         This expects an iterable input and returns a generator.
@@ -578,11 +578,11 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'eval', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'eval', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
-    def train_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
-                    verbose: bool = False, flatten: bool = False):
+    def train_apply(self, inputs: Iterable,
+                    verbose: bool = False, flatten: bool = False, **kwargs):
         """Call transform within the train context.
 
         This expects an iterable input and returns a generator.
@@ -593,7 +593,7 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'train', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'train', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
 
