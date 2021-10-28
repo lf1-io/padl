@@ -14,4 +14,4 @@ def x():
 
 def test_getpackages():
     out = packagefinder.get_packages(ast.parse(source_a).body)
-    assert out == ['bla', 'blu', 'ble']
+    assert out == {'bla', 'blu', 'ble'}
