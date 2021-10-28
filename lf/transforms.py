@@ -396,7 +396,7 @@ class Transform:
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
-        if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
+        if stage in ('eval', 'infer'):
             torch_context = torch.no_grad()
         else:
             torch_context = contextlib.suppress()
