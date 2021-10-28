@@ -1269,7 +1269,8 @@ def load(path):
         '_lf_module': module,
         '__file__': str(path / 'transform.py')
     })
-    exec(source, module.__dict__)
+    code = compile(source, path/'transform.py', 'exec')
+    exec(code, module.__dict__)
     transform = module._lf_main
     for i, subtrans in enumerate(transform.lf_all_transforms()):
         subtrans.lf_post_load(path, i)
