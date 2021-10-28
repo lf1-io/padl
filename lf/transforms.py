@@ -98,7 +98,7 @@ class Transform:
 
     @property
     def display_width(self):
-        return len(self.lf_shortname())
+        return len(self._lf_shortname())
 
     @property
     def children_widths(self):
@@ -254,7 +254,7 @@ class Transform:
         # pylint: disable=unused-argument,no-self-use
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_all_transforms(self, result=None):
         """Return a list of all transforms needed for executing the transform.
@@ -307,7 +307,7 @@ class Transform:
         return res
 
     def _lf_bodystr(self):
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_repr(self, indent: int = 0) -> str:
         # pylint: disable=unused-argument
@@ -747,6 +747,9 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
+    def _lf_bodystr(self):
+        return torch.nn.Module.__repr__(self)
+
 
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
@@ -1016,7 +1019,7 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
         return top_message + self._lf_write_arrows_to_rows()
 
     def _lf_write_arrows_to_rows(self):
@@ -1031,9 +1034,9 @@ class Compose(CompoundTransform):
         # pad the components of rows which are shorter than other parts in same column
         # rows = [re.split(r'\/|\+', x) for x in rows]
         rows = [
-            [s.lf_shortname().strip() for s in t.transforms]
+            [s._lf_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
-            else [t.lf_shortname()]
+            else [t._lf_shortname()]
             for t in self.transforms
         ]
 
