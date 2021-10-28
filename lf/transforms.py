@@ -2,7 +2,7 @@
 import ast
 import re
 from copy import copy
-from collections import Counter, namedtuple
+from collections import Counter, namedtuple, OrderedDict
 import contextlib
 import inspect
 from itertools import chain
@@ -711,10 +711,11 @@ class ClassTransform(AtomicTransform):
     :param lf_name: Name of the transform.
     """
 
-    def __init__(self, lf_name=None, ignore_scope=False):
+    def __init__(self, lf_name=None, ignore_scope=False, arguments=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+        self._lf_arguments = arguments
         AtomicTransform.__init__(
             self,
             call=call,
@@ -1415,7 +1416,7 @@ class Unbatchify(ClassTransform):
     """
 
     def __init__(self, dim=0, cpu=True):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
         self._lf_component = {'postprocess'}
         self.cpu = cpu
@@ -1453,7 +1454,7 @@ class Batchify(ClassTransform):
     """
 
     def __init__(self, dim=0):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
         self._lf_component = {'preprocess'}
 

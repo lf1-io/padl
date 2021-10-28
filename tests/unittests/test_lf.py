@@ -64,6 +64,15 @@ class SimpleClassTransform:
 
 
 @transform
+class ClassTransformWithManyArguments:
+    def __init__(self, a, b, *args, c=1, d=2, **kwargs):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
+@transform
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
 
@@ -503,6 +512,10 @@ class TestClassTransform:
         self.transform_2.lf_save('test.lf')
         t2 = lf.load('test.lf')
         assert t2.infer_apply(1) == 3
+
+    def test_stored_arguments(self):
+        c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
+        breakpoint()
 
 
 class TestTorchModuleTransform:
