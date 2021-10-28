@@ -77,10 +77,14 @@ def _wrap_class(cls, ignore_scope=False):
     # make cls inherit from AtomicTransform
     cls = type(cls.__name__, (trans_class, cls), {})
 
+    signature = inspect.signature(old__init__)
+
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):
         old__init__(self, *args, **kwargs)
-        trans_class.__init__(self, ignore_scope=ignore_scope)
+        trans_class.__init__(self, ignore_scope=ignore_scope,
+                             bound_args=signature.bind(None, *args, **kwargs)
+
 
     cls.__init__ = __init__
     cls.__module__ = module
