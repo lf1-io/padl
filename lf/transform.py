@@ -78,10 +78,6 @@ class Transform:
             return self.lf_varname()
         return self._lf_name
 
-    @lf_name.setter
-    def lf_name(self, value):
-        self._lf_name = value
-
     def __rshift__(self, other: "Transform") -> "Compose":
         """Compose with *other*.
 
