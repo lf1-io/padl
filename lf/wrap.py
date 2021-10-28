@@ -8,7 +8,7 @@ from warnings import warn
 import torch
 
 from lf.dumptools import var2mod, inspector
-from lf.transform import (
+from lf.transforms import (
     AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
 
@@ -24,18 +24,18 @@ def _set_local_varname(frame, event, _args):
 
 
 def _wrap_function(fun, ignore_scope=False):
-    """Fram *fun* in a Transform. Don't use directly, use `trans` instead. """
+    """Fram *fun* in a Transform. Don't use directly, use `transform` instead. """
     caller = inspect.stack()[2]
 
     try:
-        # case trans(f)
+        # case transform(f)
         call = inspector.get_segment_from_frame(caller.frame, 'call')
     except RuntimeError:
         try:
-            # case importer.np.trans
+            # case importer.np.transform
             call = inspector.get_segment_from_frame(caller.frame, 'attribute')
         except RuntimeError:
-            # decorator case @trans ..
+            # decorator case @transform ..
             call = None
 
     # if this is the decorator case we drop one leven from the scope (this is the decorated
@@ -54,11 +54,11 @@ def _wrap_class(cls, ignore_scope=False):
     """Patch __init__ of class such that the initialization statement is stored
     as an attribute `_lf_call`. In addition make class inherit from Transform.
 
-    This is called by `trans`, don't call `_wrap_class` directly, always use `trans`.
+    This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
     Example:
 
-    @trans
+    @transform
     class MyClass:
         def __init__(self, x):
             ...
@@ -90,7 +90,7 @@ def _wrap_class(cls, ignore_scope=False):
 def _wrap_lambda(fun, ignore_scope=False):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
     become obsolete with python 3.11 (see _wrap_class). """
-    # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
+    # get the caller frame (it's 2 - [caller] -> [transform] -> [_wrap_lambda])
     caller_frame = inspector.caller_frame()
     # get the source
     try:
@@ -103,12 +103,12 @@ def _wrap_lambda(fun, ignore_scope=False):
     candidate_segments = []
     candidate_calls = []
     for node in nodes:
-        # keep lambda nodes which are contained in a call of `lf.trans`
+        # keep lambda nodes which are contained in a call of `lf.transform`
         if not isinstance(node.parent, ast.Call):
             continue
         containing_call = ast.get_source_segment(source, node.parent.func)
         containing_function = eval(containing_call, caller_frame.f_globals)
-        if containing_function is not trans:
+        if containing_function is not transform:
             continue
         candidate_segments.append(ast.get_source_segment(source, node))
         candidate_calls.append(ast.get_source_segment(source, node.parent))
@@ -136,7 +136,7 @@ def _wrap_lambda(fun, ignore_scope=False):
     return wrapper
 
 
-def trans(fun_or_cls, ignore_scope=False):
+def transform(fun_or_cls, ignore_scope=False):
     """Transform wrapper / decorator. Use to wrap a class or callable. """
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
