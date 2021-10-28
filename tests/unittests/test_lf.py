@@ -277,16 +277,16 @@ class TestCompose:
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ):
             assert torch.all(batch == torch.tensor([8, 12]))
         # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
             flatten=True,
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
 
     def test_context(self):
