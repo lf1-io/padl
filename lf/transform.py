@@ -977,37 +977,46 @@ class Compose(CompoundTransform):
     def n_display_outputs(self):
         return self.transforms[-1].n_display_outputs
 
-    def _lf_add_format_to_str(self, name):
+    def __repr__(self) -> str:
+        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        return top_message + self._lf_write_arrows_to_rows()
+
+    def _lf_write_arrows_to_rows(self):
         """
         Create formatted output based on "name" input lines. For multi-line inputs
         the lines are infixed with *self.display_op*
 
         :param name: line or lines of input
         """
-        rows = name.split('\n')
-        assert len(rows) == len(self.transforms)
         # output = [make_bold('0: ' + rows[0])]
 
+        # pad the components of rows which are shorter than other parts in same column
+        # rows = [re.split(r'\/|\+', x) for x in rows]
+        rows = [
+            [s.lf_shortname().strip() for s in t.transforms]
+            if isinstance(t, CompoundTransform)
+            else [t.lf_shortname()]
+            for t in self.transforms
+        ]
+
+        children_widths = [[len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
-        children_widths = [t.children_widths for t in self.transforms]
         children_widths_matrix = np.zeros((len(self.transforms),
-                                          max([len(x) for x in children_widths])))
+                                           max([len(x) for x in children_widths])))
         for i, cw in enumerate(children_widths):
             children_widths_matrix[i, :len(cw)] = cw
-
-        # pad the components of rows which are shorter than other parts in same column
-        rows = [re.split(r'\/|\+', x) for x in rows]
         max_widths = np.max(children_widths_matrix, 0)
+
         for i, r in enumerate(rows):
             for j in range(len(rows[i])):
                 if len(rows[i][j]) < max_widths[j]:
-                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]) + 2)
+                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]))
+
         for i, r in enumerate(rows):
             if len(r) > 1:
-                rows[i] = self.transforms[i].display_op.join(r)
+                rows[i] = f' {self.transforms[i].display_op} '.join(r)
             else:
                 rows[i] = r[0]
-
         output = []
         # iterate through rows and create arrows depending on numbers of components
         for i, (r, t) in enumerate(zip(rows, self.transforms)):
@@ -1015,25 +1024,26 @@ class Compose(CompoundTransform):
             subarrows = []
 
             # if subsequent rows have the same number of "children" transforms
-            if i > 0 and len(t.children_widths) == len(self.transforms[i - 1].children_widths):
-                for j, w in enumerate(t.children_widths):
+            if i > 0 and len(children_widths[i]) == len(children_widths[i - 1]):
+                for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
-            elif i > 0 and len(t.children_widths) == 1 and len(self.transforms[i - 1].children_widths) > 1:
-                for j, w in enumerate(self.transforms[i].children_widths):
+            elif i > 0 and len(children_widths[i]) == 1 \
+                    and len(children_widths[i - 1]) > 1:
+                for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_reverse_arrow(
                         j, sum(widths) - j + j * 3,
-                        len(self.transforms[i].children_widths) - j + 1, j + 1
+                        len(children_widths[i]) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
 
             # if previous row has one output and current row has multiple inputs
             else:
-                for j, w in enumerate(t.children_widths):
+                for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
-                                                  len(t.children_widths) - j, j + 1))
+                                                  len(children_widths[i]) - j, j + 1))
                     widths.append(int(max_widths[j]))
 
             # add signature names to the arrows
