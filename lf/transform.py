@@ -425,7 +425,7 @@ class Transform:
 
         signature_count = 0
         var_positional_count = 0
-        for param in self.lf_get_signature().parameters.values():
+        for param in self.lf_get_signature().values():
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
