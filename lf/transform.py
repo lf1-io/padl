@@ -268,8 +268,8 @@ class Transform:
 
     def _lf_shortname(self):
         title = self._lf_title()
-        if self.lf_name is not None:
-            return title + f'[{self.lf_name}]'
+        if self._lf_name is not None:
+            return title + f'[{self._lf_name}]'
         varname = self.lf_varname()
         if varname is None or varname == title:
             return title
@@ -630,6 +630,9 @@ class FunctionTransform(AtomicTransform):
             body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
             lines = re.split('(\n)', body_msg)
             lines = ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
+            if len(lines) == 0:
+                body_msg = ''.join(re.split('(lambda)', self._lf_call, 1)[1:])[:-1]
+                return body_msg[:100]
             return lines
         except TypeError:
             return self._lf_call
