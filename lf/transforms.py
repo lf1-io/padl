@@ -19,6 +19,8 @@ from tqdm import tqdm
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
 from lf.exceptions import WrongDeviceError
+from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
+    create_arrow
 
 
 class _Notset:
@@ -39,35 +41,6 @@ def _isinstance_of_namedtuple(arg):
     if not isinstance(fields, tuple):
         return False
     return all(isinstance(field, str) for field in fields)
-
-
-def create_arrow(start_left,  finish_right, n_initial_rows, n_final_rows):
-    initial = ''
-    for _ in range(n_initial_rows - 1):
-        initial += ' ' * start_left + '|' + '\n'
-    final = ''
-    for _ in range(n_final_rows - 1):
-        final += ' ' * (start_left + finish_right) + '|' + '\n'
-    return initial + ' ' * start_left + '|' \
-        + '_' * (finish_right - 1) + '\n' \
-        + final \
-        + ' ' * (start_left + finish_right) + '▼'
-
-
-def combine_arrows(arrows):
-    arrows = [x.split('\n') for x in arrows]
-    length = max([len(x) for x in arrows])
-    lines = []
-    for i in range(length):
-        parts = [x[i] for x in arrows if len(x) >= i + 1]
-        line = list(' ' * max([len(x) for x in parts]))
-        for j in range(len(line)):
-            for part in parts:
-                if len(part) >= j + 1:
-                    if part[j] != ' ':
-                        line[j] = part[j]
-        lines.append(''.join(line))
-    return '\n'.join(lines)
 
 
 Stage = Literal['infer', 'eval', 'train']
@@ -117,7 +90,7 @@ class Transform:
 
     @property
     def n_display_inputs(self):
-        return len(self._get_signature())
+        return len(self.lf_get_signature())
 
     @property
     def n_display_outputs(self):
@@ -322,9 +295,12 @@ class Transform:
 
     @staticmethod
     def _lf_add_format_to_str(name):
-        res = '\33[32m        ⬇  \33[0m\n'
-        res += '    ' + '\n    '.join(['\33[1m' + x + '\33[0m' for x in name.split('\n')]) + '\n'
-        res += '\33[32m        ⬇  \33[0m\n'
+        """
+        Create formatted output based on "name" input lines.
+
+        :param name: line or lines of input
+        """
+        res = '    ' + '\n    '.join([make_bold(x) for x in name.split('\n')]) + '\n'
         return res
 
     def lf_bodystr(self):
@@ -400,7 +376,7 @@ class Transform:
 
         signature_count = 0
         var_positional_count = 0
-        for param in self._get_signature().values():
+        for param in self.lf_get_signature().values():
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
@@ -414,7 +390,7 @@ class Transform:
                 return self(*arg)
             return self(arg)
 
-    def _get_signature(self):
+    def lf_get_signature(self):
         return inspect.signature(self).parameters
 
     def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
@@ -590,8 +566,8 @@ class Transform:
         """
         return self._lf_call_transform(input, stage='infer')
 
-    def eval_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
-                   verbose: bool = False, flatten: bool = False):
+    def eval_apply(self, inputs: Iterable,
+                   verbose: bool = False, flatten: bool = False, **kwargs):
         """Call transform within the eval context.
 
         This expects an iterable input and returns a generator.
@@ -602,11 +578,11 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'eval', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'eval', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
-    def train_apply(self, inputs: Iterable, loader_kwargs: Optional[dict] = None,
-                    verbose: bool = False, flatten: bool = False):
+    def train_apply(self, inputs: Iterable,
+                    verbose: bool = False, flatten: bool = False, **kwargs):
         """Call transform within the train context.
 
         This expects an iterable input and returns a generator.
@@ -617,7 +593,7 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'train', loader_kwargs=loader_kwargs,
+        return self._lf_callyield(inputs, 'train', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
 
@@ -728,7 +704,7 @@ class ClassTransform(AtomicTransform):
 
 class TorchModuleTransform(ClassTransform):
     """Torch Module Transform"""
-    def _get_signature(self):
+    def lf_get_signature(self):
         return inspect.signature(self.forward).parameters
 
     def lf_pre_save(self, path, i):
@@ -864,10 +840,14 @@ class CompoundTransform(Transform):
         return sep.join(t.lf_shortname() for t in self.transforms)
 
     def _lf_add_format_to_str(self, name):
-        res = '\33[32m        ⬇  \33[0m\n'
-        res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-            [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        res += '\33[32m        ⬇  \33[0m\n'
+        """
+        Create formatted output based on "name" input lines. For multi-line inputs
+        the lines are infixed with *self.display_op*
+
+        :param name: line or lines of input
+        """
+        res = f'\n        {make_green(self.display_op)}  \n'.join(
+            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -997,31 +977,102 @@ class Compose(CompoundTransform):
     def n_display_outputs(self):
         return self.transforms[-1].n_display_outputs
 
-    # def lf_bodystr(self, is_child=False):
-    #     sep = f' {self.op} ' if is_child else '\n'
-    #     return sep.join(t.lf_shortname() for t in self.transforms)
+    def __repr__(self) -> str:
+        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        return top_message + self._lf_write_arrows_to_rows()
 
-    def test_lf_add_format_to_str(self):
-        name = self.lf_bodystr()
-        rows = name.split('\n')
-        assert len(rows) == len(self.transforms)
-        output = [rows[0]]
-        for i, (r, t) in enumerate(zip(rows, self.transforms[1:])):
-            output.append(t.n_display_inputs)
+    def _lf_write_arrows_to_rows(self):
+        """
+        Create formatted output based on "name" input lines. For multi-line inputs
+        the lines are infixed with *self.display_op*
+
+        :param name: line or lines of input
+        """
+        # output = [make_bold('0: ' + rows[0])]
+
+        # pad the components of rows which are shorter than other parts in same column
+        # rows = [re.split(r'\/|\+', x) for x in rows]
+        rows = [
+            [s.lf_shortname().strip() for s in t.transforms]
+            if isinstance(t, CompoundTransform)
+            else [t.lf_shortname()]
+            for t in self.transforms
+        ]
+
+        children_widths = [[len(x) for x in row] for row in rows]
+        # get maximum widths in "columns"
+        children_widths_matrix = np.zeros((len(self.transforms),
+                                           max([len(x) for x in children_widths])))
+        for i, cw in enumerate(children_widths):
+            children_widths_matrix[i, :len(cw)] = cw
+        max_widths = np.max(children_widths_matrix, 0)
+
+        for i, r in enumerate(rows):
+            for j in range(len(rows[i])):
+                if len(rows[i][j]) < max_widths[j]:
+                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]))
+
+        for i, r in enumerate(rows):
+            if len(r) > 1:
+                rows[i] = f' {self.transforms[i].display_op} '.join(r)
+            else:
+                rows[i] = r[0]
+        output = []
+        # iterate through rows and create arrows depending on numbers of components
+        for i, (r, t) in enumerate(zip(rows, self.transforms)):
             widths = [0]
-            for i, w in enumerate(t.children_widths):
-                output.append(create_arrow(i, sum(widths) - i, len(t.children_widths) - i, i + 1))
-                widths.append(w)
-            output.append(r)
-            output.append(t.n_display_outputs)
-        return output
+            subarrows = []
 
-        # res = '\33[32m        ⬇  \33[0m\n'
-        # res += f'\n\33[32m        {self.display_op}  \33[0m\n'.join(
-        #     [f'\33[1m{i}: ' + x + '\33[0m' for i, x in enumerate(name.split('\n'))]) + '\n'
-        # res += '\33[32m        ⬇  \33[0m\n'
-        # return res
-        #
+            # if subsequent rows have the same number of "children" transforms
+            if i > 0 and len(children_widths[i]) == len(children_widths[i - 1]):
+                for j, w in enumerate(children_widths[i]):
+                    subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
+                    widths.append(int(max_widths[j]))
+
+            # if previous row has multiple outputs and current row just one input
+            elif i > 0 and len(children_widths[i]) == 1 \
+                    and len(children_widths[i - 1]) > 1:
+                for j, w in enumerate(children_widths[i - 1]):
+                    subarrows.append(create_reverse_arrow(
+                        j, sum(widths) - j + j * 3,
+                        len(children_widths[i - 1]) - j + 1, j + 1
+                    ))
+                    widths.append(int(max_widths[j]))
+
+            # if previous row has one output and current row has multiple inputs
+            else:
+                for j, w in enumerate(children_widths[i]):
+                    subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
+                                                  len(children_widths[i]) - j, j + 1))
+                    widths.append(int(max_widths[j]))
+
+            # add signature names to the arrows
+            tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
+            if isinstance(t, Rollout) or isinstance(t, Parallel):
+                all_params = []
+                for tt in t.transforms:
+                    all_params.append(list(tt.lf_get_signature().keys()))
+                to_combine = [
+                    ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
+                    if len(params) > 1
+                    else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
+                    for k, params in enumerate(all_params)
+                ]
+                to_format = combine_multi_line_strings(to_combine)
+            else:
+                padder = (len(subarrows) + 1) * ' '
+                params = [x for x in t.lf_get_signature()]
+                to_format = padder + tuple_to_str(params) if len(params) > 1 else padder + params[0]
+            to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
+            to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
+
+            # combine the arrows
+            mark = combine_multi_line_strings(subarrows + [to_format])
+            mark = '\n'.join(['   ' + x for x in mark.split('\n')])
+            output.append(make_green(mark))
+            output.append(make_bold(f'{i + 1}: {r}'))
+        return '\n'.join(output)
+
     def __call__(self, arg):
         """Call method for Compose
 
@@ -1104,7 +1155,7 @@ class Rollout(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '+'
-    display_op = '✚'
+    display_op = '+'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
@@ -1181,7 +1232,7 @@ class Parallel(CompoundTransform):
     :return: namedtuple of outputs
     """
     op = '/'
-    display_op = '╱'
+    display_op = '/'
 
     def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
