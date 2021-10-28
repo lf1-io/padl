@@ -46,6 +46,23 @@ def simple_func(x):
     return x
 
 
+class SimpleClass:
+    def __init__(self, a):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
+@trans
+class SimpleClassTransform:
+    def __init__(self, a):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
 @trans
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
@@ -469,6 +486,25 @@ class TestTransformDeviceCheck:
         assert self.transform_2._lf_forward_device_check()
 
 
+class TestClassTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = trans(SimpleClass)(2)
+        request.cls.transform_2 = SimpleClassTransform(2)
+
+    def test_infer_apply(self):
+        self.transform_1.infer_apply(1) == 3
+        self.transform_2.infer_apply(1) == 3
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(1) == 3
+        self.transform_2.lf_save('test.lf')
+        t2 = lf.load('test.lf')
+        assert t2.infer_apply(1) == 3
+
+
 class TestTorchModuleTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -496,4 +532,4 @@ class TestTorchModuleTransform:
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
-        assert t1(1) == 2
+        assert t1.infer_apply(1) == 2
