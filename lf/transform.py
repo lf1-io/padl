@@ -639,6 +639,12 @@ class FunctionTransform(AtomicTransform):
     def _lf_bodystr(self, length=20):
         return self.source
 
+    def _lf_title(self):
+        title = self._lf_call
+        if '(' in title:
+            return re.split('\(', title)[-1][:-1]
+        return title
+
     @property
     def _lf_closurevars(self) -> inspect.ClosureVars:
         try:
@@ -679,7 +685,15 @@ class ClassTransform(AtomicTransform):
         except thingfinder.ThingNotFound:
             return self._lf_call
 
-    def _lf_bodystr(self, length=20):
+    def _lf_title(self):
+        title = self._lf_call
+        if title.count('(') == 2:
+            title = re.split('\(', title)
+            title = re.split('\)', ''.join(title[1:]))[:-1]
+            return '('.join(title) + ')'
+        return title
+
+    def _lf_bodystr(self):
         return self.source
 
 
