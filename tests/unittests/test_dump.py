@@ -1,10 +1,10 @@
-from lf import trans, group
+from lf import transform, group
 
 
 CONST = 1
 
 
-@trans
+@transform
 def x(y):
     return CONST + 1
 
@@ -13,19 +13,19 @@ def k(o):
     return o * 7
 
 
-@trans
+@transform
 def y(y):
     return CONST + k(y)
 
 
 def maketransform():
-    @trans
+    @transform
     def z(x):
         return x
     return z
 
 
-@trans
+@transform
 class MyClassTransform:
     def __init__(self, a, b, c):
         self.a = a
@@ -40,7 +40,7 @@ class MyClassTransform:
 
 
 def maketransformclass():
-    @trans
+    @transform
     class MyClassTransform:
         def __init__(self, a, b, c):
             self.a = a
@@ -57,7 +57,7 @@ def maketransformclass():
 
 
 def makeclasstransform(a, b, c):
-    @trans
+    @transform
     class MyClassTransform:
         def __init__(self, a, b, c):
             self.a = a
@@ -96,8 +96,8 @@ def test_dump_class_a():
     assert t.lf_dumps() == read_dump('class_a')
 
 
-lambda_a = trans(lambda x: x)
-lambda_b = trans(lambda x: y(x))
+lambda_a = transform(lambda x: x)
+lambda_b = transform(lambda x: y(x))
 
 
 def test_lambda_a():

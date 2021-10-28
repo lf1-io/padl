@@ -1,43 +1,43 @@
 import pytest
 import torch
-from lf import transform as lf, trans, Identity
-from lf.transform import Batchify, Unbatchify
+from lf import transforms as lf, transform, Identity
+from lf.transforms import Batchify, Unbatchify
 from collections import namedtuple
 from lf.exceptions import WrongDeviceError
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
-@trans
+@transform
 def plus_one(x):
     return x + 1
 
 
-@trans
+@transform
 def append_one(x):
     return x + "one"
 
 
-@trans
+@transform
 def times_two(x):
     return x * 2
 
 
-@trans
+@transform
 def plus(x, y):
     return x + y
 
 
-@trans
+@transform
 def get_info(x):
     return x['info']
 
 
-@trans
+@transform
 def complex_signature_func_1(a, b=10):
     return a+b
 
 
-@trans
+@transform
 def complex_signature_func_2(*a, b= 10):
     return sum(a) + b
 
@@ -46,12 +46,29 @@ def simple_func(x):
     return x
 
 
-@trans
+class SimpleClass:
+    def __init__(self, a):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
+@transform
+class SimpleClassTransform:
+    def __init__(self, a):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
+@transform
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
 
 
-@trans
+@transform
 class Polynomial(torch.nn.Module):
     def __init__(self, a, b):
         super().__init__()
@@ -79,7 +96,7 @@ class TestLFCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one >> (times_two + times_two)
-        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
+        request.cls.transform_2 = transform(simple_func) + transform(simple_func) + transform(simple_func)
         request.cls.transform_3 = plus_one + times_two >> plus
         request.cls.transform_4 = plus_one + times_two >> complex_signature_func_1
         request.cls.transform_5 = plus_one >> complex_signature_func_1
@@ -109,8 +126,8 @@ class TestParallel:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one / times_two / times_two
-        request.cls.transform_2 = trans(simple_func) / trans(simple_func) / trans(simple_func)
-        request.cls.transform_3 = plus_one / plus_one / trans(simple_func)
+        request.cls.transform_2 = transform(simple_func) / transform(simple_func) / transform(simple_func)
+        request.cls.transform_3 = plus_one / plus_one / transform(simple_func)
 
     def test_output(self):
         in_ = (2, 2, 2)
@@ -163,8 +180,8 @@ class TestRollout:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one + times_two + times_two
-        request.cls.transform_2 = trans(simple_func) + trans(simple_func) + trans(simple_func)
-        request.cls.transform_3 = plus_one + plus_one + trans(simple_func)
+        request.cls.transform_2 = transform(simple_func) + transform(simple_func) + transform(simple_func)
+        request.cls.transform_3 = plus_one + plus_one + transform(simple_func)
 
     def test_output(self):
         in_ = 123
@@ -260,16 +277,16 @@ class TestCompose:
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ):
             assert torch.all(batch == torch.tensor([8, 12]))
         # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
             flatten=True,
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
 
     def test_context(self):
@@ -469,6 +486,25 @@ class TestTransformDeviceCheck:
         assert self.transform_2._lf_forward_device_check()
 
 
+class TestClassTransform:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = transform(SimpleClass)(2)
+        request.cls.transform_2 = SimpleClassTransform(2)
+
+    def test_infer_apply(self):
+        self.transform_1.infer_apply(1) == 3
+        self.transform_2.infer_apply(1) == 3
+
+    def test_save_and_load(self, cleanup_checkpoint):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply(1) == 3
+        self.transform_2.lf_save('test.lf')
+        t2 = lf.load('test.lf')
+        assert t2.infer_apply(1) == 3
+
+
 class TestTorchModuleTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -496,4 +532,4 @@ class TestTorchModuleTransform:
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
-        assert t1(1) == 2
+        assert t1.infer_apply(1) == 2

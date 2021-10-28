@@ -1,4 +1,4 @@
-from lf.transform import AtomicTransform
+from lf.transforms import AtomicTransform
 from lf.dumptools import inspector
 
 
@@ -11,7 +11,6 @@ def _maketrans(attr, getitem=False):
         """
 
         def __init__(self, *args, **kwargs):
-            call_info = inspector.CallInfo()
             self.__args = args
             self.__kwargs = kwargs
             caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
