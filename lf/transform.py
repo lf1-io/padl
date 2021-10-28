@@ -986,7 +986,7 @@ class Compose(CompoundTransform):
         """
         rows = name.split('\n')
         assert len(rows) == len(self.transforms)
-        output = [make_bold('0: ' + rows[0])]
+        # output = [make_bold('0: ' + rows[0])]
 
         # get maximum widths in "columns"
         children_widths = [t.children_widths for t in self.transforms]
@@ -1008,19 +1008,20 @@ class Compose(CompoundTransform):
             else:
                 rows[i] = r[0]
 
+        output = []
         # iterate through rows and create arrows depending on numbers of components
-        for i, (r, t) in enumerate(zip(rows[1:], self.transforms[1:])):
+        for i, (r, t) in enumerate(zip(rows, self.transforms)):
             widths = [0]
             subarrows = []
 
             # if subsequent rows have the same number of "children" transforms
-            if len(t.children_widths) == len(self.transforms[i].children_widths):
+            if i > 0 and len(t.children_widths) == len(self.transforms[i - 1].children_widths):
                 for j, w in enumerate(t.children_widths):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
-            elif len(t.children_widths) == 1 and len(self.transforms[i].children_widths) > 1:
+            elif i > 0 and len(t.children_widths) == 1 and len(self.transforms[i - 1].children_widths) > 1:
                 for j, w in enumerate(self.transforms[i].children_widths):
                     subarrows.append(create_reverse_arrow(
                         j, sum(widths) - j + j * 3,

@@ -54,12 +54,18 @@ def create_reverse_arrow(start_left, finish_right, n_initial_rows, n_final_rows)
 
 
 def make_bold(x):
-    """Make input bold"""
+    """Make input bold
+
+    :param x: string input
+    """
     return f'\33[1m{x}\33[0m'
 
 
 def make_green(x):
-    """Make input green"""
+    """Make input green
+
+    :param x: string input
+    """
     return f'\33[32m{x}\33[0m'
 
 
