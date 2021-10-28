@@ -64,6 +64,15 @@ class SimpleClassTransform:
 
 
 @transform
+class ClassTransformWithManyArguments:
+    def __init__(self, a, b, *args, c=1, d=2, **kwargs):
+        self.a = a
+
+    def __call__(self, x):
+        return x + self.a
+
+
+@transform
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
 
@@ -277,16 +286,16 @@ class TestCompose:
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ):
             assert torch.all(batch == torch.tensor([8, 12]))
         # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
-            loader_kwargs={'batch_size': 2},
             flatten=True,
-            verbose=True)
+            verbose=True,
+            batch_size=2)
         ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
 
     def test_context(self):
@@ -504,6 +513,10 @@ class TestClassTransform:
         t2 = lf.load('test.lf')
         assert t2.infer_apply(1) == 3
 
+    def test_stored_arguments(self):
+        c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
+        breakpoint()
+
 
 class TestTorchModuleTransform:
     @pytest.fixture(autouse=True, scope='class')
@@ -533,3 +546,40 @@ class TestTorchModuleTransform:
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
         assert t1.infer_apply(1) == 2
+
+
+
+
+class TestLFImporter:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        from lf.importer import numpy as inp
+        request.cls.transform_1 = inp.sin
+        request.cls.transform_2 = (inp.sin >> inp.sin)
+        transform_temp = inp.sin
+        request.cls.transform_3 = transform_temp + transform_temp >> inp.add
+        request.cls.transform_4 = inp.cos + inp.cos >> inp.add
+
+    def test_output(self):
+        assert self.transform_1(2)
+        assert self.transform_2(2.4)
+        assert self.transform_3(1.1)
+        assert self.transform_4(4.1)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(2)
+        assert self.transform_2.infer_apply(2.4)
+        assert self.transform_3.infer_apply(1.1)
+        assert self.transform_4.infer_apply(4.1)
+
+    """
+    def test_save_load(self, cleanup_checkpoint):
+        for transform_ in [self.transform_1,
+                           self.transform_2,
+                           self.transform_3,
+                           self.transform_4,
+                           ]:
+            transform_.lf_save('test.lf')
+            t_ = lf.load('test.lf')
+            assert t_.infer_apply(1.3)
+    """

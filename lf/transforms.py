@@ -2,7 +2,7 @@
 import ast
 import re
 from copy import copy
-from collections import Counter, namedtuple
+from collections import Counter, namedtuple, OrderedDict
 import contextlib
 import inspect
 from itertools import chain
@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.dumptools.packagefinder import dump_packages_versions
 from lf.exceptions import WrongDeviceError
 from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
     create_arrow
@@ -150,8 +151,11 @@ class Transform:
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.lf_all_transforms()):
             subtrans.lf_pre_save(path, i)
+        code, versions = self.lf_dumps(True)
         with open(path / 'transform.py', 'w') as f:
-            f.write(self.lf_dumps())
+            f.write(code)
+        with open(path / 'versions.txt', 'w') as f:
+            f.write(versions)
 
     def _lf_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
@@ -276,12 +280,16 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def lf_dumps(self) -> str:
+    def lf_dumps(self, return_versions: bool = False) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
         unscoped = var2mod.unscope_graph(graph, scopemap)
-        return var2mod.dumps_graph(unscoped)
+        code = var2mod.dumps_graph(unscoped)
+        if return_versions:
+            versions = dump_packages_versions(node.ast_node for node in graph.values())
+            return code, versions
+        return code
 
     def _lf_shortname(self):
         title = self._lf_title()
@@ -369,27 +377,40 @@ class Transform:
                     raise WrongDeviceError(self, layer)
         return True
 
-    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
-        """Call transform with possibility to pass multiple arguments"""
-
-        if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
-            torch_context = torch.no_grad()
-        else:
-            torch_context = contextlib.suppress()
-
+    def _lf_unpack_argument(self, arg):
+        """Returns True if to unpack argument else False"""
         signature_count = 0
-        var_positional_count = 0
-        for param in self.lf_get_signature().values():
+        if not isinstance(arg, (list, tuple)):
+            return False
+
+        if hasattr(self, '_lf_number_of_inputs') and self._lf_number_of_inputs is not None:
+            return self._lf_number_of_inputs > 1
+
+        try:
+            parameters = self.lf_get_signature().values()
+        except ValueError:
+            return False
+        for param in parameters:
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
                 signature_count += 1
             if param.kind == param.VAR_POSITIONAL:
-                signature_count += 1
-                var_positional_count += 1
+                return True
+        if signature_count > 1:
+            return True
+        return False
+
+    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
+        """Call transform with possibility to pass multiple arguments"""
+
+        if stage in ('eval', 'infer'):
+            torch_context = torch.no_grad()
+        else:
+            torch_context = contextlib.suppress()
 
         with self.lf_set_stage(stage), torch_context:
-            if (var_positional_count > 0 or signature_count > 1) and isinstance(arg, (list, tuple)):
+            if self._lf_unpack_argument(arg):
                 return self(*arg)
             return self(arg)
 
@@ -576,7 +597,7 @@ class Transform:
         This expects an iterable input and returns a generator.
 
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
-        :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
+        :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
@@ -591,7 +612,7 @@ class Transform:
         This expects an iterable input and returns a generator.
 
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
-        :param loader_kwargs: Keyword arguments to be passed on to the dataloader. These can be
+        :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
@@ -646,6 +667,7 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
+        self._lf_number_of_inputs = None
 
     @property
     def source(self, length=20):
@@ -689,10 +711,11 @@ class ClassTransform(AtomicTransform):
     :param lf_name: Name of the transform.
     """
 
-    def __init__(self, lf_name=None, ignore_scope=False):
+    def __init__(self, lf_name=None, ignore_scope=False, arguments=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+        self._lf_arguments = arguments
         AtomicTransform.__init__(
             self,
             call=call,
@@ -1396,7 +1419,7 @@ class Unbatchify(ClassTransform):
     """
 
     def __init__(self, dim=0, cpu=True):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
         self._lf_component = {'postprocess'}
         self.cpu = cpu
@@ -1434,7 +1457,7 @@ class Batchify(ClassTransform):
     """
 
     def __init__(self, dim=0):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
         self._lf_component = {'preprocess'}
 
