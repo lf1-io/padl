@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.dumptools.packagefinder import dump_packages_versions
 from lf.exceptions import WrongDeviceError
 from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
     create_arrow
@@ -150,8 +151,11 @@ class Transform:
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.lf_all_transforms()):
             subtrans.lf_pre_save(path, i)
+        code, versions = self.lf_dumps(True)
         with open(path / 'transform.py', 'w') as f:
-            f.write(self.lf_dumps())
+            f.write(code)
+        with open(path / 'versions.txt', 'w') as f:
+            f.write(versions)
 
     def _lf_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
@@ -276,12 +280,16 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def lf_dumps(self) -> str:
+    def lf_dumps(self, return_versions: bool = False) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
         unscoped = var2mod.unscope_graph(graph, scopemap)
-        return var2mod.dumps_graph(unscoped)
+        code = var2mod.dumps_graph(unscoped)
+        if return_versions:
+            versions = dump_packages_versions(node.ast_node for node in graph.values())
+            return code, versions
+        return code
 
     def _lf_shortname(self):
         title = self._lf_title()
