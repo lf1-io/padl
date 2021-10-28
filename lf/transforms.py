@@ -369,6 +369,30 @@ class Transform:
                     raise WrongDeviceError(self, layer)
         return True
 
+    def _lf_unpack_argument(self, arg):
+        """Returns True if to unpack argument else False"""
+        signature_count = 0
+        if not isinstance(arg, (list, tuple)):
+            return False
+
+        if hasattr(self, '_lf_number_of_inputs') and self._lf_number_of_inputs is not None:
+            return self._lf_number_of_inputs > 1
+
+        try:
+            parameters = self.lf_get_signature().values()
+        except ValueError:
+            return False
+        for param in parameters:
+            if param.kind in (
+                    param.POSITIONAL_OR_KEYWORD,
+                    param.POSITIONAL_ONLY):
+                signature_count += 1
+            if param.kind == param.VAR_POSITIONAL:
+                return True
+        if signature_count > 1:
+            return True
+        return False
+
     def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
@@ -377,19 +401,8 @@ class Transform:
         else:
             torch_context = contextlib.suppress()
 
-        signature_count = 0
-        var_positional_count = 0
-        for param in self.lf_get_signature().values():
-            if param.kind in (
-                    param.POSITIONAL_OR_KEYWORD,
-                    param.POSITIONAL_ONLY):
-                signature_count += 1
-            if param.kind == param.VAR_POSITIONAL:
-                signature_count += 1
-                var_positional_count += 1
-
         with self.lf_set_stage(stage), torch_context:
-            if (var_positional_count > 0 or signature_count > 1) and isinstance(arg, (list, tuple)):
+            if self._lf_unpack_argument(arg):
                 return self(*arg)
             return self(arg)
 
