@@ -21,6 +21,7 @@ help:
 
 github:
 	make clean
+	mkdir _static
 	make html
 	cp -r _build/html/* ./
 	mv _sources sources
