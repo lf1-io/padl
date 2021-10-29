@@ -84,16 +84,17 @@ def write_dump(dump, name):
 
 
 def test_dump_a():
-    assert x.lf_dumps() == read_dump('a')
+    import pdb; pdb.set_trace()
+    assert x.td_dumps() == read_dump('a')
 
 
 def test_dump_b():
-    assert y.lf_dumps() == read_dump('b')
+    assert y.td_dumps == read_dump('b')
 
 
 def test_dump_class_a():
     t = MyClassTransform(1, 2, x)
-    assert t.lf_dumps() == read_dump('class_a')
+    assert t.td_dumps == read_dump('class_a')
 
 
 lambda_a = transform(lambda x: x)
@@ -109,7 +110,7 @@ def test_lambda_b():
 
 
 def test_nested_dump_a():
-    assert maketransform().lf_dumps() == read_dump('nested_a')
+    assert maketransform().td_dumps == read_dump('nested_a')
 
 
 def test_nested_dump_b():
@@ -120,7 +121,7 @@ def test_nested_dump_b():
 
 def test_nested_dump_c():
     t = makeclasstransform(1, 2, x)
-    assert t.lf_dumps() == read_dump('nested_c')
+    assert t.td_dumps == read_dump('nested_c')
 
 
 c_a = x >> y >> x

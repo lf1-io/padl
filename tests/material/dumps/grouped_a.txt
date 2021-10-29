@@ -1,5 +1,5 @@
-import lf
-from lf import transform
+import tadl
+from tadl import transform
 
 
 CONST = 1
@@ -21,7 +21,7 @@ def y(y):
 
 _lf_main = (
     x
-    + lf.group(
+    + tadl.group(
         y
         + x
         + x
