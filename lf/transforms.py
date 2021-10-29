@@ -693,8 +693,8 @@ class FunctionTransform(AtomicTransform):
 
     def _lf_title(self):
         title = self._lf_call
-        # if '(' in title:
-        #     return re.split('\(', title)[-1][:-1]
+        if '(' in title:
+            return re.split('\(', title)[-1][:-1]
         return title
 
     @property
@@ -738,9 +738,21 @@ class ClassTransform(AtomicTransform):
         except thingfinder.ThingNotFound:
             return self._lf_call
 
+    def _parse_args(self):
+        args_list = []
+        for key, value in self._lf_arguments.items():
+            if key == 'args':
+                args_list += [f'{val}' for val in value]
+            elif key == 'kwargs':
+                args_list += [f'{subkey}={val}' for subkey, val in value.items()]
+            else:
+                args_list.append(f'{key}={value}')
+        return ', '.join(args_list)
+
     def _lf_title(self):
-        title = self._lf_call
-        return title
+        title = type(self).__name__
+        args = self._parse_args()
+        return title + '(' + args + ')'
 
     def _lf_bodystr(self):
         return self.source
