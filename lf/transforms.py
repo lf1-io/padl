@@ -803,6 +803,9 @@ class Map(Transform):
         """
         return [self.transform._lf_call_transform(arg) for arg in arglist]
 
+    def _lf_bodystr(self):
+        return '~ ' + self.transform._lf_shortname()
+
     def _lf_title(self):
         return self.__class__.__name__
 
