@@ -9,4 +9,4 @@ def x(y):
     return CONST + 1
 
 
-_lf_main = x
+_td_main = x

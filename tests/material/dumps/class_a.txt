@@ -32,4 +32,4 @@ class MyClassTransform:
         return self.calculate(input_) + y(input_) + self.c(input_)
 
 
-_lf_main = MyClassTransform(1, 2, x)
+_td_main = MyClassTransform(1, 2, x)

@@ -116,7 +116,7 @@ def test_nested_dump_a():
 def test_nested_dump_b():
     t = maketransformclass()(1, 2, x)
     # TODO: make this work, currently it gives maketransformclass()(1, 2, x)
-    assert t._lf_call == "MyClassTransform(1, 2, x)"
+    assert t._td_call == "MyClassTransform(1, 2, x)"
 
 
 def test_nested_dump_c():

@@ -1,4 +1,4 @@
 from tadl import transform
 
 
-_lf_main = transform(lambda x: x)
+_td_main = transform(lambda x: x)

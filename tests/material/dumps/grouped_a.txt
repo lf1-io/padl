@@ -19,7 +19,7 @@ def y(y):
     return CONST + k(y)
 
 
-_lf_main = (
+_td_main = (
     x
     + tadl.group(
         y
