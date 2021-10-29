@@ -778,7 +778,7 @@ class TorchModuleTransform(ClassTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
 
-class Map(Transform):
+class Map(ClassTransform):
     """Apply one transform to each element of a list.
 
     >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
@@ -787,8 +787,8 @@ class Map(Transform):
     :param transform: transform to be applied to a list of inputs
     """
 
-    def __init__(self, transform, call_info=None, lf_name=None):
-        super().__init__(call_info, lf_name)
+    def __init__(self, transform, lf_name=None):
+        super().__init__(lf_name, arguments=OrderedDict([('transform', transform)]))
         self.transform = transform
         self._lf_component = transform.lf_component
 
@@ -851,7 +851,7 @@ class CompoundTransform(Transform):
         named_copy._lf_group = True
         return named_copy
 
-    def __getitem__(self, item : Union[int, slice, str]) -> Transform:
+    def __getitem__(self, item: Union[int, slice, str]) -> Transform:
         """Get item
 
         If int, gets item'th transform in this CompoundTransform.
