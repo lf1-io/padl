@@ -195,12 +195,12 @@ def transform(fun_or_cls, ignore_scope=False):
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
 
-    # Class instance
-    if not hasattr(fun_or_cls, '__name__'):
-        return _wrap_class_instance(fun_or_cls, ignore_scope)
-
-    # Function
     if callable(fun_or_cls):
+        # Class instance
+        if not hasattr(fun_or_cls, '__name__'):
+            return _wrap_class_instance(fun_or_cls, ignore_scope)
+
+        # Function
         if fun_or_cls.__name__ == '<lambda>':
             return _wrap_lambda(fun_or_cls, ignore_scope)
         return _wrap_function(fun_or_cls, ignore_scope)
