@@ -31,10 +31,10 @@ In terms of the functional mental model for deep learning we typically enjoy wor
 
 The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.
 
-1. A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.
-2. To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing) 
-3. It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar
-4. There is no easy way to robustly save and inspect the results of "quick and dirty" experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists' daily routine. 
+- A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.
+- To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing)
+- It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar
+- There is no easy way to robustly save and inspect the results of "quick and dirty" experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists' daily routine. 
 
 ### TADL Solutions
 
@@ -166,7 +166,7 @@ print(isinstance(cosine, td.transforms.Transform))            # prints "True"
 
 Atomic transforms may be combined using 3 functional primitives:
 
-1. Transform composition: **compose**
+Transform composition: **compose**
 
 <img src="img/compose.png" width="100">
 
@@ -174,7 +174,7 @@ Atomic transforms may be combined using 3 functional primitives:
 s = transform_1 >> transform_2
 ```
 
-2. Applying transforms in parallel to multiple inputs: **parallel**
+Applying transforms in parallel to multiple inputs: **parallel**
 
 <img src="img/parallel.png" width="230">
 
@@ -182,7 +182,7 @@ s = transform_1 >> transform_2
 s = transform_1 / transform_2
 ```
 
-3. Applying multiple transforms to a single input: **rollout**
+Applying multiple transforms to a single input: **rollout**
 
 <img src="img/rollout.png" width="230">
 
@@ -249,15 +249,11 @@ print(s['a'] == s[0])    # prints "True"
 
 ### Applying transforms to data
 
-#### Inference mode
-
-Single data points may be passed through the transform using `Tranform.infer_apply`:
+To pass single data points may be passed through the transform:
 
 ```python
 prediction = t.infer_apply('the cat sat on the mat .')
 ```
-
-#### Batch modes: eval & train
 
 To pass data points in batches but no gradients:
 
