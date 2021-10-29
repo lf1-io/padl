@@ -177,6 +177,18 @@ class TestMap:
         #                                                        [torch.tensor(3), torch.tensor(4)])]
         assert list(self.transform_4.train_apply([1])) == [[2, 2, 2]]
 
+    def test_save_and_load(self):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply([2, 3, 4]) == [3, 4, 5]
+        # self.transform_2.lf_save('test.lf')
+        # _ = lf.load('test.lf')
+        # self.transform_3.lf_save('test.lf')
+        # _ = lf.load('test.lf')
+        # self.transform_4.lf_save('test.lf')
+        # _ = lf.load('test.lf')
+
+
 
 class TestParallel:
     @pytest.fixture(autouse=True, scope='class')
