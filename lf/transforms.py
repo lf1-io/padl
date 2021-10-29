@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.dumptools.serialize import Serializer
 from lf.dumptools.packagefinder import dump_packages_versions
 from lf.exceptions import WrongDeviceError
 from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
@@ -99,7 +100,7 @@ class Transform:
 
     @property
     def display_width(self):
-        return len(self.lf_shortname())
+        return len(self._lf_shortname())
 
     @property
     def children_widths(self):
@@ -151,7 +152,7 @@ class Transform:
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.lf_all_transforms()):
             subtrans.lf_pre_save(path, i)
-        code, versions = self.lf_dumps(True)
+        code, versions = self.lf_dumps(True, path=path)
         with open(path / 'transform.py', 'w') as f:
             f.write(code)
         with open(path / 'versions.txt', 'w') as f:
@@ -218,6 +219,9 @@ class Transform:
 
             next_var, next_scope = next_
 
+            if next_var.startswith('TADL_VALUE'):
+                continue
+
             # see if the object itself knows how to generate its codegraph
             try:
                 if len(next_scope) > 0:
@@ -280,10 +284,11 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def lf_dumps(self, return_versions: bool = False) -> str:
+    def lf_dumps(self, return_versions: bool = False, path=None) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
+        Serializer.save_all(graph, scopemap, path)
         unscoped = var2mod.unscope_graph(graph, scopemap)
         code = var2mod.dumps_graph(unscoped)
         if return_versions:
@@ -701,6 +706,7 @@ class ClassTransform(AtomicTransform):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+        call = re.sub(r'\n\s*', ' ', call)
         self._lf_arguments = arguments
         AtomicTransform.__init__(
             self,
@@ -1025,7 +1031,7 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
         return top_message + self._lf_write_arrows_to_rows()
 
     def _lf_write_arrows_to_rows(self):
@@ -1040,9 +1046,9 @@ class Compose(CompoundTransform):
         # pad the components of rows which are shorter than other parts in same column
         # rows = [re.split(r'\/|\+', x) for x in rows]
         rows = [
-            [s.lf_shortname().strip() for s in t.transforms]
+            [s._lf_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
-            else [t.lf_shortname()]
+            else [t._lf_shortname()]
             for t in self.transforms
         ]
 

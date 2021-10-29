@@ -9,6 +9,7 @@ from typing import Callable, Optional
 from warnings import warn
 
 from lf.dumptools import thingfinder, var2mod
+from lf.dumptools.sourceget import get_source, original, cut
 
 
 class CallInfo:
@@ -148,33 +149,24 @@ def _instructions_up_to_offset(x, lasti):
     return instructions
 
 
-def get_source(filename: str):
-    """Get source from *filename*.
-
-    Filename as in the code object, can be "<ipython input-...>" in which case
-    the source is taken from the ipython cache.
-    """
-    try:
-        # the ipython case
-        return ''.join(linecache.cache[filename][2])
-    except KeyError:
-        # normal module
-        with open(filename) as f:
-            return f.read()
-
-
 def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*. """
-    for i in range(lineno):
+    for row_offset in range(lineno):
         try:
-            block, lineno_in_block = get_surrounding_block(source, lineno - i)
+            block, lineno_in_block, col_offset = get_surrounding_block(source, lineno - row_offset)
         except ValueError:
             continue
         try:
             try:
-                return _get_statement_from_block(block, lineno_in_block + i)
+                return (
+                    _get_statement_from_block(block, lineno_in_block + row_offset),
+                    (lineno - row_offset - 1, -col_offset)
+                )
             except SyntaxError:
-                return _get_statement_from_block('(' + block + ')', lineno_in_block + i)
+                return (
+                    _get_statement_from_block('(' + block + ')', lineno_in_block + row_offset),
+                    (lineno - row_offset - 1, -col_offset)
+                )
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
@@ -195,12 +187,14 @@ def get_surrounding_block(source: str, lineno: int):
     The code block surrounding a line is the largest block of lines with the same or larger
     indentation as the line itself.
 
+    The result will be unindented.
+
     Raises a `ValueError` if the line at *lineno* is empty.
 
     :param source: The source to extract the block from.
     :param lineno: Number of the line for extracting the block.
     :returns: A tuple containing the block itself and the line number of the target line
-        within the block.
+        within the block and the number of spaces removed from the front.
     """
     lines = source.split('\n')
     before, after = lines[:lineno-1], lines[lineno:]
@@ -224,7 +218,7 @@ def get_surrounding_block(source: str, lineno: int):
             block = block + [next_[white:]]
         else:
             break
-    return '\n'.join(block), lineno_in_block
+    return '\n'.join(block), lineno_in_block, white
 
 
 def _module(frame: types.FrameType):
@@ -286,7 +280,7 @@ def get_attribute_segment_from_frame(caller_frame: types.FrameType) -> str:
     return get_segment_from_frame(caller_frame, 'attribute')
 
 
-def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
+def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_locs=False) -> str:
     if segment_type == 'call':
         node_type = ast.Call
         instructions_finder = _instructions_up_to_call
@@ -305,7 +299,8 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
         full_source = caller_frame.f_globals['_lf_source']
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
-    source = get_statement(full_source, caller_frame.f_lineno)
+
+    source, offset = get_statement(original(full_source), caller_frame.f_lineno)
     # the source can contain surrounding stuff we need to discard
     # as we only have the line number (this is what makes this complicated)
 
@@ -321,9 +316,10 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
                                                caller_frame.f_lasti)
 
     segment = None
+    locs = None
     found = False
 
-    for segment in sorted(candidate_segments, key=lambda x: -len(x)):
+    for segment, locs in sorted(candidate_segments, key=lambda x: -len(x[0])):
 
         instrs = instructions_finder(segment)
         if len(instrs) > len(target_instrs):
@@ -343,4 +339,16 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
     if segment is None or not found:
         raise RuntimeError('Attribute not found.')
 
+    locs = (
+        locs[0] + offset[0] - 1,
+        locs[1] + offset[0] - 1,
+        locs[2] + offset[1],
+        locs[3] + offset[1]
+    )
+    segment = cut(full_source, *locs)
+
+    if return_locs:
+        return (
+            segment, locs
+        )
     return segment

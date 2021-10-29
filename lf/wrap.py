@@ -103,7 +103,7 @@ def _wrap_lambda(fun, ignore_scope=False):
         full_source = caller_frame.f_globals['_lf_source']
     except KeyError:
         full_source = inspector.get_source(caller_frame.f_code.co_filename)
-    source = inspector.get_statement(full_source, caller_frame.f_lineno)
+    source, _offset = inspector.get_statement(full_source, caller_frame.f_lineno)
     # find all lambda nodes
     nodes = var2mod.Finder(ast.Lambda).find(ast.parse(source))
     candidate_segments = []

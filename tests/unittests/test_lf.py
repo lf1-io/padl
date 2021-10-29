@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import pytest
 import torch
 from lf import transforms as lf, transform, Identity
@@ -515,7 +516,7 @@ class TestClassTransform:
 
     def test_stored_arguments(self):
         c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
-        breakpoint()
+        assert c._lf_arguments == OrderedDict([('a', 1), ('b', 2), ('args', (3, 4, 5))])
 
 
 class TestTorchModuleTransform:
