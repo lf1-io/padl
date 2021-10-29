@@ -1,5 +1,5 @@
 import torch
-from lf.utils import this
+from tadl.utils import this
 
 
 def test_this():

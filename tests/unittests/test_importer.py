@@ -1,7 +1,7 @@
-from lf.transforms import ClassTransform, FunctionTransform
+from tadl.transforms import ClassTransform, FunctionTransform
 
-from lf.importer import numpy as np
-from lf.importer import torch
+from tadl.importer import numpy as np
+from tadl.importer import torch
 
 
 def test_function_a():

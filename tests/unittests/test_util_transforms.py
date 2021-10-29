@@ -1,7 +1,7 @@
 import pytest
-from lf import transform, Batchify
-import lf.transforms as lf
-from lf.util_transforms import IfTrain, IfEval, IfInfer
+from tadl import transform, Batchify
+import tadl.transforms as tadl
+from tadl.util_transforms import IfTrain, IfEval, IfInfer
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
@@ -57,11 +57,11 @@ class TestIfInStage:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply(1) == 9
         self.transform_2.td_save('test.tadl')
-        t2 = lf.load('test.tadl')
+        t2 = tadl.load('test.tadl')
         assert t2.infer_apply(1) == 6
         self.transform_3.td_save('test.tadl')
-        t3 = lf.load('test.tadl')
+        t3 = tadl.load('test.tadl')
         assert t3.infer_apply(1) == 12

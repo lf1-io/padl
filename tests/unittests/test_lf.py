@@ -1,9 +1,9 @@
 import pytest
 import torch
-from lf import transforms as lf, transform, Identity
-from lf.transforms import Batchify, Unbatchify
+from tadl import transforms as tadl, transform, Identity
+from tadl.transforms import Batchify, Unbatchify
 from collections import namedtuple
-from lf.exceptions import WrongDeviceError
+from tadl.exceptions import WrongDeviceError
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
@@ -94,11 +94,11 @@ def test_isinstance_of_namedtuple():
     namedtup_type = namedtuple('something', 'a b c')
     namedtup_ins = namedtup_type(*tup)
 
-    assert lf._isinstance_of_namedtuple(namedtup_ins)
-    assert not lf._isinstance_of_namedtuple(tup)
-    assert not lf._isinstance_of_namedtuple(list(tup))
-    assert not lf._isinstance_of_namedtuple(1.)
-    assert not lf._isinstance_of_namedtuple('something')
+    assert tadl._isinstance_of_namedtuple(namedtup_ins)
+    assert not tadl._isinstance_of_namedtuple(tup)
+    assert not tadl._isinstance_of_namedtuple(list(tup))
+    assert not tadl._isinstance_of_namedtuple(1.)
+    assert not tadl._isinstance_of_namedtuple('something')
 
 
 class TestLFCallTransform:
@@ -127,7 +127,7 @@ class TestLFCallTransform:
                            self.transform_5,
                            self.transform_6]:
             transform_.td_save('test.tadl')
-            t_ = lf.load('test.tadl')
+            t_ = tadl.load('test.tadl')
             assert t_.infer_apply(1)
 
 
@@ -141,25 +141,25 @@ class TestParallel:
     def test_output(self):
         in_ = (2, 2, 2)
         out = self.transform_1(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one', 'times_two_0', 'times_two_1')
 
         out = self.transform_2(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('out_0', 'out_1', 'out_2')
 
         out = self.transform_3(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_td_preprocess(self):
-        assert isinstance(self.transform_1.td_preprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_preprocess, tadl.Identity)
 
     def test_td_forward(self):
-        assert isinstance(self.transform_1.td_forward, lf.Parallel)
+        assert isinstance(self.transform_1.td_forward, tadl.Parallel)
 
     def test_td_postprocess(self):
-        assert isinstance(self.transform_1.td_postprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_postprocess, tadl.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
@@ -177,12 +177,12 @@ class TestParallel:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
         self.transform_2.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
         self.transform_3.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
 
 
 class TestRollout:
@@ -195,25 +195,25 @@ class TestRollout:
     def test_output(self):
         in_ = 123
         out = self.transform_1(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one', 'times_two_0', 'times_two_1')
 
         out = self.transform_2(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('out_0', 'out_1', 'out_2')
 
         out = self.transform_3(in_)
-        assert lf._isinstance_of_namedtuple(out)
+        assert tadl._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_td_preprocess(self):
-        assert isinstance(self.transform_1.td_preprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_preprocess, tadl.Identity)
 
     def test_td_forward(self):
-        assert isinstance(self.transform_1.td_forward, lf.Rollout)
+        assert isinstance(self.transform_1.td_forward, tadl.Rollout)
 
     def test_td_postprocess(self):
-        assert isinstance(self.transform_1.td_postprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_postprocess, tadl.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
@@ -231,12 +231,12 @@ class TestRollout:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply(2) == (3, 4, 4)
         self.transform_2.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
         self.transform_3.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
 
 
 class TestCompose:
@@ -262,16 +262,16 @@ class TestCompose:
         assert self.transform_4(1) == 4
 
     def test_td_preprocess(self):
-        assert isinstance(self.transform_1.td_preprocess, lf.Identity)
-        assert isinstance(self.transform_5.td_preprocess, lf.Compose)
+        assert isinstance(self.transform_1.td_preprocess, tadl.Identity)
+        assert isinstance(self.transform_5.td_preprocess, tadl.Compose)
 
     def test_td_forward(self):
-        assert isinstance(self.transform_1.td_forward, lf.Compose)
-        assert isinstance(self.transform_5.td_forward, lf.Compose)
+        assert isinstance(tadl.transform_1.td_forward, tadl.Compose)
+        assert isinstance(self.transform_5.td_forward, tadl.Compose)
 
     def test_td_postprocess(self):
-        assert isinstance(self.transform_1.td_postprocess, lf.Identity)
-        assert isinstance(self.transform_5.td_postprocess, lf.Unbatchify)
+        assert isinstance(self.transform_1.td_postprocess, tadl.Identity)
+        assert isinstance(self.transform_5.td_postprocess, tadl.Unbatchify)
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
@@ -318,23 +318,23 @@ class TestCompose:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
         self.transform_2.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
         self.transform_3.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
         self.transform_4.td_save('test.tadl')
-        t4 = lf.load('test.tadl')
+        t4 = tadl.load('test.tadl')
         assert t4.infer_apply(1) == 4
         self.transform_5.td_save('test.tadl')
-        t5 = lf.load('test.tadl')
+        t5 = tadl.load('test.tadl')
         assert t5.infer_apply(1) == torch.tensor(8)
 
     def test_getitem(self):
-        assert isinstance(self.transform_5[0], lf.Transform)
-        assert isinstance(self.transform_5[0:2], lf.CompoundTransform)
-        assert isinstance(self.transform_5[0:2], lf.Compose)
-        assert isinstance(self.transform_5['named_times_two'], lf.Transform)
+        assert isinstance(self.transform_5[0], tadl.Transform)
+        assert isinstance(self.transform_5[0:2], tadl.CompoundTransform)
+        assert isinstance(self.transform_5[0:2], tadl.Compose)
+        assert isinstance(self.transform_5['named_times_two'], tadl.Transform)
         with pytest.raises(ValueError):
             self.transform_5['other_name']
         with pytest.raises(TypeError):
@@ -374,18 +374,18 @@ class TestModel:
         )
 
     def test_td_preprocess(self):
-        assert isinstance(self.model_1.td_preprocess, lf.Parallel)
-        assert isinstance(self.model_2.td_preprocess, lf.Rollout)
-        assert isinstance(self.model_4.td_preprocess, lf.Compose)
+        assert isinstance(self.model_1.td_preprocess, tadl.Parallel)
+        assert isinstance(self.model_2.td_preprocess, tadl.Rollout)
+        assert isinstance(self.model_4.td_preprocess, tadl.Compose)
 
     def test_td_forward(self):
-        assert isinstance(self.model_1.td_forward, lf.Parallel)
-        assert isinstance(self.model_2.td_forward, lf.Parallel)
+        assert isinstance(self.model_1.td_forward, tadl.Parallel)
+        assert isinstance(self.model_2.td_forward, tadl.Parallel)
 
     def test_td_postprocess(self):
-        assert isinstance(self.model_1.td_postprocess, lf.Parallel)
-        assert isinstance(self.model_2.td_postprocess, lf.Parallel)
-        assert isinstance(self.model_4.td_postprocess, lf.Compose)
+        assert isinstance(self.model_1.td_postprocess, tadl.Parallel)
+        assert isinstance(self.model_2.td_postprocess, tadl.Parallel)
+        assert isinstance(self.model_4.td_postprocess, tadl.Compose)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
@@ -406,17 +406,17 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_save_and_load(self, cleanup_checkpoint):
-        lf.save(self.model_1, 'test.tadl')
-        m1 = lf.load('test.tadl')
+        tadl.save(self.model_1, 'test.tadl')
+        m1 = tadl.load('test.tadl')
         assert m1.infer_apply((5, 5)) == (13, 13)
         self.model_2.td_save('test.tadl')
-        m2 = lf.load('test.tadl')
+        m2 = tadl.load('test.tadl')
         assert m2.infer_apply(5) == (13, 13)
         self.model_3.td_save('test.tadl')
-        m3 = lf.load('test.tadl')
+        m3 = tadl.load('test.tadl')
         assert m3.infer_apply(5) == (7, 20)
         self.model_4.td_save('test.tadl')
-        m4 = lf.load('test.tadl') # TODO This Fails
+        m4 = tadl.load('test.tadl') # TODO This Fails
         assert m4.infer_apply(5) == (8, 20)
 
 
@@ -427,13 +427,13 @@ class TestFunctionTransform:
         request.cls.transform_2 = get_info
 
     def test_td_preprocess(self):
-        assert isinstance(self.transform_1.td_preprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_preprocess, tadl.Identity)
 
     def test_td_forward(self):
-        assert isinstance(self.transform_1.td_forward, lf.FunctionTransform)
+        assert isinstance(self.transform_1.td_forward, tadl.FunctionTransform)
 
     def test_td_postprocess(self):
-        assert isinstance(self.transform_1.td_postprocess, lf.Identity)
+        assert isinstance(self.transform_1.td_postprocess, tadl.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(5) == 6
@@ -467,10 +467,10 @@ class TestFunctionTransform:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply(5) == 6
         self.transform_2.td_save('test.tadl')
-        _ = lf.load('test.tadl')
+        _ = tadl.load('test.tadl')
 
 
 def test_name():
@@ -507,10 +507,10 @@ class TestClassTransform:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply(1) == 3
         self.transform_2.td_save('test.tadl')
-        t2 = lf.load('test.tadl')
+        t2 = tadl.load('test.tadl')
         assert t2.infer_apply(1) == 3
 
     def test_stored_arguments(self):
@@ -543,14 +543,14 @@ class TestTorchModuleTransform:
 
     def test_save_and_load(self, cleanup_checkpoint):
         self.transform_1.td_save('test.tadl')
-        t1 = lf.load('test.tadl')
+        t1 = tadl.load('test.tadl')
         assert t1.infer_apply(1) == 2
 
 
 class TestLFImporter:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        from lf.importer import numpy as inp
+        from tadl.importer import numpy as inp
         request.cls.transform_1 = inp.sin
         request.cls.transform_2 = (inp.sin >> inp.sin)
         transform_temp = inp.sin
@@ -577,6 +577,6 @@ class TestLFImporter:
                            self.transform_4,
                            ]:
             transform_.td_save('test.td')
-            t_ = lf.load('test.tadl')
+            t_ = tadl.load('test.tadl')
             assert t_.infer_apply(1.3)
     """

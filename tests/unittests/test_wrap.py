@@ -1,7 +1,7 @@
 import pytest
-import lf
+import tadl
 
 
 def test_raise():
     with pytest.raises(ValueError):
-        lf.transform(2)
+        tadl.transform(2)

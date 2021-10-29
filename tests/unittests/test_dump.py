@@ -1,4 +1,4 @@
-from lf import transform, group
+from tadl import transform, group
 
 
 CONST = 1
