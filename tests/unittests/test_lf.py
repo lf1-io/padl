@@ -266,7 +266,7 @@ class TestCompose:
         assert isinstance(self.transform_5.td_preprocess, tadl.Compose)
 
     def test_td_forward(self):
-        assert isinstance(tadl.transform_1.td_forward, tadl.Compose)
+        assert isinstance(self.transform_1.td_forward, tadl.Compose)
         assert isinstance(self.transform_5.td_forward, tadl.Compose)
 
     def test_td_postprocess(self):
@@ -406,6 +406,7 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_save_and_load(self, cleanup_checkpoint):
+        #import pdb; pdb.set_trace()
         tadl.save(self.model_1, 'test.tadl')
         m1 = tadl.load('test.tadl')
         assert m1.infer_apply((5, 5)) == (13, 13)
