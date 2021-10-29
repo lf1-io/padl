@@ -305,15 +305,8 @@ pytest tests/
 </section>
 <section id="applying-transforms-to-data">
 <h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
-<p>Inference mode</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Single data points may be passed through the transform using ``Tranform.infer_apply``\ :
-
-.. code-block:: python
-
-   prediction = t.infer_apply(&#39;the cat sat on the mat .&#39;)
-
-Batch modes: eval &amp; train
-~~~~~~~~~~~
+<p>To pass single data points may be passed through the transform:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To pass data points in batches but no gradients:</p>

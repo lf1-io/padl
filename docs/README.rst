@@ -291,19 +291,12 @@ These components may then be referenced using ``__getitem__``\ :
 Applying transforms to data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Inference mode
+To pass single data points may be passed through the transform:
 
-.. code-block::
+.. code-block:: python
 
+   prediction = t.infer_apply('the cat sat on the mat .')
 
-   Single data points may be passed through the transform using ``Tranform.infer_apply``\ :
-
-   .. code-block:: python
-
-      prediction = t.infer_apply('the cat sat on the mat .')
-
-   Batch modes: eval & train
-   ~~~~~~~~~~~
 
 To pass data points in batches but no gradients:
 
