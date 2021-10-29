@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to TADL’s documentation! &mdash; TADL 0.1.0 documentation</title>
+      <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
+        <script src="static/jquery.js"></script>
+        <script src="static/underscore.js"></script>
+        <script src="static/doctools.js"></script>
+    <script src="static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> TADL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Welcome to TADL’s documentation!</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#id1">Why TADL?</a><ul>
+<li><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
+<li><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
+<li><a class="reference internal" href="#tadl-solutions">TADL Solutions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2">Installation</a></li>
+<li><a class="reference internal" href="#id3">Project Structure</a></li>
+<li><a class="reference internal" href="#id4">Basic Usage</a><ul>
+<li><a class="reference internal" href="#defining-atomic-transforms">Defining atomic transforms</a></li>
+<li><a class="reference internal" href="#defining-compound-transforms">Defining compound transforms</a></li>
+<li><a class="reference internal" href="#decomposing-models">Decomposing models</a></li>
+<li><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
+<li><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
+<li><a class="reference internal" href="#model-training">Model training</a></li>
+<li><a class="reference internal" href="#nlp-example">NLP Example</a></li>
+<li><a class="reference internal" href="#weight-sharing-for-auxiliary-production-models">Weight sharing for auxiliary production models</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5">Licensing</a></li>
+<li><a class="reference internal" href="#module-lf.transforms">Transforms</a></li>
+<li><a class="reference internal" href="#module-lf.util_transforms">Util Transforms</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">TADL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Welcome to TADL’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="welcome-to-tadl-s-documentation">
+<h1>Welcome to TADL’s documentation!<a class="headerlink" href="#welcome-to-tadl-s-documentation" title="Permalink to this headline"></a></h1>
+<p><span class="raw-html-m2r"><img src="img/logo.png" width="400"></span></p>
+<p><em>Transform abstractions for deep learning</em> – using <strong>Pytorch</strong>.</p>
+<hr class="docutils" />
+<p>Technical documentation here: <a class="reference external" href="https://lf1-io.github.io/tadl/">https://lf1-io.github.io/tadl/</a></p>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="#why-tadl">Why TADL?</a></p></li>
+<li><p><a class="reference external" href="#installation">Installation</a></p></li>
+<li><p><a class="reference external" href="#project-structure">Project structure</a></p></li>
+<li><p><a class="reference external" href="#basic-usage">Basic Usage</a></p></li>
+<li><p><a class="reference external" href="#licensing">Licensing</a></p></li>
+</ul>
+</section>
+<section id="id1">
+<h2>Why TADL?<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<section id="problem-statement">
+<h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
+<p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
+<ul class="simple">
+<li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
+<li><p>in <em>neural translation</em> the details of beam search post-processing and filtering based on business logic</p></li>
+<li><p>in <em>vision</em> applications, the normalization constants applied to image tensors</p></li>
+<li><p>in <em>classification</em> the label lookup dictionaries, formatting the tensor to human readable output</p></li>
+</ul>
+<p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
+</section>
+<section id="standard-approach">
+<h3>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h3>
+<p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
+<ul class="simple">
+<li><p>A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.</p></li>
+<li><p>To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing)</p></li>
+<li><p>It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar</p></li>
+<li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
+</ul>
+</section>
+<section id="tadl-solutions">
+<h3>TADL Solutions<a class="headerlink" href="#tadl-solutions" title="Permalink to this headline"></a></h3>
+<p>In creating <strong>TADL</strong> we aimed to create:</p>
+<ul class="simple">
+<li><p>A beautiful functional API including all mission critical computational steps in a single formalism – pre-processing, post-processing, forward pass, batching and inference modes.</p></li>
+<li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
+<li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
+</ul>
+</section>
+</section>
+<section id="id2">
+<h2>Installation<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python setup.py install
+</pre></div>
+</div>
+<p>Run tests to check:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r requirements-test.txt
+pytest tests/
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h2>Project Structure<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p>TADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
+<ul class="simple">
+<li><p>preprocessing</p></li>
+<li><p>data-loading</p></li>
+<li><p>batching</p></li>
+<li><p>forward passes in <strong>Pytorch</strong></p></li>
+<li><p>postprocessing</p></li>
+<li><p><strong>Pytorch</strong> loss functions</p></li>
+</ul>
+<p>Loosely it can be thought of as a computational block with full support for <strong>Pytorch</strong> dynamical graphs and with the possibility to recursively combine blocks into larger blocks.</p>
+<p>Here’s a schematic of what this typically looks like:</p>
+<p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
+<p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
+</section>
+<section id="id4">
+<h2>Basic Usage<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<section id="defining-atomic-transforms">
+<h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
+<p>Imports:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tadl</span> <span class="k">as</span> <span class="nn">td</span>
+<span class="kn">from</span> <span class="nn">tadl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">this</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">importer</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+</pre></div>
+</div>
+<p>Transform definition using <code class="docutils literal notranslate"><span class="pre">transform</span></code> decorator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">split_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">pad_tensor</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)])</span>
+
+<span class="n">ALPHABET</span> <span class="o">=</span> <span class="s1">&#39;abcdefghijklmnopqrstuvwxyz .,-&#39;</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">lookup_letters</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">lookup</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">))))</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">lookup</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>Any callable class implementing <code class="docutils literal notranslate"><span class="pre">__call__</span></code> can also become a transform:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">class</span> <span class="nc">Replace</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_replace</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span> <span class="o">=</span> <span class="n">to_replace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replacement</span> <span class="o">=</span> <span class="n">replacement</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacement</span><span class="p">)</span>
+
+<span class="n">replace</span> <span class="o">=</span> <span class="n">Replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">transform</span></code> also supports inline lambda functions as transforms:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">split_string</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">this</span></code> yields inline transforms which reflexively reference object methods:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">index_one</span> <span class="o">=</span> <span class="n">this</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">lower_case</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">lower_case</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Pytorch layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">td.transforms.TorchModuleTransform</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">class</span> <span class="nc">MyLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_input</span><span class="p">,</span> <span class="n">n_output</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">n_input</span><span class="p">,</span> <span class="n">n_output</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">layer</span> <span class="o">=</span> <span class="n">MyLayer</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">),</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">))</span>                 <span class="c1"># prints &quot;True&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
+</pre></div>
+</div>
+<p>Finally, it’s possibly to instantiate <code class="docutils literal notranslate"><span class="pre">Transform</span></code> directly from callables using <code class="docutils literal notranslate"><span class="pre">importer</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">torchvision</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">cosine</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">cos</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="defining-compound-transforms">
+<h3>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h3>
+<p>Atomic transforms may be combined using 3 functional primitives:</p>
+<p>Transform composition: <strong>compose</strong></p>
+<p><span class="raw-html-m2r"><img src="img/compose.png" width="100"></span></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">&gt;&gt;</span> <span class="n">transform_2</span>
+</pre></div>
+</div>
+<p>Applying transforms in parallel to multiple inputs: <strong>parallel</strong></p>
+<p><span class="raw-html-m2r"><img src="img/parallel.png" width="230"></span></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">/</span> <span class="n">transform_2</span>
+</pre></div>
+</div>
+<p>Applying multiple transforms to a single input: <strong>rollout</strong></p>
+<p><span class="raw-html-m2r"><img src="img/rollout.png" width="230"></span></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">+</span> <span class="n">transform_2</span>
+</pre></div>
+</div>
+<p>Large transforms may be built in terms of combinations of these operations. For example the schematic above would be implemented by:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span>
+     <span class="n">pre_00</span> <span class="o">/</span> <span class="n">pre_01</span>
+     <span class="o">&gt;&gt;</span> <span class="n">pre_1</span>
+     <span class="o">&gt;&gt;</span> <span class="n">pre_2</span>
+     <span class="o">&gt;&gt;</span> <span class="n">batch</span>
+     <span class="o">&gt;&gt;</span> <span class="n">model_1</span> <span class="o">+</span> <span class="n">model_2</span>
+     <span class="o">&gt;&gt;</span> <span class="n">unbatch</span>
+     <span class="o">&gt;&gt;</span> <span class="n">post</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Or a simple NLP string embedding model based on components defined above:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">this</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="o">&gt;&gt;</span> <span class="n">this</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="o">&gt;&gt;</span> <span class="n">split_string</span>
+    <span class="o">&gt;&gt;</span> <span class="n">lookup_letters</span>
+    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
+    <span class="o">&gt;&gt;</span> <span class="n">layer</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="decomposing-models">
+<h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h3>
+<p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span> <span class="o">=</span> <span class="n">model</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Individual components may be obtained using indexing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step_1</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="naming-transforms-inside-models">
+<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h3>
+<p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These components may then be referenced using <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>    <span class="c1"># prints &quot;True&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="applying-transforms-to-data">
+<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
+<p>To pass single data points may be passed through the transform:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To pass data points in batches but no gradients:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;the cat sat on the mat&#39;</span><span class="p">,</span> <span class="s1">&#39;the dog sh...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man stepped in th...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man kic...&#39;</span><span class="p">],</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>To pass data points in batches but with gradients:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">train_apply</span><span class="p">(</span>
+    <span class="p">[</span><span class="s1">&#39;the cat sat on the mat&#39;</span><span class="p">,</span> <span class="s1">&#39;the dog sh...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man stepped in th...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man kic...&#39;</span><span class="p">],</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="model-training">
+<h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
+<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">loss</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">train_apply</span><span class="p">(</span><span class="n">TRAIN_DATA</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="n">NUM_WORKERS</span><span class="p">):</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="nlp-example">
+<h3>NLP Example<a class="headerlink" href="#nlp-example" title="Permalink to this headline"></a></h3>
+<p>Suppose we define a simple classifier extending our NLP pipeline:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">this</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="o">&gt;&gt;</span> <span class="n">this</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="o">&gt;&gt;</span> <span class="n">split_string</span>
+    <span class="o">&gt;&gt;</span> <span class="n">lookup_letters</span>
+    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
+    <span class="o">&gt;&gt;</span> <span class="n">layer</span>
+    <span class="o">&gt;&gt;</span> <span class="n">importer</span><span class="o">.</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">N_LABELS</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Targets to be computed are simple labels:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">lookup_classes</span><span class="p">(</span><span class="n">class_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="n">class_</span><span class="p">)</span>
+
+<span class="n">target</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">lookup_classes</span>
+    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>In training the model outputs can be compared with the targets with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">training_pipeline</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span> <span class="o">/</span> <span class="n">target</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">loss</span>
+</pre></div>
+</div>
+<p>Data points must be tuples of sentences and labels.</p>
+</section>
+<section id="weight-sharing-for-auxiliary-production-models">
+<h3>Weight sharing for auxiliary production models<a class="headerlink" href="#weight-sharing-for-auxiliary-production-models" title="Permalink to this headline"></a></h3>
+<p>At run-time in production we often will need important postprocessing steps on top of tensor outputs. For example, to serve meaningful predictions from our NLP model, we would want to lookup the best prediction in the <code class="docutils literal notranslate"><span class="pre">CLASSES</span></code> variable:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">reverse_lookup</span><span class="p">(</span><span class="n">prediction</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">prediction</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span>
+</pre></div>
+</div>
+<p>A useful production model would be:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">reverse_lookup</span>
+</pre></div>
+</div>
+<p>Since the weights are tied to <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code> trains together with <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, but with the added capability of producing human readable outputs.</p>
+</section>
+</section>
+<section id="id5">
+<h2>Licensing<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>TADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="module-lf.transforms">
+<span id="transforms"></span><h2>Transforms<a class="headerlink" href="#module-lf.transforms" title="Permalink to this headline"></a></h2>
+<p>The Transform class and some of its children.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.AtomicTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">AtomicTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">lf.dumptools.inspector.CallInfo</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.AtomicTransform" title="Permalink to this definition"></a></dt>
+<dd><p>Base class for “atomic” transforms (transforms that are not made by combining
+other transforms - in contrast to <a href="#id6"><span class="problematic" id="id7">`</span></a>CompoundTransform`s).</p>
+<p>Examples of <a href="#id8"><span class="problematic" id="id9">`</span></a>AtomicTransform`s are <a href="#id10"><span class="problematic" id="id11">`</span></a>ClassTransform`s and <a href="#id12"><span class="problematic" id="id13">`</span></a>FunctionTransform`s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>call</strong> – </p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the transform</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.AtomicTransform.lf_direct_subtransforms">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_direct_subtransforms</span></span><a class="headerlink" href="#lf.transforms.AtomicTransform.lf_direct_subtransforms" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate over the direct subtransforms of this.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.AtomicTransform.lf_evaluable_repr">
+<span class="sig-name descname"><span class="pre">lf_evaluable_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_transforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.AtomicTransform.lf_evaluable_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Return a string that if evaluated <em>in the same scope where the transform was created</em>
+creates the transform.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Batchify">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Batchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Batchify" title="Permalink to this definition"></a></dt>
+<dd><p>Mark end of preprocessing.</p>
+<p>Batchify adds batch dimension at <em>dim</em>. During inference, this unsqueezes tensors and,
+recursively, tuples thereof. Batchify also moves the input tensors to device specified
+for the transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dim</strong> – batching dimension</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.BuiltinTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">BuiltinTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.BuiltinTransform" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.ClassTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">ClassTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.ClassTransform" title="Permalink to this definition"></a></dt>
+<dd><p>Class Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lf_name</strong> – Name of the transform.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Compose">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Compose" title="Permalink to this definition"></a></dt>
+<dd><p>Apply series of transforms on input.</p>
+<p>Compose([t1, t2, t3])(x) = t3(t1(t2(x)))</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transforms</strong> – List of transforms to compose.</p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the Compose transform</p></li>
+<li><p><strong>lf_group</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>output from series of transforms</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Compose.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><a class="headerlink" href="#lf.transforms.Compose.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Compose.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><a class="headerlink" href="#lf.transforms.Compose.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.CompoundTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">CompoundTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.CompoundTransform" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract base class for compound-transforms (transforms combining other transforms).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transforms</strong> – list of transforms</p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of CompoundTransform</p></li>
+<li><p><strong>lf_group</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.CompoundTransform.grouped">
+<span class="sig-name descname"><span class="pre">grouped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.CompoundTransform.grouped" title="Permalink to this definition"></a></dt>
+<dd><p>Return a grouped version of <em>self</em>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.CompoundTransform.lf_direct_subtransforms">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_direct_subtransforms</span></span><a class="headerlink" href="#lf.transforms.CompoundTransform.lf_direct_subtransforms" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate over the direct subtransforms of this.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.CompoundTransform.lf_evaluable_repr">
+<span class="sig-name descname"><span class="pre">lf_evaluable_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_transforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.CompoundTransform.lf_evaluable_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Return a string that if evaluated <em>in the same scope where the transform was created</em>
+creates the transform.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.CompoundTransform.lf_to">
+<span class="sig-name descname"><span class="pre">lf_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.CompoundTransform.lf_to" title="Permalink to this definition"></a></dt>
+<dd><p>Set the transform’s device to <em>device</em></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>device</strong> – device on which to send {‘cpu’, cuda’, ‘cuda:N’}</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.FunctionTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">FunctionTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.FunctionTransform" title="Permalink to this definition"></a></dt>
+<dd><p>Function Transform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>function</strong> – function to call</p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the transform</p></li>
+<li><p><strong>call</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Identity">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Identity</span></span><a class="headerlink" href="#lf.transforms.Identity" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lf_name</strong> – name of the transform</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Identity.lf_is_identity">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_is_identity</span></span><a class="headerlink" href="#lf.transforms.Identity.lf_is_identity" title="Permalink to this definition"></a></dt>
+<dd><p>Return <em>True</em> iff the transform is the identity transform.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Parallel">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Parallel" title="Permalink to this definition"></a></dt>
+<dd><p>Apply transforms in parallel to a tuple of inputs and get tuple output</p>
+<p>Parallel([f1, f2, …])((x1, x2, ..)) := (f1(x1), f2(x2), …)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transforms</strong> – List of transforms to parallelize.</p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the Parallel transform</p></li>
+<li><p><strong>lf_group</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>namedtuple of outputs</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Parallel.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><a class="headerlink" href="#lf.transforms.Parallel.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Parallel.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><a class="headerlink" href="#lf.transforms.Parallel.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Rollout">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Rollout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Rollout" title="Permalink to this definition"></a></dt>
+<dd><p>Apply a list of transform to same input and get tuple output</p>
+<p>Rollout([t1, t2, …])(x) := (t1(x), t2(x), …)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transforms</strong> – List of transforms to rollout.</p></li>
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the Rollout transform</p></li>
+<li><p><strong>lf_group</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>namedtuple of outputs</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Rollout.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><a class="headerlink" href="#lf.transforms.Rollout.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Rollout.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><a class="headerlink" href="#lf.transforms.Rollout.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.TorchModuleTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">TorchModuleTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.TorchModuleTransform" title="Permalink to this definition"></a></dt>
+<dd><p>Torch Module Transform</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.TorchModuleTransform.lf_post_load">
+<span class="sig-name descname"><span class="pre">lf_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.TorchModuleTransform.lf_post_load" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The load path.</p></li>
+<li><p><strong>i</strong> – Sublayer index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.TorchModuleTransform.lf_pre_save">
+<span class="sig-name descname"><span class="pre">lf_pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.TorchModuleTransform.lf_pre_save" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The save path.</p></li>
+<li><p><strong>i</strong> – Sublayer index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Transform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">lf.dumptools.inspector.CallInfo</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transform base class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>call_info</strong> – </p></li>
+<li><p><strong>lf_name</strong> – name of the transform</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.eval_apply">
+<span class="sig-name descname"><span class="pre">eval_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.eval_apply" title="Permalink to this definition"></a></dt>
+<dd><p>Call transform within the eval context.</p>
+<p>This expects an iterable input and returns a generator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputs</strong> – The arguments - an iterable (e.g. list) of inputs.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments to be passed on to the dataloader. These can be
+any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
+<li><p><strong>verbose</strong> – If <em>True</em>, print progress bar.</p></li>
+<li><p><strong>flatten</strong> – If <em>True</em>, flatten the output.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.infer_apply">
+<span class="sig-name descname"><span class="pre">infer_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.infer_apply" title="Permalink to this definition"></a></dt>
+<dd><p>Call transform within the infer context.</p>
+<p>This expects a single argument and returns a single output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_all_transforms">
+<span class="sig-name descname"><span class="pre">lf_all_transforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_all_transforms" title="Permalink to this definition"></a></dt>
+<dd><p>Return a list of all transforms needed for executing the transform.</p>
+<p>This includes the transform itself, the subtransforms of a compount transform or
+transforms a function-transform depends on as a global.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_component">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_component</span></span><em class="property"><span class="pre">:</span> <span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'preprocess'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'forward'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'postprocess'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lf.transforms.Transform.lf_component" title="Permalink to this definition"></a></dt>
+<dd><p>Return the component (preprocess, forward or postprocess).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_device">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_device</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#lf.transforms.Transform.lf_device" title="Permalink to this definition"></a></dt>
+<dd><p>Return the device the transform is on.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_direct_subtransforms">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_direct_subtransforms</span></span><a class="headerlink" href="#lf.transforms.Transform.lf_direct_subtransforms" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate over the direct subtransforms of this.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_dumps">
+<span class="sig-name descname"><span class="pre">lf_dumps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">return_versions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#lf.transforms.Transform.lf_dumps" title="Permalink to this definition"></a></dt>
+<dd><p>Dump the transform as python code.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_evaluable_repr">
+<span class="sig-name descname"><span class="pre">lf_evaluable_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_transforms</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#lf.transforms.Transform.lf_evaluable_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Return a string that if evaluated <em>in the same scope where the transform was created</em>
+creates the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_forward">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#lf.transforms.Transform" title="lf.transforms.Transform"><span class="pre">lf.transforms.Transform</span></a></em><a class="headerlink" href="#lf.transforms.Transform.lf_forward" title="Permalink to this definition"></a></dt>
+<dd><p>The forward part of the transform and send to GPU</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_is_identity">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_is_identity</span></span><a class="headerlink" href="#lf.transforms.Transform.lf_is_identity" title="Permalink to this definition"></a></dt>
+<dd><p>Return <em>True</em> iff the transform is the identity transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_layers">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_layers</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lf.transforms.Transform.lf_layers" title="Permalink to this definition"></a></dt>
+<dd><p>Get a dict with all layers in the transform (including layers in sub-transforms).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_name">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_name</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lf.transforms.Transform.lf_name" title="Permalink to this definition"></a></dt>
+<dd><p>The “name” of the transform.</p>
+<p>A transform can have a name. This is optional, but helps when inspecting complex transforms.
+Good transform names indicate what the transform does.</p>
+<p>If a transform does not have an explicitly set name, the name will default to the name of
+the <em>last variable the transforms was assigned to</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_parameters">
+<span class="sig-name descname"><span class="pre">lf_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span></span></span><a class="headerlink" href="#lf.transforms.Transform.lf_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate over parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_post_load">
+<span class="sig-name descname"><span class="pre">lf_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_post_load" title="Permalink to this definition"></a></dt>
+<dd><p>Method that is called on each transform after loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The load path.</p></li>
+<li><p><strong>i</strong> – Subtransform index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#lf.transforms.Transform" title="lf.transforms.Transform"><span class="pre">lf.transforms.Transform</span></a></em><a class="headerlink" href="#lf.transforms.Transform.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_pre_save">
+<span class="sig-name descname"><span class="pre">lf_pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_pre_save" title="Permalink to this definition"></a></dt>
+<dd><p>Method that is called on each transform before saving.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – The save path.</p></li>
+<li><p><strong>i</strong> – Subtransform index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#lf.transforms.Transform" title="lf.transforms.Transform"><span class="pre">lf.transforms.Transform</span></a></em><a class="headerlink" href="#lf.transforms.Transform.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_save">
+<span class="sig-name descname"><span class="pre">lf_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_save" title="Permalink to this definition"></a></dt>
+<dd><p>Save the transform to <em>path</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_set_stage">
+<span class="sig-name descname"><span class="pre">lf_set_stage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_set_stage" title="Permalink to this definition"></a></dt>
+<dd><p>Set of stage of Transform</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stage</strong> – stage (‘train’, ‘eval’, ‘infer’)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_to">
+<span class="sig-name descname"><span class="pre">lf_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.lf_to" title="Permalink to this definition"></a></dt>
+<dd><p>Set the transform’s device to <em>device</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>device</strong> – device on which to map {‘cpu’, ‘cuda’, ‘cuda:N’}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.lf_varname">
+<span class="sig-name descname"><span class="pre">lf_varname</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#lf.transforms.Transform.lf_varname" title="Permalink to this definition"></a></dt>
+<dd><p>The name of the variable name the transform was last assigned to.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span><span class="o">.</span><span class="n">_lf_varname</span>
+<span class="go">&quot;foo&quot;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A string with the variable name or <em>None</em> if the transform has not been assigned
+to any variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Transform.train_apply">
+<span class="sig-name descname"><span class="pre">train_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Transform.train_apply" title="Permalink to this definition"></a></dt>
+<dd><p>Call transform within the train context.</p>
+<p>This expects an iterable input and returns a generator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputs</strong> – The arguments - an iterable (e.g. list) of inputs.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments to be passed on to the dataloader. These can be
+any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
+<li><p><strong>verbose</strong> – If <em>True</em>, print progress bar.</p></li>
+<li><p><strong>flatten</strong> – If <em>True</em>, flatten the output.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Unbatchify">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Unbatchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Unbatchify" title="Permalink to this definition"></a></dt>
+<dd><p>Mark start of postprocessing</p>
+<p>Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to ‘cpu’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dim</strong> – batching dimension</p></li>
+<li><p><strong>cpu</strong> – if true, moves output to cpu after unbatchify</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lf.transforms.load">
+<span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.load" title="Permalink to this definition"></a></dt>
+<dd><p>Load transform (as saved with lf.save) from <em>path</em>.</p>
+</dd></dl>
+
+</section>
+<section id="module-lf.util_transforms">
+<span id="util-transforms"></span><h2>Util Transforms<a class="headerlink" href="#module-lf.util_transforms" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="lf.util_transforms.IfEval">
+<span class="sig-prename descclassname"><span class="pre">lf.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfEval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.util_transforms.IfEval" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – transform for eval phase</p></li>
+<li><p><strong>else</strong> – transform otherwise</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.util_transforms.IfInStage">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInStage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_stage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.util_transforms.IfInStage" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if self.stage is <em>target_stage</em>, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – transform for the if part</p></li>
+<li><p><strong>target_stage</strong> – stage {‘train’, ‘eval’, ‘infer’}</p></li>
+<li><p><strong>else</strong> – transform for the <a href="#id14"><span class="problematic" id="id15">else_</span></a> part</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.util_transforms.IfInStage.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><a class="headerlink" href="#lf.util_transforms.IfInStage.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.util_transforms.IfInStage.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><a class="headerlink" href="#lf.util_transforms.IfInStage.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lf.util_transforms.IfInfer">
+<span class="sig-prename descclassname"><span class="pre">lf.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.util_transforms.IfInfer" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – transform for infer phase</p></li>
+<li><p><strong>else</strong> – transform otherwise</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lf.util_transforms.IfTrain">
+<span class="sig-prename descclassname"><span class="pre">lf.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfTrain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.util_transforms.IfTrain" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – transform for train phase</p></li>
+<li><p><strong>else</strong> – transform otherwise</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, LF1.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
