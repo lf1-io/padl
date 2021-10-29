@@ -1,6 +1,10 @@
 <img src="img/logo.png" width="400">
 
-*Transform abstractions for deep learning* -- using **Pytorch**.
+*Transform abstractions for deep learning* -- using **Pytorch**. 
+
+---
+
+Technical documentation here: https://lf1-io.github.io/tadl/
 
 ## Contents
 
