@@ -26,37 +26,37 @@ class IfInStage(ClassTransform):
         self.else_ = else_
         self.target_stage = target_stage
 
-        self._lf_component = set.union(*[t.lf_component for t in [self.if_, self.else_]])
+        self._td_component = set.union(*[t.td_component for t in [self.if_, self.else_]])
 
     def __call__(self, *args):
-        assert Transform.lf_stage is not None,\
+        assert Transform.td_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if Transform.lf_stage == self.target_stage:
+        if Transform.td_stage == self.target_stage:
             return self.if_(*args)
         return self.else_(*args)
 
     @property
-    def lf_preprocess(self):
+    def td_preprocess(self):
         return type(self)(
-            if_=self.if_.lf_preprocess,
+            if_=self.if_.td_preprocess,
             target_stage=self.target_stage,
-            else_=self.else_.lf_preprocess
+            else_=self.else_.td_preprocess
         )
 
-    def _lf_forward_part(self):
+    def _td_forward_part(self):
         return type(self)(
-            if_=self.if_.lf_forward,
+            if_=self.if_.td_forward,
             target_stage=self.target_stage,
-            else_=self.else_.lf_forward
+            else_=self.else_.td_forward
         )
 
     @property
-    def lf_postprocess(self):
+    def td_postprocess(self):
         return type(self)(
-            if_=self.if_.lf_postprocess,
+            if_=self.if_.td_postprocess,
             target_stage=self.target_stage,
-            else_=self.else_.lf_postprocess
+            else_=self.else_.td_postprocess
         )
 
 

@@ -230,7 +230,7 @@ def get_surrounding_block(source: str, lineno: int):
 def _module(frame: types.FrameType):
     """Get module of *frame*. """
     try:
-        return frame.f_globals['_lf_module']
+        return frame.f_globals['_td_module']
     except KeyError:
         return sys.modules[frame.f_globals['__name__']]
 
@@ -302,7 +302,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type) -> str:
     # for now, as 3.11 isn't widely used, this requires the following hack:
     # extract the source of the class init statement
     try:
-        full_source = caller_frame.f_globals['_lf_source']
+        full_source = caller_frame.f_globals['_td_source']
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
     source = get_statement(full_source, caller_frame.f_lineno)

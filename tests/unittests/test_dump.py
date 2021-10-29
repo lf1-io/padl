@@ -101,11 +101,11 @@ lambda_b = transform(lambda x: y(x))
 
 
 def test_lambda_a():
-    assert lambda_a.lf_dumps() == read_dump('lambda_a')
+    assert lambda_a.td_dumps() == read_dump('lambda_a')
 
 
 def test_lambda_b():
-    assert lambda_b.lf_dumps() == read_dump('lambda_b')
+    assert lambda_b.td_dumps() == read_dump('lambda_b')
 
 
 def test_nested_dump_a():
@@ -128,15 +128,15 @@ c_b = x >> y >> x / x + c_a
 
 
 def test_compound_dump_a():
-    assert c_a.lf_dumps() == read_dump('compound_a')
+    assert c_a.td_dumps() == read_dump('compound_a')
 
 
 def test_compound_dump_b():
-    assert c_b.lf_dumps() == read_dump('compound_b')
+    assert c_b.td_dumps() == read_dump('compound_b')
 
 
 g_a = x + group(y + x + x)
 
 
 def test_grouped_dump_a():
-    assert g_a.lf_dumps() == read_dump('grouped_a')
+    assert g_a.td_dumps() == read_dump('grouped_a')

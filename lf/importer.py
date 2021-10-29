@@ -12,7 +12,7 @@ class PatchedModule:
 
     Example:
 
-        >>> from lf.importer import numpy as np
+        >>> from td.importer import numpy as np
         >>> isinstance(np.random.rand, Transform)
         True
     """

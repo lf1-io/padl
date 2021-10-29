@@ -81,7 +81,6 @@ class _FunctionDefFinder(_NameFinder):
         return '\n'.join(res)
 
 
-
 class _ClassDefFinder(_NameFinder):
     def visit_ClassDef(self, node):
         if node.name == self.var_name:

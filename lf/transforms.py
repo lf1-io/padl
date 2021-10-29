@@ -52,23 +52,23 @@ class Transform:
     """Transform base class.
 
     :param call_info:
-    :param lf_name: name of the transform
+    :param td_name: name of the transform
     """
-    lf_stage = None
+    td_stage = None
 
     def __init__(self, call_info: Optional[inspector.CallInfo] = None,
-                 lf_name: Optional[str] = None):
+                 td_name: Optional[str] = None):
         if call_info is None:
             call_info = inspector.CallInfo()
-        self._lf_call_info = call_info
-        self._lf_varname = _notset
-        self._lf_name = lf_name
-        self._lf_component = {'forward'}
-        self._lf_device = 'cpu'
-        self._lf_layers = None
+        self._td_call_info = call_info
+        self._td_varname = _notset
+        self._td_name = td_name
+        self._td_component = {'forward'}
+        self._td_device = 'cpu'
+        self._td_layers = None
 
     @property
-    def lf_name(self) -> Optional[str]:
+    def td_name(self) -> Optional[str]:
         """The "name" of the transform.
 
         A transform can have a name. This is optional, but helps when inspecting complex transforms.
@@ -77,9 +77,9 @@ class Transform:
         If a transform does not have an explicitly set name, the name will default to the name of
         the *last variable the transforms was assigned to*.
         """
-        if self._lf_name is None:
-            return self.lf_varname()
-        return self._lf_name
+        if self._td_name is None:
+            return self.td_varname()
+        return self._td_name
 
     def __rshift__(self, other: "Transform") -> "Compose":
         """Compose with *other*.
@@ -91,7 +91,7 @@ class Transform:
 
     @property
     def n_display_inputs(self):
-        return len(self.lf_get_signature())
+        return len(self.td_get_signature())
 
     @property
     def n_display_outputs(self):
@@ -99,7 +99,7 @@ class Transform:
 
     @property
     def display_width(self):
-        return len(self._lf_shortname())
+        return len(self._td_shortname())
 
     @property
     def children_widths(self):
@@ -128,42 +128,42 @@ class Transform:
             named_t = t - 'rescale image'
         """
         named_copy = copy(self)
-        named_copy._lf_name = name
+        named_copy._td_name = name
         return named_copy
 
-    def lf_pre_save(self, path: Path, i: int):
+    def td_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
 
         :param path: The save path.
         :param i: Subtransform index.
         """
 
-    def lf_post_load(self, path: Path, i: int):
+    def td_post_load(self, path: Path, i: int):
         """Method that is called on each transform after loading.
 
         :param path: The load path.
         :param i: Subtransform index.
         """
 
-    def lf_save(self, path: Union[Path, str]):
+    def td_save(self, path: Union[Path, str]):
         """Save the transform to *path*. """
         path = Path(path)
         path.mkdir(exist_ok=True)
-        for i, subtrans in enumerate(self.lf_all_transforms()):
-            subtrans.lf_pre_save(path, i)
-        code, versions = self.lf_dumps(True)
+        for i, subtrans in enumerate(self.td_all_transforms()):
+            subtrans.td_pre_save(path, i)
+        code, versions = self.td_dumps(True)
         with open(path / 'transform.py', 'w') as f:
             f.write(code)
         with open(path / 'versions.txt', 'w') as f:
             f.write(versions)
 
-    def _lf_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
+    def _td_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
-        start_source = f'{name or "_lf_dummy"} = {self.lf_evaluable_repr()}'
+        start_source = f'{name or "_td_dummy"} = {self.td_evaluable_repr()}'
         start_node = ast.parse(start_source).body[0]
         start_globals = {
-            (var, self._lf_call_info.scope)  # this should be the current scope ...?
+            (var, self._td_call_info.scope)  # this should be the current scope ...?
             for var in var2mod.find_globals(start_node)
         }
         return var2mod.CodeNode(
@@ -173,11 +173,11 @@ class Transform:
         )
 
     @property
-    def _lf_closurevars(self) -> Tuple[dict, dict]:
+    def _td_closurevars(self) -> Tuple[dict, dict]:
         """Return the closurevars (globals and nonlocals) the transform depends on. """
         return {}, {}
 
-    def _lf_build_codegraph(self, graph: Optional[dict] = None,
+    def _td_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
                             scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
@@ -187,7 +187,7 @@ class Transform:
             scopemap = {}
 
         if scope is None:
-            scope = self._lf_call_info.scope
+            scope = self._td_call_info.scope
 
         if name is not None:
             name_scope_here = name, scope
@@ -197,16 +197,16 @@ class Transform:
         given_name = name
 
         try:
-            if self._lf_call == name:
+            if self._td_call == name:
                 name = None
         except AttributeError:
             pass
 
         # build the start node ->
-        start = self._lf_codegraph_startnode(name)
+        start = self._td_codegraph_startnode(name)
         # <-
 
-        globals_dict, nonlocals_dict = self._lf_closurevars
+        globals_dict, nonlocals_dict = self._td_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
@@ -224,7 +224,7 @@ class Transform:
                     next_obj = all_vars_dict[next_var]
                 else:
                     next_obj = globals_dict[next_var]
-                next_obj._lf_build_codegraph(graph, scopemap, next_var)
+                next_obj._td_build_codegraph(graph, scopemap, next_var)
             except (KeyError, AttributeError):
                 pass
             else:
@@ -254,13 +254,13 @@ class Transform:
 
         return graph, scopemap
 
-    def lf_evaluable_repr(self, indent: int = 0, var_transforms: Optional[dict] = None) -> str:  # TODO: var_transforms needed?
+    def td_evaluable_repr(self, indent: int = 0, var_transforms: Optional[dict] = None) -> str:  # TODO: var_transforms needed?
         # pylint: disable=unused-argument,no-self-use
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
         raise NotImplementedError
 
-    def lf_all_transforms(self, result=None):
+    def td_all_transforms(self, result=None):
         """Return a list of all transforms needed for executing the transform.
 
         This includes the transform itself, the subtransforms of a compount transform or
@@ -270,20 +270,20 @@ class Transform:
         if self in result:
             return result
         result.append(self)
-        for transform in self.lf_direct_subtransforms:
-            transform.lf_all_transforms(result)
+        for transform in self.td_direct_subtransforms:
+            transform.td_all_transforms(result)
         return result
 
     @property
-    def lf_direct_subtransforms(self):
+    def td_direct_subtransforms(self):
         """Iterate over the direct subtransforms of this. """
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def lf_dumps(self, return_versions: bool = False) -> str:
+    def td_dumps(self, return_versions: bool = False) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
-        graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
+        graph, scopemap = self._td_build_codegraph(name='_td_main', scope=scope)
         unscoped = var2mod.unscope_graph(graph, scopemap)
         code = var2mod.dumps_graph(unscoped)
         if return_versions:
@@ -291,11 +291,11 @@ class Transform:
             return code, versions
         return code
 
-    def _lf_shortname(self):
-        title = self._lf_title()
-        if self._lf_name is not None:
-            return title + f'[{self._lf_name}]'
-        varname = self.lf_varname()
+    def _td_shortname(self):
+        title = self._td_title()
+        if self._td_name is not None:
+            return title + f'[{self._td_name}]'
+        varname = self.td_varname()
         if varname is None or varname == title:
             return title
         return title + f'[{varname}]'
@@ -305,7 +305,7 @@ class Transform:
         return name
 
     @staticmethod
-    def _lf_add_format_to_str(name):
+    def _td_add_format_to_str(name):
         """
         Create formatted output based on "name" input lines.
 
@@ -314,23 +314,23 @@ class Transform:
         res = '    ' + '\n    '.join(name.split('\n')) + '\n'
         return res
 
-    def _lf_bodystr(self):
+    def _td_bodystr(self):
         raise NotImplementedError
 
-    def lf_repr(self, indent: int = 0) -> str:
+    def td_repr(self, indent: int = 0) -> str:
         # pylint: disable=unused-argument
-        varname = self.lf_varname()
-        evaluable_repr = self.lf_evaluable_repr()
+        varname = self.td_varname()
+        evaluable_repr = self.td_evaluable_repr()
         if varname is None or varname == evaluable_repr:
             return f'{evaluable_repr}'
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
-        bottom_message = self._lf_bodystr()
-        return top_message + self._lf_add_format_to_str(bottom_message)
+        top_message = make_bold(Transform._td_shortname(self) + ':') + '\n\n'
+        bottom_message = self._td_bodystr()
+        return top_message + self._td_add_format_to_str(bottom_message)
 
-    def _lf_find_varname(self, scopedict: dict) -> Optional[str]:
+    def _td_find_varname(self, scopedict: dict) -> Optional[str]:
         """Find the name of the variable name the transform was last assigned to.
 
         :returns: A string with the variable name or *None* if the transform has not been assigned
@@ -344,26 +344,26 @@ class Transform:
         except IndexError:
             return None
 
-    def lf_varname(self) -> Optional[str]:
+    def td_varname(self) -> Optional[str]:
         """The name of the variable name the transform was last assigned to.
 
         Example:
 
         >>> foo = MyTransform()
-        >>> foo._lf_varname
+        >>> foo._td_varname
         "foo"
 
         :returns: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
-        if self._lf_varname is _notset:
-            self._lf_varname = self._lf_find_varname(self._lf_call_info.module.__dict__)
-        return self._lf_varname
+        if self._td_varname is _notset:
+            self._td_varname = self._td_find_varname(self._td_call_info.module.__dict__)
+        return self._td_varname
 
-    def _lf_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
-        self._lf_varname = val
+    def _td_set_varname(self, val):  # TODO: needed (used in wrap, but can be done without "set" method potentially)
+        self._td_varname = val
 
-    def _lf_forward_device_check(self):
+    def _td_forward_device_check(self):
         """Check all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -371,23 +371,23 @@ class Transform:
 
         :return: Bool
         """
-        for layer in self.lf_forward.lf_layers:
+        for layer in self.td_forward.td_layers:
             for parameters in layer.parameters():
-                if parameters.device.type != self.lf_device:
+                if parameters.device.type != self.td_device:
                     raise WrongDeviceError(self, layer)
         return True
 
-    def _lf_unpack_argument(self, arg):
+    def _td_unpack_argument(self, arg):
         """Returns True if to unpack argument else False"""
         signature_count = 0
         if not isinstance(arg, (list, tuple)):
             return False
 
-        if hasattr(self, '_lf_number_of_inputs') and self._lf_number_of_inputs is not None:
-            return self._lf_number_of_inputs > 1
+        if hasattr(self, '_td_number_of_inputs') and self._td_number_of_inputs is not None:
+            return self._td_number_of_inputs > 1
 
         try:
-            parameters = self.lf_get_signature().values()
+            parameters = self.td_get_signature().values()
         except ValueError:
             return False
         for param in parameters:
@@ -401,7 +401,7 @@ class Transform:
             return True
         return False
 
-    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
+    def _td_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call transform with possibility to pass multiple arguments"""
 
         if stage in ('eval', 'infer'):
@@ -409,15 +409,15 @@ class Transform:
         else:
             torch_context = contextlib.suppress()
 
-        with self.lf_set_stage(stage), torch_context:
-            if self._lf_unpack_argument(arg):
+        with self.td_set_stage(stage), torch_context:
+            if self._td_unpack_argument(arg):
                 return self(*arg)
             return self(arg)
 
-    def lf_get_signature(self):
+    def td_get_signature(self):
         return inspect.signature(self).parameters
 
-    def _lf_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
+    def _td_callyield(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
                       verbose: bool = False, flatten: bool = False):  # TODO: different name?
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
@@ -429,26 +429,26 @@ class Transform:
 
         :returns: A generator that allows iterating over the output.
         """
-        assert stage in ('eval', 'train'), '_lf_callyield can only be used with stage eval or train'
+        assert stage in ('eval', 'train'), '_td_callyield can only be used with stage eval or train'
 
-        self._lf_forward_device_check()
+        self._td_forward_device_check()
 
-        preprocess = self.lf_preprocess
-        forward = self.lf_forward
-        post = self.lf_postprocess
+        preprocess = self.td_preprocess
+        forward = self.td_forward
+        post = self.td_postprocess
 
-        use_preprocess = not preprocess.lf_is_identity
-        use_forward = not forward.lf_is_identity
-        use_post = not post.lf_is_identity
+        use_preprocess = not preprocess.td_is_identity
+        use_forward = not forward.td_is_identity
+        use_post = not post.td_is_identity
 
         if use_preprocess:
             iterator = SimpleIterator(
                 args,
-                lambda *args: self.lf_preprocess._lf_call_transform(*args, stage)
+                lambda *args: self.td_preprocess._td_call_transform(*args, stage)
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
-            loader = self._lf_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
+            loader = self._td_get_loader(iterator=iterator, loader_kwargs=loader_kwargs)
         else:
             loader = args
 
@@ -461,12 +461,12 @@ class Transform:
 
         for batch in loader:
             if use_forward:
-                output = forward._lf_call_transform(batch, stage)
+                output = forward._td_call_transform(batch, stage)
             else:
                 output = batch
 
             if use_post:
-                output = post._lf_call_transform(output, stage)
+                output = post._td_call_transform(output, stage)
 
             if flatten:
                 pbar.update()
@@ -478,72 +478,72 @@ class Transform:
             yield output
 
     @property
-    def lf_device(self) -> str:  # TODO: remove?
+    def td_device(self) -> str:  # TODO: remove?
         """Return the device the transform is on."""
-        return self._lf_device
+        return self._td_device
 
     @property
-    def lf_component(self) -> Set[Component]:
+    def td_component(self) -> Set[Component]:
         """Return the component (preprocess, forward or postprocess)."""
-        return self._lf_component
+        return self._td_component
 
     @property
-    def lf_preprocess(self) -> "Transform":
+    def td_preprocess(self) -> "Transform":
         """The preprocessing part. """
-        if 'preprocess' in self.lf_component:
+        if 'preprocess' in self.td_component:
             return self
         return Identity()
 
-    def _lf_forward_part(self) -> "Transform":
+    def _td_forward_part(self) -> "Transform":
         """The forward part of the transform """
-        if 'forward' in self.lf_component:
+        if 'forward' in self.td_component:
             return self
         return Identity()
 
     @property
-    def lf_forward(self) -> "Transform":
+    def td_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
-        f = self._lf_forward_part()
+        f = self._td_forward_part()
         return f
 
     @property
-    def lf_postprocess(self) -> "Transform":
+    def td_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. """
-        if 'postprocess' in self.lf_component:
+        if 'postprocess' in self.td_component:
             return self
         return Identity()
 
-    def lf_to(self, device: str):  # TODO: change
+    def td_to(self, device: str):  # TODO: change
         """Set the transform's device to *device*.
 
         :param device: device on which to map {'cpu', 'cuda', 'cuda:N'}
         """
-        self._lf_device = device
-        for layer in self.lf_layers:
+        self._td_device = device
+        for layer in self.td_layers:
             layer.to(device)
         return self
 
     @property
-    def lf_is_identity(self):  # TODO: keep?
+    def td_is_identity(self):  # TODO: keep?
         """Return *True* iff the transform is the identity transform. """
         return False
 
     @property
-    def lf_layers(self) -> List[torch.nn.Module]:
+    def td_layers(self) -> List[torch.nn.Module]:
         """Get a dict with all layers in the transform (including layers in sub-transforms)."""
         layers = []
-        for subtrans in self.lf_all_transforms():
+        for subtrans in self.td_all_transforms():
             if isinstance(subtrans, torch.nn.Module):
                 layers.append(subtrans)
         return layers
 
-    def lf_parameters(self) -> Iterator:
+    def td_parameters(self) -> Iterator:
         """ Iterate over parameters. """
-        for layer in self.lf_layers:
+        for layer in self.td_layers:
             yield from layer.parameters()
 
     @contextlib.contextmanager
-    def lf_set_stage(self, stage: Optional[str]=None):
+    def td_set_stage(self, stage: Optional[str]=None):
         """Set of stage of Transform
 
         :param stage: stage ('train', 'eval', 'infer')
@@ -554,23 +554,23 @@ class Transform:
             yield
             return
 
-        layers = self.lf_layers  # TODO: set back?
+        layers = self.td_layers  # TODO: set back?
         try:
             for layer in layers:
                 if stage == 'train':
                     layer.train()
                 else:
                     layer.eval()
-            Transform.lf_stage = stage
+            Transform.td_stage = stage
             yield
         # TODO: Should we put layers in eval mode by default?
         finally:
             for layer in layers:
                 layer.eval()
-            Transform.lf_stage = None
+            Transform.td_stage = None
 
     @staticmethod
-    def _lf_get_loader(iterator, loader_kwargs=None):
+    def _td_get_loader(iterator, loader_kwargs=None):
         """Get the data loader
 
         :param iterator: Iterator
@@ -588,7 +588,7 @@ class Transform:
 
         This expects a single argument and returns a single output.
         """
-        return self._lf_call_transform(input, stage='infer')
+        return self._td_call_transform(input, stage='infer')
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
@@ -602,7 +602,7 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'eval', loader_kwargs=kwargs,
+        return self._td_callyield(inputs, 'eval', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
     def train_apply(self, inputs: Iterable,
@@ -617,7 +617,7 @@ class Transform:
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._lf_callyield(inputs, 'train', loader_kwargs=kwargs,
+        return self._td_callyield(inputs, 'train', loader_kwargs=kwargs,
                                   verbose=verbose, flatten=flatten)
 
 
@@ -629,26 +629,26 @@ class AtomicTransform(Transform):
 
     :param call:
     :param call_info:
-    :param lf_name: name of the transform
+    :param td_name: name of the transform
     """
 
     def __init__(self, call: str, call_info: Optional[inspector.CallInfo] = None,
-                 lf_name: Optional[str] = None):
-        super().__init__(call_info, lf_name)
-        self._lf_call = call
+                 td_name: Optional[str] = None):
+        super().__init__(call_info, td_name)
+        self._td_call = call
 
-    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+    def td_evaluable_repr(self, indent=0, var_transforms=None):
         if var_transforms is None:
             var_transforms = {}
-        return var_transforms.get(self, self._lf_call)
+        return var_transforms.get(self, self._td_call)
 
-    def _lf_title(self):
-        return self._lf_call
+    def _td_title(self):
+        return self._td_call
 
     @property
-    def lf_direct_subtransforms(self):
+    def td_direct_subtransforms(self):
         # pylint: disable=no-self-use
-        globals_dict, nonlocals_dict = self._lf_closurevars
+        globals_dict, nonlocals_dict = self._td_closurevars
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
             if isinstance(v, Transform):
                 yield v
@@ -659,15 +659,15 @@ class FunctionTransform(AtomicTransform):
 
     :param function: function to call
     :param call_info:
-    :param lf_name: name of the transform
+    :param td_name: name of the transform
     :param call:
     """
-    def __init__(self, function, call_info, lf_name=None, call=None):
+    def __init__(self, function, call_info, td_name=None, call=None):
         if call is None:
             call = function.__name__
-        super().__init__(call=call, call_info=call_info, lf_name=lf_name)
+        super().__init__(call=call, call_info=call_info, td_name=td_name)
         self.function = function
-        self._lf_number_of_inputs = None
+        self._td_number_of_inputs = None
 
     @property
     def source(self, length=20):
@@ -677,28 +677,28 @@ class FunctionTransform(AtomicTransform):
             lines = re.split('(\n)', body_msg)
             lines = ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
             if len(lines) == 0:
-                body_msg = ''.join(re.split('(lambda)', self._lf_call, 1)[1:])[:-1]
+                body_msg = ''.join(re.split('(lambda)', self._td_call, 1)[1:])[:-1]
                 return body_msg[:100]
             return lines
         except TypeError:
-            return self._lf_call
+            return self._td_call
 
-    def lf_get_signature(self):
-        if self._lf_number_of_inputs is None:
+    def td_get_signature(self):
+        if self._td_number_of_inputs is None:
             return inspect.signature(self).parameters
-        return [f'arg_{i}' for i in range(self._lf_number_of_inputs)]
+        return [f'arg_{i}' for i in range(self._td_number_of_inputs)]
 
-    def _lf_bodystr(self, length=20):
+    def _td_bodystr(self, length=20):
         return self.source
 
-    def _lf_title(self):
-        title = self._lf_call
+    def _td_title(self):
+        title = self._td_call
         if '(' in title:
             return re.split('\(', title)[-1][:-1]
         return title
 
     @property
-    def _lf_closurevars(self) -> inspect.ClosureVars:
+    def _td_closurevars(self) -> inspect.ClosureVars:
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
@@ -713,19 +713,19 @@ class FunctionTransform(AtomicTransform):
 class ClassTransform(AtomicTransform):
     """Class Transform.
 
-    :param lf_name: Name of the transform.
+    :param td_name: Name of the transform.
     """
 
-    def __init__(self, lf_name=None, ignore_scope=False, arguments=None):
+    def __init__(self, td_name=None, ignore_scope=False, arguments=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
-        self._lf_arguments = arguments
+        self._td_arguments = arguments
         AtomicTransform.__init__(
             self,
             call=call,
             call_info=call_info,
-            lf_name=lf_name
+            td_name=td_name
         )
 
     @property
@@ -736,11 +736,11 @@ class ClassTransform(AtomicTransform):
             lines = re.split('(\n)', body_msg)
             return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
         except thingfinder.ThingNotFound:
-            return self._lf_call
+            return self._td_call
 
     def _parse_args(self):
         args_list = []
-        for key, value in self._lf_arguments.items():
+        for key, value in self._td_arguments.items():
             if key == 'args':
                 args_list += [f'{val}' for val in value]
             elif key == 'kwargs':
@@ -749,21 +749,21 @@ class ClassTransform(AtomicTransform):
                 args_list.append(f'{key}={value}')
         return ', '.join(args_list)
 
-    def _lf_title(self):
+    def _td_title(self):
         title = type(self).__name__
         args = self._parse_args()
         return title + '(' + args + ')'
 
-    def _lf_bodystr(self):
+    def _td_bodystr(self):
         return self.source
 
 
 class TorchModuleTransform(ClassTransform):
     """Torch Module Transform"""
-    def lf_get_signature(self):
+    def td_get_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def lf_pre_save(self, path, i):
+    def td_pre_save(self, path, i):
         """
         :param path: The save path.
         :param i: Sublayer index.
@@ -773,7 +773,7 @@ class TorchModuleTransform(ClassTransform):
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def lf_post_load(self, path, i):
+    def td_post_load(self, path, i):
         """
         :param path: The load path.
         :param i: Sublayer index.
@@ -783,7 +783,7 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
-    def _lf_bodystr(self):
+    def _td_bodystr(self):
         return torch.nn.Module.__repr__(self)
 
 
@@ -792,27 +792,27 @@ class CompoundTransform(Transform):
 
     :param transforms: list of transforms
     :param call_info:
-    :param lf_name: name of CompoundTransform
-    :param lf_group:
+    :param td_name: name of CompoundTransform
+    :param td_group:
     """
     op = NotImplemented
 
-    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
-        super().__init__(call_info, lf_name)
+    def __init__(self, transforms, call_info=None, td_name=None, td_group=False):
+        super().__init__(call_info, td_name)
 
-        self._lf_group = True if lf_name is not None else lf_group
-        self._lf_preprocess = None
-        self._lf_forward = None
-        self._lf_postprocess = None
+        self._td_group = True if td_name is not None else td_group
+        self._td_preprocess = None
+        self._td_forward = None
+        self._td_postprocess = None
 
         transforms = self._flatten_list(transforms)
         self.transforms = transforms
 
-        self._lf_component_list = [t.lf_component for t in self.transforms]
+        self._td_component_list = [t.td_component for t in self.transforms]
         try:
-            self._lf_component = set.union(*self._lf_component_list)
+            self._td_component = set.union(*self._td_component_list)
         except (AttributeError, TypeError):
-            self._lf_component = None
+            self._td_component = None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -821,8 +821,8 @@ class CompoundTransform(Transform):
             named_t = t - 'rescale image'
         """
         named_copy = copy(self)
-        named_copy._lf_name = name
-        named_copy._lf_group = True
+        named_copy._td_name = name
+        named_copy._td_group = True
         return named_copy
 
     def __getitem__(self, item : Union[int, slice, str]) -> Transform:
@@ -840,14 +840,14 @@ class CompoundTransform(Transform):
             return type(self)(self.transforms[item])
         if isinstance(item, str):
             for transform_ in self.transforms:
-                if transform_.lf_name == item:
+                if transform_.td_name == item:
                     return transform_
-            raise ValueError(f"{item}: Transform with lf_name '{item}' not found")
+            raise ValueError(f"{item}: Transform with td_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
-    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+    def td_evaluable_repr(self, indent=0, var_transforms=None):
         sub_reprs = [
-            x.lf_varname() or x.lf_evaluable_repr(indent + 4, var_transforms)
+            x.td_varname() or x.td_evaluable_repr(indent + 4, var_transforms)
             for x in self.transforms
         ]
         result = (
@@ -855,21 +855,21 @@ class CompoundTransform(Transform):
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
-        if self._lf_group:
-            result = 'lf.group' + result
+        if self._td_group:
+            result = 'tadl.group' + result
         return result
 
-    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+    def _td_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         if graph is None:
             graph = {}
         if scopemap is None:
             scopemap = {}
 
-        start = self._lf_codegraph_startnode(name)
+        start = self._td_codegraph_startnode(name)
 
-        if self._lf_group and 'lf' not in graph:
-            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
-            scopemap['lf', scope] = scope
+        if self._td_group and 'td' not in graph:
+            graph['tadl', scope] = var2mod.CodeNode.from_source('import tadl', scope)
+            scopemap['tadl', scope] = scope
 
         if name is not None:
             assert scope is not None
@@ -877,14 +877,14 @@ class CompoundTransform(Transform):
             scopemap[name, scope] = scope
 
         for transform in self.transforms:
-            varname = transform.lf_varname()
-            transform._lf_build_codegraph(graph, scopemap, varname,
-                                          self._lf_call_info.scope)
+            varname = transform.td_varname()
+            transform._td_build_codegraph(graph, scopemap, varname,
+                                          self._td_call_info.scope)
         return graph, scopemap
 
-    def lf_repr(self, indent=0):
+    def td_repr(self, indent=0):
         sub_reprs = [
-            x.lf_repr(indent + 4)
+            x.td_repr(indent + 4)
             for x in self.transforms
         ]
         res = (
@@ -892,31 +892,31 @@ class CompoundTransform(Transform):
             + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
             + '\n' + ' ' * indent + ')'
         )
-        if self.lf_varname() is not None and self.lf_varname() is not _notset:
-            res += f' [{self.lf_varname()}]'
+        if self.td_varname() is not None and self.td_varname() is not _notset:
+            res += f' [{self.td_varname()}]'
         return res
 
     def _add_parentheses_if_needed(self, name):
-        if self._lf_name is None:
+        if self._td_name is None:
             return '(' + name + ')'
         return name
 
-    def _lf_shortname(self):
-        if self._lf_name is None:
-            return self._lf_bodystr(is_child=True)
+    def _td_shortname(self):
+        if self._td_name is None:
+            return self._td_bodystr(is_child=True)
         else:
-            return super()._lf_shortname()
+            return super()._td_shortname()
 
-    def _lf_title(self):
+    def _td_title(self):
         return self.__class__.__name__
 
-    def _lf_bodystr(self, is_child=False):
+    def _td_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
         if is_child:
-            return sep.join(t._add_parentheses_if_needed(t._lf_shortname()) for t in self.transforms)
-        return sep.join(t._lf_shortname() for t in self.transforms)
+            return sep.join(t._add_parentheses_if_needed(t._td_shortname()) for t in self.transforms)
+        return sep.join(t._td_shortname() for t in self.transforms)
 
-    def _lf_add_format_to_str(self, name):
+    def _td_add_format_to_str(self, name):
         """
         Create formatted output based on "name" input lines. For multi-line inputs
         the lines are infixed with *self.display_op*
@@ -927,17 +927,17 @@ class CompoundTransform(Transform):
             [make_bold(f'{i}: ') + x for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
-    def lf_to(self, device: str):
+    def td_to(self, device: str):
         """Set the transform's device to *device*
 
         :param device: device on which to send {'cpu', cuda', 'cuda:N'}
         """
-        self._lf_device = device
+        self._td_device = device
         for transform_ in self.transforms:
-            transform_.lf_to(device)
+            transform_.td_to(device)
         return self
 
-    def _lf_forward_device_check(self):
+    def _td_forward_device_check(self):
         """Check all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -947,17 +947,17 @@ class CompoundTransform(Transform):
         """
         return_val = True
 
-        if isinstance(self.lf_forward, type(self)):
-            for transform_ in self.lf_forward.transforms:
-                if self.lf_device != transform_.lf_device:
+        if isinstance(self.td_forward, type(self)):
+            for transform_ in self.td_forward.transforms:
+                if self.td_device != transform_.td_device:
                     raise WrongDeviceError(self, transform_)
-                return_val = transform_._lf_forward_device_check()
+                return_val = transform_._td_forward_device_check()
             return return_val
 
-        if self.lf_device != self.lf_forward.lf_device:
-            raise WrongDeviceError(self, self.lf_forward)
+        if self.td_device != self.td_forward.td_device:
+            raise WrongDeviceError(self, self.td_forward)
 
-        return self.lf_forward._lf_forward_device_check()
+        return self.td_forward._td_forward_device_check()
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
@@ -969,7 +969,7 @@ class CompoundTransform(Transform):
 
         for transform in transform_list:
             if isinstance(transform, cls):
-                if transform._lf_group:
+                if transform._td_group:
                     list_flat.append(transform)
                 else:
                     list_flat += transform.transforms
@@ -979,15 +979,15 @@ class CompoundTransform(Transform):
         return list_flat
 
     @property
-    def lf_direct_subtransforms(self):
+    def td_direct_subtransforms(self):
         yield from self.transforms
 
     def grouped(self):
         """Return a grouped version of *self*. """
-        return type(self)(self.transforms, self._lf_call_info, lf_name=self.lf_name, lf_group=True)
+        return type(self)(self.transforms, self._td_call_info, td_name=self.td_name, td_group=True)
 
     @staticmethod
-    def _lf_get_keys(transforms):
+    def _td_get_keys(transforms):
         """Get deduplicated keys from list of transforms
 
         Names are updated as below.
@@ -998,10 +998,10 @@ class CompoundTransform(Transform):
         """
         names = []
         for ind, transform_ in enumerate(transforms):
-            if transform_.lf_name is None:
+            if transform_.td_name is None:
                 name = 'out_'+str(ind)
             else:
-                name = transform_.lf_name
+                name = transform_.td_name
             names.append(name)
 
         counter = Counter(names)
@@ -1022,29 +1022,29 @@ class Compose(CompoundTransform):
 
     :param transforms: List of transforms to compose.
     :param call_info:
-    :param lf_name: name of the Compose transform
-    :param lf_group:
+    :param td_name: name of the Compose transform
+    :param td_group:
     :return: output from series of transforms
     """
     op = '>>'
     display_op = '↓'
 
-    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
-        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
+    def __init__(self, transforms, call_info=None, td_name=None, td_group=False):
+        super().__init__(transforms, call_info=call_info, td_name=td_name, td_group=td_group)
 
         preprocess_end = 0
         postprocess_start = len(self.transforms)
         set_postprocess = True
         for i, transform_ in enumerate(self.transforms):
-            if 'preprocess' in transform_.lf_component:
+            if 'preprocess' in transform_.td_component:
                 preprocess_end = i
-            if 'postprocess' in transform_.lf_component and set_postprocess:
+            if 'postprocess' in transform_.td_component and set_postprocess:
                 postprocess_start = i
                 set_postprocess = False
         for i in range(preprocess_end):
-            self._lf_component_list[i] = {'preprocess'}
+            self._td_component_list[i] = {'preprocess'}
         for i in range(postprocess_start+1, len(self.transforms)):
-            self._lf_component_list[i] = {'postprocess'}
+            self._td_component_list[i] = {'postprocess'}
 
     @property
     def n_display_inputs(self):
@@ -1055,10 +1055,10 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
-        return top_message + self._lf_write_arrows_to_rows()
+        top_message = make_bold(Transform._td_shortname(self) + ':') + '\n\n'
+        return top_message + self._td_write_arrows_to_rows()
 
-    def _lf_write_arrows_to_rows(self):
+    def _td_write_arrows_to_rows(self):
         """
         Create formatted output based on "name" input lines. For multi-line inputs
         the lines are infixed with *self.display_op*
@@ -1067,9 +1067,9 @@ class Compose(CompoundTransform):
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
-            [s._lf_shortname().strip() for s in t.transforms]
+            [s._td_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
-            else [t._lf_shortname()]
+            else [t._td_shortname()]
             for t in self.transforms
         ]
 
@@ -1122,10 +1122,10 @@ class Compose(CompoundTransform):
 
             # add signature names to the arrows
             tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._lf_name is None:
+            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._td_name is None:
                 all_params = []
                 for tt in t.transforms:
-                    all_params.append(list(tt.lf_get_signature().keys()))
+                    all_params.append(list(tt.td_get_signature().keys()))
                 to_combine = [
                     ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
                     if len(params) > 1
@@ -1135,7 +1135,7 @@ class Compose(CompoundTransform):
                 to_format = combine_multi_line_strings(to_combine)
             else:
                 padder = (len(subarrows) + 1) * ' '
-                params = [x for x in t.lf_get_signature()]
+                params = [x for x in t.td_get_signature()]
                 to_format = padder + tuple_to_str(params) if len(params) > 1 else padder + params[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
@@ -1154,67 +1154,67 @@ class Compose(CompoundTransform):
         :return: output from series of transforms
         """
         for transform_ in self.transforms:
-            arg = transform_._lf_call_transform(arg)
+            arg = transform_._td_call_transform(arg)
         return arg
 
-    def _lf_forward_part(self):
+    def _td_forward_part(self):
         """Forward part of transforms"""
-        if self._lf_forward is None:
+        if self._td_forward is None:
             t_list = []
-            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+            for transform_, component_set in zip(self.transforms, self._td_component_list):
                 if 'forward' in component_set:
                     if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
-                        t_list.append(transform_.lf_forward)
+                        t_list.append(transform_.td_forward)
 
             if len(t_list) == 1:
-                self._lf_forward = t_list[0]
+                self._td_forward = t_list[0]
             elif t_list:
-                self._lf_forward = Compose(t_list, call_info=self._lf_call_info)
+                self._td_forward = Compose(t_list, call_info=self._td_call_info)
             else:
-                self._lf_forward = Identity()
+                self._td_forward = Identity()
 
-        return self._lf_forward
+        return self._td_forward
 
     @property
-    def lf_preprocess(self):
-        if self._lf_preprocess is None:
+    def td_preprocess(self):
+        if self._td_preprocess is None:
             t_list = []
-            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+            for transform_, component_set in zip(self.transforms, self._td_component_list):
                 if 'preprocess' in component_set:
                     if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
-                        t_list.append(transform_.lf_preprocess)
+                        t_list.append(transform_.td_preprocess)
 
             if len(t_list) == 1:
-                self._lf_preprocess = t_list[0]
+                self._td_preprocess = t_list[0]
             elif t_list:
-                self._lf_preprocess = Compose(t_list, call_info=self._lf_call_info)
+                self._td_preprocess = Compose(t_list, call_info=self._td_call_info)
             else:
-                self._lf_preprocess = Identity()
+                self._td_preprocess = Identity()
 
-        return self._lf_preprocess
+        return self._td_preprocess
 
     @property
-    def lf_postprocess(self):
-        if self._lf_postprocess is None:
+    def td_postprocess(self):
+        if self._td_postprocess is None:
             t_list = []
-            for transform_, component_set in zip(self.transforms, self._lf_component_list):
+            for transform_, component_set in zip(self.transforms, self._td_component_list):
                 if 'postprocess' in component_set:
                     if len(component_set) == 1:
                         t_list.append(transform_)
                     else:
-                        t_list.append(transform_.lf_postprocess)
+                        t_list.append(transform_.td_postprocess)
 
             if len(t_list) == 1:
-                self._lf_postprocess = t_list[0]
+                self._td_postprocess = t_list[0]
             elif t_list:
-                self._lf_postprocess = Compose(t_list, call_info=self._lf_call_info)
+                self._td_postprocess = Compose(t_list, call_info=self._td_call_info)
             else:
-                self._lf_postprocess = Identity()
-        return self._lf_postprocess
+                self._td_postprocess = Identity()
+        return self._td_postprocess
 
 
 class Rollout(CompoundTransform):
@@ -1224,17 +1224,17 @@ class Rollout(CompoundTransform):
 
     :param transforms: List of transforms to rollout.
     :param call_info:
-    :param lf_name: name of the Rollout transform
-    :param lf_group:
+    :param td_name: name of the Rollout transform
+    :param td_group:
     :return: namedtuple of outputs
     """
     op = '+'
     display_op = '+'
 
-    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
-        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
-        self.lf_keys = self._lf_get_keys(self.transforms)
-        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
+    def __init__(self, transforms, call_info=None, td_name=None, td_group=False):
+        super().__init__(transforms, call_info=call_info, td_name=td_name, td_group=td_group)
+        self.td_keys = self._td_get_keys(self.transforms)
+        self._td_output_format = namedtuple('namedtuple', self.td_keys)
 
     @property
     def n_display_inputs(self):
@@ -1256,42 +1256,42 @@ class Rollout(CompoundTransform):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_._lf_call_transform(arg))
-        out = self._lf_output_format(*out)
+            out.append(transform_._td_call_transform(arg))
+        out = self._td_output_format(*out)
         return out
 
     @property
-    def lf_preprocess(self):
-        if self._lf_preprocess is None:
-            t_list = [x.lf_preprocess for x in self.transforms]
+    def td_preprocess(self):
+        if self._td_preprocess is None:
+            t_list = [x.td_preprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_preprocess = Identity()
+                self._td_preprocess = Identity()
             else:
-                self._lf_preprocess = Rollout(t_list, call_info=self._lf_call_info)
-        return self._lf_preprocess
+                self._td_preprocess = Rollout(t_list, call_info=self._td_call_info)
+        return self._td_preprocess
 
-    def _lf_forward_part(self):
-        if self._lf_forward is None:
-            t_list = [x.lf_forward for x in self.transforms]
+    def _td_forward_part(self):
+        if self._td_forward is None:
+            t_list = [x.td_forward for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_forward = Identity()
-            elif 'preprocess' in self._lf_component and 'forward' in self._lf_component:
-                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
+                self._td_forward = Identity()
+            elif 'preprocess' in self._td_component and 'forward' in self._td_component:
+                self._td_forward = Parallel(t_list, call_info=self._td_call_info)
             else:
-                self._lf_forward = Rollout(t_list, call_info=self._lf_call_info)
-        return self._lf_forward
+                self._td_forward = Rollout(t_list, call_info=self._td_call_info)
+        return self._td_forward
 
     @property
-    def lf_postprocess(self):
-        if self._lf_postprocess is None:
-            t_list = [x.lf_postprocess for x in self.transforms]
+    def td_postprocess(self):
+        if self._td_postprocess is None:
+            t_list = [x.td_postprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_postprocess = Identity()
-            elif len(list(self._lf_component)) >= 2 and 'postprocess' in self._lf_component:
-                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
+                self._td_postprocess = Identity()
+            elif len(list(self._td_component)) >= 2 and 'postprocess' in self._td_component:
+                self._td_postprocess = Parallel(t_list, call_info=self._td_call_info)
             else:
-                self._lf_postprocess = Rollout(t_list, call_info=self._lf_call_info)
-        return self._lf_postprocess
+                self._td_postprocess = Rollout(t_list, call_info=self._td_call_info)
+        return self._td_postprocess
 
 
 class Parallel(CompoundTransform):
@@ -1301,17 +1301,17 @@ class Parallel(CompoundTransform):
 
     :param transforms: List of transforms to parallelize.
     :param call_info:
-    :param lf_name: name of the Parallel transform
-    :param lf_group:
+    :param td_name: name of the Parallel transform
+    :param td_group:
     :return: namedtuple of outputs
     """
     op = '/'
     display_op = '/'
 
-    def __init__(self, transforms, call_info=None, lf_name=None, lf_group=False):
-        super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
-        self.lf_keys = self._lf_get_keys(self.transforms)
-        self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
+    def __init__(self, transforms, call_info=None, td_name=None, td_group=False):
+        super().__init__(transforms, call_info=call_info, td_name=td_name, td_group=td_group)
+        self.td_keys = self._td_get_keys(self.transforms)
+        self._td_output_format = namedtuple('namedtuple', self.td_keys)
 
     @property
     def n_display_inputs(self):
@@ -1333,45 +1333,45 @@ class Parallel(CompoundTransform):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._lf_call_transform(arg[ind]))
-        out = self._lf_output_format(*out)
+            out.append(transform_._td_call_transform(arg[ind]))
+        out = self._td_output_format(*out)
         return out
 
     @property
-    def lf_preprocess(self):
-        if self._lf_preprocess is None:
-            t_list = [x.lf_preprocess for x in self.transforms]
+    def td_preprocess(self):
+        if self._td_preprocess is None:
+            t_list = [x.td_preprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_preprocess = Identity()
+                self._td_preprocess = Identity()
             else:
-                self._lf_preprocess = Parallel(t_list, call_info=self._lf_call_info)
-        return self._lf_preprocess
+                self._td_preprocess = Parallel(t_list, call_info=self._td_call_info)
+        return self._td_preprocess
 
-    def _lf_forward_part(self):
-        if self._lf_forward is None:
-            t_list = [x.lf_forward for x in self.transforms]
+    def _td_forward_part(self):
+        if self._td_forward is None:
+            t_list = [x.td_forward for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_forward = Identity()
+                self._td_forward = Identity()
             else:
-                self._lf_forward = Parallel(t_list, call_info=self._lf_call_info)
-        return self._lf_forward
+                self._td_forward = Parallel(t_list, call_info=self._td_call_info)
+        return self._td_forward
 
     @property
-    def lf_postprocess(self):
-        if self._lf_postprocess is None:
-            t_list = [x.lf_postprocess for x in self.transforms]
+    def td_postprocess(self):
+        if self._td_postprocess is None:
+            t_list = [x.td_postprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
-                self._lf_postprocess = Identity()
+                self._td_postprocess = Identity()
             else:
-                self._lf_postprocess = Parallel(t_list, call_info=self._lf_call_info)
-        return self._lf_postprocess
+                self._td_postprocess = Parallel(t_list, call_info=self._td_call_info)
+        return self._td_postprocess
 
 
 class BuiltinTransform(AtomicTransform):
     def __init__(self, call):
         super().__init__(call)
 
-    def _lf_build_codegraph(self, graph: Optional[dict] = None,
+    def _td_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
                             scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
@@ -1382,11 +1382,11 @@ class BuiltinTransform(AtomicTransform):
 
         if scope is None:
             scope = thingfinder.Scope.empty()
-        if ('lf', scope) not in graph:
-            graph['lf', scope] = var2mod.CodeNode.from_source('import lf', scope)
-            scopemap['lf', scope] = scope
+        if ('tadl', scope) not in graph:
+            graph['tadl', scope] = var2mod.CodeNode.from_source('import tadl', scope)
+            scopemap['tadl', scope] = scope
 
-        start_source = f'{name or "_lf_dummy"} = {self._lf_call}'
+        start_source = f'{name or "_td_dummy"} = {self._td_call}'
 
         graph[self.__class__.__name__, scope] = \
             var2mod.CodeNode.from_source(start_source, scope)
@@ -1395,24 +1395,24 @@ class BuiltinTransform(AtomicTransform):
 
         return graph, scopemap
 
-    def _lf_bodystr(self):
-        return self._lf_call.split('lf.')[-1]
+    def _td_bodystr(self):
+        return self._td_call.split('td.')[-1]
 
-    def _lf_title(self):
-        return self._lf_call.split('lf.')[-1].split('(')[0]
+    def _td_title(self):
+        return self._td_call.split('td.')[-1].split('(')[0]
 
 
 class Identity(BuiltinTransform):
     """Do nothing.
 
-    :param lf_name: name of the transform
+    :param td_name: name of the transform
     """
 
     def __init__(self):
-        super().__init__('lf.Identity()')
+        super().__init__('td.Identity()')
 
     @property
-    def lf_is_identity(self):
+    def td_is_identity(self):
         return True
 
     def __call__(self, args):
@@ -1431,7 +1431,7 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
-        self._lf_component = {'postprocess'}
+        self._td_component = {'postprocess'}
         self.cpu = cpu
 
     def _move_to_device(self, args):
@@ -1442,10 +1442,10 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.lf_stage is not None,\
+        assert Transform.td_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if Transform.lf_stage != 'infer':
+        if Transform.td_stage != 'infer':
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
@@ -1469,50 +1469,50 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-        self._lf_component = {'preprocess'}
+        self._td_component = {'preprocess'}
 
     def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
             return tuple([self._move_to_device(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.to(self.lf_device)
+            return args.to(self.td_device)
         return args
 
     def __call__(self, args):
-        assert Transform.lf_stage is not None,\
+        assert Transform.td_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if Transform.lf_stage != 'infer':
+        if Transform.td_stage != 'infer':
             return self._move_to_device(args)
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.unsqueeze(self.dim).to(self.lf_device)
+            return args.unsqueeze(self.dim).to(self.td_device)
         if isinstance(args, (float, int)):
-            return torch.tensor([args]).to(self.lf_device)
+            return torch.tensor([args]).to(self.td_device)
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
 def save(transform: Transform, path):
-    transform.lf_save(path)
+    transform.td_save(path)
 
 
 def load(path):
-    """Load transform (as saved with lf.save) from *path*. """
+    """Load transform (as saved with td.save) from *path*. """
     path = Path(path)
     with open(path / 'transform.py') as f:
         source = f.read()
-    module = types.ModuleType('lfload')
+    module = types.ModuleType('tdload')
     module.__dict__.update({
-        '_lf_source': source,
-        '_lf_module': module,
+        '_td_source': source,
+        '_td_module': module,
         '__file__': str(path / 'transform.py')
     })
     code = compile(source, path/'transform.py', 'exec')
     exec(code, module.__dict__)
-    transform = module._lf_main
-    for i, subtrans in enumerate(transform.lf_all_transforms()):
-        subtrans.lf_post_load(path, i)
+    transform = module._td_main
+    for i, subtrans in enumerate(transform.td_all_transforms()):
+        subtrans.td_post_load(path, i)
     return transform
 
 

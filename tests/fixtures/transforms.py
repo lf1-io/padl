@@ -5,4 +5,4 @@ import shutil
 @fixture
 def cleanup_checkpoint():
     yield
-    shutil.rmtree('test.lf')
+    shutil.rmtree('test.tadl')
