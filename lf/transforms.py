@@ -311,7 +311,7 @@ class Transform:
 
         :param name: line or lines of input
         """
-        res = '    ' + '\n    '.join([make_bold(x) for x in name.split('\n')]) + '\n'
+        res = '    ' + '\n    '.join([x for x in name.split('\n')]) + '\n'
         return res
 
     def _lf_bodystr(self):
@@ -326,7 +326,7 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
         bottom_message = self._lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
@@ -735,10 +735,6 @@ class ClassTransform(AtomicTransform):
 
     def _lf_title(self):
         title = self._lf_call
-        # if title.count('(') == 2:
-        #     title = re.split('\(', title)
-        #     title = re.split('\)', ''.join(title[1:]))[:-1]
-        #     return '('.join(title) + ')'
         return title
 
     def _lf_bodystr(self):
@@ -911,7 +907,7 @@ class CompoundTransform(Transform):
         :param name: line or lines of input
         """
         res = f'\n        {make_green(self.display_op)}  \n'.join(
-            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
+            [make_bold(f'{i}: {x}') for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -1042,7 +1038,7 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
         return top_message + self._lf_write_arrows_to_rows()
 
     def _lf_write_arrows_to_rows(self):
@@ -1052,10 +1048,7 @@ class Compose(CompoundTransform):
 
         :param name: line or lines of input
         """
-        # output = [make_bold('0: ' + rows[0])]
-
         # pad the components of rows which are shorter than other parts in same column
-        # rows = [re.split(r'\/|\+', x) for x in rows]
         rows = [
             [s._lf_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
@@ -1364,7 +1357,7 @@ class BuiltinTransform(AtomicTransform):
     def _lf_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
-                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:  # TODO: refactor
+                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
         if scopemap is None:

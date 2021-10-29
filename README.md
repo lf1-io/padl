@@ -7,6 +7,13 @@ Functional deep learning in `pytorch`.
 python setup.py install
 ```
 
+Run tests to check:
+
+```bash
+pip install -r requirements-test.txt
+pytest tests/
+```
+
 ## Overview
 
 LF chief abstraction is `lf.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
