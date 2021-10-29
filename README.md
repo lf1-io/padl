@@ -302,3 +302,6 @@ model >> unbatch >> reverse_lookup
 ```
 
 Since the weights are tied to `training_pipeline`, `model` trains together with `training_pipeline`, but with the added capability of producing human readable outputs.
+
+# Licensing
+lf is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
