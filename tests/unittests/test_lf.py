@@ -131,6 +131,33 @@ class TestLFCallTransform:
             assert t_.infer_apply(1)
 
 
+class TestMap:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = ~plus_one
+        request.cls.transform_2 = transform(simple_func) / ~plus_one
+        request.cls.transform_3 = times_two + ~plus_one
+        request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
+
+    def test_lf_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Map)
+        assert isinstance(self.transform_2.lf_preprocess, lf.Parallel)
+
+    def test_lf_forward(self):
+        assert isinstance(self.transform_1.lf_forward, lf.Map)
+        assert isinstance(self.transform_2.lf_forward, lf.Parallel)
+
+    def test_lf_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Map)
+        assert isinstance(self.transform_2.lf_postprocess, lf.Parallel)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply([2, 3, 4]) == [3, 4, 5]
+        assert self.transform_2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
+        # assert self.transform_3.infer_apply([2, 3, 4]) == (1, [3, 4, 5])
+        assert self.transform_4.infer_apply(1) == [2, 2, 2]
+
+
 class TestParallel:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -515,7 +542,6 @@ class TestClassTransform:
 
     def test_stored_arguments(self):
         c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
-        breakpoint()
 
 
 class TestTorchModuleTransform:
@@ -546,9 +572,6 @@ class TestTorchModuleTransform:
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
         assert t1.infer_apply(1) == 2
-
-
-
 
 class TestLFImporter:
     @pytest.fixture(autouse=True, scope='class')
