@@ -174,6 +174,14 @@ Transform composition: **compose**
 s = transform_1 >> transform_2
 ```
 
+Applying a single transform over multiple inputs: **map**
+
+<img src="img/map.png" width="200">
+
+```python
+s = ~ transform
+```
+
 Applying transforms in parallel to multiple inputs: **parallel**
 
 <img src="img/parallel.png" width="230">
