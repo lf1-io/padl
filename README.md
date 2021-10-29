@@ -1,6 +1,6 @@
 <img src="img/logo.png" width="400">
 
-TADL (pronounced "taddle") stands for "**TA**DL for **D**eep **L**earning" - functional deep learning in `pytorch`.
+*Transform abstractions for deep learning.*
 
 ## Installation
 
