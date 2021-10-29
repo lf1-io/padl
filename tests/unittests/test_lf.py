@@ -515,7 +515,6 @@ class TestClassTransform:
 
     def test_stored_arguments(self):
         c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
-        breakpoint()
 
 
 class TestTorchModuleTransform:
