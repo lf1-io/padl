@@ -136,7 +136,7 @@ class TestMap:
     def init(self, request):
         request.cls.transform_1 = ~plus_one
         request.cls.transform_2 = transform(simple_func) / ~plus_one
-        request.cls.transform_3 = times_two + ~plus_one
+        request.cls.transform_3 = ~times_two + ~plus_one
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
 
     def test_lf_preprocess(self):
@@ -154,8 +154,15 @@ class TestMap:
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == [3, 4, 5]
         assert self.transform_2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
-        # assert self.transform_3.infer_apply([2, 3, 4]) == (1, [3, 4, 5])
+        assert self.transform_3.infer_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
         assert self.transform_4.infer_apply(1) == [2, 2, 2]
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == \
+               [[torch.tensor([3]), torch.tensor([4])], [torch.tensor([4]), torch.tensor([5])]]
+        # assert self.transform_2.eval_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
+        # assert self.transform_3.eval_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
+        # assert self.transform_4.eval_apply(1) == [2, 2, 2]
 
 
 class TestParallel:

@@ -477,7 +477,8 @@ class Transform:
                 output = post._lf_call_transform(output, stage)
 
             if flatten:
-                pbar.update()
+                if verbose:
+                    pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
                 yield from output
