@@ -683,6 +683,11 @@ class FunctionTransform(AtomicTransform):
         except TypeError:
             return self._lf_call
 
+    def lf_get_signature(self):
+        if self._lf_number_of_inputs is None:
+            return inspect.signature(self).parameters
+        return [f'arg_{i}' for i in range(self._lf_number_of_inputs)]
+
     def _lf_bodystr(self, length=20):
         return self.source
 
