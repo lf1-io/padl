@@ -205,6 +205,15 @@ Transform composition: **compose**
    s = transform_1 >> transform_2
 
 
+Applying a single transform over multiple inputs: **map**
+
+:raw-html-m2r:`<img src="img/map.png" width="200">`
+
+.. code-block:: python
+
+   s = ~ transform
+
+
 Applying transforms in parallel to multiple inputs: **parallel**
 
 :raw-html-m2r:`<img src="img/parallel.png" width="230">`

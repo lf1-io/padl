@@ -246,6 +246,11 @@ pytest tests/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">&gt;&gt;</span> <span class="n">transform_2</span>
 </pre></div>
 </div>
+<p>Applying a single transform over multiple inputs: <strong>map</strong></p>
+<p><span class="raw-html-m2r"><img src="img/map.png" width="200"></span></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="o">~</span> <span class="n">transform</span>
+</pre></div>
+</div>
 <p>Applying transforms in parallel to multiple inputs: <strong>parallel</strong></p>
 <p><span class="raw-html-m2r"><img src="img/parallel.png" width="230"></span></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">/</span> <span class="n">transform_2</span>
@@ -566,6 +571,46 @@ creates the transform.</p>
 <dt class="sig sig-object py" id="lf.transforms.Identity.lf_is_identity">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_is_identity</span></span><a class="headerlink" href="#lf.transforms.Identity.lf_is_identity" title="Permalink to this definition"></a></dt>
 <dd><p>Return <em>True</em> iff the transform is the identity transform.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lf.transforms.Map">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lf.transforms.</span></span><span class="sig-name descname"><span class="pre">Map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lf_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Map" title="Permalink to this definition"></a></dt>
+<dd><p>Apply one transform to each element of a list.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Map</span><span class="p">(</span><span class="n">t</span><span class="p">)([</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x2</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x3</span><span class="p">)]</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>transform</strong> – transform to be applied to a list of inputs</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Map.lf_direct_subtransforms">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_direct_subtransforms</span></span><a class="headerlink" href="#lf.transforms.Map.lf_direct_subtransforms" title="Permalink to this definition"></a></dt>
+<dd><p>Iterate over the direct subtransforms of this.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lf.transforms.Map.lf_evaluable_repr">
+<span class="sig-name descname"><span class="pre">lf_evaluable_repr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_transforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lf.transforms.Map.lf_evaluable_repr" title="Permalink to this definition"></a></dt>
+<dd><p>Return a string that if evaluated <em>in the same scope where the transform was created</em>
+creates the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Map.lf_postprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_postprocess</span></span><a class="headerlink" href="#lf.transforms.Map.lf_postprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The postprocessing part of the transform.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lf.transforms.Map.lf_preprocess">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">lf_preprocess</span></span><a class="headerlink" href="#lf.transforms.Map.lf_preprocess" title="Permalink to this definition"></a></dt>
+<dd><p>The preprocessing part.</p>
 </dd></dl>
 
 </dd></dl>
