@@ -1,10 +1,11 @@
 Welcome to TADL's documentation!
 ================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. include:: README.rst
 
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents:
 
 Transforms
 ----------
