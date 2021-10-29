@@ -778,7 +778,7 @@ class TorchModuleTransform(ClassTransform):
         return torch.nn.Module.__repr__(self)
 
 
-class Map(ClassTransform):
+class Map(Transform):
     """Apply one transform to each element of a list.
 
     >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
@@ -787,8 +787,9 @@ class Map(ClassTransform):
     :param transform: transform to be applied to a list of inputs
     """
 
-    def __init__(self, transform, lf_name=None):
-        super().__init__(lf_name, arguments=OrderedDict([('transform', transform)]))
+    def __init__(self, transform, call_info=None, lf_name=None):
+        super().__init__(call_info, lf_name)
+
         self.transform = transform
         self._lf_component = transform.lf_component
 
@@ -797,6 +798,13 @@ class Map(ClassTransform):
         :param arglist: Args list to call transforms with
         """
         return [self.transform._lf_call_transform(arg) for arg in arglist]
+
+    def _lf_title(self):
+        return self.__class__.__name__
+
+    @property
+    def lf_direct_subtransforms(self):
+        yield from [self.transform]
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
         result = ' ' * indent + f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}\n'
