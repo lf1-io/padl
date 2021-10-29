@@ -584,10 +584,10 @@ class TestLFImporter:
     """
 
 
-class TestObject:
+class TestClassInstance:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        request.cls.class_1 = SimpleClass(1)
+        request.cls.transform_1 = transform(SimpleClass(1))
 
     def test_infer_apply(self):
-        print(transform(self.class_1))
+        assert self.transform_1.infer_apply(2) == 3

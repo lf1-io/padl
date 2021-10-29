@@ -196,7 +196,7 @@ def transform(fun_or_cls, ignore_scope=False):
         return _wrap_class(fun_or_cls, ignore_scope)
 
     # Class instance
-    if hasattr(fun_or_cls, '__class__'):
+    if not hasattr(fun_or_cls, '__name__'):
         return _wrap_class_instance(fun_or_cls, ignore_scope)
 
     # Function
