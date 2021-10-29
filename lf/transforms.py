@@ -793,6 +793,10 @@ class Map(Transform):
         self.transform = transform
         self._lf_component = transform.lf_component
 
+        self._lf_preprocess = None
+        self._lf_forward = None
+        self._lf_postprocess = None
+
     def __call__(self, arglist):
         """
         :param arglist: Args list to call transforms with
@@ -829,17 +833,32 @@ class Map(Transform):
 
     @property
     def lf_preprocess(self):
-        preprocess = type(self)(transform=self.transform.lf_preprocess)
-        return preprocess
+        if self._lf_preprocess is None:
+            t_pre = self.transform.lf_preprocess
+            if isinstance(t_pre, Identity):
+                self._lf_preprocess = Identity()
+            else:
+                self._lf_preprocess = Map(transform=t_pre, call_info=self._lf_call_info)
+        return self._lf_preprocess
 
     @property
     def lf_postprocess(self):
-        postprocess = type(self)(transform=self.transform.lf_postprocess)
-        return postprocess
+        if self._lf_postprocess is None:
+            t_post = self.transform.lf_postprocess
+            if isinstance(t_post, Identity):
+                self._lf_postprocess = Identity()
+            else:
+                self._lf_postprocess = Map(transform=t_post, call_info=self._lf_call_info)
+        return self._lf_postprocess
 
     def _lf_forward_part(self):
-        forward = type(self)(transform=self.transform.lf_forward)
-        return forward
+        if self._lf_forward is None:
+            t_for = self.transform.lf_forward
+            if isinstance(t_for, Identity):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Map(transform=t_for, call_info=self._lf_call_info)
+        return self._lf_forward
 
 
 class CompoundTransform(Transform):
