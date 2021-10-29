@@ -2,7 +2,7 @@
 import ast
 import re
 from copy import copy
-from collections import Counter, namedtuple
+from collections import Counter, namedtuple, OrderedDict
 import contextlib
 import inspect
 from itertools import chain
@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
+from lf.dumptools.packagefinder import dump_packages_versions
 from lf.exceptions import WrongDeviceError
 from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
     create_arrow
@@ -150,8 +151,11 @@ class Transform:
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.lf_all_transforms()):
             subtrans.lf_pre_save(path, i)
+        code, versions = self.lf_dumps(True)
         with open(path / 'transform.py', 'w') as f:
-            f.write(self.lf_dumps())
+            f.write(code)
+        with open(path / 'versions.txt', 'w') as f:
+            f.write(versions)
 
     def _lf_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
@@ -276,12 +280,16 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def lf_dumps(self) -> str:
+    def lf_dumps(self, return_versions: bool = False) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._lf_build_codegraph(name='_lf_main', scope=scope)
         unscoped = var2mod.unscope_graph(graph, scopemap)
-        return var2mod.dumps_graph(unscoped)
+        code = var2mod.dumps_graph(unscoped)
+        if return_versions:
+            versions = dump_packages_versions(node.ast_node for node in graph.values())
+            return code, versions
+        return code
 
     def _lf_shortname(self):
         title = self._lf_title()
@@ -703,10 +711,11 @@ class ClassTransform(AtomicTransform):
     :param lf_name: Name of the transform.
     """
 
-    def __init__(self, lf_name=None, ignore_scope=False):
+    def __init__(self, lf_name=None, ignore_scope=False, arguments=None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+        self._lf_arguments = arguments
         AtomicTransform.__init__(
             self,
             call=call,
@@ -1407,7 +1416,7 @@ class Unbatchify(ClassTransform):
     """
 
     def __init__(self, dim=0, cpu=True):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
         self._lf_component = {'postprocess'}
         self.cpu = cpu
@@ -1445,7 +1454,7 @@ class Batchify(ClassTransform):
     """
 
     def __init__(self, dim=0):
-        super().__init__()
+        super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
         self._lf_component = {'preprocess'}
 
