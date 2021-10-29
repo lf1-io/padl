@@ -17,16 +17,16 @@ pytest tests/
 
 ## Overview
 
-TADL's chief abstraction is `lf.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+TADL's chief abstraction is `tl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
 - batching
-- forward passes in `pytorch`
+- forward passes in **Pytorch**
 - postprocessing
-- `pytorch` loss functions
+- **Pytorch** loss functions
 
-Loosely it can be thought of as a computational block with full support for `pytorch` dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
+Loosely it can be thought of as a computational block with full support for **Pytorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
 
 Here's a schematic of what this typically looks like:
 
@@ -41,7 +41,7 @@ The schematic represents a model which is a `Transform` instance with multiple s
 Imports:
 
 ```python
-from lf import transform, batch, unbatch, group, this, transforms, importer
+from tl import transform, batch, unbatch, group, this, transforms, importer
 import torch
 ```
 
@@ -92,7 +92,7 @@ index_one = this[0]
 lower_case = this.lower_case()
 ```
 
-Pytorch layers are first class citizens via `lf.transforms.TorchModuleTransform`:
+Pytorch layers are first class citizens via `tl.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -106,10 +106,18 @@ class MyLayer(torch.nn.Module):
 layer = MyLayer(len(ALPHABET), 20)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
-print(isinstance(layer, lf.transforms.Transform))         # prints "True"
+print(isinstance(layer, tl.transforms.Transform))         # prints "True"
 ```
 
-Finally, it's possibly to instantiate `Transform` directly from a third-party module using `importer`.
+Finally, it's possibly to instantiate `Transform` directly from callables using `importer`. 
+
+```python
+normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
+cosine = importer.numpy.cos
+
+print(isinstance(normalize, tl.transforms.Transform))         # prints "True"
+print(isinstance(cosine, tl.transforms.Transform))            # prints "True"
+```
 
 ### Defining compound transforms
 
@@ -182,7 +190,7 @@ Individual components may be obtained using indexing:
 step_1 = model[1]
 ```
 
-### Naming tran§sforms inside models
+### Naming transforms inside models
 
 Component `Transform` instances may be named inline:
 
@@ -232,10 +240,10 @@ for x in t.train_apply(
 
 ### Model training
 
-Important methods such as all model parameters are accessible via `Transform.lf_*`.: 
+Important methods such as all model parameters are accessible via `Transform.tl_*`.: 
 
 ```python
-o = torch.optim.Adam(model.lf_parameters(), lr=LR)
+o = torch.optim.Adam(model.tl_parameters(), lr=LR)
 ```
 
 For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:
@@ -305,4 +313,4 @@ model >> unbatch >> reverse_lookup
 Since the weights are tied to `training_pipeline`, `model` trains together with `training_pipeline`, but with the added capability of producing human readable outputs.
 
 # Licensing
-lf is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
+TADML is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
