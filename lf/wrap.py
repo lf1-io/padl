@@ -115,13 +115,13 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
     >>> myobj._lf_call
     MyClass('hello')
     """
-    old__init__ = cls_instance.__init__
+    old__init__ = cls_instance.__class__.__init__
     if issubclass(cls_instance.__class__, torch.nn.Module):
         trans_class = TorchModuleTransform
     else:
         trans_class = ClassTransform
 
-    module = cls_instance.__module__
+    module = cls_instance.__class__.__module__
     # make cls inherit from AtomicTransform
     cls = type(cls_instance.__class__.__name__, (trans_class, cls_instance.__class__), {})
 
@@ -137,7 +137,7 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
 
     cls.__init__ = __init__
     cls.__module__ = module
-    return cls_instance
+    return cls
 
 
 def _wrap_lambda(fun, ignore_scope=False):
@@ -197,7 +197,7 @@ def transform(fun_or_cls, ignore_scope=False):
 
     # Class instance
     if hasattr(fun_or_cls, '__class__'):
-        return _wrap_class_instance(fun_or_cls)
+        return _wrap_class_instance(fun_or_cls, ignore_scope)
 
     # Function
     if callable(fun_or_cls):
