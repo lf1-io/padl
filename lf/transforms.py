@@ -19,6 +19,7 @@ from tqdm import tqdm
 from lf.data import SimpleIterator
 from lf.dumptools import var2mod, thingfinder, inspector
 from lf.dumptools.serialize import Serializer
+
 from lf.dumptools.packagefinder import dump_packages_versions
 from lf.exceptions import WrongDeviceError
 from lf.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
@@ -90,22 +91,6 @@ class Transform:
         """
         return Compose([self, other])
 
-    @property
-    def n_display_inputs(self):
-        return len(self.lf_get_signature())
-
-    @property
-    def n_display_outputs(self):
-        return 1
-
-    @property
-    def display_width(self):
-        return len(self._lf_shortname())
-
-    @property
-    def children_widths(self):
-        return [self.display_width]
-
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*.
 
@@ -132,6 +117,30 @@ class Transform:
         named_copy._lf_name = name
         return named_copy
 
+    def __invert__(self) -> "Map":
+        """Map.
+
+        Example:
+            t = ~a
+        """
+        return Map(self)
+
+    @property
+    def n_display_inputs(self):
+        return len(self.lf_get_signature())
+
+    @property
+    def n_display_outputs(self):
+        return 1
+
+    @property
+    def display_width(self):
+        return len(self.lf_shortname())
+
+    @property
+    def children_widths(self):
+        return [self.display_width]
+
     def lf_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
 
@@ -153,6 +162,7 @@ class Transform:
         for i, subtrans in enumerate(self.lf_all_transforms()):
             subtrans.lf_pre_save(path, i)
         code, versions = self.lf_dumps(True, path=path)
+
         with open(path / 'transform.py', 'w') as f:
             f.write(code)
         with open(path / 'versions.txt', 'w') as f:
@@ -262,7 +272,7 @@ class Transform:
         # pylint: disable=unused-argument,no-self-use
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_all_transforms(self, result=None):
         """Return a list of all transforms needed for executing the transform.
@@ -316,11 +326,11 @@ class Transform:
 
         :param name: line or lines of input
         """
-        res = '    ' + '\n    '.join([make_bold(x) for x in name.split('\n')]) + '\n'
+        res = '    ' + '\n    '.join([x for x in name.split('\n')]) + '\n'
         return res
 
     def _lf_bodystr(self):
-        return NotImplemented
+        raise NotImplementedError
 
     def lf_repr(self, indent: int = 0) -> str:
         # pylint: disable=unused-argument
@@ -331,7 +341,7 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
         bottom_message = self._lf_bodystr()
         return top_message + self._lf_add_format_to_str(bottom_message)
 
@@ -382,27 +392,40 @@ class Transform:
                     raise WrongDeviceError(self, layer)
         return True
 
-    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
-        """Call transform with possibility to pass multiple arguments"""
-
-        if stage in ('eval', 'infer'):  # TODO: move to lf_set_stage?
-            torch_context = torch.no_grad()
-        else:
-            torch_context = contextlib.suppress()
-
+    def _lf_unpack_argument(self, arg):
+        """Returns True if to unpack argument else False"""
         signature_count = 0
-        var_positional_count = 0
-        for param in self.lf_get_signature().values():
+        if not isinstance(arg, (list, tuple)):
+            return False
+
+        if hasattr(self, '_lf_number_of_inputs') and self._lf_number_of_inputs is not None:
+            return self._lf_number_of_inputs > 1
+
+        try:
+            parameters = self.lf_get_signature().values()
+        except ValueError:
+            return False
+        for param in parameters:
             if param.kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
                 signature_count += 1
             if param.kind == param.VAR_POSITIONAL:
-                signature_count += 1
-                var_positional_count += 1
+                return True
+        if signature_count > 1:
+            return True
+        return False
+
+    def _lf_call_transform(self, arg, stage: Optional[Stage] = None):
+        """Call transform with possibility to pass multiple arguments"""
+
+        if stage in ('eval', 'infer'):
+            torch_context = torch.no_grad()
+        else:
+            torch_context = contextlib.suppress()
 
         with self.lf_set_stage(stage), torch_context:
-            if (var_positional_count > 0 or signature_count > 1) and isinstance(arg, (list, tuple)):
+            if self._lf_unpack_argument(arg):
                 return self(*arg)
             return self(arg)
 
@@ -461,7 +484,8 @@ class Transform:
                 output = post._lf_call_transform(output, stage)
 
             if flatten:
-                pbar.update()
+                if verbose:
+                    pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
                 yield from output
@@ -495,8 +519,7 @@ class Transform:
     @property
     def lf_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
-        f = self._lf_forward_part()
-        return f
+        return self._lf_forward_part()
 
     @property
     def lf_postprocess(self) -> "Transform":
@@ -659,6 +682,7 @@ class FunctionTransform(AtomicTransform):
             call = function.__name__
         super().__init__(call=call, call_info=call_info, lf_name=lf_name)
         self.function = function
+        self._lf_number_of_inputs = None
 
     @property
     def source(self, length=20):
@@ -674,13 +698,18 @@ class FunctionTransform(AtomicTransform):
         except TypeError:
             return self._lf_call
 
+    def lf_get_signature(self):
+        if self._lf_number_of_inputs is None:
+            return inspect.signature(self).parameters
+        return [f'arg_{i}' for i in range(self._lf_number_of_inputs)]
+
     def _lf_bodystr(self, length=20):
         return self.source
 
     def _lf_title(self):
         title = self._lf_call
-        if '(' in title:
-            return re.split('\(', title)[-1][:-1]
+        # if '(' in title:
+        #     return re.split('\(', title)[-1][:-1]
         return title
 
     @property
@@ -727,10 +756,6 @@ class ClassTransform(AtomicTransform):
 
     def _lf_title(self):
         title = self._lf_call
-        if title.count('(') == 2:
-            title = re.split('\(', title)
-            title = re.split('\)', ''.join(title[1:]))[:-1]
-            return '('.join(title) + ')'
         return title
 
     def _lf_bodystr(self):
@@ -761,6 +786,94 @@ class TorchModuleTransform(ClassTransform):
         checkpoint_path = path / f'{path.stem}_{i}.pt'
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
+
+    def _lf_bodystr(self):
+        return torch.nn.Module.__repr__(self)
+
+
+class Map(Transform):
+    """Apply one transform to each element of a list.
+
+    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    True
+
+    :param transform: transform to be applied to a list of inputs
+    """
+
+    def __init__(self, transform, call_info=None, lf_name=None):
+        super().__init__(call_info, lf_name)
+
+        self.transform = transform
+        self._lf_component = transform.lf_component
+
+        self._lf_preprocess = None
+        self._lf_forward = None
+        self._lf_postprocess = None
+
+    def __call__(self, arglist):
+        """
+        :param arglist: Args list to call transforms with
+        """
+        return [self.transform._lf_call_transform(arg) for arg in arglist]
+
+    def _lf_bodystr(self):
+        return '~ ' + self.transform._lf_shortname()
+
+    def _lf_title(self):
+        return self.__class__.__name__
+
+    @property
+    def lf_direct_subtransforms(self):
+        yield self.transform
+
+    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+        return f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}'
+
+    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        start = self._lf_codegraph_startnode(name)
+
+        if name is not None:
+            assert scope is not None
+            graph[name, scope] = start
+            scopemap[name, scope] = scope
+
+        varname = self.transform.lf_varname()
+        self.transform._lf_build_codegraph(graph, scopemap, varname,  self._lf_call_info.scope)
+        return graph, scopemap
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_pre = self.transform.lf_preprocess
+            if isinstance(t_pre, Identity):
+                self._lf_preprocess = Identity()
+            else:
+                self._lf_preprocess = Map(transform=t_pre, call_info=self._lf_call_info)
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t_post = self.transform.lf_postprocess
+            if isinstance(t_post, Identity):
+                self._lf_postprocess = Identity()
+            else:
+                self._lf_postprocess = Map(transform=t_post, call_info=self._lf_call_info)
+        return self._lf_postprocess
+
+    def _lf_forward_part(self):
+        if self._lf_forward is None:
+            t_for = self.transform.lf_forward
+            if isinstance(t_for, Identity):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Map(transform=t_for, call_info=self._lf_call_info)
+        return self._lf_forward
 
 
 class CompoundTransform(Transform):
@@ -801,7 +914,7 @@ class CompoundTransform(Transform):
         named_copy._lf_group = True
         return named_copy
 
-    def __getitem__(self, item : Union[int, slice, str]) -> Transform:
+    def __getitem__(self, item: Union[int, slice, str]) -> Transform:
         """Get item
 
         If int, gets item'th transform in this CompoundTransform.
@@ -900,7 +1013,7 @@ class CompoundTransform(Transform):
         :param name: line or lines of input
         """
         res = f'\n        {make_green(self.display_op)}  \n'.join(
-            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
+            [make_bold(f'{i}: {x}') for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -1031,7 +1144,7 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
+        top_message = make_bold(Transform._lf_shortname(self) + ':') + '\n\n'
         return top_message + self._lf_write_arrows_to_rows()
 
     def _lf_write_arrows_to_rows(self):
@@ -1041,10 +1154,7 @@ class Compose(CompoundTransform):
 
         :param name: line or lines of input
         """
-        # output = [make_bold('0: ' + rows[0])]
-
         # pad the components of rows which are shorter than other parts in same column
-        # rows = [re.split(r'\/|\+', x) for x in rows]
         rows = [
             [s._lf_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
@@ -1297,10 +1407,6 @@ class Parallel(CompoundTransform):
         return len(self.transforms)
 
     @property
-    def n_display_inputs(self):
-        return len(self.transforms)
-
-    @property
     def children_widths(self):
         return [t.display_width for t in self.transforms]
 
@@ -1353,7 +1459,7 @@ class BuiltinTransform(AtomicTransform):
     def _lf_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
-                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:  # TODO: refactor
+                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
         if scopemap is None:

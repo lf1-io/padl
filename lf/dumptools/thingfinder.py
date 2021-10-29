@@ -212,7 +212,6 @@ def _get_call_assignments(args, source, values, keywords):
         if name in argnames:
             res[name] = val
         else:
-            print(name)
             kwargs[name] = val
 
     if kwargs and not set(kwargs) == {None}:

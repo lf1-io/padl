@@ -132,6 +132,63 @@ class TestLFCallTransform:
             assert t_.infer_apply(1)
 
 
+class TestMap:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = ~plus_one
+        request.cls.transform_2 = transform(simple_func) / ~plus_one
+        request.cls.transform_3 = ~times_two + ~plus_one
+        request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
+
+    def test_lf_preprocess(self):
+        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+        assert isinstance(self.transform_2.lf_preprocess, lf.Identity)
+
+    def test_lf_forward(self):
+        assert isinstance(self.transform_1.lf_forward, lf.Map)
+        assert isinstance(self.transform_2.lf_forward, lf.Parallel)
+
+    def test_lf_postprocess(self):
+        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+        assert isinstance(self.transform_2.lf_postprocess, lf.Identity)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply([2, 3, 4]) == [3, 4, 5]
+        assert self.transform_2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
+        assert self.transform_3.infer_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
+        assert self.transform_4.infer_apply(1) == [2, 2, 2]
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
+        assert list(self.transform_2.eval_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
+                                                                                 (2, [4, 5])]
+        assert list(self.transform_3.eval_apply([[2, 3], [2, 3]])) == \
+               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
+        assert list(self.transform_4.eval_apply([1])) == [[2, 2, 2]]
+
+    def test_train_apply(self):
+        assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
+        assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
+                                                                                  (2, [4, 5])]
+        assert list(self.transform_3.train_apply([[2, 3], [2, 3]])) == \
+               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
+        assert list(self.transform_4.train_apply([1])) == [[2, 2, 2]]
+
+    def test_save_and_load(self):
+        self.transform_1.lf_save('test.lf')
+        t1 = lf.load('test.lf')
+        assert t1.infer_apply([2, 3, 4]) == [3, 4, 5]
+        self.transform_2.lf_save('test.lf')
+        t2 = lf.load('test.lf')
+        assert t2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
+        self.transform_3.lf_save('test.lf')
+        t3 = lf.load('test.lf')
+        assert t3.infer_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
+        self.transform_4.lf_save('test.lf')
+        t4 = lf.load('test.lf')
+        assert t4.infer_apply(1) == [2, 2, 2]
+
+
 class TestParallel:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -547,3 +604,38 @@ class TestTorchModuleTransform:
         self.transform_1.lf_save('test.lf')
         t1 = lf.load('test.lf')
         assert t1.infer_apply(1) == 2
+
+
+class TestLFImporter:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        from lf.importer import numpy as inp
+        request.cls.transform_1 = inp.sin
+        request.cls.transform_2 = (inp.sin >> inp.sin)
+        transform_temp = inp.sin
+        request.cls.transform_3 = transform_temp + transform_temp >> inp.add
+        request.cls.transform_4 = inp.cos + inp.cos >> inp.add
+
+    def test_output(self):
+        assert self.transform_1(2)
+        assert self.transform_2(2.4)
+        assert self.transform_3(1.1)
+        assert self.transform_4(4.1)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(2)
+        assert self.transform_2.infer_apply(2.4)
+        assert self.transform_3.infer_apply(1.1)
+        assert self.transform_4.infer_apply(4.1)
+
+    """
+    def test_save_load(self, cleanup_checkpoint):
+        for transform_ in [self.transform_1,
+                           self.transform_2,
+                           self.transform_3,
+                           self.transform_4,
+                           ]:
+            transform_.lf_save('test.lf')
+            t_ = lf.load('test.lf')
+            assert t_.infer_apply(1.3)
+    """
