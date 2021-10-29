@@ -93,10 +93,51 @@ def _wrap_class(cls, ignore_scope=False):
         trans_class.__init__(self, ignore_scope=ignore_scope,
                              arguments=args)
 
-
     cls.__init__ = __init__
     cls.__module__ = module
     return cls
+
+
+def _wrap_class_instance(cls_instance, ignore_scope=False):
+    """Patch __init__ of class such that the initialization statement is stored
+    as an attribute `_lf_call`. In addition make class inherit from Transform.
+
+    This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
+
+    Example:
+
+    @transform
+    class MyClass:
+        def __init__(self, x):
+            ...
+
+    >>> myobj = MyClass('hello')
+    >>> myobj._lf_call
+    MyClass('hello')
+    """
+    old__init__ = cls_instance.__init__
+    if issubclass(cls_instance.__class__, torch.nn.Module):
+        trans_class = TorchModuleTransform
+    else:
+        trans_class = ClassTransform
+
+    module = cls_instance.__module__
+    # make cls inherit from AtomicTransform
+    cls = type(cls_instance.__class__.__name__, (trans_class, cls_instance.__class__), {})
+
+    signature = inspect.signature(old__init__)
+
+    @functools.wraps(cls.__init__)
+    def __init__(self, *args, **kwargs):
+        old__init__(self, *args, **kwargs)
+        args = signature.bind(None, *args, **kwargs).arguments
+        args.pop(next(iter(args.keys())))
+        trans_class.__init__(self, ignore_scope=ignore_scope,
+                             arguments=args)
+
+    cls.__init__ = __init__
+    cls.__module__ = module
+    return cls_instance
 
 
 def _wrap_lambda(fun, ignore_scope=False):
@@ -150,8 +191,15 @@ def _wrap_lambda(fun, ignore_scope=False):
 
 def transform(fun_or_cls, ignore_scope=False):
     """Transform wrapper / decorator. Use to wrap a class or callable. """
+    # Class
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
+
+    # Class instance
+    if hasattr(fun_or_cls, '__class__'):
+        return _wrap_class_instance(fun_or_cls)
+
+    # Function
     if callable(fun_or_cls):
         if fun_or_cls.__name__ == '<lambda>':
             return _wrap_lambda(fun_or_cls, ignore_scope)

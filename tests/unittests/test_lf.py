@@ -582,3 +582,12 @@ class TestLFImporter:
             t_ = lf.load('test.lf')
             assert t_.infer_apply(1.3)
     """
+
+
+class TestObject:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.class_1 = SimpleClass(1)
+
+    def test_infer_apply(self):
+        print(transform(self.class_1))
