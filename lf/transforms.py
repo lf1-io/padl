@@ -311,7 +311,7 @@ class Transform:
 
         :param name: line or lines of input
         """
-        res = '    ' + '\n    '.join([make_bold(x) for x in name.split('\n')]) + '\n'
+        res = '    ' + '\n    '.join(name.split('\n')) + '\n'
         return res
 
     def _lf_bodystr(self):
@@ -770,6 +770,9 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
+    def _lf_bodystr(self):
+        return torch.nn.Module.__repr__(self)
+
 
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
@@ -908,7 +911,7 @@ class CompoundTransform(Transform):
         :param name: line or lines of input
         """
         res = f'\n        {make_green(self.display_op)}  \n'.join(
-            [make_bold(f'{i}: ' + x) for i, x in enumerate(name.split('\n'))]) + '\n'
+            [make_bold(f'{i}: ') + x for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def lf_to(self, device: str):
@@ -1039,7 +1042,7 @@ class Compose(CompoundTransform):
         return self.transforms[-1].n_display_outputs
 
     def __repr__(self) -> str:
-        top_message = '\33[1m' + Transform.lf_shortname(self) + ':\33[0m\n\n'
+        top_message = '\33[1m' + Transform._lf_shortname(self) + ':\33[0m\n\n'
         return top_message + self._lf_write_arrows_to_rows()
 
     def _lf_write_arrows_to_rows(self):
@@ -1054,9 +1057,9 @@ class Compose(CompoundTransform):
         # pad the components of rows which are shorter than other parts in same column
         # rows = [re.split(r'\/|\+', x) for x in rows]
         rows = [
-            [s.lf_shortname().strip() for s in t.transforms]
+            [s._lf_shortname().strip() for s in t.transforms]
             if isinstance(t, CompoundTransform)
-            else [t.lf_shortname()]
+            else [t._lf_shortname()]
             for t in self.transforms
         ]
 
@@ -1109,7 +1112,7 @@ class Compose(CompoundTransform):
 
             # add signature names to the arrows
             tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if isinstance(t, Rollout) or isinstance(t, Parallel):
+            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._lf_name is None:
                 all_params = []
                 for tt in t.transforms:
                     all_params.append(list(tt.lf_get_signature().keys()))
@@ -1131,7 +1134,7 @@ class Compose(CompoundTransform):
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
-            output.append(make_bold(f'{i + 1}: {r}'))
+            output.append(make_bold(f'{i}: ') + r)
         return '\n'.join(output)
 
     def __call__(self, arg):
