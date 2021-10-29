@@ -89,22 +89,6 @@ class Transform:
         """
         return Compose([self, other])
 
-    @property
-    def n_display_inputs(self):
-        return len(self.lf_get_signature())
-
-    @property
-    def n_display_outputs(self):
-        return 1
-
-    @property
-    def display_width(self):
-        return len(self.lf_shortname())
-
-    @property
-    def children_widths(self):
-        return [self.display_width]
-
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*.
 
@@ -130,6 +114,30 @@ class Transform:
         named_copy = copy(self)
         named_copy._lf_name = name
         return named_copy
+
+    def __invert__(self) -> "Map":
+        """Map.
+
+        Example:
+            t = ~a
+        """
+        return Map(self)
+
+    @property
+    def n_display_inputs(self):
+        return len(self.lf_get_signature())
+
+    @property
+    def n_display_outputs(self):
+        return 1
+
+    @property
+    def display_width(self):
+        return len(self.lf_shortname())
+
+    @property
+    def children_widths(self):
+        return [self.display_width]
 
     def lf_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
@@ -503,8 +511,7 @@ class Transform:
     @property
     def lf_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
-        f = self._lf_forward_part()
-        return f
+        return self._lf_forward_part()
 
     @property
     def lf_postprocess(self) -> "Transform":
@@ -769,6 +776,41 @@ class TorchModuleTransform(ClassTransform):
         checkpoint_path = path / f'{path.stem}_{i}.pt'
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
+
+
+class Map(Transform):
+    """Apply one transform to each element of a list.
+
+    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    True
+
+    :param transform: transform to be applied to a list of inputs
+    """
+
+    def __init__(self, transform, call_info=None, lf_name=None):
+        super().__init__(call_info, lf_name)
+        self.transform = transform
+        self._lf_component = transform.lf_component
+
+    def __call__(self, arglist):
+        """
+        :param arglist: Args list to call transforms with
+        """
+        return [self.transform._lf_call_transform(arg) for arg in arglist]
+
+    @property
+    def lf_preprocess(self):
+        preprocess = type(self)(transform=self.transform.lf_preprocess)
+        return preprocess
+
+    @property
+    def lf_postprocess(self):
+        postprocess = type(self)(transform=self.transform.lf_postprocess)
+        return postprocess
+
+    def _lf_forward_part(self):
+        forward = type(self)(transform=self.transform.lf_forward)
+        return forward
 
 
 class CompoundTransform(Transform):
@@ -1299,10 +1341,6 @@ class Parallel(CompoundTransform):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
-
-    @property
-    def n_display_inputs(self):
-        return len(self.transforms)
 
     @property
     def n_display_inputs(self):
