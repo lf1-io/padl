@@ -181,7 +181,7 @@ step_1 = model[1]
 Component `Transform` instances may be named inline:
 
 ```python
-s = (transform_1 - 'a' / transform_2 - 'b')
+s = (transform_1 - 'a') / (transform_2 - 'b')
 ```
 
 These components may then be referenced using `__getitem__`:
