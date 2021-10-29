@@ -137,7 +137,7 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
 
     cls.__init__ = __init__
     cls.__module__ = module
-    return cls
+    return cls(**cls_instance.__dict__)
 
 
 def _wrap_lambda(fun, ignore_scope=False):
