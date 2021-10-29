@@ -1,5 +1,6 @@
 import inspect
 import linecache
+from typing import List
 
 
 cache = {}
@@ -28,7 +29,7 @@ def get_module_source(module, use_cache=True):
             return cache[module.__filename__]
         except (KeyError, AttributeError):
             pass
-    inspect.getsource(module)
+    return inspect.getsource(module)
 
 
 def _ipython_history():
@@ -43,6 +44,7 @@ def _ipython_history():
 
 
 def original(string: str):
+    """Get either the original of a `ReplaceString` or a string."""
     return getattr(string, 'original', string)
 
 
@@ -96,7 +98,9 @@ class ReplaceString(str):
 
 
 class ReplaceStrings(str):
-    def __new__(cls, rstrings):
+    """A collection of replacestrings with different replacements in an original string. """
+
+    def __new__(cls, rstrings: List[ReplaceString]):
         rstrings = sorted(rstrings, key=lambda x: (x.from_line, x.from_col), reverse=True)
         replaced = rstrings[0].original
         for rstring in rstrings:
@@ -105,10 +109,12 @@ class ReplaceStrings(str):
         return super().__new__(cls, replaced)
 
     def __init__(self, rstrings):
+        super().__init__()
         self.original = rstrings[0].original
         self.rstrings = rstrings
 
     def cut(self, from_line, to_line, from_col, to_col):
+        """Cut and return the resulting sub-`ReplaceStrings`. """
         return ReplaceStrings([rstr.cut(from_line, to_line, from_col, to_col)
                                for rstr in self.rstrings])
 

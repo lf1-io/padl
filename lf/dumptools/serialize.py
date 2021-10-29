@@ -1,5 +1,4 @@
 import ast
-import inspect
 import json
 from pathlib import Path
 import sys
@@ -11,6 +10,8 @@ SCOPE = thingfinder.Scope.toplevel(sys.modules[__name__])
 
 
 class Serializer:
+    """Serializer base class. """
+
     store = []
     i = 0
 
@@ -21,10 +22,12 @@ class Serializer:
 
     @property
     def varname(self):
+        """The varname to store in the dumped code. """
         return f'TADL_VALUE_{self.index}'
 
     @classmethod
     def save_all(cls, codegraph, scopemap, path):
+        """Save all values. """
         for codenode in list(codegraph.values()):
             for serializer in cls.store:
                 if serializer.varname in codenode.source:
@@ -35,11 +38,17 @@ class Serializer:
 
 
 class JSONSerializer(Serializer):
+    """JSON Serializer (stores stuff as json).
+
+    :param val: The value to serialize.
+    """
+
     def __init__(self, val):
         self.val = val
         super().__init__()
 
-    def save(self, path):
+    def save(self, path: Path):
+        """Method for saving *self.val*. """
         if path is None:
             savepath = '?.json'
         else:
@@ -58,7 +67,7 @@ class JSONSerializer(Serializer):
                 }
 
 
-def serialize(val):
+def _serialize(val):
     if hasattr(val, '__len__') and len(val) > 10:
         serializer = JSONSerializer(val)
         print('using json')
@@ -67,8 +76,9 @@ def serialize(val):
 
 
 def value(val):
+    """Helper function that marks things in the code that should be stored by value. """
     caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
     _call, locs = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call', True)
     source = sourceget.get_source(caller_frameinfo.filename)
     sourceget.put_into_cache(caller_frameinfo.filename, sourceget.original(source),
-                             serialize(val), *locs)
+                             _serialize(val), *locs)
