@@ -89,22 +89,6 @@ class Transform:
         """
         return Compose([self, other])
 
-    @property
-    def n_display_inputs(self):
-        return len(self.lf_get_signature())
-
-    @property
-    def n_display_outputs(self):
-        return 1
-
-    @property
-    def display_width(self):
-        return len(self._lf_shortname())
-
-    @property
-    def children_widths(self):
-        return [self.display_width]
-
     def __add__(self, other: "Transform") -> "Rollout":
         """ Rollout with *other*.
 
@@ -130,6 +114,30 @@ class Transform:
         named_copy = copy(self)
         named_copy._lf_name = name
         return named_copy
+
+    def __invert__(self) -> "Map":
+        """Map.
+
+        Example:
+            t = ~a
+        """
+        return Map(self)
+
+    @property
+    def n_display_inputs(self):
+        return len(self.lf_get_signature())
+
+    @property
+    def n_display_outputs(self):
+        return 1
+
+    @property
+    def display_width(self):
+        return len(self.lf_shortname())
+
+    @property
+    def children_widths(self):
+        return [self.display_width]
 
     def lf_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
@@ -469,7 +477,8 @@ class Transform:
                 output = post._lf_call_transform(output, stage)
 
             if flatten:
-                pbar.update()
+                if verbose:
+                    pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
                 yield from output
@@ -503,8 +512,7 @@ class Transform:
     @property
     def lf_forward(self) -> "Transform":
         """The forward part of the transform and send to GPU"""
-        f = self._lf_forward_part()
-        return f
+        return self._lf_forward_part()
 
     @property
     def lf_postprocess(self) -> "Transform":
@@ -775,6 +783,91 @@ class TorchModuleTransform(ClassTransform):
         return torch.nn.Module.__repr__(self)
 
 
+class Map(Transform):
+    """Apply one transform to each element of a list.
+
+    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    True
+
+    :param transform: transform to be applied to a list of inputs
+    """
+
+    def __init__(self, transform, call_info=None, lf_name=None):
+        super().__init__(call_info, lf_name)
+
+        self.transform = transform
+        self._lf_component = transform.lf_component
+
+        self._lf_preprocess = None
+        self._lf_forward = None
+        self._lf_postprocess = None
+
+    def __call__(self, arglist):
+        """
+        :param arglist: Args list to call transforms with
+        """
+        return [self.transform._lf_call_transform(arg) for arg in arglist]
+
+    def _lf_bodystr(self):
+        return '~ ' + self.transform._lf_shortname()
+
+    def _lf_title(self):
+        return self.__class__.__name__
+
+    @property
+    def lf_direct_subtransforms(self):
+        yield self.transform
+
+    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+        return f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}'
+
+    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        start = self._lf_codegraph_startnode(name)
+
+        if name is not None:
+            assert scope is not None
+            graph[name, scope] = start
+            scopemap[name, scope] = scope
+
+        varname = self.transform.lf_varname()
+        self.transform._lf_build_codegraph(graph, scopemap, varname,  self._lf_call_info.scope)
+        return graph, scopemap
+
+    @property
+    def lf_preprocess(self):
+        if self._lf_preprocess is None:
+            t_pre = self.transform.lf_preprocess
+            if isinstance(t_pre, Identity):
+                self._lf_preprocess = Identity()
+            else:
+                self._lf_preprocess = Map(transform=t_pre, call_info=self._lf_call_info)
+        return self._lf_preprocess
+
+    @property
+    def lf_postprocess(self):
+        if self._lf_postprocess is None:
+            t_post = self.transform.lf_postprocess
+            if isinstance(t_post, Identity):
+                self._lf_postprocess = Identity()
+            else:
+                self._lf_postprocess = Map(transform=t_post, call_info=self._lf_call_info)
+        return self._lf_postprocess
+
+    def _lf_forward_part(self):
+        if self._lf_forward is None:
+            t_for = self.transform.lf_forward
+            if isinstance(t_for, Identity):
+                self._lf_forward = Identity()
+            else:
+                self._lf_forward = Map(transform=t_for, call_info=self._lf_call_info)
+        return self._lf_forward
+
+
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
 
@@ -813,7 +906,7 @@ class CompoundTransform(Transform):
         named_copy._lf_group = True
         return named_copy
 
-    def __getitem__(self, item : Union[int, slice, str]) -> Transform:
+    def __getitem__(self, item: Union[int, slice, str]) -> Transform:
         """Get item
 
         If int, gets item'th transform in this CompoundTransform.
@@ -1300,10 +1393,6 @@ class Parallel(CompoundTransform):
         super().__init__(transforms, call_info=call_info, lf_name=lf_name, lf_group=lf_group)
         self.lf_keys = self._lf_get_keys(self.transforms)
         self._lf_output_format = namedtuple('namedtuple', self.lf_keys)
-
-    @property
-    def n_display_inputs(self):
-        return len(self.transforms)
 
     @property
     def n_display_inputs(self):
