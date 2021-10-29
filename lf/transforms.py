@@ -816,8 +816,7 @@ class Map(ClassTransform):
             scopemap[name, scope] = scope
 
         varname = self.transform.lf_varname()
-        self.transform._lf_build_codegraph(graph, scopemap, varname,
-                                           self._lf_call_info.scope)
+        self.transform._lf_build_codegraph(graph, scopemap, varname,  self._lf_call_info.scope)
         return graph, scopemap
 
     @property
