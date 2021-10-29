@@ -1,6 +1,6 @@
 <img src="img/logo.png" width="400">
 
-*Transform abstractions for deep learning.*
+*Transform abstractions for deep learning* -- using **Pytorch**.
 
 ## Installation
 
