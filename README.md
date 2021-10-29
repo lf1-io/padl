@@ -1,5 +1,5 @@
-# LF
-Functional deep learning in `pytorch`.
+# TADL
+TADL (pronounced "taddle") stands for "**TA**DL for **D**eep **L**earning" - functional deep learning in `pytorch`.
 
 ## Installation
 
@@ -16,7 +16,7 @@ pytest tests/
 
 ## Overview
 
-LF chief abstraction is `lf.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+TADL's chief abstraction is `lf.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
@@ -39,8 +39,9 @@ The schematic represents a model which is a `Transform` instance with multiple s
 
 Imports:
 
-```
-from lf import transform, batch, unbatch, group, this, transforms
+```python
+from lf import transform, batch, unbatch, group, this, transforms, importer
+import torch
 ```
 
 Transform definition using `transform` decorator:
@@ -96,15 +97,18 @@ Pytorch layers are first class citizens via `lf.transforms.TorchModuleTransform`
 @transform
 class MyLayer(torch.nn.Module):
     def __init__(self, n_input, n_output):
+        super().__init__()
         self.embed = torch.nn.Embedding(n_input, n_output)
     def forward(self, x):
         return self.embed(x)
       
-layer = MyLayer(10, 20)
+layer = MyLayer(len(ALPHABET), 20)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
 print(isinstance(layer, lf.transforms.Transform))         # prints "True"
 ```
+
+Finally, it's possibly to instantiate `Transform` directly from a third-party module using `importer`.
 
 ### Defining compound transforms
 
@@ -151,6 +155,7 @@ s = (
 Or a simple NLP string embedding model based on components defined above:
 
 ```python
+
 model = (
     this.lower()
     >> this.strip()
@@ -176,7 +181,7 @@ Individual components may be obtained using indexing:
 step_1 = model[1]
 ```
 
-### Naming transforms inside models
+### Naming tran§sforms inside models
 
 Component `Transform` instances may be named inline:
 
