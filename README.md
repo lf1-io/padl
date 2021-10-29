@@ -6,9 +6,8 @@
 
 - [Why TADL?](#why-tadl)
 - [Installation](#installation)
-- [Overview](#overview)
+- [Project structure](#project-structure)
 - [Basic Usage](#basic-usage)
-- [Project Structure](#project-structure)
 - [Licensing](#licensing)
 
 ## Why TADL?
