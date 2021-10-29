@@ -688,8 +688,8 @@ class FunctionTransform(AtomicTransform):
 
     def _lf_title(self):
         title = self._lf_call
-        if '(' in title:
-            return re.split('\(', title)[-1][:-1]
+        # if '(' in title:
+        #     return re.split('\(', title)[-1][:-1]
         return title
 
     @property
@@ -735,10 +735,10 @@ class ClassTransform(AtomicTransform):
 
     def _lf_title(self):
         title = self._lf_call
-        if title.count('(') == 2:
-            title = re.split('\(', title)
-            title = re.split('\)', ''.join(title[1:]))[:-1]
-            return '('.join(title) + ')'
+        # if title.count('(') == 2:
+        #     title = re.split('\(', title)
+        #     title = re.split('\)', ''.join(title[1:]))[:-1]
+        #     return '('.join(title) + ')'
         return title
 
     def _lf_bodystr(self):
