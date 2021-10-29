@@ -63,7 +63,7 @@ def lookup_letters(x):
     return list(map(lookup.__getitem__, list(x)))
 ```
 
-Any callable class implementing `__call__` can aso become a transform:
+Any callable class implementing `__call__` can also become a transform:
 
 ```python
 @transform
