@@ -17,7 +17,7 @@ pytest tests/
 
 ## Overview
 
-TADL's chief abstraction is `tl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+TADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
@@ -41,7 +41,8 @@ The schematic represents a model which is a `Transform` instance with multiple s
 Imports:
 
 ```python
-from tl import transform, batch, unbatch, group, this, transforms, importer
+import tadl as td
+from tadl import transform, batch, unbatch, group, this, transforms, importer
 import torch
 ```
 
@@ -92,7 +93,7 @@ index_one = this[0]
 lower_case = this.lower_case()
 ```
 
-Pytorch layers are first class citizens via `tl.transforms.TorchModuleTransform`:
+Pytorch layers are first class citizens via `td.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -106,7 +107,7 @@ class MyLayer(torch.nn.Module):
 layer = MyLayer(len(ALPHABET), 20)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
-print(isinstance(layer, tl.transforms.Transform))         # prints "True"
+print(isinstance(layer, td.transforms.Transform))         # prints "True"
 ```
 
 Finally, it's possibly to instantiate `Transform` directly from callables using `importer`. 
@@ -115,8 +116,8 @@ Finally, it's possibly to instantiate `Transform` directly from callables using 
 normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
 cosine = importer.numpy.cos
 
-print(isinstance(normalize, tl.transforms.Transform))         # prints "True"
-print(isinstance(cosine, tl.transforms.Transform))            # prints "True"
+print(isinstance(normalize, tf.transforms.Transform))         # prints "True"
+print(isinstance(cosine, td.transforms.Transform))            # prints "True"
 ```
 
 ### Defining compound transforms
