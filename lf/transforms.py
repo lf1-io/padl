@@ -798,6 +798,28 @@ class Map(ClassTransform):
         """
         return [self.transform._lf_call_transform(arg) for arg in arglist]
 
+    def lf_evaluable_repr(self, indent=0, var_transforms=None):
+        result = ' ' * indent + f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}\n'
+        return result
+
+    def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
+
+        start = self._lf_codegraph_startnode(name)
+
+        if name is not None:
+            assert scope is not None
+            graph[name, scope] = start
+            scopemap[name, scope] = scope
+
+        varname = self.transform.lf_varname()
+        self.transform._lf_build_codegraph(graph, scopemap, varname,
+                                           self._lf_call_info.scope)
+        return graph, scopemap
+
     @property
     def lf_preprocess(self):
         preprocess = type(self)(transform=self.transform.lf_preprocess)
