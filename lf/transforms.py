@@ -807,7 +807,7 @@ class Map(Transform):
         yield from [self.transform]
 
     def lf_evaluable_repr(self, indent=0, var_transforms=None):
-        result = ' ' * indent + f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}\n'
+        result = f'~{self.transform.lf_evaluable_repr(indent + 4, var_transforms)}'
         return result
 
     def _lf_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):

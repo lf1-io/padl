@@ -182,11 +182,14 @@ class TestMap:
         t1 = lf.load('test.lf')
         assert t1.infer_apply([2, 3, 4]) == [3, 4, 5]
         self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t2 = lf.load('test.lf')
+        assert t2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
         self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t3 = lf.load('test.lf')
+        assert t3.infer_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
         self.transform_4.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        t4 = lf.load('test.lf')
+        assert t4.infer_apply(1) == [2, 2, 2]
 
 
 
