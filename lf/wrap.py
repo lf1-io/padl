@@ -102,18 +102,18 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
     """Patch __init__ of class such that the initialization statement is stored
     as an attribute `_lf_call`. In addition make class inherit from Transform.
 
-    This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
+    This is called by `transform`, don't call `_wrap_class_instance` directly, always use
+    `transform`.
 
     Example:
 
-    @transform
     class MyClass:
         def __init__(self, x):
             ...
 
+    transform(MyClass(1))
     >>> myobj = MyClass('hello')
-    >>> myobj._lf_call
-    MyClass('hello')
+    >>> transform(myobj)
     """
     old__init__ = cls_instance.__class__.__init__
     if issubclass(cls_instance.__class__, torch.nn.Module):
