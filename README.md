@@ -39,7 +39,7 @@ In creating **PADL** we aimed to create:
 ## Installation
 
 ```bash
-python setup.py install
+pip install padl
 ```
 
 Run tests to check:
