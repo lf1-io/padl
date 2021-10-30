@@ -158,15 +158,12 @@ def get_statement(source: str, lineno: int):
             continue
         try:
             try:
-                return (
-                    _get_statement_from_block(block, lineno_in_block + row_offset),
-                    (lineno - row_offset - 1, -col_offset)
-                )
+                statement = _get_statement_from_block(block, lineno_in_block + row_offset)
+                return statement, (lineno - 1, -col_offset)
             except SyntaxError:
-                return (
-                    _get_statement_from_block('(' + block + ')', lineno_in_block + row_offset),
-                    (lineno - row_offset - 1, -col_offset)
-                )
+                statement = _get_statement_from_block('(\n' + block + '\n)',
+                                                              lineno_in_block + row_offset + 1)
+                return statement, (lineno - lineno_in_block - 1, -col_offset)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
@@ -340,10 +337,10 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         raise RuntimeError('Attribute not found.')
 
     locs = (
-        locs[0] + offset[0] - 1,
-        locs[1] + offset[0] - 1,
-        locs[2] + offset[1],
-        locs[3] + offset[1]
+        locs[0] - 1 + offset[0],
+        locs[1] - 1 + offset[0],
+        locs[2] - offset[1],
+        locs[3] - offset[1]
     )
     segment = cut(full_source, *locs)
 
