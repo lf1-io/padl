@@ -218,13 +218,13 @@ def replace(string, what, from_line, to_line, from_col, to_col):
 
     lines = string.split('\n')
 
-    if from_line >= len(lines) - 1 and to_line >= len(lines) - 1:
+    if from_line > len(lines) - 1 and to_line > len(lines) - 1:
         return string
 
     if from_line < 0:
         from_col = 0
     from_line = max(from_line, 0)
-    if to_line >= len(lines) - 1:
+    if to_line > len(lines) - 1:
         to_col = len(lines[-1])
     to_line = min(to_line, len(lines) - 1)
 
