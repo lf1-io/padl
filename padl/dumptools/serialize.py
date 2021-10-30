@@ -81,3 +81,4 @@ def value(val):
     source = sourceget.get_source(caller_frameinfo.filename)
     sourceget.put_into_cache(caller_frameinfo.filename, sourceget.original(source),
                              _serialize(val), *locs)
+    return val

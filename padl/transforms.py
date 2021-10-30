@@ -24,7 +24,7 @@ from padl.dumptools.sourceget import original
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, create_arrow
+    make_green, make_faint, create_arrow, format_argument
 
 
 class _Notset:
@@ -136,7 +136,7 @@ class Transform:
 
     @property
     def display_width(self):
-        return len(self.pd_shortname())
+        return len(self._pd_shortname())
 
     @property
     def children_widths(self):
@@ -307,14 +307,16 @@ class Transform:
             return code, versions
         return code
 
-    def _pd_shortname(self):
+    def _pd_shortname(self, bold_title=False):
         title = self._pd_title()
-        if self._pd_name is not None:
-            return title + f'[{self._pd_name}]'
-        varname = self.pd_varname()
-        if varname is None or varname == title:
-            return title
-        return title + f'[{varname}]'
+        if bold_title:
+            title = make_bold(title)
+        if self.pd_name is not None and self.pd_name != title:
+            return title + f' - "{self.pd_name}"'
+        return title
+
+    def _pd_title(self):
+        raise NotImplementedError
 
     @staticmethod
     def _add_parentheses_if_needed(name):
@@ -342,7 +344,7 @@ class Transform:
         return f'{evaluable_repr} [{varname}]'
 
     def __repr__(self) -> str:
-        top_message = make_bold(Transform._pd_shortname(self) + ':') + '\n\n'
+        top_message = Transform._pd_shortname(self, True) + ':' + '\n\n'
         bottom_message = self._pd_bodystr()
         return top_message + self._pd_add_format_to_str(bottom_message)
 
@@ -757,11 +759,11 @@ class ClassTransform(AtomicTransform):
         args_list = []
         for key, value in self._pd_arguments.items():
             if key == 'args':
-                args_list += [f'{val}' for val in value]
+                args_list += [f'{format_argument(val)}' for val in value]
             elif key == 'kwargs':
-                args_list += [f'{subkey}={val}' for subkey, val in value.items()]
+                args_list += [f'{subkey}={format_argument(val)}' for subkey, val in value.items()]
             else:
-                args_list.append(f'{key}={value}')
+                args_list.append(f'{key}={format_argument(value)}')
         return ', '.join(args_list)
 
     def _pd_title(self):
@@ -1000,11 +1002,10 @@ class CompoundTransform(Transform):
             return '(' + name + ')'
         return name
 
-    def _pd_shortname(self):
+    def _pd_shortname(self, bold_title=False):
         if self._pd_name is None:
             return self._pd_bodystr(is_child=True)
-        else:
-            return super()._pd_shortname()
+        return super()._pd_shortname(bold_title)
 
     def _pd_title(self):
         return self.__class__.__name__
@@ -1012,7 +1013,8 @@ class CompoundTransform(Transform):
     def _pd_bodystr(self, is_child=False):
         sep = f' {self.op} ' if is_child else '\n'
         if is_child:
-            return sep.join(t._add_parentheses_if_needed(t._pd_shortname()) for t in self.transforms)
+            return sep.join(t._add_parentheses_if_needed(t._pd_shortname())
+                            for t in self.transforms)
         return sep.join(t._pd_shortname() for t in self.transforms)
 
     def _pd_add_format_to_str(self, name):
