@@ -63,8 +63,7 @@ class JSONSerializer(Serializer):
                 ('json', SCOPE): var2mod.CodeNode(source='import json', globals_=set(),
                                                   ast_node=ast.parse('import json').body[0]),
                 ('os', SCOPE): var2mod.CodeNode(source='import os', globals_=set(),
-                                                ast_node=ast.parse('import os').body[0])
-                }
+                                                ast_node=ast.parse('import os').body[0])}
 
 
 def _serialize(val):
