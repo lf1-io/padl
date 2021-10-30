@@ -19,12 +19,11 @@ from tqdm import tqdm
 from padl.data import SimpleIterator
 from padl.dumptools import var2mod, thingfinder, inspector
 from padl.dumptools.serialize import Serializer
-from padl.dumptools.sourceget import original
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, make_faint, create_arrow, format_argument
+    make_green, create_arrow, format_argument
 
 
 class _Notset:
@@ -735,7 +734,7 @@ class ClassTransform(AtomicTransform):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
-        call = re.sub(r'\n\s*', ' ', original(call))
+        call = re.sub(r'\n\s*', ' ', call)
         self._pd_arguments = arguments
         AtomicTransform.__init__(
             self,
