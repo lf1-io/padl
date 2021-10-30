@@ -19,11 +19,12 @@ from tqdm import tqdm
 from padl.data import SimpleIterator
 from padl.dumptools import var2mod, thingfinder, inspector
 from padl.dumptools.serialize import Serializer
+from padl.dumptools.sourceget import original
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
-from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
-    create_arrow
+from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
+    make_green, create_arrow
 
 
 class _Notset:
@@ -326,7 +327,7 @@ class Transform:
 
         :param name: line or lines of input
         """
-        res = '    ' + '\n    '.join([x for x in name.split('\n')]) + '\n'
+        res = '    ' + '\n    '.join(name.split('\n')) + '\n'
         return res
 
     def _pd_bodystr(self):
@@ -707,10 +708,7 @@ class FunctionTransform(AtomicTransform):
         return self.source
 
     def _pd_title(self):
-        title = self._pd_call
-        # if '(' in title:
-        #     return re.split('\(', title)[-1][:-1]
-        return title
+        return self._pd_call.split('(')[0]
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
@@ -735,7 +733,7 @@ class ClassTransform(AtomicTransform):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
-        call = re.sub(r'\n\s*', ' ', call)
+        call = re.sub(r'\n\s*', ' ', original(call))
         self._pd_arguments = arguments
         AtomicTransform.__init__(
             self,
@@ -747,16 +745,28 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self, length=40):
         try:
-            body_msg = thingfinder.find(self.__class__.__name__)[0]
+            (body_msg, _), _ = thingfinder.find_in_scope(self.__class__.__name__,
+                                                    self._pd_call_info.scope)
             body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
             lines = re.split('(\n)', body_msg)
             return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
         except thingfinder.ThingNotFound:
             return self._pd_call
 
+    def _format_args(self):
+        args_list = []
+        for key, value in self._pd_arguments.items():
+            if key == 'args':
+                args_list += [f'{val}' for val in value]
+            elif key == 'kwargs':
+                args_list += [f'{subkey}={val}' for subkey, val in value.items()]
+            else:
+                args_list.append(f'{key}={value}')
+        return ', '.join(args_list)
+
     def _pd_title(self):
-        title = self._pd_call
-        return title
+        title = type(self).__name__
+        return title + '(' + self._format_args() + ')'
 
     def _pd_bodystr(self):
         return self.source
@@ -1013,7 +1023,7 @@ class CompoundTransform(Transform):
         :param name: line or lines of input
         """
         res = f'\n        {make_green(self.display_op)}  \n'.join(
-            [make_bold(f'{i}: {x}') for i, x in enumerate(name.split('\n'))]) + '\n'
+            [make_bold(f'{i}: ') + x for i, x in enumerate(name.split('\n'))]) + '\n'
         return res
 
     def pd_to(self, device: str):
@@ -1211,7 +1221,7 @@ class Compose(CompoundTransform):
 
             # add signature names to the arrows
             tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if isinstance(t, Rollout) or isinstance(t, Parallel):
+            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._lf_name is None:
                 all_params = []
                 for tt in t.transforms:
                     all_params.append(list(tt.pd_get_signature().keys()))
@@ -1233,7 +1243,7 @@ class Compose(CompoundTransform):
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
-            output.append(make_bold(f'{i}: {r}'))
+            output.append(make_bold(f'{i}: ') + r)
         return '\n'.join(output)
 
     def __call__(self, arg):
