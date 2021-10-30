@@ -18,7 +18,7 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'TADL'
+project = 'PADL'
 copyright = '2021, LF1'
 author = 'LF1'
 
