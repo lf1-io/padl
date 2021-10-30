@@ -1,4 +1,5 @@
 import setuptools
+
 import pkg_resources
 import pathlib
 from distutils.util import convert_path
@@ -9,7 +10,10 @@ with open(ver_path) as ver_file:
     exec(ver_file.read(), versions)
 
 with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+    long_description = fh.read().split('\n')
+
+long_description = ['# PADL\n'] + [x for x in long_description if not x.strip().startswith('<img')]
+long_description = '\n'.join(long_description)
 
 
 def parse_requirements(filename):
@@ -32,7 +36,6 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
-        "License :: Apache 2.0",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
@@ -40,4 +43,6 @@ setuptools.setup(
     install_requires=parse_requirements('requirements.txt'),
     test_suite="tests",
     tests_require=parse_requirements('requirements-test.txt'),
+    package_data={'': ['requirements.txt']},
+    include_package_data=True,
 )

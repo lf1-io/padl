@@ -1225,7 +1225,7 @@ class Compose(CompoundTransform):
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
-            output.append(make_bold(f'{i + 1}: {r}'))
+            output.append(make_bold(f'{i}: {r}'))
         return '\n'.join(output)
 
     def __call__(self, arg):
