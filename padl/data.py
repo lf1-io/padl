@@ -1,7 +1,7 @@
 class SimpleIterator:  # TODO: find a different name (it's not an iterator)
     """
     :param samples: object implementing __getitem__ and __len__
-    :param trans: instance of lf.lf.Transform
+    :param trans: instance of padl.padl.Transform
     :param exception: exception to catch for default
     :param default: default value
     """
