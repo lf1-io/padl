@@ -1,4 +1,4 @@
-Welcome to TADL's documentation!
+Welcome to PADL's documentation!
 ================================
 
 .. include:: README.rst

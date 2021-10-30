@@ -10,17 +10,7 @@
 
 ----
 
-Technical documentation here: https://lf1-io.github.io/tadl/
-
-Contents
---------
-
-
-* `Why PADL? <#why-tadl>`_
-* `Installation <#installation>`_
-* `Project structure <#project-structure>`_
-* `Basic Usage <#basic-usage>`_
-* `Licensing <#licensing>`_
+Technical documentation here: https://lf1-io.github.io/padl/
 
 Why PADL?
 ---------
