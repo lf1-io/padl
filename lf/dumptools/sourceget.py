@@ -3,17 +3,20 @@ import linecache
 from typing import List
 
 
-cache = {}
+replace_cache = {}
 
 
-def get_source(filename: str, use_cache=True):
+def get_source(filename: str, use_replace_cache=True):
     """Get source from *filename*.
 
-    Filename as in the code object, can be "<ipython input-...>" in which case
-    the source is taken from the ipython cache.
+    The filename is as in the code object gotten from an `inspect.frame`,
+    this can be "<ipython input-...>" in which case the source is taken from the ipython cache.
+
+    If *use_replace_cache*, try getting the source from the "replace_cache", which can contain
+    explicit replacements of the original source strings.
     """
-    if use_cache and filename in cache:
-        return cache[filename]
+    if use_replace_cache and filename in replace_cache:
+        return replace_cache[filename]
     if filename in linecache.cache:
         # the ipython case
         return ''.join(linecache.cache[filename][2])
@@ -22,11 +25,15 @@ def get_source(filename: str, use_cache=True):
         return f.read()
 
 
-def get_module_source(module, use_cache=True):
-    """Get the source code of a module. """
-    if use_cache:
+def get_module_source(module, use_replace_cache=True):
+    """Get the source code of a module.
+
+    If *use_replace_cache*, try getting the source from the "replace_cache", which can contain
+    explicit replacements of the original source strings.
+    """
+    if use_replace_cache:
         try:
-            return cache[module.__filename__]
+            return replace_cache[module.__filename__]
         except (KeyError, AttributeError):
             pass
     return inspect.getsource(module)
@@ -35,7 +42,7 @@ def get_module_source(module, use_cache=True):
 def _ipython_history():
     """Get the list of commands executed by IPython, ordered from oldest to newest. """
     return [
-        cache.get(k, ''.join(lines))
+        replace_cache.get(k, ''.join(lines))
         for k, (_, _, lines, _)
         in linecache.cache.items()
         if k.startswith('<ipython-')
@@ -119,40 +126,78 @@ class ReplaceStrings(str):
                                for rstr in self.rstrings])
 
 
-def put_into_cache(key, source: ReplaceString, repl: str, *loc):
+def put_into_cache(key, source: str, repl: str, *loc):
     val = ReplaceString(source, repl, *loc)
     try:
-        cache[key] = ReplaceStrings([val] + cache[key].rstrings)
+        replace_cache[key] = ReplaceStrings([val] + replace_cache[key].rstrings)
     except KeyError:
-        cache[key] = ReplaceStrings([val])
+        replace_cache[key] = ReplaceStrings([val])
 
 
-
-
-def cut_string(string, from_line, to_line, from_col, to_col):
+def cut_string(string: str, from_line: int, to_line: int, from_col: int, to_col: int):
     """Cut a string and return the resulting substring.
+
+    Example:
+        Given a *string*,
+
+        "xxxxxxxxxxx
+         xxxxxAXXXXXXXXXXXXXXXXXXXX
+         XXXXXXXXXXXXXBxxxx
+         xxxx"
+
+        , to cut a substring from *A* to *B*, give as *from_line* the line of *A* (1) and *to_line*
+        the line of *B* (2). *from_col* determines the position of *A* within the line (5) and
+        *to_col* determines the position of *B* (13).
+        The result would be:
+
+        "AXXXXXXXXXXXXXXXXXXXX
+         XXXXXXXXXXXXXB"
 
     :param string: The input string.
     :param from_line: The first line to include.
     :param to_line: The last line to include.
     :param from_col: The first col on *from_line* to include.
     :param to_col: The last col on *to_line* to include.
+    :returns: The cut-out string.
     """
     lines = string.split('\n')[from_line: to_line + 1]
+    if len(lines) == 1:
+        return lines[0][from_col:to_col]
     lines[0] = lines[0][from_col:]
     lines[-1] = lines[-1][:to_col]
     return '\n'.join(lines)
 
 
 def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int):
-    """Cut a string (can be a `ReplaceString` or a `ReplaceStrings`) and return the resulting
-    substring.
+    """Cut a string (can be a normal `str`, a `ReplaceString` or a `ReplaceStrings`) and return the
+    resulting substring.
+
+    Example:
+
+        Given a *string*,
+
+        "xxxxxxxxxxx
+         xxxxxAXXXXXXXXXXXXXXXXXXXX
+         XXXXXXXXXXXXXBxxxx
+         xxxx"
+
+        , to cut a substring from *A* to *B*, give as *from_line* the line of *A* (1) and *to_line*
+        the line of *B* (2). *from_col* determines the position of *A* within the line (5) and
+        *to_col* determines the position of *B* (13).
+        The result would be:
+
+        "AXXXXXXXXXXXXXXXXXXXX
+         XXXXXXXXXXXXXB"
+
+    If used with a `ReplaceString`, the result will be a `ReplaceString` with original and
+    replacement at the expected positions.
 
     :param string: The input string.
     :param from_line: The first line to include.
     :param to_line: The last line to include.
     :param from_col: The first col on *from_line* to include.
     :param to_col: The last col on *to_line* to include.
+    :returns: The cut-out string.
     """
     try:
         return string.cut(from_line, to_line, from_col, to_col)
@@ -162,29 +207,18 @@ def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int):
 
 def replace(string, what, from_line, to_line, from_col, to_col):
     """Replace a substring in *string* with what. """
-    keep_newline = from_line == to_line
-    res = ''
-    inside = False
-    for i, line in enumerate(string.split('\n')):
-        if i == from_line:
-            startcol = from_col
-            inside = True
-        else:
-            startcol = None
-        if i == to_line:
-            endcol = to_col
-        else:
-            endcol = None
-        if i > to_line:
-            inside = False
-        if startcol is not None:
-            res += line[:startcol]
-        if i == from_line:
-            res += what
-        if endcol is not None:
-            res += line[endcol:]
-        if startcol is None and endcol is None:
-            res += line
-        if not inside or keep_newline:
-            res += '\n'
-    return res
+    lines = string.split('\n')
+    for i, line in enumerate(lines[:-1]):
+        lines[i] = line + '\n'
+
+    before = ''.join(lines[:from_line])
+    if from_line == to_line:
+        middle = lines[from_line][:from_col] + what + lines[from_line][to_col:]
+        start = end = ''
+    else:
+        start = lines[from_line][from_col:] + what
+        middle = ''.join(lines[from_line+1:to_line])
+        end = lines[to_line][:to_col]
+    after = ''.join(lines[to_line+1:])
+
+    return before + start + middle + end + after
