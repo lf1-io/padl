@@ -18,6 +18,8 @@ from tqdm import tqdm
 
 from padl.data import SimpleIterator
 from padl.dumptools import var2mod, thingfinder, inspector
+from padl.dumptools.serialize import Serializer
+
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
@@ -159,7 +161,8 @@ class Transform:
         path.mkdir(exist_ok=True)
         for i, subtrans in enumerate(self.pd_all_transforms()):
             subtrans.pd_pre_save(path, i)
-        code, versions = self.pd_dumps(True)
+        code, versions = self.pd_dumps(True, path=path)
+
         with open(path / 'transform.py', 'w') as f:
             f.write(code)
         with open(path / 'versions.txt', 'w') as f:
@@ -226,6 +229,9 @@ class Transform:
 
             next_var, next_scope = next_
 
+            if next_var.startswith('TADL_VALUE'):
+                continue
+
             # see if the object itself knows how to generate its codegraph
             try:
                 if len(next_scope) > 0:
@@ -288,10 +294,11 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def pd_dumps(self, return_versions: bool = False) -> str:
+    def pd_dumps(self, return_versions: bool = False, path=None) -> str:
         """Dump the transform as python code. """
         scope = thingfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._pd_build_codegraph(name='_pd_main', scope=scope)
+        Serializer.save_all(graph, scopemap, path)
         unscoped = var2mod.unscope_graph(graph, scopemap)
         code = var2mod.dumps_graph(unscoped)
         if return_versions:
@@ -728,6 +735,7 @@ class ClassTransform(AtomicTransform):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+        call = re.sub(r'\n\s*', ' ', call)
         self._pd_arguments = arguments
         AtomicTransform.__init__(
             self,

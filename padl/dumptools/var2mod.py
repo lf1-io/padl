@@ -4,6 +4,7 @@ from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
 import sys
+from typing import Optional
 
 from padl.dumptools import thingfinder
 
@@ -41,7 +42,9 @@ class Finder(ast.NodeVisitor):
     def get_source_segments(self, source):
         nodes = self.find(ast.parse(source))
         return [
-            ast.get_source_segment(source, node)
+            (ast.get_source_segment(source, node),
+             (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+            )
             for node in nodes
         ]
 
@@ -348,7 +351,7 @@ def unscope_graph(graph, scopemap):
 class CodeNode:
     source: str
     globals_: set
-    ast_node: ast.AST
+    ast_node: Optional[ast.AST] = None
 
     @classmethod
     def from_source(cls, source, scope):

@@ -1,9 +1,8 @@
 import ast
-import inspect
-import linecache
 from math import inf
 import sys
-from warnings import warn
+
+from padl.dumptools import sourceget
 
 
 class _ThingFinder(ast.NodeVisitor):
@@ -22,7 +21,8 @@ class _ThingFinder(ast.NodeVisitor):
         self.max_n = max_n
         self._result = None
 
-    def found_something(self):
+    def found_something(self) -> bool:
+        """*True* if something was found. """
         return self._result is not None
 
     def visit_Module(self, node):
@@ -306,13 +306,19 @@ class Scope:
     def global_(self):
         return type(self)(self.module, self.def_source, [])
 
+    @property
+    def module_name(self):
+        if self.module is None:
+            return ''
+        return self.module.__name__
+
     def unscoped(self, varname):
         if not self.scopelist:
             return varname
-        return f'{"_".join(x[0] for x in self.scopelist)}_{varname}'
+        return f'{"_".join(x[0] for x in [self.module_name] + self.scopelist)}_{varname}'
 
     def __repr__(self):
-        return f'Scope[{".".join(x[0] for x in self.scopelist)}]'
+        return f'Scope[{self.module_name}.{".".join(x[0] for x in self.scopelist)}]'
 
     def __len__(self):
         return len(self.scopelist)
@@ -380,7 +386,7 @@ def find_in_module(var_name: str, module):
     :param module: Module to search.
     :returns: Tuple with source code segment and corresponding ast node.
     """
-    source = inspect.getsource(module)
+    source = sourceget.get_module_source(module)
     return find_in_source(var_name, source)
 
 
@@ -416,20 +422,9 @@ def _count_leading_whitespace(line: str):
         return i
 
 
-def _ipython_history():
-    """Get the list of commands executed by IPython, ordered from oldest to newest. """
-    return [
-        ''.join(lines)
-        for k, (_, _, lines, _)
-        in linecache.cache.items()
-        if k.startswith('<ipython-')
-        or 'ipykernel' in k
-    ]
-
-
 def find_in_ipython(var_name: str):
     source = node = None
-    for cell in _ipython_history()[::-1]:
+    for cell in sourceget._ipython_history()[::-1]:
         try:
             source, node = find_in_source(var_name, cell)
         except (ThingNotFound, SyntaxError):

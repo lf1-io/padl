@@ -54,31 +54,31 @@ def c():
 
 class TestGetStatement:
     def test_simple(self):
-        statement = inspector.get_statement(testcode, 2)
+        statement, _ = inspector.get_statement(testcode, 2)
         assert statement == 'a = 1'
-        statement = inspector.get_statement(testcode, 3)
+        statement, _ = inspector.get_statement(testcode, 3)
         assert statement == 'b = 2'
 
     def test_function(self):
-        statement = inspector.get_statement(testcode, 5)
+        statement, _ = inspector.get_statement(testcode, 5)
         assert statement == testcode.split(' = 2')[1].strip()
 
     def test_multiline_1(self):
-        statement = inspector.get_statement(testcode, 7)
+        statement, _ = inspector.get_statement(testcode, 7)
         assert statement == 'p = (a,\n    b,\n    c)'
 
     def test_multiline_2(self):
-        statement = inspector.get_statement(testcode, 8)
+        statement, _ = inspector.get_statement(testcode, 8)
         assert statement == 'p = (a,\n    b,\n    c)'
 
     def test_multiline_3(self):
-        statement = inspector.get_statement(testcode, 9)
+        statement, _ = inspector.get_statement(testcode, 9)
         assert statement == 'p = (a,\n    b,\n    c)'
 
     def test_multiline_4(self):
-        statement = inspector.get_statement(testcode, 11)
+        statement, _ = inspector.get_statement(testcode, 11)
         assert statement == 'f = a +         b'
 
     def test_multiline_5(self):
-        statement = inspector.get_statement(testcode, 14)
+        statement, _ = inspector.get_statement(testcode, 14)
         assert statement == 'k = f(1,\n      2, 3,\n      4)'
