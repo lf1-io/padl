@@ -28,7 +28,7 @@ from padl.dumptools.serialize import Serializer
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, create_arrow, format_argument
+    make_green, create_arrow, format_argument, plen
 
 
 class _Notset:
@@ -451,9 +451,9 @@ class Transform:
         forward = self.pd_forward
         post = self.pd_postprocess
 
-        use_preprocess = not preprocess._pd_is_identity
-        use_forward = not forward._pd_is_identity
-        use_post = not post._pd_is_identity
+        use_preprocess = not isinstance(preprocess, Identity)
+        use_forward = not isinstance(forward, Identity)
+        use_post = not isinstance(post, Identity)
 
         if use_preprocess:
             data = SimpleDataset(
@@ -532,11 +532,6 @@ class Transform:
         for layer in self.pd_layers:
             layer.to(device)
         return self
-
-    @property
-    def _pd_is_identity(self) -> bool:  # TODO: keep?
-        """Return *True* iff the transform is the identity transform. """
-        return False
 
     @property
     def pd_layers(self) -> List[torch.nn.Module]:
@@ -1151,13 +1146,11 @@ class Compose(CompoundTransform):
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
-            [s._pd_shortrepr().strip() for s in t.transforms]
-            if isinstance(t, CompoundTransform)
-            else [t._pd_shortrepr()]
+            [s._pd_tinyrepr() for s in t.transforms]
             for t in self.transforms
         ]
 
-        children_widths = [[len(x) for x in row] for row in rows]
+        children_widths = [[plen(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
                                            max([len(x) for x in children_widths])))
@@ -1366,6 +1359,14 @@ class Rollout(CompoundTransform):
                 self._pd_postprocess = Rollout(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
+    def _pd_longrepr(self) -> str:
+        between = f'\n{make_green("│ " + self.display_op)}  \n'
+        rows = [make_green('├─▶ ') + make_bold(f'{i}: ') + t._pd_shortrepr()
+                for i, t in enumerate(self.transforms[:-1])]
+        rows.append(make_green('└─▶ ') + make_bold(f'{len(self.transforms) - 1}: ')
+                    + self.transforms[-1]._pd_shortrepr())
+        return between.join(rows) + '\n'
+
 
 class Parallel(CompoundTransform):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
@@ -1427,6 +1428,25 @@ class Parallel(CompoundTransform):
                 self._pd_postprocess = Parallel(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
+    def _pd_longrepr(self) -> str:
+        def pipes(n):
+            return "│" * n
+        def spaces(n):
+            return " " * n
+        def horizontal(n):
+            return "─" * n
+        between = f'\n{make_green("│ " + self.display_op)}  \n'
+        len_ = len(self.transforms)
+        out = ''
+        for i, t in enumerate(self.transforms):
+            out += (
+                make_green(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                make_bold(f'{i}: ') + t._pd_shortrepr() + '\n'
+            )
+            if i < len(self.transforms) - 1:
+                out += f'{make_green(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+        return out
+
 
 class BuiltinTransform(AtomicTransform):
     def __init__(self, call):
@@ -1468,10 +1488,6 @@ class Identity(BuiltinTransform):
 
     def __init__(self):
         super().__init__('padl.Identity()')
-
-    @property
-    def _pd_is_identity(self):
-        return True
 
     def __call__(self, args):
         return args
