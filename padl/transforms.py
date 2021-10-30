@@ -19,11 +19,12 @@ from tqdm import tqdm
 from padl.data import SimpleIterator
 from padl.dumptools import var2mod, thingfinder, inspector
 from padl.dumptools.serialize import Serializer
+from padl.dumptools.sourceget import original
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
-from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, make_green, \
-    create_arrow
+from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
+    make_green, create_arrow
 
 
 class _Notset:
@@ -735,7 +736,7 @@ class ClassTransform(AtomicTransform):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
-        call = re.sub(r'\n\s*', ' ', call)
+        call = re.sub(r'\n\s*', ' ', original(call))
         self._pd_arguments = arguments
         AtomicTransform.__init__(
             self,
@@ -747,7 +748,8 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self, length=40):
         try:
-            body_msg = thingfinder.find(self.__class__.__name__)[0]
+            (body_msg, _), _ = thingfinder.find_in_scope(self.__class__.__name__,
+                                                    self._pd_call_info.scope)
             body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
             lines = re.split('(\n)', body_msg)
             return ''.join(lines[:length]) + ('  ...' if len(lines) > length else '')
