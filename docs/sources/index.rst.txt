@@ -10,12 +10,12 @@ Welcome to TADL's documentation!
 Transforms
 ----------
 
-.. automodule:: lf.transforms
+.. automodule:: padl.transforms
     :members:
 
 Util Transforms
 ---------------
 
-.. automodule:: lf.util_transforms
+.. automodule:: padl.util_transforms
     :members:
 
