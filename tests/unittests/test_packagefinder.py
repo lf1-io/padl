@@ -1,5 +1,5 @@
 import ast
-from lf.dumptools import packagefinder
+from padl.dumptools import packagefinder
 
 
 source_a = '''

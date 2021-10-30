@@ -1,4 +1,4 @@
-from lf import transform
+from padl import transform
 
 
 @transform
@@ -6,4 +6,4 @@ def z(x):
     return x
 
 
-_lf_main = z
+_pd_main = z

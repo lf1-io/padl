@@ -1,7 +1,7 @@
 import pytest
-from lf import transform, Batchify
-import lf.transforms as lf
-from lf.util_transforms import IfTrain, IfEval, IfInfer
+from padl import transform, Batchify
+import padl.transforms as padl
+from padl.util_transforms import IfTrain, IfEval, IfInfer
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
@@ -56,12 +56,12 @@ class TestIfInStage:
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = padl.load('test.padl')
         assert t1.infer_apply(1) == 9
-        self.transform_2.lf_save('test.lf')
-        t2 = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        t2 = padl.load('test.padl')
         assert t2.infer_apply(1) == 6
-        self.transform_3.lf_save('test.lf')
-        t3 = lf.load('test.lf')
+        self.transform_3.pd_save('test.padl')
+        t3 = padl.load('test.padl')
         assert t3.infer_apply(1) == 12

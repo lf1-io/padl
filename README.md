@@ -1,11 +1,45 @@
 <img src="img/logo.png" width="400">
 
-*Transform abstractions for deep learning* -- using **Pytorch**.
+**Pytorch** *abstractions for deep learning*.
+
+---
+
+Technical documentation here: https://lf1-io.github.io/padl/
+
+## Why PADL?
+
+### Problem Statement
+
+While developing and deploying our deep learning models in **pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+
+- in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
+- in *neural translation* the details of beam search post-processing and filtering based on business logic
+- in *vision* applications, the normalization constants applied to image tensors
+- in *classification* the label lookup dictionaries, formatting the tensor to human readable output
+
+In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.
+
+### Standard Approach
+
+The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.
+
+- A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.
+- To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing)
+- It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar
+- There is no easy way to robustly save and inspect the results of "quick and dirty" experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists' daily routine. 
+
+### PADL Solutions
+
+In creating **PADL** we aimed to create:
+
+- A beautiful functional API including all mission critical computational steps in a single formalism -- pre-processing, post-processing, forward pass, batching and inference modes.
+- An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
+- An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
 ## Installation
 
 ```bash
-python setup.py install
+pip install padl
 ```
 
 Run tests to check:
@@ -15,9 +49,9 @@ pip install -r requirements-test.txt
 pytest tests/
 ```
 
-## Overview
+## Project Structure
 
-TADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+PADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
@@ -124,7 +158,7 @@ print(isinstance(cosine, td.transforms.Transform))            # prints "True"
 
 Atomic transforms may be combined using 3 functional primitives:
 
-1. Transform composition: **compose**
+Transform composition: **compose**
 
 <img src="img/compose.png" width="100">
 
@@ -132,7 +166,15 @@ Atomic transforms may be combined using 3 functional primitives:
 s = transform_1 >> transform_2
 ```
 
-2. Applying transforms in parallel to multiple inputs: **parallel**
+Applying a single transform over multiple inputs: **map**
+
+<img src="img/map.png" width="200">
+
+```python
+s = ~ transform
+```
+
+Applying transforms in parallel to multiple inputs: **parallel**
 
 <img src="img/parallel.png" width="230">
 
@@ -140,7 +182,7 @@ s = transform_1 >> transform_2
 s = transform_1 / transform_2
 ```
 
-3. Applying multiple transforms to a single input: **rollout**
+Applying multiple transforms to a single input: **rollout**
 
 <img src="img/rollout.png" width="230">
 
@@ -207,15 +249,11 @@ print(s['a'] == s[0])    # prints "True"
 
 ### Applying transforms to data
 
-#### Inference mode
-
-Single data points may be passed through the transform using `Tranform.infer_apply`:
+To pass single data points may be passed through the transform:
 
 ```python
 prediction = t.infer_apply('the cat sat on the mat .')
 ```
-
-#### Batch modes: eval & train
 
 To pass data points in batches but no gradients:
 
@@ -313,5 +351,5 @@ model >> unbatch >> reverse_lookup
 
 Since the weights are tied to `training_pipeline`, `model` trains together with `training_pipeline`, but with the added capability of producing human readable outputs.
 
-# Licensing
-TADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
+## Licensing
+PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
