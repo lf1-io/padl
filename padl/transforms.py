@@ -1223,7 +1223,7 @@ class Compose(CompoundTransform):
 
             # add signature names to the arrows
             tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._lf_name is None:
+            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and t._pd_name is None:
                 all_params = []
                 for tt in t.transforms:
                     all_params.append(list(tt.pd_get_signature().keys()))

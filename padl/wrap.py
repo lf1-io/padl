@@ -92,6 +92,7 @@ def _wrap_class(cls, ignore_scope=False):
         trans_class.__init__(self, ignore_scope=ignore_scope,
                              arguments=args)
 
+    functools.update_wrapper(__init__, old__init__)
 
     cls.__init__ = __init__
     cls.__module__ = module

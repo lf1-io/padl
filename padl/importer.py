@@ -18,24 +18,27 @@ class PatchedModule:
     """
 
     def __init__(self, module, parents=None):
-        self.module = module
+        self._module = module
         if parents is None:
-            self.path = self.module.__name__
+            self._path = self._module.__name__
         else:
-            self.path = parents + '.' + self.module.__name__
+            self._path = parents + '.' + self._module.__name__
 
     def __getattr__(self, key):
-        x = getattr(self.module, key)
+        x = getattr(self._module, key)
         if inspect.isclass(x):
             return _wrap_class(x)
         if callable(x):
             return _wrap_function(x, ignore_scope=True)
         if isinstance(x, ModuleType):
-            return PatchedModule(x, parents=self.path)
+            return PatchedModule(x, parents=self._path)
         return x
 
     def __repr__(self):
-        return f'Transform patched: {self.module}'
+        return f'Transform patched: {self._module}'
+
+    def __dir__(self):
+        return dir(self._module)
 
 
 class PatchFactory:
