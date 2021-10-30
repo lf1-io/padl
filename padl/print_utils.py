@@ -1,3 +1,6 @@
+from reprlib import repr
+
+
 def combine_multi_line_strings(strings):
     """
     Combine multi line strings, where every character takes precedence over space.
@@ -61,6 +64,14 @@ def make_bold(x):
     return f'\33[1m{x}\33[0m'
 
 
+def make_faint(x):
+    """Make input faint
+
+    :param x: string input
+    """
+    return f'\33[2m{x}\33[0m'
+
+
 def make_green(x):
     """Make input green
 
@@ -94,3 +105,8 @@ def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
         + '_' * (finish_right - 1) + '\n' \
         + final \
         + ' ' * (start_left + finish_right) + '▼'
+
+
+def format_argument(value):
+    """Format an argument value for printing."""
+    return repr(value)
