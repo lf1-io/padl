@@ -1,20 +1,12 @@
 <img src="img/logo.png" width="400">
 
-*Transform abstractions for deep learning* -- using **Pytorch**. 
+**Pytorch** *abstractions for deep learning*.
 
 ---
 
-Technical documentation here: https://lf1-io.github.io/tadl/
+Technical documentation here: https://lf1-io.github.io/padl/
 
-## Contents
-
-- [Why TADL?](#why-tadl)
-- [Installation](#installation)
-- [Project structure](#project-structure)
-- [Basic Usage](#basic-usage)
-- [Licensing](#licensing)
-
-## Why TADL?
+## Why PADL?
 
 ### Problem Statement
 
@@ -36,9 +28,9 @@ The standard approach to deal with these steps is to maintain a library of routi
 - It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar
 - There is no easy way to robustly save and inspect the results of "quick and dirty" experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists' daily routine. 
 
-### TADL Solutions
+### PADL Solutions
 
-In creating **TADL** we aimed to create:
+In creating **PADL** we aimed to create:
 
 - A beautiful functional API including all mission critical computational steps in a single formalism -- pre-processing, post-processing, forward pass, batching and inference modes.
 - An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
@@ -47,7 +39,7 @@ In creating **TADL** we aimed to create:
 ## Installation
 
 ```bash
-python setup.py install
+pip install padl
 ```
 
 Run tests to check:
@@ -59,7 +51,7 @@ pytest tests/
 
 ## Project Structure
 
-TADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+PADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
@@ -360,4 +352,4 @@ model >> unbatch >> reverse_lookup
 Since the weights are tied to `training_pipeline`, `model` trains together with `training_pipeline`, but with the added capability of producing human readable outputs.
 
 ## Licensing
-TADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
+PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.

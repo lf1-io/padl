@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import sys
 from typing import Optional
 
-from lf.dumptools import thingfinder
+from padl.dumptools import thingfinder
 
 try:
     unparse = ast.unparse

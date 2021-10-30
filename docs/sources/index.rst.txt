@@ -1,4 +1,4 @@
-Welcome to TADL's documentation!
+Welcome to PADL's documentation!
 ================================
 
 .. include:: README.rst
@@ -10,12 +10,12 @@ Welcome to TADL's documentation!
 Transforms
 ----------
 
-.. automodule:: lf.transforms
+.. automodule:: padl.transforms
     :members:
 
 Util Transforms
 ---------------
 
-.. automodule:: lf.util_transforms
+.. automodule:: padl.util_transforms
     :members:
 

@@ -1,15 +1,19 @@
 import setuptools
+
 import pkg_resources
 import pathlib
 from distutils.util import convert_path
 
 versions = {}
-ver_path = convert_path('lf/version.py')
+ver_path = convert_path('padl/version.py')
 with open(ver_path) as ver_file:
     exec(ver_file.read(), versions)
 
 with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+    long_description = fh.read().split('\n')
+
+long_description = ['# PADL\n'] + [x for x in long_description if not x.strip().startswith('<img')]
+long_description = '\n'.join(long_description)
 
 
 def parse_requirements(filename):
@@ -18,11 +22,11 @@ def parse_requirements(filename):
 
 
 setuptools.setup(
-    name="lf",
+    name="padl",
     version=versions['__version__'],
     author="LF1",
     author_email="contact@lf1.io",
-    description="Abstractions and base classes for AI models based on Pytorch.",
+    description="Pytorch abstractions for deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lf1-io/lf",
@@ -32,7 +36,6 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
-        "License :: Apache 2.0",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
@@ -40,4 +43,6 @@ setuptools.setup(
     install_requires=parse_requirements('requirements.txt'),
     test_suite="tests",
     tests_require=parse_requirements('requirements-test.txt'),
+    package_data={'': ['requirements.txt']},
+    include_package_data=True,
 )

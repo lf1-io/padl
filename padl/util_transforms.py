@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from lf.transforms import ClassTransform, Identity, Transform
+from padl.transforms import ClassTransform, Identity, Transform
 
 
 class IfInStage(ClassTransform):
@@ -26,37 +26,37 @@ class IfInStage(ClassTransform):
         self.else_ = else_
         self.target_stage = target_stage
 
-        self._lf_component = set.union(*[t.lf_component for t in [self.if_, self.else_]])
+        self._pd_component = set.union(*[t.pd_component for t in [self.if_, self.else_]])
 
     def __call__(self, *args):
-        assert Transform.lf_stage is not None,\
+        assert Transform.pd_stage is not None,\
             'Stage is not set, use infer_apply, eval_apply or train_apply'
 
-        if Transform.lf_stage == self.target_stage:
+        if Transform.pd_stage == self.target_stage:
             return self.if_(*args)
         return self.else_(*args)
 
     @property
-    def lf_preprocess(self):
+    def pd_preprocess(self):
         return type(self)(
-            if_=self.if_.lf_preprocess,
+            if_=self.if_.pd_preprocess,
             target_stage=self.target_stage,
-            else_=self.else_.lf_preprocess
+            else_=self.else_.pd_preprocess
         )
 
-    def _lf_forward_part(self):
+    def _pd_forward_part(self):
         return type(self)(
-            if_=self.if_.lf_forward,
+            if_=self.if_.pd_forward,
             target_stage=self.target_stage,
-            else_=self.else_.lf_forward
+            else_=self.else_.pd_forward
         )
 
     @property
-    def lf_postprocess(self):
+    def pd_postprocess(self):
         return type(self)(
-            if_=self.if_.lf_postprocess,
+            if_=self.if_.pd_postprocess,
             target_stage=self.target_stage,
-            else_=self.else_.lf_postprocess
+            else_=self.else_.pd_postprocess
         )
 
 

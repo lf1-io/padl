@@ -1,4 +1,4 @@
-from lf import transform
+from padl import transform
 
 
 CONST = 1
@@ -23,7 +23,7 @@ c_a = (
     >> y
     >> x
 )
-_lf_main = (
+_pd_main = (
     x
     >> y
     >> (

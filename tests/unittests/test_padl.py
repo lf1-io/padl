@@ -1,10 +1,10 @@
 from collections import OrderedDict
 import pytest
 import torch
-from lf import transforms as lf, transform, Identity
-from lf.transforms import Batchify, Unbatchify
+from padl import transforms as lf, transform, Identity
+from padl.transforms import Batchify, Unbatchify
 from collections import namedtuple
-from lf.exceptions import WrongDeviceError
+from padl.exceptions import WrongDeviceError
 from tests.fixtures.transforms import cleanup_checkpoint
 
 
@@ -127,8 +127,8 @@ class TestLFCallTransform:
                            self.transform_4,
                            self.transform_5,
                            self.transform_6]:
-            transform_.lf_save('test.lf')
-            t_ = lf.load('test.lf')
+            transform_.pd_save('test.padl')
+            t_ = lf.load('test.padl')
             assert t_.infer_apply(1)
 
 
@@ -140,17 +140,17 @@ class TestMap:
         request.cls.transform_3 = ~times_two + ~plus_one
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
-        assert isinstance(self.transform_2.lf_preprocess, lf.Identity)
+    def test_pd_preprocess(self):
+        assert isinstance(self.transform_1.pd_preprocess, lf.Identity)
+        assert isinstance(self.transform_2.pd_preprocess, lf.Identity)
 
-    def test_lf_forward(self):
-        assert isinstance(self.transform_1.lf_forward, lf.Map)
-        assert isinstance(self.transform_2.lf_forward, lf.Parallel)
+    def test_pd_forward(self):
+        assert isinstance(self.transform_1.pd_forward, lf.Map)
+        assert isinstance(self.transform_2.pd_forward, lf.Parallel)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
-        assert isinstance(self.transform_2.lf_postprocess, lf.Identity)
+    def test_pd_postprocess(self):
+        assert isinstance(self.transform_1.pd_postprocess, lf.Identity)
+        assert isinstance(self.transform_2.pd_postprocess, lf.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == [3, 4, 5]
@@ -175,17 +175,17 @@ class TestMap:
         assert list(self.transform_4.train_apply([1])) == [[2, 2, 2]]
 
     def test_save_and_load(self):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply([2, 3, 4]) == [3, 4, 5]
-        self.transform_2.lf_save('test.lf')
-        t2 = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        t2 = lf.load('test.padl')
         assert t2.infer_apply((1, [2, 3, 4])) == (1, [3, 4, 5])
-        self.transform_3.lf_save('test.lf')
-        t3 = lf.load('test.lf')
+        self.transform_3.pd_save('test.padl')
+        t3 = lf.load('test.padl')
         assert t3.infer_apply([2, 3, 4]) == ([4, 6, 8], [3, 4, 5])
-        self.transform_4.lf_save('test.lf')
-        t4 = lf.load('test.lf')
+        self.transform_4.pd_save('test.padl')
+        t4 = lf.load('test.padl')
         assert t4.infer_apply(1) == [2, 2, 2]
 
 
@@ -210,14 +210,14 @@ class TestParallel:
         assert lf._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+    def test_pd_preprocess(self):
+        assert isinstance(self.transform_1.pd_preprocess, lf.Identity)
 
-    def test_lf_forward(self):
-        assert isinstance(self.transform_1.lf_forward, lf.Parallel)
+    def test_pd_forward(self):
+        assert isinstance(self.transform_1.pd_forward, lf.Parallel)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+    def test_pd_postprocess(self):
+        assert isinstance(self.transform_1.pd_postprocess, lf.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
@@ -226,21 +226,21 @@ class TestParallel:
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
 
     def test_context(self):
-        assert self.transform_1.lf_stage is None
-        with self.transform_1.lf_set_stage('train'):
-            assert self.transform_1.lf_stage is 'train'
-            assert self.transform_1.lf_preprocess.lf_stage == 'train'
-            assert self.transform_1.lf_forward.lf_stage == 'train'
-            assert self.transform_1.lf_postprocess.lf_stage == 'train'
+        assert self.transform_1.pd_stage is None
+        with self.transform_1.pd_set_stage('train'):
+            assert self.transform_1.pd_stage is 'train'
+            assert self.transform_1.pd_preprocess.pd_stage == 'train'
+            assert self.transform_1.pd_forward.pd_stage == 'train'
+            assert self.transform_1.pd_postprocess.pd_stage == 'train'
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
-        self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
-        self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        _ = lf.load('test.padl')
+        self.transform_3.pd_save('test.padl')
+        _ = lf.load('test.padl')
 
 
 class TestRollout:
@@ -264,14 +264,14 @@ class TestRollout:
         assert lf._isinstance_of_namedtuple(out)
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+    def test_pd_preprocess(self):
+        assert isinstance(self.transform_1.pd_preprocess, lf.Identity)
 
-    def test_lf_forward(self):
-        assert isinstance(self.transform_1.lf_forward, lf.Rollout)
+    def test_pd_forward(self):
+        assert isinstance(self.transform_1.pd_forward, lf.Rollout)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+    def test_pd_postprocess(self):
+        assert isinstance(self.transform_1.pd_postprocess, lf.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
@@ -280,21 +280,21 @@ class TestRollout:
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
 
     def test_context(self):
-        assert self.transform_1.lf_stage is None
-        with self.transform_1.lf_set_stage('train'):
-            assert self.transform_1.lf_stage is 'train'
-            assert self.transform_1.lf_preprocess.lf_stage == 'train'
-            assert self.transform_1.lf_forward.lf_stage == 'train'
-            assert self.transform_1.lf_postprocess.lf_stage == 'train'
+        assert self.transform_1.pd_stage is None
+        with self.transform_1.pd_set_stage('train'):
+            assert self.transform_1.pd_stage is 'train'
+            assert self.transform_1.pd_preprocess.pd_stage == 'train'
+            assert self.transform_1.pd_forward.pd_stage == 'train'
+            assert self.transform_1.pd_postprocess.pd_stage == 'train'
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply(2) == (3, 4, 4)
-        self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
-        self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        _ = lf.load('test.padl')
+        self.transform_3.pd_save('test.padl')
+        _ = lf.load('test.padl')
 
 
 class TestCompose:
@@ -319,17 +319,17 @@ class TestCompose:
     def test_output(self):
         assert self.transform_4(1) == 4
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
-        assert isinstance(self.transform_5.lf_preprocess, lf.Compose)
+    def test_pd_preprocess(self):
+        assert isinstance(self.transform_1.pd_preprocess, lf.Identity)
+        assert isinstance(self.transform_5.pd_preprocess, lf.Compose)
 
-    def test_lf_forward(self):
-        assert isinstance(self.transform_1.lf_forward, lf.Compose)
-        assert isinstance(self.transform_5.lf_forward, lf.Compose)
+    def test_pd_forward(self):
+        assert isinstance(self.transform_1.pd_forward, lf.Compose)
+        assert isinstance(self.transform_5.pd_forward, lf.Compose)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
-        assert isinstance(self.transform_5.lf_postprocess, lf.Unbatchify)
+    def test_pd_postprocess(self):
+        assert isinstance(self.transform_1.pd_postprocess, lf.Identity)
+        assert isinstance(self.transform_5.pd_postprocess, lf.Unbatchify)
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
@@ -357,35 +357,35 @@ class TestCompose:
         ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
 
     def test_context(self):
-        assert self.transform_1.lf_stage is None
-        with self.transform_1.lf_set_stage('eval'):
-            assert self.transform_1.lf_stage is 'eval'
-            assert self.transform_1.lf_preprocess.lf_stage == 'eval'
-            assert self.transform_1.lf_forward.lf_stage == 'eval'
-            assert self.transform_1.lf_postprocess.lf_stage == 'eval'
+        assert self.transform_1.pd_stage is None
+        with self.transform_1.pd_set_stage('eval'):
+            assert self.transform_1.pd_stage is 'eval'
+            assert self.transform_1.pd_preprocess.pd_stage == 'eval'
+            assert self.transform_1.pd_forward.pd_stage == 'eval'
+            assert self.transform_1.pd_postprocess.pd_stage == 'eval'
 
     def test_all_transforms_1(self):
         c = plus_one >> times_two >> times_two
-        all_ = c.lf_all_transforms()
+        all_ = c.pd_all_transforms()
         assert set(all_) == set([plus_one, times_two, c])
 
     def test_all_transforms_2(self):
         c = plus_one >> times_two >> trans_with_globals
-        all_ = c.lf_all_transforms()
+        all_ = c.pd_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        _ = lf.load('test.lf')
-        self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
-        self.transform_3.lf_save('test.lf')
-        _ = lf.load('test.lf')
-        self.transform_4.lf_save('test.lf')
-        t4 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        _ = lf.load('test.padl')
+        self.transform_2.pd_save('test.padl')
+        _ = lf.load('test.padl')
+        self.transform_3.pd_save('test.padl')
+        _ = lf.load('test.padl')
+        self.transform_4.pd_save('test.padl')
+        t4 = lf.load('test.padl')
         assert t4.infer_apply(1) == 4
-        self.transform_5.lf_save('test.lf')
-        t5 = lf.load('test.lf')
+        self.transform_5.pd_save('test.padl')
+        t5 = lf.load('test.padl')
         assert t5.infer_apply(1) == torch.tensor(8)
 
     def test_getitem(self):
@@ -431,19 +431,19 @@ class TestModel:
             >> plus_one / times_two
         )
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.model_1.lf_preprocess, lf.Parallel)
-        assert isinstance(self.model_2.lf_preprocess, lf.Rollout)
-        assert isinstance(self.model_4.lf_preprocess, lf.Compose)
+    def test_pd_preprocess(self):
+        assert isinstance(self.model_1.pd_preprocess, lf.Parallel)
+        assert isinstance(self.model_2.pd_preprocess, lf.Rollout)
+        assert isinstance(self.model_4.pd_preprocess, lf.Compose)
 
-    def test_lf_forward(self):
-        assert isinstance(self.model_1.lf_forward, lf.Parallel)
-        assert isinstance(self.model_2.lf_forward, lf.Parallel)
+    def test_pd_forward(self):
+        assert isinstance(self.model_1.pd_forward, lf.Parallel)
+        assert isinstance(self.model_2.pd_forward, lf.Parallel)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.model_1.lf_postprocess, lf.Parallel)
-        assert isinstance(self.model_2.lf_postprocess, lf.Parallel)
-        assert isinstance(self.model_4.lf_postprocess, lf.Compose)
+    def test_pd_postprocess(self):
+        assert isinstance(self.model_1.pd_postprocess, lf.Parallel)
+        assert isinstance(self.model_2.pd_postprocess, lf.Parallel)
+        assert isinstance(self.model_4.pd_postprocess, lf.Compose)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
@@ -464,17 +464,17 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_save_and_load(self, cleanup_checkpoint):
-        lf.save(self.model_1, 'test.lf')
-        m1 = lf.load('test.lf')
+        lf.save(self.model_1, 'test.padl')
+        m1 = lf.load('test.padl')
         assert m1.infer_apply((5, 5)) == (13, 13)
-        self.model_2.lf_save('test.lf')
-        m2 = lf.load('test.lf')
+        self.model_2.pd_save('test.padl')
+        m2 = lf.load('test.padl')
         assert m2.infer_apply(5) == (13, 13)
-        self.model_3.lf_save('test.lf')
-        m3 = lf.load('test.lf')
+        self.model_3.pd_save('test.padl')
+        m3 = lf.load('test.padl')
         assert m3.infer_apply(5) == (7, 20)
-        self.model_4.lf_save('test.lf')
-        m4 = lf.load('test.lf') # TODO This Fails
+        self.model_4.pd_save('test.padl')
+        m4 = lf.load('test.padl') # TODO This Fails
         assert m4.infer_apply(5) == (8, 20)
 
 
@@ -484,14 +484,14 @@ class TestFunctionTransform:
         request.cls.transform_1 = plus_one
         request.cls.transform_2 = get_info
 
-    def test_lf_preprocess(self):
-        assert isinstance(self.transform_1.lf_preprocess, lf.Identity)
+    def test_pd_preprocess(self):
+        assert isinstance(self.transform_1.pd_preprocess, lf.Identity)
 
-    def test_lf_forward(self):
-        assert isinstance(self.transform_1.lf_forward, lf.FunctionTransform)
+    def test_pd_forward(self):
+        assert isinstance(self.transform_1.pd_forward, lf.FunctionTransform)
 
-    def test_lf_postprocess(self):
-        assert isinstance(self.transform_1.lf_postprocess, lf.Identity)
+    def test_pd_postprocess(self):
+        assert isinstance(self.transform_1.pd_postprocess, lf.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(5) == 6
@@ -508,32 +508,32 @@ class TestFunctionTransform:
         assert out[1] == 'dog'
 
     def test_context(self):
-        assert self.transform_1.lf_stage is None
-        with self.transform_1.lf_set_stage('infer'):
-            assert self.transform_1.lf_stage is 'infer'
-            assert self.transform_1.lf_preprocess.lf_stage == 'infer'
-            assert self.transform_1.lf_forward.lf_stage == 'infer'
-            assert self.transform_1.lf_postprocess.lf_stage == 'infer'
+        assert self.transform_1.pd_stage is None
+        with self.transform_1.pd_set_stage('infer'):
+            assert self.transform_1.pd_stage is 'infer'
+            assert self.transform_1.pd_preprocess.pd_stage == 'infer'
+            assert self.transform_1.pd_forward.pd_stage == 'infer'
+            assert self.transform_1.pd_postprocess.pd_stage == 'infer'
 
     def test_all_transforms(self):
-        all_ = trans_with_globals.lf_all_transforms()
+        all_ = trans_with_globals.pd_all_transforms()
         assert set(all_) == set([plus, times_two, trans_with_globals])
 
-    def test_lf_to(self):
-        self.transform_1.lf_to('cpu')
-        assert self.transform_1.lf_device == 'cpu'
+    def test_pd_to(self):
+        self.transform_1.pd_to('cpu')
+        assert self.transform_1.pd_device == 'cpu'
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply(5) == 6
-        self.transform_2.lf_save('test.lf')
-        _ = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        _ = lf.load('test.padl')
 
 
 def test_name():
-    assert (plus_one - 'p1')._lf_name == 'p1'
-    assert plus_one._lf_name is None
+    assert (plus_one - 'p1')._pd_name == 'p1'
+    assert plus_one._pd_name is None
 
 
 class TestTransformDeviceCheck:
@@ -543,14 +543,14 @@ class TestTransformDeviceCheck:
         request.cls.transform_2 = plus_one >> (times_two >> times_two)
 
     def test_device_check(self):
-        self.transform_1.lf_to('gpu')
-        self.transform_1.transforms[1].lf_to('cpu')
+        self.transform_1.pd_to('gpu')
+        self.transform_1.transforms[1].pd_to('cpu')
 
         with pytest.raises(WrongDeviceError):
-            self.transform_1._lf_forward_device_check()
+            self.transform_1._pd_forward_device_check()
 
-        self.transform_2.lf_to('gpu')
-        assert self.transform_2._lf_forward_device_check()
+        self.transform_2.pd_to('gpu')
+        assert self.transform_2._pd_forward_device_check()
 
 
 class TestClassTransform:
@@ -564,16 +564,16 @@ class TestClassTransform:
         self.transform_2.infer_apply(1) == 3
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply(1) == 3
-        self.transform_2.lf_save('test.lf')
-        t2 = lf.load('test.lf')
+        self.transform_2.pd_save('test.padl')
+        t2 = lf.load('test.padl')
         assert t2.infer_apply(1) == 3
 
     def test_stored_arguments(self):
         c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
-        assert c._lf_arguments == OrderedDict([('a', 1), ('b', 2), ('args', (3, 4, 5))])
+        assert c._pd_arguments == OrderedDict([('a', 1), ('b', 2), ('args', (3, 4, 5))])
 
 
 class TestTorchModuleTransform:
@@ -589,27 +589,27 @@ class TestTorchModuleTransform:
         assert self.transform_1.infer_apply(1)
 
     def test_device(self):
-        self.transform_1.lf_to('cpu')
-        device = next(self.transform_1.lf_layers[0].parameters()).device.type
+        self.transform_1.pd_to('cpu')
+        device = next(self.transform_1.pd_layers[0].parameters()).device.type
         assert device == 'cpu'
 
-    def test_lf_layers(self):
-        assert len(self.transform_1.lf_layers) > 0
+    def test_pd_layers(self):
+        assert len(self.transform_1.pd_layers) > 0
 
-    def test_lf_parameters(self):
-        params = list(self.transform_1.lf_parameters())
+    def test_pd_parameters(self):
+        params = list(self.transform_1.pd_parameters())
         assert len(params) == 2
 
     def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.lf_save('test.lf')
-        t1 = lf.load('test.lf')
+        self.transform_1.pd_save('test.padl')
+        t1 = lf.load('test.padl')
         assert t1.infer_apply(1) == 2
 
 
 class TestLFImporter:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        from lf.importer import numpy as inp
+        from padl.importer import numpy as inp
         request.cls.transform_1 = inp.sin
         request.cls.transform_2 = (inp.sin >> inp.sin)
         transform_temp = inp.sin
@@ -635,7 +635,7 @@ class TestLFImporter:
                            self.transform_3,
                            self.transform_4,
                            ]:
-            transform_.lf_save('test.lf')
-            t_ = lf.load('test.lf')
+            transform_.pd_save('test.padl')
+            t_ = padl.load('test.padl')
             assert t_.infer_apply(1.3)
     """

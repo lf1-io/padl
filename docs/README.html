@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contents &mdash; TADL 0.1.0 documentation</title>
+  <title>Why PADL? &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -25,7 +25,7 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> TADL
+            <a href="index.html" class="icon icon-home"> PADL
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -37,16 +37,15 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Contents</a></li>
-<li><a class="reference internal" href="#id1">Why TADL?</a><ul>
+<li><a class="reference internal" href="#">Why PADL?</a><ul>
 <li><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
 <li><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
-<li><a class="reference internal" href="#tadl-solutions">TADL Solutions</a></li>
+<li><a class="reference internal" href="#padl-solutions">PADL Solutions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id2">Installation</a></li>
-<li><a class="reference internal" href="#id3">Project Structure</a></li>
-<li><a class="reference internal" href="#id4">Basic Usage</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#project-structure">Project Structure</a></li>
+<li><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
 <li><a class="reference internal" href="#defining-atomic-transforms">Defining atomic transforms</a></li>
 <li><a class="reference internal" href="#defining-compound-transforms">Defining compound transforms</a></li>
 <li><a class="reference internal" href="#decomposing-models">Decomposing models</a></li>
@@ -57,7 +56,7 @@
 <li><a class="reference internal" href="#weight-sharing-for-auxiliary-production-models">Weight sharing for auxiliary production models</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5">Licensing</a></li>
+<li><a class="reference internal" href="#licensing">Licensing</a></li>
 </ul>
 </div>
         </div>
@@ -66,7 +65,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">TADL</a>
+          <a href="index.html">PADL</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -74,7 +73,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Contents</li>
+      <li>Why PADL?</li>
       <li class="wy-breadcrumbs-aside">
             <a href="sources/README.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -85,21 +84,11 @@
            <div itemprop="articleBody">
              
   <p><span class="raw-html-m2r"><img src="img/logo.png" width="400"></span></p>
-<p><em>Transform abstractions for deep learning</em> – using <strong>Pytorch</strong>.</p>
+<p><strong>Pytorch</strong> <em>abstractions for deep learning</em>.</p>
 <hr class="docutils" />
-<p>Technical documentation here: <a class="reference external" href="https://lf1-io.github.io/tadl/">https://lf1-io.github.io/tadl/</a></p>
-<section id="contents">
-<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline"></a></h1>
-<ul class="simple">
-<li><p><a class="reference external" href="#why-tadl">Why TADL?</a></p></li>
-<li><p><a class="reference external" href="#installation">Installation</a></p></li>
-<li><p><a class="reference external" href="#project-structure">Project structure</a></p></li>
-<li><p><a class="reference external" href="#basic-usage">Basic Usage</a></p></li>
-<li><p><a class="reference external" href="#licensing">Licensing</a></p></li>
-</ul>
-</section>
-<section id="id1">
-<h1>Why TADL?<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<p>Technical documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
+<section id="why-padl">
+<h1>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h1>
 <section id="problem-statement">
 <h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h2>
 <p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
@@ -121,9 +110,9 @@
 <li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
 </ul>
 </section>
-<section id="tadl-solutions">
-<h2>TADL Solutions<a class="headerlink" href="#tadl-solutions" title="Permalink to this headline"></a></h2>
-<p>In creating <strong>TADL</strong> we aimed to create:</p>
+<section id="padl-solutions">
+<h2>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h2>
+<p>In creating <strong>PADL</strong> we aimed to create:</p>
 <ul class="simple">
 <li><p>A beautiful functional API including all mission critical computational steps in a single formalism – pre-processing, post-processing, forward pass, batching and inference modes.</p></li>
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
@@ -131,8 +120,8 @@
 </ul>
 </section>
 </section>
-<section id="id2">
-<h1>Installation<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h1>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python setup.py install
 </pre></div>
 </div>
@@ -142,9 +131,9 @@ pytest tests/
 </pre></div>
 </div>
 </section>
-<section id="id3">
-<h1>Project Structure<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h1>
-<p>TADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
+<section id="project-structure">
+<h1>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h1>
+<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
 <ul class="simple">
 <li><p>preprocessing</p></li>
 <li><p>data-loading</p></li>
@@ -158,8 +147,8 @@ pytest tests/
 <p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
 </section>
-<section id="id4">
-<h1>Basic Usage<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h1>
+<section id="basic-usage">
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h1>
 <section id="defining-atomic-transforms">
 <h2>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h2>
 <p>Imports:</p>
@@ -388,9 +377,9 @@ pytest tests/
 <p>Since the weights are tied to <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code> trains together with <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, but with the added capability of producing human readable outputs.</p>
 </section>
 </section>
-<section id="id5">
-<h1>Licensing<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h1>
-<p>TADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
+<section id="licensing">
+<h1>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h1>
+<p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
 </section>
 
 

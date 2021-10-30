@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import sys
 
-from lf.dumptools import inspector, sourceget, var2mod, thingfinder
+from padl.dumptools import inspector, sourceget, var2mod, thingfinder
 
 
 SCOPE = thingfinder.Scope.toplevel(sys.modules[__name__])

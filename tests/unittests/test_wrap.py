@@ -1,7 +1,7 @@
 import pytest
-import lf
+import padl
 
 
 def test_raise():
     with pytest.raises(ValueError):
-        lf.transform(2)
+        padl.transform(2)

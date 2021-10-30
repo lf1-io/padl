@@ -3,7 +3,7 @@ import inspect
 import sys
 from types import ModuleType
 
-from lf.wrap import _wrap_class, _wrap_function
+from padl.wrap import _wrap_class, _wrap_function
 
 
 class PatchedModule:
@@ -12,7 +12,7 @@ class PatchedModule:
 
     Example:
 
-        >>> from lf.importer import numpy as np
+        >>> from padl.importer import numpy as np
         >>> isinstance(np.random.rand, Transform)
         True
     """
