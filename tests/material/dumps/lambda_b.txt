@@ -1,4 +1,4 @@
-from lf import transform
+from padl import transform
 
 
 CONST = 1
@@ -13,4 +13,4 @@ def y(y):
     return CONST + k(y)
 
 
-_lf_main = transform(lambda x: y(x))
+_pd_main = transform(lambda x: y(x))

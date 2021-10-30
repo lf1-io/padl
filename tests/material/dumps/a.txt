@@ -1,4 +1,4 @@
-from lf import transform
+from padl import transform
 
 
 CONST = 1
@@ -9,4 +9,4 @@ def x(y):
     return CONST + 1
 
 
-_lf_main = x
+_pd_main = x

@@ -1,8 +1,6 @@
-import inspect
-
 import pytest
 
-from lf.dumptools import inspector
+from padl.dumptools import inspector
 
 
 toplevel_callinfo = inspector.CallInfo('here')

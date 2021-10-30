@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import sys
 
-from lf.dumptools import thingfinder
+from padl.dumptools import thingfinder
 
 try:
     unparse = ast.unparse

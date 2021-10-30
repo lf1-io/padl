@@ -4,7 +4,7 @@ import pathlib
 from distutils.util import convert_path
 
 versions = {}
-ver_path = convert_path('lf/version.py')
+ver_path = convert_path('padl/version.py')
 with open(ver_path) as ver_file:
     exec(ver_file.read(), versions)
 
@@ -18,11 +18,11 @@ def parse_requirements(filename):
 
 
 setuptools.setup(
-    name="lf",
+    name="padl",
     version=versions['__version__'],
     author="LF1",
     author_email="contact@lf1.io",
-    description="Abstractions and base classes for AI models based on Pytorch.",
+    description="Pytorch abstractions for deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lf1-io/lf",

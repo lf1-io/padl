@@ -1,6 +1,6 @@
 import ast
 
-from lf.dumptools import thingfinder
+from padl.dumptools import thingfinder
 
 
 def test__get_call_signature_a():

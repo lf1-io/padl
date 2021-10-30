@@ -1,5 +1,5 @@
-import lf
-from lf import transform
+import padl
+from padl import transform
 
 
 CONST = 1
@@ -19,9 +19,9 @@ def y(y):
     return CONST + k(y)
 
 
-_lf_main = (
+_pd_main = (
     x
-    + lf.group(
+    + padl.group(
         y
         + x
         + x

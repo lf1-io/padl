@@ -3,14 +3,13 @@ import ast
 import dis
 import functools
 import inspect
-from warnings import warn
 
 import numpy as np
 import torch
 
-from lf.dumptools import var2mod, inspector
-from lf.transforms import (
-    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+from padl.dumptools import var2mod, inspector
+from padl.transforms import (
+    ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
 
 
@@ -18,8 +17,8 @@ def _set_local_varname(frame, event, _args):
     if event == 'return':
         for k, v in frame.f_locals.items():
             try:
-                if v._lf_varname is _notset or v._lf_varname is None:
-                    v._lf_set_varname(k)
+                if v._pd_varname is _notset or v._pd_varname is None:
+                    v._pd_set_varname(k)
             except AttributeError:
                 continue
 
@@ -50,7 +49,7 @@ def _wrap_function(fun, ignore_scope=False):
 
     # Special checks
     if isinstance(fun, np.ufunc):
-        wrapper._lf_number_of_inputs = fun.nin
+        wrapper._pd_number_of_inputs = fun.nin
 
     functools.update_wrapper(wrapper, fun)
     return wrapper
@@ -58,7 +57,7 @@ def _wrap_function(fun, ignore_scope=False):
 
 def _wrap_class(cls, ignore_scope=False):
     """Patch __init__ of class such that the initialization statement is stored
-    as an attribute `_lf_call`. In addition make class inherit from Transform.
+    as an attribute `_pd_call`. In addition make class inherit from Transform.
 
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
@@ -70,7 +69,7 @@ def _wrap_class(cls, ignore_scope=False):
             ...
 
     >>> myobj = MyClass('hello')
-    >>> myobj._lf_call
+    >>> myobj._pd_call
     MyClass('hello')
     """
     old__init__ = cls.__init__
@@ -106,7 +105,7 @@ def _wrap_lambda(fun, ignore_scope=False):
     caller_frame = inspector.caller_frame()
     # get the source
     try:
-        full_source = caller_frame.f_globals['_lf_source']
+        full_source = caller_frame.f_globals['_pd_source']
     except KeyError:
         full_source = inspector.get_source(caller_frame.f_code.co_filename)
     source = inspector.get_statement(full_source, caller_frame.f_lineno)
@@ -115,7 +114,7 @@ def _wrap_lambda(fun, ignore_scope=False):
     candidate_segments = []
     candidate_calls = []
     for node in nodes:
-        # keep lambda nodes which are contained in a call of `lf.transform`
+        # keep lambda nodes which are contained in a call of `padl.transform`
         if not isinstance(node.parent, ast.Call):
             continue
         containing_call = ast.get_source_segment(source, node.parent.func)

@@ -1,5 +1,5 @@
-from lf.transforms import AtomicTransform
-from lf.dumptools import inspector
+from padl.transforms import AtomicTransform
+from padl.dumptools import inspector
 
 
 def _maketrans(attr, getitem=False):
