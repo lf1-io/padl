@@ -18,7 +18,7 @@ from padl.wrap import _wrap_class, _wrap_function
 
 
 class PatchedModule:
-    """Class that patches a module, such that all functions and classes in that module come out
+    """Class that patches a module, such that all functions and classeGs in that module come out
     wrapped as Transforms.
 
     Example:
@@ -55,6 +55,7 @@ class PatchedModule:
 
 
 class _PatchFactory:
+    # pylint: disable=too-few-public-methods
     """Class that allows patching imported modules. """
 
     def __getattr__(self, name):
