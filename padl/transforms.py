@@ -691,23 +691,26 @@ class FunctionTransform(AtomicTransform):
         created (needed for saving).
     :param pd_name: name of the transform
     :param call: The call string (defaults to the function's name.
+    :param source: The source code (optional).
     """
 
     def __init__(self, function: Callable, call_info: inspector.CallInfo,
-                 pd_name: Optional[str] = None, call: Optional[str] = None):
+                 pd_name: Optional[str] = None, call: Optional[str] = None,
+                 source: Optional[str] = None):
         if call is None:
             call = function.__name__
         super().__init__(call=call, call_info=call_info, pd_name=pd_name)
         self.function = function
         self._pd_number_of_inputs = None
+        self._source = source
 
     @property
     def source(self) -> str:
         """The source of the wrapped function. """
+        if self._source is not None:
+            return self._source
         body_msg = inspect.getsource(self.function)
         body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
-        if len(body_msg.split('\n', 1)) == 0:
-            body_msg = ''.join(re.split('(lambda)', self._pd_call, 1)[1:])[:-1]
         return body_msg
 
     def _pd_get_signature(self) -> List[str]:
@@ -720,6 +723,11 @@ class FunctionTransform(AtomicTransform):
             return '\n'.join(self.source.split('\n')[:30])
         except TypeError:
             return self._pd_call
+
+    def _pd_shortrepr(self) -> str:
+        if len(self._pd_longrepr().split('\n', 1)) == 1:
+            return self._pd_longrepr()
+        return super()._pd_shortrepr()
 
     def _pd_title(self) -> str:
         return self._pd_call.split('(')[0]
@@ -1147,7 +1155,7 @@ class Compose(CompoundTransform):
         # pad the components of rows which are shorter than other parts in same column
         rows = [
             [s._pd_tinyrepr() for s in t.transforms] if hasattr(t, 'transforms')
-            else [t._pd_tinyrepr()]
+            else [t._pd_shortrepr()]
             for t in self.transforms
         ]
 
