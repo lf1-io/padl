@@ -1216,11 +1216,6 @@ class Compose(CompoundTransform):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                # last_lines = [x.split('\n')[-1] for x in subarrows]
-                # pre_spaces = []
-                # for i, ll in enumerate(last_lines):
-                #     pre_spaces.append(next(j for j, x in enumerate(ll) if x != ' '))
-                # padder = (len(subarrows) + 1) * ' '
                 params = [x for x in t._pd_get_signature()]
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
