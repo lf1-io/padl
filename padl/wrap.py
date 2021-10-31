@@ -135,6 +135,7 @@ def _wrap_lambda(fun, ignore_scope=False):
              node.parent.col_offset, node.parent.end_col_offset)
         ))
 
+
     # compare candidate's bytecodes to that of `fun`
     # keep the call for the matching one
     target_instrs = list(dis.get_instructions(fun))

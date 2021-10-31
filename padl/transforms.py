@@ -235,7 +235,7 @@ class Transform:
 
             next_var, next_scope = next_
 
-            if next_var.startswith('TADL_VALUE'):
+            if next_var.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
@@ -1194,7 +1194,7 @@ class Compose(CompoundTransform):
             subarrows = []
 
             # if subsequent rows have the same number of "children" transforms
-            if i > 0 and len(children_widths[i]) == len(children_widths[i - 1]):
+            if i > 0 and isinstance(t, Parallel) and len(children_widths[i]) == len(children_widths[i - 1]):
                 for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
@@ -1204,7 +1204,7 @@ class Compose(CompoundTransform):
                     and len(children_widths[i - 1]) > 1:
                 for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
-                        j, sum(widths) - j + j * 3,
+                        0, sum(widths) - j + j * 4,
                         len(children_widths[i - 1]) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
@@ -1212,8 +1212,12 @@ class Compose(CompoundTransform):
             # if previous row has one output and current row has multiple inputs
             else:
                 for j, w in enumerate(children_widths[i]):
-                    subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
-                                                  len(children_widths[i]) - j, j + 1))
+                    if isinstance(t, Rollout):
+                        subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
+                                                      len(children_widths[i]) - j, j + 1))
+                    else:
+                        subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
+                                                      len(children_widths[i]) - j, j + 1))
                     widths.append(int(max_widths[j]))
 
             # add signature names to the arrows
@@ -1230,9 +1234,8 @@ class Compose(CompoundTransform):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                padder = (len(subarrows) + 1) * ' '
                 params = [x for x in t._pd_get_signature()]
-                to_format = padder + tuple_to_str(params) if len(params) > 1 else padder + params[0]
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
