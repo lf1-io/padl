@@ -765,7 +765,7 @@ class ClassTransform(AtomicTransform):
         body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
         return 'class ' + body_msg.split('class ', 1)[1]
 
-    def _formated_args(self) -> str:
+    def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
         args_list = []
         for key, value in self._pd_arguments.items():
@@ -785,7 +785,7 @@ class ClassTransform(AtomicTransform):
 
     def _pd_title(self) -> str:
         title = type(self).__name__
-        return title + '(' + self._formated_args() + ')'
+        return title + '(' + self._formatted_args() + ')'
 
 
 class TorchModuleTransform(ClassTransform):
@@ -1146,7 +1146,8 @@ class Compose(CompoundTransform):
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
-            [s._pd_tinyrepr() for s in t.transforms]
+            [s._pd_tinyrepr() for s in t.transforms] if hasattr(t, 'transforms')
+            else [t._pd_tinyrepr()]
             for t in self.transforms
         ]
 
