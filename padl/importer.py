@@ -1,13 +1,24 @@
+"""Special module that allows importing any other module such that all callables inside are wrapped
+as transforms.
+
+Example:
+
+>>> from importer.torch import nn
+>>> x = nn.Linear(10, 10)
+>>> isinstance(x, padl.transforms.Transform)
+True
+"""
+
 import importlib
 import inspect
 import sys
-from types import ModuleType
+from types import MethodWrapperType, ModuleType
 
 from padl.wrap import _wrap_class, _wrap_function
 
 
 class PatchedModule:
-    """Class that patches a module, such that all functions and classes in that module come out
+    """Class that patches a module, such that all functions and classeGs in that module come out
     wrapped as Transforms.
 
     Example:
@@ -27,7 +38,9 @@ class PatchedModule:
     def __getattr__(self, key):
         x = getattr(self._module, key)
         if inspect.isclass(x):
-            return _wrap_class(x)
+            if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
+                return _wrap_class(x)
+            return x
         if callable(x):
             return _wrap_function(x, ignore_scope=True)
         if isinstance(x, ModuleType):
@@ -41,7 +54,10 @@ class PatchedModule:
         return dir(self._module)
 
 
-class PatchFactory:
+class _PatchFactory:
+    # pylint: disable=too-few-public-methods
+    """Class that allows patching imported modules. """
+
     def __getattr__(self, name):
         try:
             module = importlib.import_module(name)
@@ -50,4 +66,4 @@ class PatchFactory:
             pass
 
 
-sys.modules[__name__] = PatchFactory()
+sys.modules[__name__] = _PatchFactory()

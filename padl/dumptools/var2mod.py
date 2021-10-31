@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import sys
 from typing import Optional
 
-from padl.dumptools import thingfinder
+from padl.dumptools import symfinder
 
 try:
     unparse = ast.unparse
@@ -258,7 +258,7 @@ def build_codegraph(x: set, module=None, all_=None, update_callback=None):
         if update_callback is not None and update_callback(next_, module):
             pass
         else:
-            source, node = thingfinder.find(next_, module)
+            source, node = symfinder.find(next_, module)
             globals_ = find_globals(node)
             all_[next_] = (source, globals_, node)
         todo.update(globals_)

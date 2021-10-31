@@ -1,4 +1,5 @@
 """Wrappers. """
+
 import ast
 import dis
 import functools
@@ -24,7 +25,7 @@ def _set_local_varname(frame, event, _args):
 
 
 def _wrap_function(fun, ignore_scope=False):
-    """Fram *fun* in a Transform. Don't use directly, use `transform` instead. """
+    """Wrap *fun* in a Transform. Don't use directly, use `transform` instead."""
     caller = inspect.stack()[2]
 
     try:
@@ -101,7 +102,7 @@ def _wrap_class(cls, ignore_scope=False):
 
 def _wrap_lambda(fun, ignore_scope=False):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
-    become obsolete with python 3.11 (see _wrap_class). """
+    become obsolete with python 3.11 (see also inspector.CallInfo). """
     # get the caller frame (it's 2 - [caller] -> [transform] -> [_wrap_lambda])
     caller_frame = inspector.caller_frame()
     # get the source

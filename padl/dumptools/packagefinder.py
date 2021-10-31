@@ -1,3 +1,5 @@
+"""Utilities for finding packages used in code. """
+
 import ast
 from importlib.metadata import version, PackageNotFoundError
 
