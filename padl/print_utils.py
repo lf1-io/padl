@@ -1,10 +1,10 @@
 """Utilities for printing. """
 
-from reprlib import repr
+from reprlib import repr as shortrepr
 from typing import Any, List
 
 
-def combine_multi_line_strings(strings, List[str]):
+def combine_multi_line_strings(strings: List[str]):
     """Combine multi line strings, where every character takes precedence over space.
     (Image space is transparent and superimposing strings on top of one another.)
 
@@ -109,7 +109,7 @@ def create_arrow(start_left: int, finish_right: int, n_initial_rows: int, n_fina
 
 def format_argument(value: Any) -> str:
     """Format an argument value for printing."""
-    return repr(value)
+    return shortrepr(value)
 
 
 def visible_len(value: str) -> int:
