@@ -329,7 +329,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
             break
 
     if segment is None or not found:
-        raise RuntimeError('Attribute not found.')
+        raise RuntimeError(f'{segment_type} not found.')
 
     locs = (
         locs[0] - 1 + offset[0],
