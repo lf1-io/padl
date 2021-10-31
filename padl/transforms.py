@@ -22,13 +22,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from padl.data import SimpleDataset
-from padl.dumptools import var2mod, thingfinder, inspector
+from padl.dumptools import var2mod, symfinder, inspector
 from padl.dumptools.serialize import Serializer
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, create_arrow, format_argument, plen
+    make_green, create_arrow, format_argument, visible_len
 
 
 class _Notset:
@@ -201,7 +201,7 @@ class Transform:
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
-                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
+                            scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
         if scopemap is None:
@@ -251,7 +251,7 @@ class Transform:
                 continue
 
             # find how next_var came into being
-            (source, node), scope_of_next_var = thingfinder.find_in_scope(next_var, next_scope)
+            (source, node), scope_of_next_var = symfinder.find_in_scope(next_var, next_scope)
             scopemap[next_var, next_scope] = scope_of_next_var
 
             # find dependencies
@@ -308,7 +308,7 @@ class Transform:
             dependencies and their versions.
         :param path: Optional path to save at, might be required for serializer code snippets.
         """
-        scope = thingfinder.Scope.toplevel(inspector.caller_module())
+        scope = symfinder.Scope.toplevel(inspector.caller_module())
         graph, scopemap = self._pd_build_codegraph(name='_pd_main', scope=scope)
         Serializer.save_all(graph, scopemap, path)
         unscoped = var2mod.unscope_graph(graph, scopemap)
@@ -760,7 +760,7 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self) -> str:
         """The class source code. """
-        (body_msg, _), _ = thingfinder.find_in_scope(self.__class__.__name__,
+        (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
                                                 self._pd_call_info.scope)
         body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
         return 'class ' + body_msg.split('class ', 1)[1]
@@ -780,7 +780,7 @@ class ClassTransform(AtomicTransform):
     def _pd_longrepr(self) -> str:
         try:
             return '\n'.join(self.source.split('\n')[:30])
-        except thingfinder.ThingNotFound:
+        except symfinder.NameNotFound:
             return self._pd_call
 
     def _pd_title(self) -> str:
@@ -1150,7 +1150,7 @@ class Compose(CompoundTransform):
             for t in self.transforms
         ]
 
-        children_widths = [[plen(x) for x in row] for row in rows]
+        children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
                                            max([len(x) for x in children_widths])))
@@ -1455,14 +1455,14 @@ class BuiltinTransform(AtomicTransform):
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
-                            scope: Optional[thingfinder.Scope] = None) -> Tuple[dict, dict]:
+                            scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
         if scopemap is None:
             scopemap = {}
 
         if scope is None:
-            scope = thingfinder.Scope.empty()
+            scope = symfinder.Scope.empty()
         if ('padl', scope) not in graph:
             graph['padl', scope] = var2mod.CodeNode.from_source('import padl', scope)
             scopemap['padl', scope] = scope

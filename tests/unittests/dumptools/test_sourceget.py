@@ -36,10 +36,10 @@ b_r = '0123here6789'
 
 class TestReplace:
     def test_a(self):
-        assert sourceget.replace(a, 'here', 2, 2, 2, 5) == a_r
+        assert sourceget._replace(a, 'here', 2, 2, 2, 5) == a_r
 
     def test_a1(self):
-        assert sourceget.replace(a, 'he\nre', 2, 2, 2, 8) == a_r1
+        assert sourceget._replace(a, 'he\nre', 2, 2, 2, 8) == a_r1
 
     def test_b(self):
-        assert sourceget.replace(b, 'here', 0, 0, 4, 6) == b_r
+        assert sourceget._replace(b, 'here', 0, 0, 4, 6) == b_r

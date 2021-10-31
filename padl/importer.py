@@ -1,3 +1,14 @@
+"""Special module that allows importing any other module such that all callables inside are wrapped
+as transforms.
+
+Example:
+
+>>> from importer.torch import nn
+>>> x = nn.Linear(10, 10)
+>>> isinstance(x, padl.transforms.Transform)
+True
+"""
+
 import importlib
 import inspect
 import sys
@@ -41,7 +52,9 @@ class PatchedModule:
         return dir(self._module)
 
 
-class PatchFactory:
+class _PatchFactory:
+    """Class that allows patching imported modules. """
+
     def __getattr__(self, name):
         try:
             module = importlib.import_module(name)
@@ -50,4 +63,4 @@ class PatchFactory:
             pass
 
 
-sys.modules[__name__] = PatchFactory()
+sys.modules[__name__] = _PatchFactory()

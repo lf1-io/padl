@@ -3,10 +3,10 @@ import json
 from pathlib import Path
 import sys
 
-from padl.dumptools import inspector, sourceget, var2mod, thingfinder
+from padl.dumptools import inspector, sourceget, var2mod, symfinder
 
 
-SCOPE = thingfinder.Scope.toplevel(sys.modules[__name__])
+SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])
 
 
 class Serializer:
