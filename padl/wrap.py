@@ -25,7 +25,7 @@ def _set_local_varname(frame, event, _args):
                 continue
 
 
-def _wrap_function(fun, ignore_scope=False):
+def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None):
     """Wrap *fun* in a Transform. Don't use directly, use `transform` instead."""
     caller = inspect.stack()[2]
 
@@ -43,7 +43,8 @@ def _wrap_function(fun, ignore_scope=False):
     # if this is the decorator case we drop one leven from the scope (this is the decorated
     # function itself)
     drop_n = 1 if call is None else 0
-    call_info = inspector.CallInfo(drop_n=drop_n, ignore_scope=ignore_scope)
+    if call_info is None:
+        call_info = inspector.CallInfo(drop_n=drop_n, ignore_scope=ignore_scope)
     if call_info.function != '<module>' and not ignore_scope:
         inspector.trace_this(_set_local_varname, caller.frame)
 
@@ -111,6 +112,7 @@ def _wrap_lambda(fun, ignore_scope=False):
         full_source = caller_frame.f_globals['_pd_source']
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
+
     source, offset = inspector.get_statement(original(full_source), caller_frame.f_lineno)
     # find all lambda nodes
     nodes = var2mod.Finder(ast.Lambda).find(ast.parse(source))
@@ -124,11 +126,14 @@ def _wrap_lambda(fun, ignore_scope=False):
         containing_function = eval(containing_call, caller_frame.f_globals)
         if containing_function is not transform:
             continue
-        candidate_segments.append((
+        candidate_segments.append(
             ast.get_source_segment(source, node),
-            (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+        )
+        candidate_calls.append((
+            ast.get_source_segment(source, node.parent),
+            (node.parent.lineno, node.parent.end_lineno,
+             node.parent.col_offset, node.parent.end_col_offset)
         ))
-        candidate_calls.append(ast.get_source_segment(source, node.parent))
 
     # compare candidate's bytecodes to that of `fun`
     # keep the call for the matching one
@@ -138,7 +143,7 @@ def _wrap_lambda(fun, ignore_scope=False):
     call = None
     locs = None
 
-    for (segment, locs), call in zip(candidate_segments, candidate_calls):
+    for segment, (call, locs) in zip(candidate_segments, candidate_calls):
         instrs = list(dis.get_instructions(eval(segment)))
         if not len(instrs) == len(target_instrs):
             continue
@@ -159,7 +164,7 @@ def _wrap_lambda(fun, ignore_scope=False):
         locs[3] - offset[1]
     )
 
-    segment = cut(full_source, *locs)
+    call = cut(full_source, *locs)
 
     caller = inspector.CallInfo(ignore_scope=ignore_scope)
     inner = var2mod.Finder(ast.Lambda).get_source_segments(call)[0][0]

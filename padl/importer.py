@@ -14,6 +14,7 @@ import inspect
 import sys
 from types import MethodWrapperType, ModuleType
 
+from padl.dumptools import inspector
 from padl.wrap import _wrap_class, _wrap_function
 
 
@@ -39,10 +40,12 @@ class PatchedModule:
         x = getattr(self._module, key)
         if inspect.isclass(x):
             if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
-                return _wrap_class(x)
+                call_info = inspector.CallInfo()
+                return _wrap_class(x, call_info=call_info)
             return x
         if callable(x):
-            return _wrap_function(x, ignore_scope=True)
+            call_info = inspector.CallInfo()
+            return _wrap_function(x, ignore_scope=True, call_info=call_info)
         if isinstance(x, ModuleType):
             return PatchedModule(x, parents=self._path)
         return x
