@@ -28,7 +28,7 @@ from padl.dumptools.serialize import Serializer
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, create_arrow, format_argument, plen
+    make_green, create_arrow, format_argument, visible_len
 
 
 class _Notset:
@@ -1150,7 +1150,7 @@ class Compose(CompoundTransform):
             for t in self.transforms
         ]
 
-        children_widths = [[plen(x) for x in row] for row in rows]
+        children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
                                            max([len(x) for x in children_widths])))

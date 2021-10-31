@@ -267,6 +267,10 @@ def caller_frame() -> types.FrameType:
 def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_locs=False) -> str:
     """Get a segment of a given type from a frame.
 
+    *NOTE*: All this is rather hacky and should be changed as soon as python 3.11 becomes widely
+    available as then it will be possible to get column information from frames
+    (see inline comments).
+
     *segement_type* can be 'call', 'attribute', 'getitem'.
     """
     if segment_type == 'call':
@@ -333,6 +337,8 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         locs[2] - offset[1],
         locs[3] - offset[1]
     )
+    # cutting is necessary instead of just using the segment from above for support of
+    # `sourceget.ReplaceString`s
     segment = cut(full_source, *locs)
 
     if return_locs:

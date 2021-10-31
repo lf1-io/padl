@@ -1,9 +1,11 @@
+"""Utilities for printing. """
+
 from reprlib import repr
+from typing import Any, List
 
 
-def combine_multi_line_strings(strings):
-    """
-    Combine multi line strings, where every character takes precedence over space.
+def combine_multi_line_strings(strings, List[str]):
+    """Combine multi line strings, where every character takes precedence over space.
     (Image space is transparent and superimposing strings on top of one another.)
 
     :param strings: list of multi-line strings
@@ -23,14 +25,14 @@ def combine_multi_line_strings(strings):
     return '\n'.join(lines)
 
 
-def create_reverse_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
-    """
-    Create an ascii arrow.
+def create_reverse_arrow(start_left: int, finish_right: int, n_initial_rows: int,
+                         n_final_rows: int):
+    """Create an ascii arrow.
 
-    :param start_left: x-coor where last line arrow ends
-    :param finish_right: x-coor where first line arrow starts
-    :param n_initial_rows: y-padding
-    :param n_final_rows: y-padding
+    :param start_left: X-coordinate where the last line arrow ends.
+    :param finish_right: X-coor where the first line arrow starts.
+    :param n_initial_rows: Y-padding.
+    :param n_final_rows: Y-padding.
 
     Example:
 
@@ -38,21 +40,25 @@ def create_reverse_arrow(start_left, finish_right, n_initial_rows, n_final_rows)
         |
         v
     """
-    final = ''
-    for _ in range(n_initial_rows - 1):
-        final += ' ' * start_left + '│' + '\n'
     initial = ''
     for _ in range(n_final_rows - 1):
         initial += ' ' * (start_left + finish_right) + '│' + '\n'
+
+    final = ''
+    for _ in range(n_initial_rows - 1):
+        final += ' ' * start_left + '│' + '\n'
+
     underscore_line = list('_' * finish_right)
     if underscore_line:
         underscore_line[0] = ' '
     underscore_line = ''.join(underscore_line)
+
     output = initial \
-           + ' ' * start_left + underscore_line + '│' + ' ' + '\n' \
-           + final \
-           + ' ' * start_left + '▼'
+        + ' ' * start_left + underscore_line + '│' + ' ' + '\n' \
+        + final \
+        + ' ' * start_left + '▼'
     output = '\n'.join(output.split('\n')[1:])
+
     return output
 
 
@@ -64,14 +70,6 @@ def make_bold(x):
     return f'\33[1m{x}\33[0m'
 
 
-def make_faint(x):
-    """Make input faint
-
-    :param x: string input
-    """
-    return f'\33[2m{x}\33[0m'
-
-
 def make_green(x):
     """Make input green
 
@@ -80,14 +78,14 @@ def make_green(x):
     return f'\33[32m{x}\33[0m'
 
 
-def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
+def create_arrow(start_left: int, finish_right: int, n_initial_rows: int, n_final_rows: int) -> str:
     """
     Create an ascii arrow.
 
-    :param start_left: x-coor where first line arrow starts
-    :param finish_right: x-offset where last line arrow ends
-    :param n_initial_rows: y-padding
-    :param n_final_rows: y-padding
+    :param start_left: X-coordinate where the last line arrow ends.
+    :param finish_right: X-coor where the first line arrow starts.
+    :param n_initial_rows: Y-padding.
+    :param n_final_rows: Y-padding.
 
     Example:
 
@@ -109,10 +107,14 @@ def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
         + ' ' * (start_left + finish_right) + '▼'
 
 
-def format_argument(value):
+def format_argument(value: Any) -> str:
     """Format an argument value for printing."""
     return repr(value)
 
 
-def plen(value):
+def visible_len(value: str) -> int:
+    """The number of visible characters in a string.
+
+    Use this to get the length of strings that contain escape sequences.
+    """
     return int(len(value) - value.count('\x1b') * 4.5 + value.count('\x1b[1'))

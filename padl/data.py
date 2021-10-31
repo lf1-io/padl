@@ -1,3 +1,6 @@
+"""Data utilities. """
+
+
 class SimpleDataset:
     """A simple dataset.
 
@@ -8,6 +11,7 @@ class SimpleDataset:
     :param exception: Exception to catch for (fall back to *default*).
     :param default: The default value to fall back to in case of exception.
     """
+
     def __init__(self, samples, trans, exception=None, default=None):
         self.samples = samples
         self.trans = trans
