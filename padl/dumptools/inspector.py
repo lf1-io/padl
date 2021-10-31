@@ -1,11 +1,11 @@
-"""Inspect utils. """
+"""Utilities for inspecting frames. """
+
 import ast
 import dis
 import inspect
-import linecache
 import sys
 import types
-from typing import Callable, Optional
+from typing import Callable, Literal, Optional
 from warnings import warn
 
 from padl.dumptools import symfinder, var2mod
@@ -20,12 +20,17 @@ class CallInfo:
         - the function from which that call was made
         - the scope (see `symfinder.Scope`)
 
-    :param drop_n: Drop *n* from the calling scope.
+    :param origin: Where to look for the call, can be
+        - "nextmodule": use the first frame not in the module the object was created in
+        - "here": use the frame the object was created in
+    :param drop_n: Drop *n* levels from the calling scope.
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
 
     :returns: A CallInfo object.
     """
 
-    def __init__(self, origin='nextmodule', drop_n: int = 0, ignore_scope=False):
+    def __init__(self, origin: Literal['nextmodule', 'here'] = 'nextmodule',
+                 drop_n: int = 0, ignore_scope: bool = False):
         assert isinstance(origin, inspect.FrameInfo) or origin in ('nextmodule', 'here')
         if isinstance(origin, inspect.FrameInfo):
             caller_frameinfo = origin
@@ -39,6 +44,7 @@ class CallInfo:
 
     def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
                          drop_n: int, ignore_scope: bool) -> symfinder.Scope:
+        """Determine the scope of the caller frame. """
         module = _module(caller_frameinfo.frame)
 
         if self.function == '<module>' or ignore_scope:
@@ -49,8 +55,8 @@ class CallInfo:
             fdef_lineno = caller_frameinfo.frame.f_lineno
             calling_scope = symfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
             scope = symfinder.Scope.from_source(definition_source, fdef_lineno,
-                                                  call_source, module, drop_n,
-                                                  calling_scope)
+                                                call_source, module, drop_n,
+                                                calling_scope)
             assert len(scope) <= 1, 'scope longer than 1 currently not supported'
             return scope
         except (SyntaxError, RuntimeError) as exc:
@@ -63,7 +69,7 @@ class CallInfo:
         return self.scope.module
 
 
-def non_init_caller_frameinfo() -> inspect.FrameInfo:  # TODO: generalize?
+def non_init_caller_frameinfo() -> inspect.FrameInfo:
     """Get the FrameInfo for the first outer frame that is not of an "__init__" method. """
     stack = inspect.stack()
     frameinfo = None
@@ -115,31 +121,33 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None):
     frame.f_trace = trace
 
 
-def _instructions_up_to_call(x):
+def _instructions_up_to_call(x) -> list:
     """Get all instructions up to last CALL FUNCTION. """
     instructions = list(dis.get_instructions(x))
+    i = 0
     for i, instruction in enumerate(instructions[::-1]):
         if instruction.opname.startswith('CALL_'):
             break
     return instructions[:-i]
 
 
-def _instructions_in_name(x):
+def _instructions_in_name(x) -> list:
     """Get all instructions up to last CALL FUNCTION. """
     instructions = list(dis.get_instructions(x))
+    i = 0
     for i, instruction in enumerate(instructions):
         if instruction.opname not in ('LOAD_NAME', 'LOAD_ATTR'):
             break
     return instructions[:i]
 
 
-def _instructions_in_getitem(x):
+def _instructions_in_getitem(x) -> list:
     """Get all instructions up to last CALL FUNCTION. """
     instructions = list(dis.get_instructions(x))
     return instructions[:-1]
 
 
-def _instructions_up_to_offset(x, lasti):
+def _instructions_up_to_offset(x, lasti: int) -> list:
     """Get all instructions up to offset *lasti*. """
     instructions = []
     for instruction in dis.get_instructions(x):
@@ -150,7 +158,11 @@ def _instructions_up_to_offset(x, lasti):
 
 
 def get_statement(source: str, lineno: int):
-    """Get complete (potentially multi-line) statement at line *lineno* out of *source*. """
+    """Get complete (potentially multi-line) statement at line *lineno* out of *source*.
+
+    :returns: A tuple of statement and offset. The offset is a tuple of row offset and col offset.
+        It can be used to determine the location of the satement within the source.
+    """
     for row_offset in range(lineno):
         try:
             block, lineno_in_block, col_offset = get_surrounding_block(source, lineno - row_offset)
@@ -162,7 +174,7 @@ def get_statement(source: str, lineno: int):
                 return statement, (lineno - 1, -col_offset)
             except SyntaxError:
                 statement = _get_statement_from_block('(\n' + block + '\n)',
-                                                              lineno_in_block + row_offset + 1)
+                                                      lineno_in_block + row_offset + 1)
                 return statement, (lineno - lineno_in_block - 1, -col_offset)
         except SyntaxError:
             continue
@@ -170,6 +182,7 @@ def get_statement(source: str, lineno: int):
 
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
+    """Get a statement from ."""
     module = ast.parse(block)
     stmts = []
     for stmt in module.body:
@@ -218,30 +231,12 @@ def get_surrounding_block(source: str, lineno: int):
     return '\n'.join(block), lineno_in_block, white
 
 
-def _module(frame: types.FrameType):
+def _module(frame: types.FrameType) -> types.ModuleType:
     """Get module of *frame*. """
     try:
         return frame.f_globals['_pd_module']
     except KeyError:
         return sys.modules[frame.f_globals['__name__']]
-
-
-def _same_module_stack(depth: int):  # TODO: remove (not being used)?
-    stack = inspect.stack()[depth + 1:]
-    module_name = stack[0].frame.f_globals['__name__']
-    same_module = []
-    for f in stack:
-        if f.frame.f_globals['__name__'] == module_name:
-            same_module.append(f)
-        else:
-            break
-    res = []
-    path = module_name
-    for frame_info in same_module[::-1]:
-        if frame_info.function != '<module>':
-            path += '.' + frame_info.function
-        res.append((frame_info.frame, path + ''))
-    return res[::-1]
 
 
 def outer_caller_frameinfo(module_name: str) -> inspect.FrameInfo:
@@ -269,15 +264,11 @@ def caller_frame() -> types.FrameType:
     return outer_caller_frameinfo(calling_module_name).frame
 
 
-def get_call_segment_from_frame(caller_frame: types.FrameType) -> str:
-    return get_segment_from_frame(caller_frame, 'call')
-
-
-def get_attribute_segment_from_frame(caller_frame: types.FrameType) -> str:
-    return get_segment_from_frame(caller_frame, 'attribute')
-
-
 def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_locs=False) -> str:
+    """Get a segment of a given type from a frame.
+
+    *segement_type* can be 'call', 'attribute', 'getitem'.
+    """
     if segment_type == 'call':
         node_type = ast.Call
         instructions_finder = _instructions_up_to_call
@@ -351,7 +342,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     return segment
 
 
-def _count_leading_whitespace(line: str):
+def _count_leading_whitespace(line: str) -> int:
     """Count the number of spaces *line* starts with. """
     i = 0
     for char in line:

@@ -22,7 +22,8 @@ history.
 import ast
 from math import inf
 import sys
-from typing import Tuple
+from types import ModuleType
+from typing import List, Tuple
 
 from padl.dumptools import sourceget
 
@@ -278,7 +279,16 @@ def _get_call_signature(source: str):
 
 
 class Scope:
-    def __init__(self, module, def_source, scopelist):
+    """A scope.
+
+    Scope objects can be used to find names that are not defined globally in a module, but
+    nested, for example within a function body.
+
+    It contains the module, the source string and a "scopelist".
+    """
+
+    def __init__(self, module: ModuleType, def_source: str,
+                 scopelist: List[Tuple[str, ast.AST]]):
         self.module = module
         self.def_source = def_source
         self.scopelist = scopelist
@@ -290,10 +300,20 @@ class Scope:
 
     @classmethod
     def empty(cls):
+        """Create the empty scope (a scope with no module and no nesting). """
         return cls(None, '', [])
 
     @classmethod
-    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0, calling_scope=None):
+    def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0,
+                    calling_scope=None):
+        """Create a `Scope` object from source code.
+
+        :param def_source: The source string containing the scope.
+        :param lineno: The line number to get the scope from.
+        :param call_source: The source of the call used for accessing the scope.
+        :param module: The module.
+        :param drop_n: Number of levels to drop from the scope.
+        """
         tree = ast.parse(def_source)
         branch = _find_branch(tree, lineno)
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
@@ -333,22 +353,28 @@ class Scope:
 
         return cls(module, def_source, scopelist)
 
-    def from_level(self, i):
+    def from_level(self, i: int) -> 'Scope':
+        """Return a new scope starting at level *i* of the scope hierarchy. """
         return type(self)(self.module, self.def_source, self.scopelist[i:])
 
-    def up(self):
+    def up(self) -> 'Scope':
+        """Return a new scope one level up in the scope hierarchy. """
         return type(self)(self.module, self.def_source, self.scopelist[1:])
 
-    def global_(self):
+    def global_(self) -> 'Scope':
+        """Return the global scope surrounding *self*. """
         return type(self)(self.module, self.def_source, [])
 
     @property
-    def module_name(self):
+    def module_name(self) -> str:
+        """The name of the scope's module. """
         if self.module is None:
             return ''
         return self.module.__name__
 
-    def unscoped(self, varname):
+    def unscoped(self, varname: str) -> str:
+        """Convert a variable name in an "unscoped" version by adding strings representing
+        the containing scope. """
         if not self.scopelist:
             return varname
         return f'{"_".join(x[0] for x in [self.module_name] + self.scopelist)}_{varname}'
