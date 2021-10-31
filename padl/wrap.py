@@ -18,7 +18,7 @@ def _set_local_varname(frame, event, _args):
         for k, v in frame.f_locals.items():
             try:
                 if v._pd_varname is _notset or v._pd_varname is None:
-                    v._pd_set_varname(k)
+                    v._pd_varname = k
             except AttributeError:
                 continue
 

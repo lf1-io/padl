@@ -40,16 +40,16 @@ def create_reverse_arrow(start_left, finish_right, n_initial_rows, n_final_rows)
     """
     final = ''
     for _ in range(n_initial_rows - 1):
-        final += ' ' * start_left + '|' + '\n'
+        final += ' ' * start_left + '│' + '\n'
     initial = ''
     for _ in range(n_final_rows - 1):
-        initial += ' ' * (start_left + finish_right) + '|' + '\n'
+        initial += ' ' * (start_left + finish_right) + '│' + '\n'
     underscore_line = list('_' * finish_right)
     if underscore_line:
         underscore_line[0] = ' '
     underscore_line = ''.join(underscore_line)
     output = initial \
-           + ' ' * start_left + underscore_line + '|' + ' ' + '\n' \
+           + ' ' * start_left + underscore_line + '│' + ' ' + '\n' \
            + final \
            + ' ' * start_left + '▼'
     output = '\n'.join(output.split('\n')[1:])
@@ -85,7 +85,7 @@ def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
     Create an ascii arrow.
 
     :param start_left: x-coor where first line arrow starts
-    :param finish_right: x-coor where last line arrow ends
+    :param finish_right: x-offset where last line arrow ends
     :param n_initial_rows: y-padding
     :param n_final_rows: y-padding
 
@@ -97,12 +97,14 @@ def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
     """
     initial = ''
     for _ in range(n_initial_rows - 1):
-        initial += ' ' * start_left + '|' + '\n'
+        initial += ' ' * start_left + '│' + '\n'
     final = ''
     for _ in range(n_final_rows - 1):
-        final += ' ' * (start_left + finish_right) + '|' + '\n'
-    return initial + ' ' * start_left + '|' \
-        + '_' * (finish_right - 1) + '\n' \
+        final += ' ' * (start_left + finish_right) + '│' + '\n'
+    bend_start = '└' if finish_right else '│'
+    bend_end = '┐' if finish_right else ''
+    return initial + ' ' * start_left + bend_start \
+        + '─' * (finish_right - 1) + bend_end + '\n' \
         + final \
         + ' ' * (start_left + finish_right) + '▼'
 
@@ -110,3 +112,7 @@ def create_arrow(start_left, finish_right, n_initial_rows, n_final_rows):
 def format_argument(value):
     """Format an argument value for printing."""
     return repr(value)
+
+
+def plen(value):
+    return int(len(value) - value.count('\x1b') * 4.5 + value.count('\x1b[1'))

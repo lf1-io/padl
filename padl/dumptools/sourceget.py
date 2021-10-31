@@ -90,7 +90,7 @@ class ReplaceString(str):
         new_from_line = self.from_line - from_line
         new_to_line = self.to_line - from_line
         if from_line == self.from_line:
-            new_from_col = max(self.from_col - from_col, 0)
+            new_from_col = self.from_col - from_col
         else:
             new_from_col = self.from_col
         if to_line == self.to_line and to_col < self.to_col:
@@ -99,6 +99,12 @@ class ReplaceString(str):
             new_to_col = self.to_col
         if self.to_line == from_line:
             new_to_col -= from_col
+
+        if new_from_line < 0:
+            new_from_col = 0
+        if new_to_line < 0:
+            new_from_col = 0
+            new_to_col = 0
 
         return ReplaceString('\n'.join(lines), self.what, new_from_line, new_to_line, new_from_col,
                              new_to_col)
@@ -207,7 +213,21 @@ def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int):
 
 def replace(string, what, from_line, to_line, from_col, to_col):
     """Replace a substring in *string* with what. """
+    if from_line < 0 and to_line < 0:
+        return string
+
     lines = string.split('\n')
+
+    if from_line > len(lines) - 1 and to_line > len(lines) - 1:
+        return string
+
+    if from_line < 0:
+        from_col = 0
+    from_line = max(from_line, 0)
+    if to_line > len(lines) - 1:
+        to_col = len(lines[-1])
+    to_line = min(to_line, len(lines) - 1)
+
     for i, line in enumerate(lines[:-1]):
         lines[i] = line + '\n'
 
