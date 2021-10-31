@@ -23,7 +23,7 @@ class Serializer:
     @property
     def varname(self):
         """The varname to store in the dumped code. """
-        return f'TADL_VALUE_{self.index}'
+        return f'PADL_VALUE_{self.index}'
 
     @classmethod
     def save_all(cls, codegraph, scopemap, path):

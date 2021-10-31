@@ -121,6 +121,7 @@ class Transform:
         """
         named_copy = copy(self)
         named_copy._pd_name = name
+        named_copy._pd_varname = _notset
         return named_copy
 
     def __invert__(self) -> "Map":
@@ -274,6 +275,14 @@ class Transform:
         return graph, scopemap
 
     def _pd_evaluable_repr(self, indent: int = 0) -> str:
+        """Return a string that if evaluated *in the same scope where the transform was created*
+        creates the transform. """
+        result = self._pd_evaluable_repr_inner(indent)
+        if self._pd_name is not None:
+            return f"{result} - '{self._pd_name}'"
+        return result
+
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
         # pylint: disable=unused-argument,no-self-use
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
@@ -511,7 +520,7 @@ class Transform:
 
     @property
     def pd_forward(self) -> "Transform":
-        """The forward part of the transform and send to GPU"""
+        """The forward part of the transform (that what's typically done on the GPU)."""
         if 'forward' in self.pd_component:
             return self
         return Identity()
@@ -652,7 +661,7 @@ class AtomicTransform(Transform):
         super().__init__(call_info, pd_name)
         self._pd_call = call
 
-    def _pd_evaluable_repr(self, indent: int = 0) -> str:
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
         return self._pd_call
 
     def _pd_title(self) -> str:
@@ -672,17 +681,17 @@ class FunctionTransform(AtomicTransform):
 
     Do not use this directly - rather, wrap a function using `padl.transform`,
 
-    as a decorator,
+    as a decorator::
 
         @transform
         def f(x):
             ...
 
-    inline,
+    inline::
 
         t = transform(f)
 
-    or with a lambda function
+    or with a lambda function::
 
         t = transform(lambda x: x + 1)
 
@@ -861,7 +870,7 @@ class Map(Transform):
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
         yield self.transform
 
-    def _pd_evaluable_repr(self, indent: int=0) -> str:
+    def _pd_evaluable_repr_inner(self, indent: int=0) -> str:
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
@@ -933,7 +942,7 @@ class CompoundTransform(Transform):
         self._pd_postprocess = None
 
         transforms = self._flatten_list(transforms)
-        self.transforms = transforms
+        self.transforms: List[Transform] = transforms
 
         self._pd_component_list = [t.pd_component for t in self.transforms]
         try:
@@ -950,6 +959,7 @@ class CompoundTransform(Transform):
         named_copy = copy(self)
         named_copy._pd_name = name
         named_copy._pd_group = True
+        named_copy._pd_varname = _notset
         return named_copy
 
     def __getitem__(self, item: Union[int, slice, str]) -> Transform:
@@ -972,7 +982,7 @@ class CompoundTransform(Transform):
             raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
-    def _pd_evaluable_repr(self, indent=0):
+    def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
             x.pd_varname() or x._pd_evaluable_repr(indent + 4)
             for x in self.transforms
