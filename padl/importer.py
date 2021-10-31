@@ -41,7 +41,7 @@ class PatchedModule:
         if inspect.isclass(x):
             if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
                 call_info = inspector.CallInfo()
-                return _wrap_class(x, call_info=call_info)
+                return _wrap_class(x)
             return x
         if callable(x):
             call_info = inspector.CallInfo()
