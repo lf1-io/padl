@@ -8,7 +8,7 @@ import types
 from typing import Callable, Optional
 from warnings import warn
 
-from padl.dumptools import thingfinder, var2mod
+from padl.dumptools import symfinder, var2mod
 from padl.dumptools.sourceget import get_source, original, cut
 
 
@@ -18,7 +18,7 @@ class CallInfo:
     Contains the following information:
         - the module from which the call was made
         - the function from which that call was made
-        - the scope (see `thingfinder.Scope`)
+        - the scope (see `symfinder.Scope`)
 
     :param drop_n: Drop *n* from the calling scope.
 
@@ -38,24 +38,24 @@ class CallInfo:
         self.scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
 
     def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
-                         drop_n: int, ignore_scope: bool) -> thingfinder.Scope:
+                         drop_n: int, ignore_scope: bool) -> symfinder.Scope:
         module = _module(caller_frameinfo.frame)
 
         if self.function == '<module>' or ignore_scope:
-            return thingfinder.Scope.toplevel(module)
+            return symfinder.Scope.toplevel(module)
         try:
             call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
             definition_source = get_source(caller_frameinfo.filename)
             fdef_lineno = caller_frameinfo.frame.f_lineno
-            calling_scope = thingfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
-            scope = thingfinder.Scope.from_source(definition_source, fdef_lineno,
+            calling_scope = symfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
+            scope = symfinder.Scope.from_source(definition_source, fdef_lineno,
                                                   call_source, module, drop_n,
                                                   calling_scope)
             assert len(scope) <= 1, 'scope longer than 1 currently not supported'
             return scope
         except (SyntaxError, RuntimeError) as exc:
             warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
-            return thingfinder.Scope.toplevel(module)
+            return symfinder.Scope.toplevel(module)
 
     @property
     def module(self):
@@ -195,14 +195,14 @@ def get_surrounding_block(source: str, lineno: int):
     """
     lines = source.split('\n')
     before, after = lines[:lineno-1], lines[lineno:]
-    white = thingfinder._count_leading_whitespace(lines[lineno-1])
+    white = _count_leading_whitespace(lines[lineno-1])
     if white is None:
         raise ValueError('Line is empty.')
     block = [lines[lineno-1][white:]]
     lineno_in_block = 1
     while before:
         next_ = before.pop(-1)
-        next_white = thingfinder._count_leading_whitespace(next_)
+        next_white = _count_leading_whitespace(next_)
         if next_white is None or next_white >= white:
             block = [next_[white:]] + block
         else:
@@ -210,7 +210,7 @@ def get_surrounding_block(source: str, lineno: int):
         lineno_in_block += 1
     while after:
         next_ = after.pop(0)
-        next_white = thingfinder._count_leading_whitespace(next_)
+        next_white = _count_leading_whitespace(next_)
         if next_white is None or next_white >= white:
             block = block + [next_[white:]]
         else:
@@ -349,3 +349,13 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
             segment, locs
         )
     return segment
+
+
+def _count_leading_whitespace(line: str):
+    """Count the number of spaces *line* starts with. """
+    i = 0
+    for char in line:
+        if char == ' ':
+            i += 1
+            continue
+        return i

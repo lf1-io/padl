@@ -1,6 +1,28 @@
+"""Module for symbolically finding python entities in python source code given their name.
+
+A thing in python can get its name in various ways:
+
+ - it's defined as a function
+ - it's defined as a class
+ - it's assigned
+ - it is imported
+ - it's created in a with statement
+ - it's created in a for loop
+
+This module defines subclasses of the `_ThingFinder` class, which allow to identify these cases
+in an AST tree of a source code.
+
+Finding names in code then corresponds to building the AST tree of the code and using the
+`_ThingFinder` subclasses to identify if and how the names were created.
+
+The main function to use is `find`, which will find a name in a module or the current ipython
+history.
+"""
+
 import ast
 from math import inf
 import sys
+from typing import Tuple
 
 from padl.dumptools import sourceget
 
@@ -14,7 +36,7 @@ class _ThingFinder(ast.NodeVisitor):
         of the module.
     """
 
-    def __init__(self, source, var_name, max_n=inf):
+    def __init__(self, source: str, var_name: str, max_n: int = inf):
         self.source = source
         self.var_name = var_name
         self.statement_n = 0
@@ -42,11 +64,13 @@ class _ThingFinder(ast.NodeVisitor):
         # don't search definitions
         pass
 
-    def deparse(self):
+    def deparse(self) -> str:
+        """Get the source snipped corresponding to the found node. """
         return ast.get_source_segment(self.source, self._result)
 
-    def node(self):
-        #TODO: correctly inherit (is not always _result)
+    def node(self) -> ast.AST:
+        """Get the found node. """
+        # TODO: correctly inherit (is not always _result)
         return self._result
 
 
@@ -55,6 +79,8 @@ class _NameFinder(_ThingFinder):
 
 
 class _FunctionDefFinder(_NameFinder):
+    """Class for finding a *function definition* of a specified name in an AST tree. """
+
     def visit_FunctionDef(self, node):
         if node.name == self.var_name:
             self._result = node
@@ -83,6 +109,8 @@ class _FunctionDefFinder(_NameFinder):
 
 
 class _ClassDefFinder(_NameFinder):
+    """Class for finding a *class definition* of a specified name in an AST tree. """
+
     def visit_ClassDef(self, node):
         if node.name == self.var_name:
             self._result = node
@@ -96,6 +124,8 @@ class _ClassDefFinder(_NameFinder):
 
 
 class _ImportFinder(_NameFinder):
+    """Class for finding a *module import* of a specified name in an AST tree. """
+
     def visit_Import(self, node):
         for name in node.names:
             if name.asname == self.var_name:
@@ -118,6 +148,8 @@ class _ImportFinder(_NameFinder):
 
 
 class _ImportFromFinder(_NameFinder):
+    """Class for finding a *from import* of a specified name in an AST tree. """
+
     def visit_ImportFrom(self, node):
         for name in node.names:
             if name.asname == self.var_name:
@@ -140,6 +172,8 @@ class _ImportFromFinder(_NameFinder):
 
 
 class _AssignFinder(_NameFinder):
+    """Class for finding a *variable assignment* of a specified name in an AST tree. """
+
     def visit_Assign(self, node):
         for target in node.targets:
             if self._parse_target(target):
@@ -164,6 +198,8 @@ class _AssignFinder(_NameFinder):
 
 
 class _CallFinder(_ThingFinder):
+    """Class for finding a *call* in an AST tree. """
+
     def visit_Call(self, node):
         if node.func.id == self.var_name:
             self._result = node
@@ -173,7 +209,7 @@ class _CallFinder(_ThingFinder):
         self.visit(tree)
         if self.found_something():
             return self._get_name(self._result), *_get_call_signature(self.source)
-        raise ThingNotFound(f'Did not find call of "{self.var_name}".')
+        raise NameNotFound(f'Did not find call of "{self.var_name}".')
 
     def _get_name(self, call: ast.Call):
         return ast.get_source_segment(self.source, call.func)
@@ -344,7 +380,13 @@ def find_in_function_def(var_name, source, lineno, call_source):
     return find_in_scope(var_name, scope)
 
 
-def find_in_scope(var_name, scope):
+def find_in_scope(var_name: str, scope: Scope):
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    scope *scope*.
+
+    :param var_name: Name of the variable to look for.
+    :param scope: Scope to search.
+    """
     for _scopename, tree in scope.scopelist:
         try:
             source, node = find_in_source(var_name, scope.def_source, tree=tree)
@@ -353,15 +395,22 @@ def find_in_scope(var_name, scope):
             except AttributeError:
                 pass
             return (source, node), scope
-        except ThingNotFound:
+        except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
-        raise ThingNotFound(f'{var_name} not found in function hierarchy.')
+        raise NameNotFound(f'{var_name} not found in function hierarchy.')
     return find(var_name, scope.module), scope.global_()
 
 
-def find_in_source(var_name: str, source: str, tree=None):
+def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    source string *source*.
+
+    :param var_name: Name of the variable to look for.
+    :param source: Source code to search.
+    :returns: Tuple with source code segment and corresponding AST node.
+    """
     if tree is None:
         tree = ast.parse(source)
     min_n = inf
@@ -374,13 +423,13 @@ def find_in_source(var_name: str, source: str, tree=None):
             best = finder
             min_n = finder.statement_n
     if best is None:
-        raise ThingNotFound(f'{var_name} not found.')
+        raise NameNotFound(f'{var_name} not found.')
     return best.deparse(), best.node()
 
 
-def find_in_module(var_name: str, module):
-    """Find the piece of code in the module *module* that assigned a value to the
-    variable with name *var_name*.
+def find_in_module(var_name: str, module) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    module *module*.
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search.
@@ -390,66 +439,72 @@ def find_in_module(var_name: str, module):
     return find_in_source(var_name, source)
 
 
-def _find_branch(node, lineno):
+def _find_branch(tree, lineno):
+    """Find the branch of the ast tree *tree* containing *lineno*. """
+
     try:
-        start, end = node.lineno, node.end_lineno
+        start, end = tree.lineno, tree.end_lineno
+        # we're outside
         if not start <= lineno <= end:
             return False
     except AttributeError:
+        # this is for the case of nodes that have no lineno, for these we need to go deeper
         start = end = '?'
 
-    child_nodes = list(ast.iter_child_nodes(node))
+    child_nodes = list(ast.iter_child_nodes(tree))
     if not child_nodes and start != '?':
-        return [node]
+        return [tree]
 
     for child_node in child_nodes:
         res = _find_branch(child_node, lineno)
         if res:
-            return [node] + res
+            return [tree] + res
 
     if start == '?':
         return False
 
-    return [node]
+    return [tree]
 
 
-def _count_leading_whitespace(line: str):
-    i = 0
-    for char in line:
-        if char == ' ':
-            i += 1
-            continue
-        return i
+def find_in_ipython(var_name: str) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    ipython history.
 
-
-def find_in_ipython(var_name: str):
+    :param var_name: Name of the variable to look for.
+    :returns: Tuple with source code segment and the corresponding ast node.
+    """
     source = node = None
     for cell in sourceget._ipython_history()[::-1]:
         try:
             source, node = find_in_source(var_name, cell)
-        except (ThingNotFound, SyntaxError):
+        except (NameNotFound, SyntaxError):
             continue
         break
     if source is None:
-        raise ThingNotFound(f'"{var_name}" not found.')
+        raise NameNotFound(f'"{var_name}" not found.')
     return source, node
 
 
-def find(var_name: str, module=None):
-    """Find the piece of code in the module *module* that assigned a value to the
-    variable with name *var_name*. If *module* is not specified, this uses `__main__`.
+def find(var_name: str, module=None) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    module *module*.
+
+    If *module* is not specified, this uses `__main__`. In that case, the ipython history will
+    be searched as well.
 
     :param var_name: Name of the variable to look for.
-    :param module: Module to search.
+    :param module: Module to search (defaults to __main__).
     :returns: Tuple with source code segment and corresponding ast node.
     """
     if module is None:
         module = sys.modules['__main__']
     try:
         return find_in_module(var_name, module)
-    except TypeError:
+    except TypeError as exc:
+        if module is not sys.modules['__main__']:
+            raise NameNotFound(f'"{var_name}" not found.') from exc
         return find_in_ipython(var_name)
 
 
-class ThingNotFound(Exception):
-    pass
+class NameNotFound(Exception):
+    """Exception indicating that a name could not be found. """
