@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from padl.dumptools import var2mod, inspector
+from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
     ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
@@ -103,11 +104,65 @@ def _wrap_class(cls, ignore_scope=False):
 def _wrap_lambda(fun, ignore_scope=False):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
     become obsolete with python 3.11 (see also inspector.CallInfo). """
+    # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
     caller_frame = inspector.caller_frame()
-    caller = inspector.CallInfo(ignore_scope=ignore_scope)
-    call = inspector.get_segment_from_frame(caller_frame, 'call')
-    inner = var2mod.Finder(ast.Lambda).get_source_segments(call)[0][0]
+    # get the source
+    try:
+        full_source = caller_frame.f_globals['_pd_source']
+    except KeyError:
+        full_source = get_source(caller_frame.f_code.co_filename)
+    source, offset = inspector.get_statement(original(full_source), caller_frame.f_lineno)
+    # find all lambda nodes
+    nodes = var2mod.Finder(ast.Lambda).find(ast.parse(source))
+    candidate_segments = []
+    candidate_calls = []
+    for node in nodes:
+        # keep lambda nodes which are contained in a call of `lf.trans`
+        if not isinstance(node.parent, ast.Call):
+            continue
+        containing_call = ast.get_source_segment(source, node.parent.func)
+        containing_function = eval(containing_call, caller_frame.f_globals)
+        if containing_function is not transform:
+            continue
+        candidate_segments.append((
+            ast.get_source_segment(source, node),
+            (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+        ))
+        candidate_calls.append(ast.get_source_segment(source, node.parent))
 
+    # compare candidate's bytecodes to that of `fun`
+    # keep the call for the matching one
+    target_instrs = list(dis.get_instructions(fun))
+
+    found = False
+    call = None
+    locs = None
+
+    for (segment, locs), call in zip(candidate_segments, candidate_calls):
+        instrs = list(dis.get_instructions(eval(segment)))
+        if not len(instrs) == len(target_instrs):
+            continue
+        for instr, target_instr in zip(instrs, target_instrs):
+            if (instr.opname, target_instr.argval) != (instr.opname, target_instr.argval):
+                break
+        else:
+            found = True
+            break
+
+    if call is None or not found:
+        raise RuntimeError('Lambda not found.')
+
+    locs = (
+        locs[0] - 1 + offset[0],
+        locs[1] - 1 + offset[0],
+        locs[2] - offset[1],
+        locs[3] - offset[1]
+    )
+
+    segment = cut(full_source, *locs)
+
+    caller = inspector.CallInfo(ignore_scope=ignore_scope)
+    inner = var2mod.Finder(ast.Lambda).get_source_segments(call)[0][0]
     wrapper = FunctionTransform(fun, caller, call=call, source=inner)
     functools.update_wrapper(wrapper, fun)
     return wrapper
