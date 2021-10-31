@@ -279,7 +279,7 @@ class Transform:
         creates the transform. """
         result = self._pd_evaluable_repr_inner(indent)
         if self._pd_name is not None:
-            return f"{result} - '{self._pd_name}'"
+            return f"({result} - '{self._pd_name}')"
         return result
 
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
