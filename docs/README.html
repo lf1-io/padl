@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Why PADL? &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
@@ -87,9 +86,9 @@
 <p><strong>Pytorch</strong> <em>abstractions for deep learning</em>.</p>
 <hr class="docutils" />
 <p>Technical documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
-<section id="why-padl">
+<div class="section" id="why-padl">
 <h1>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h1>
-<section id="problem-statement">
+<div class="section" id="problem-statement">
 <h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h2>
 <p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
@@ -99,8 +98,8 @@
 <li><p>in <em>classification</em> the label lookup dictionaries, formatting the tensor to human readable output</p></li>
 </ul>
 <p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
-</section>
-<section id="standard-approach">
+</div>
+<div class="section" id="standard-approach">
 <h2>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h2>
 <p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
 <ul class="simple">
@@ -109,8 +108,8 @@
 <li><p>It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar</p></li>
 <li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
 </ul>
-</section>
-<section id="padl-solutions">
+</div>
+<div class="section" id="padl-solutions">
 <h2>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h2>
 <p>In creating <strong>PADL</strong> we aimed to create:</p>
 <ul class="simple">
@@ -118,11 +117,11 @@
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
 <li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
 </ul>
-</section>
-</section>
-<section id="installation">
+</div>
+</div>
+<div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python setup.py install
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
 </pre></div>
 </div>
 <p>Run tests to check:</p>
@@ -130,8 +129,8 @@
 pytest tests/
 </pre></div>
 </div>
-</section>
-<section id="project-structure">
+</div>
+<div class="section" id="project-structure">
 <h1>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h1>
 <p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
 <ul class="simple">
@@ -146,10 +145,10 @@ pytest tests/
 <p>Here’s a schematic of what this typically looks like:</p>
 <p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
-</section>
-<section id="basic-usage">
+</div>
+<div class="section" id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h1>
-<section id="defining-atomic-transforms">
+<div class="section" id="defining-atomic-transforms">
 <h2>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h2>
 <p>Imports:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tadl</span> <span class="k">as</span> <span class="nn">td</span>
@@ -219,8 +218,8 @@ pytest tests/
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-</section>
-<section id="defining-compound-transforms">
+</div>
+<div class="section" id="defining-compound-transforms">
 <h2>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h2>
 <p>Atomic transforms may be combined using 3 functional primitives:</p>
 <p>Transform composition: <strong>compose</strong></p>
@@ -267,8 +266,8 @@ pytest tests/
 <span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="decomposing-models">
+</div>
+<div class="section" id="decomposing-models">
 <h2>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h2>
 <p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span> <span class="o">=</span> <span class="n">model</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
@@ -278,8 +277,8 @@ pytest tests/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step_1</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>
-</section>
-<section id="naming-transforms-inside-models">
+</div>
+<div class="section" id="naming-transforms-inside-models">
 <h2>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h2>
 <p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
@@ -289,8 +288,8 @@ pytest tests/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>    <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-</section>
-<section id="applying-transforms-to-data">
+</div>
+<div class="section" id="applying-transforms-to-data">
 <h2>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h2>
 <p>To pass single data points may be passed through the transform:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
@@ -314,8 +313,8 @@ pytest tests/
     <span class="o">...</span>
 </pre></div>
 </div>
-</section>
-<section id="model-training">
+</div>
+<div class="section" id="model-training">
 <h2>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h2>
 <p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
@@ -328,8 +327,8 @@ pytest tests/
     <span class="n">o</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
 </pre></div>
 </div>
-</section>
-<section id="nlp-example">
+</div>
+<div class="section" id="nlp-example">
 <h2>NLP Example<a class="headerlink" href="#nlp-example" title="Permalink to this headline"></a></h2>
 <p>Suppose we define a simple classifier extending our NLP pipeline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
@@ -361,8 +360,8 @@ pytest tests/
 </pre></div>
 </div>
 <p>Data points must be tuples of sentences and labels.</p>
-</section>
-<section id="weight-sharing-for-auxiliary-production-models">
+</div>
+<div class="section" id="weight-sharing-for-auxiliary-production-models">
 <h2>Weight sharing for auxiliary production models<a class="headerlink" href="#weight-sharing-for-auxiliary-production-models" title="Permalink to this headline"></a></h2>
 <p>At run-time in production we often will need important postprocessing steps on top of tensor outputs. For example, to serve meaningful predictions from our NLP model, we would want to lookup the best prediction in the <code class="docutils literal notranslate"><span class="pre">CLASSES</span></code> variable:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
@@ -375,12 +374,12 @@ pytest tests/
 </pre></div>
 </div>
 <p>Since the weights are tied to <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code> trains together with <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, but with the added capability of producing human readable outputs.</p>
-</section>
-</section>
-<section id="licensing">
+</div>
+</div>
+<div class="section" id="licensing">
 <h1>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h1>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
-</section>
+</div>
 
 
            </div>

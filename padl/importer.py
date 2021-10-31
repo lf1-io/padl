@@ -12,7 +12,7 @@ True
 import importlib
 import inspect
 import sys
-from types import ModuleType
+from types import MethodWrapperType, ModuleType
 
 from padl.wrap import _wrap_class, _wrap_function
 
@@ -38,7 +38,9 @@ class PatchedModule:
     def __getattr__(self, key):
         x = getattr(self._module, key)
         if inspect.isclass(x):
-            return _wrap_class(x)
+            if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
+                return _wrap_class(x)
+            return x
         if callable(x):
             return _wrap_function(x, ignore_scope=True)
         if isinstance(x, ModuleType):
