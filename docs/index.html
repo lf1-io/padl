@@ -464,7 +464,7 @@ for the transform.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Compose.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Compose.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -516,25 +516,23 @@ for the transform.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.FunctionTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">FunctionTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">padl.dumptools.inspector.CallInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.FunctionTransform" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">FunctionTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">padl.dumptools.inspector.CallInfo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.FunctionTransform" title="Permalink to this definition"></a></dt>
 <dd><p>A transform that wraps a <em>function</em>.</p>
 <p>Do not use this directly - rather, wrap a function using <cite>padl.transform</cite>,</p>
-<p>as a decorator,</p>
-<blockquote>
-<div><p>&#64;transform
-def f(x):</p>
-<blockquote>
-<div><p>…</p>
-</div></blockquote>
-</div></blockquote>
-<p>inline,</p>
-<blockquote>
-<div><p>t = transform(f)</p>
-</div></blockquote>
-<p>or with a lambda function</p>
-<blockquote>
-<div><p>t = transform(lambda x: x + 1)</p>
-</div></blockquote>
+<p>as a decorator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>inline:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or with a lambda function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -543,6 +541,7 @@ def f(x):</p>
 created (needed for saving).</p></li>
 <li><p><strong>pd_name</strong> – name of the transform</p></li>
 <li><p><strong>call</strong> – The call string (defaults to the function’s name.</p></li>
+<li><p><strong>source</strong> – The source code (optional).</p></li>
 </ul>
 </dd>
 </dl>
@@ -581,7 +580,7 @@ created (needed for saving).</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Map.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Map.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -616,7 +615,7 @@ created (needed for saving).</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Parallel.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Parallel.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -651,7 +650,7 @@ created (needed for saving).</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Rollout.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Rollout.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -761,7 +760,7 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -986,7 +985,7 @@ will raise a FileExistsError.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.util_transforms.IfInStage.pd_forward">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><a class="headerlink" href="#padl.util_transforms.IfInStage.pd_forward" title="Permalink to this definition"></a></dt>
-<dd><p>The forward part of the transform and send to GPU</p>
+<dd><p>The forward part of the transform (that what’s typically done on the GPU).</p>
 </dd></dl>
 
 <dl class="py property">
