@@ -2,7 +2,6 @@ import pytest
 from padl import transform, Batchify
 import padl.transforms as padl
 from padl.util_transforms import IfTrain, IfEval, IfInfer
-from tests.fixtures.transforms import cleanup_checkpoint
 
 
 @transform
@@ -55,13 +54,13 @@ class TestIfInStage:
         assert list(self.transform_2.train_apply([1, 2])) == [6, 9]
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
 
-    def test_save_and_load(self, cleanup_checkpoint):
-        self.transform_1.pd_save('test.padl')
-        t1 = padl.load('test.padl')
+    def test_save_and_load(self, tmp_path):
+        self.transform_1.pd_save(tmp_path / 'test.padl')
+        t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 9
-        self.transform_2.pd_save('test.padl')
-        t2 = padl.load('test.padl')
+        self.transform_2.pd_save(tmp_path / 'test.padl')
+        t2 = padl.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 6
-        self.transform_3.pd_save('test.padl')
-        t3 = padl.load('test.padl')
+        self.transform_3.pd_save(tmp_path / 'test.padl')
+        t3 = padl.load(tmp_path / 'test.padl')
         assert t3.infer_apply(1) == 12
