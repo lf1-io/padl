@@ -235,7 +235,7 @@ class Transform:
 
             next_var, next_scope = next_
 
-            if next_var.startswith('TADL_VALUE'):
+            if next_var.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
