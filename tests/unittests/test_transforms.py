@@ -645,6 +645,19 @@ class TestClassInstance:
     def init(self, request):
         request.cls.transform_1 = transform(SimpleClass(1))
 
+    def test_wrap(self):
+        print(self.transform_1)
+        assert isinstance(self.transform_1, SimpleClass)
+        assert isinstance(self.transform_1, pd.Transform)
+
     def test_infer_apply(self):
-        print(isinstance(self.transform_1, SimpleClass))
-        print(self.transform_1(1))
+        assert self.transform_1.infer_apply(1) == 2
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([1])) == [2]
+
+    def test_train_apply(self):
+        assert list(self.transform_1.train_apply([1])) == [2]
+
+    def test_print(self):
+        print(self.transform_1)

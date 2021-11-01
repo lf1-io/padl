@@ -778,12 +778,15 @@ class ClassTransform(AtomicTransform):
     def source(self) -> str:
         """The class source code. """
         (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
-                                                self._pd_call_info.scope)
+                                                   self._pd_call_info.scope)
         body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
         return 'class ' + body_msg.split('class ', 1)[1]
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
+        if self._pd_arguments is None:
+            return ''
+
         args_list = []
         for key, value in self._pd_arguments.items():
             if key == 'args':

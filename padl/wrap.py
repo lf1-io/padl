@@ -143,7 +143,7 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
     cls.__init__ = __init__
     cls.__module__ = module
     cls.__getattr__ = __getattr__
-    return cls(cls_instance)
+    return cls(parent=cls_instance)
 
 
 def _wrap_lambda(fun, ignore_scope=False):
