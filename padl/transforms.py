@@ -747,7 +747,7 @@ class FunctionTransform(AtomicTransform):
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
-            warn(f'Coul not get closurevars ({exc}). This is usually fine as closurevars are only '
+            warn(f'Could not get closurevars ({exc}). This is usually fine as closurevars are only '
                  'needed for user defined transforms.',
                  RuntimeWarning)
             return {}, {}

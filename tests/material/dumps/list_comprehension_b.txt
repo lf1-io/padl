@@ -5,8 +5,8 @@ CONST = 1
 
 
 @transform
-def lc2(y):
+def listcomp_b(y):
     return [x + y for x in CONST]
 
 
-_pd_main = lc2
+_pd_main = listcomp_b

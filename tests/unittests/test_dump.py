@@ -1,3 +1,5 @@
+import pytest
+
 from padl import transform, group, IfTrain
 
 
@@ -19,13 +21,23 @@ def y(y):
 
 
 @transform
-def lc1(y):
+def listcomp_a(y):
     return [x + CONST for x in y]
 
 
 @transform
-def lc2(y):
+def listcomp_b(y):
     return [x + y for x in CONST]
+
+
+@transform
+def dictcomp_a(y):
+    return {x: x + CONST for x in y}
+
+
+@transform
+def setcomp_a(y):
+    return {x + CONST for x in y}
 
 
 def maketransform():
@@ -150,9 +162,29 @@ def test_if_train():
     assert IfTrain(x, y)._pd_dumps() == read_dump('iftrain')
 
 
-def test_lc1():
-    assert lc1._pd_dumps() == read_dump('list_comprehension_a')
+def test_listcomp_a():
+    assert listcomp_a._pd_dumps() == read_dump('list_comprehension_a')
 
 
-def test_lc2():
-    assert lc2._pd_dumps() == read_dump('list_comprehension_b')
+def test_listcomp_b():
+    assert listcomp_b._pd_dumps() == read_dump('list_comprehension_b')
+
+
+def test_dictcomp_a():
+    assert dictcomp_a._pd_dumps() == read_dump('dict_comprehension_a')
+
+
+def test_setcomp_a():
+    assert setcomp_a._pd_dumps() == read_dump('set_comprehension_a')
+
+
+def test_with_raises():
+    with open(__file__) as f:
+        x = f.read()
+
+    @transform
+    def t(y):
+        return x + y
+
+    with pytest.raises(NotImplementedError):
+        t._pd_dumps()

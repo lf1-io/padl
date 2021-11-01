@@ -115,8 +115,8 @@ class _VarFinder(ast.NodeVisitor):
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
                 targets.add(name.id)
-        all = set(x.id for x in Finder(ast.Name).find(node))
-        self.globals.update(all - targets - self.locals)
+        all_ = set(x.id for x in Finder(ast.Name).find(node))
+        self.globals.update(all_ - targets - self.locals)
 
     def visit_DictComp(self, node):
         self.visit_comprehension(node)
@@ -125,7 +125,7 @@ class _VarFinder(ast.NodeVisitor):
         self.visit_comprehension(node)
 
     def visit_SetComp(self, node):
-        pass
+        self.visit_comprehension(node)
 
     def visit_GeneratorExp(self, node):
         pass

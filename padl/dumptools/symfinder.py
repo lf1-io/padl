@@ -23,7 +23,8 @@ import ast
 from math import inf
 import sys
 from types import ModuleType
-from typing import List, Optional, Tuple
+from typing import List, Tuple
+from warnings import warn
 
 from padl.dumptools import sourceget
 
@@ -455,7 +456,9 @@ def replace_star_imports(tree: ast.Module):
                     node.names = [ast.alias(name=name, asname=None)
                                   for name in sys.modules[node.module].__all__]
                 except AttributeError:
-                    pass
+                    warn(f'Discovered star-import from "{node.module}". Failed to deternmine '
+                         'what is behind the star. This will prevent saving anything imported'
+                         ' by that.')
 
 
 def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]:
