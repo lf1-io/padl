@@ -4,6 +4,7 @@ import ast
 import dis
 import functools
 import inspect
+import copy
 
 import numpy as np
 import torch
@@ -11,8 +12,10 @@ import torch
 from padl.dumptools import var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
+
+import re
 
 
 def _set_local_varname(frame, event, _args):
@@ -92,14 +95,46 @@ def _wrap_class(cls, ignore_scope=False):
         old__init__(self, *args, **kwargs)
         args = signature.bind(None, *args, **kwargs).arguments
         args.pop(next(iter(args.keys())))
-        trans_class.__init__(self, ignore_scope=ignore_scope,
-                             arguments=args)
+        trans_class.__init__(self, ignore_scope=ignore_scope, arguments=args)
 
     functools.update_wrapper(__init__, old__init__)
 
     cls.__init__ = __init__
     cls.__module__ = module
     return cls
+
+
+def _wrap_class_instance(obj, ignore_scope=False):
+    """Patch __class__ of a class instance such that inherits from Transform.
+
+    This is called by `transform`, don't call `_wrap_class_instance` directly, always use
+    `transform`.
+
+    Example:
+
+    class MyClass:
+        def __init__(self, x):
+            ...
+
+    >>> myobj = transform(MyClass('hello'))
+    """
+    if issubclass(type(obj), torch.nn.Module):
+        trans_class = TorchModuleTransform
+    else:
+        trans_class = ClassTransform
+
+    obj_copy = copy.copy(obj)
+    obj_copy.__class__ = type(type(obj).__name__, (trans_class, type(obj)), {})
+
+    caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
+    call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
+    call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+    call = re.sub(r'\n\s*', ' ', call)
+    obj_copy._pd_arguments = None
+
+    AtomicTransform.__init__(obj_copy, call=call, call_info=call_info)
+
+    return obj_copy
 
 
 def _wrap_lambda(fun, ignore_scope=False):
@@ -134,7 +169,6 @@ def _wrap_lambda(fun, ignore_scope=False):
             (node.parent.lineno, node.parent.end_lineno,
              node.parent.col_offset, node.parent.end_col_offset)
         ))
-
 
     # compare candidate's bytecodes to that of `fun`
     # keep the call for the matching one
@@ -179,6 +213,8 @@ def transform(fun_or_cls, ignore_scope=False):
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
     if callable(fun_or_cls):
+        if not hasattr(fun_or_cls, '__name__'):
+            return _wrap_class_instance(fun_or_cls, ignore_scope)
         if fun_or_cls.__name__ == '<lambda>':
             return _wrap_lambda(fun_or_cls, ignore_scope)
         return _wrap_function(fun_or_cls, ignore_scope)

@@ -788,6 +788,9 @@ class ClassTransform(AtomicTransform):
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
+        if self._pd_arguments is None:
+            return '-?-'
+
         args_list = []
         for key, value in self._pd_arguments.items():
             if key == 'args':
