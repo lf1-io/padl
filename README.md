@@ -62,7 +62,7 @@ PADL's chief abstraction is `td.transforms.Transform`. This is an abstraction wh
 
 Loosely it can be thought of as a computational block with full support for **Pytorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
 
-Here's a schematic of what this typically looks like:
+Here's an example of what this might like:
 
 <img src="img/schematic.png" width="300">
 
@@ -75,8 +75,7 @@ The schematic represents a model which is a `Transform` instance with multiple s
 Imports:
 
 ```python
-import tadl as td
-from tadl import transform, batch, unbatch, group, this, transforms, importer
+from padl import this, transform, batch, unbatch, value, importer
 import torch
 ```
 
@@ -86,32 +85,30 @@ Transform definition using `transform` decorator:
 @transform
 def split_string(x):
     return x.split()
-    
-@transform
-def pad_tensor(x):
-    x = x[:10]
-    return torch.cat([x, torch.zeros(10 - len(x)).type(torch.long)])
-    
-ALPHABET = 'abcdefghijklmnopqrstuvwxyz .,-'
 
 @transform
-def lookup_letters(x):
-    lookup = dict(zip(list(ALPHABET), range(len(ALPHABET))))
-    return list(map(lookup.__getitem__, list(x)))
+def to_tensor(x):
+    x = x[:10][:]
+    for _ in range(10 - len(x)):
+        x.append(EOS_VALUE)
+    return torch.tensor(x)
 ```
 
 Any callable class implementing `__call__` can also become a transform:
 
 ```python
 @transform
-class Replace:
-    def __init__(self, to_replace, replacement):
-        self.to_replace = to_replace
-        self.replacement = replacement
-    def __call__(self, string):
-        return string.replace(self.to_replace, self.replacement)
+class ToInteger:
+    def __init__(self, words):
+        self.words = words + ['</s>']
+        self.dictionary = dict(zip(self.words, range(len(self.words))))
+        
+    def __call__(self, word):
+        if not word in self.dictionary:
+            word = "<unk>"
+        return self.dictionary[word]
       
-replace = Replace('-', ' ')
+to_integer = ToInteger('-', ' ')
 ```
 
 `transform` also supports inline lambda functions as transforms:
@@ -123,7 +120,7 @@ split_string = transform(lambda x: x.split())
 `this` yields inline transforms which reflexively reference object methods:
 
 ```python
-index_one = this[0]
+left_shift = this[:, :-1]
 lower_case = this.lower_case()
 ```
 
@@ -131,20 +128,24 @@ Pytorch layers are first class citizens via `td.transforms.TorchModuleTransform`
 
 ```python
 @transform
-class MyLayer(torch.nn.Module):
-    def __init__(self, n_input, n_output):
+class LM(torch.nn.Module):
+    def __init__(self, n_words):
         super().__init__()
-        self.embed = torch.nn.Embedding(n_input, n_output)
+        self.rnn = torch.nn.GRU(64, 512, 2, batch_first=True)
+        self.embed = torch.nn.Embedding(n_words, 64)
+        self.project = torch.nn.Linear(512, n_words)
+        
     def forward(self, x):
-        return self.embed(x)
+        output = self.rnn(self.embed(x))[0]
+        return self.project(output)
       
-layer = MyLayer(len(ALPHABET), 20)
+model = LM(N_WORDS)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
 print(isinstance(layer, td.transforms.Transform))         # prints "True"
 ```
 
-Finally, it's possibly to instantiate `Transform` directly from callables using `importer`. 
+Finally, it's possibly to instantiate `Transform` directly from importable callables using `importer`. 
 
 ```python
 normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
@@ -190,33 +191,28 @@ Applying multiple transforms to a single input: **rollout**
 s = transform_1 + transform_2
 ```
 
-Large transforms may be built in terms of combinations of these operations. For example the schematic above would be implemented by:
+Large transforms may be built in terms of combinations of these operations. For example the branching example above would be implemented by:
 
 ```python
-s = (
-     pre_00 / pre_01
-     >> pre_1
-     >> pre_2
-     >> batch
-     >> model_1 + model_2
-     >> unbatch
-     >> post
-)
-```
-
-Or a simple NLP string embedding model based on components defined above:
-
-```python
-
-model = (
-    this.lower()
-    >> this.strip()
-    >> split_string
-    >> lookup_letters
-    >> transform(lambda x: torch.tensor(x))
+preprocess = (
+    lower_case
+    >> clean
+    >> tokenize
+    >> ~ to_integer
+    >> to_tensor
     >> batch
-    >> layer
 )
+
+forward_pass = (
+    left_shift
+    >> IfTrain(word_dropout)
+    >> model
+)
+
+train_model = (
+    (preprocess >> model >> left_shift)
+    + (preprocess >> right_shift)
+) >> loss
 ```
 
 ### Decomposing models
@@ -224,7 +220,7 @@ model = (
 Often it is instructive to look at slices of a model -- this helps with e.g. checking intermediate computations:
 
 ```python
-preprocess = model[:4]
+preprocess[:3]
 ```
 
 Individual components may be obtained using indexing:
@@ -293,63 +289,6 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
     loss.backward()
     o.step()
 ```
-
-### NLP Example
-
-Suppose we define a simple classifier extending our NLP pipeline:
-
-```python
-model = (
-    this.lower()
-    >> this.strip()
-    >> split_string
-    >> lookup_letters
-    >> transform(lambda x: torch.tensor(x))
-    >> batch
-    >> layer
-    >> importer.torch.nn.Linear(20, N_LABELS)
-)
-```
-
-Targets to be computed are simple labels:
-
-```python
-@transform
-def lookup_classes(class_):
-    return next(i for i, c in enumerate(CLASSES) if c == class_)
-
-target = (
-    lookup_classes
-    >> transform(lambda x: torch.tensor(x))
-    >> batch
-)
-```
-
-In training the model outputs can be compared with the targets with:
-
-```python
-training_pipeline = (model / target) >> loss
-```
-
-Data points must be tuples of sentences and labels.
-
-### Weight sharing for auxiliary production models
-
-At run-time in production we often will need important postprocessing steps on top of tensor outputs. For example, to serve meaningful predictions from our NLP model, we would want to lookup the best prediction in the `CLASSES` variable:
-
-```python
-@transform
-def reverse_lookup(prediction):
-    return CLASSES[prediction.topk(1)[1].item()]
-```
-
-A useful production model would be:
-
-```python
-model >> unbatch >> reverse_lookup
-```
-
-Since the weights are tied to `training_pipeline`, `model` trains together with `training_pipeline`, but with the added capability of producing human readable outputs.
 
 ## Licensing
 PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
