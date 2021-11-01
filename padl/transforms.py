@@ -1184,8 +1184,6 @@ class Compose(CompoundTransform):
     def _pd_longrepr(self) -> str:
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
-
-        :param name: Line or lines of input.
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
