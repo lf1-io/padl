@@ -12,8 +12,10 @@ import torch
 from padl.dumptools import var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
+
+import re
 
 
 def _set_local_varname(frame, event, _args):
@@ -102,7 +104,7 @@ def _wrap_class(cls, ignore_scope=False):
     return cls
 
 
-def _wrap_class_instance(cls_instance, ignore_scope=False):
+def _wrap_class_instance(obj, ignore_scope=False):
     """Patch __class__ of a class instance such that inherits from Transform.
 
     This is called by `transform`, don't call `_wrap_class_instance` directly, always use
@@ -116,15 +118,23 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
 
     >>> myobj = transform(MyClass('hello'))
     """
-    if issubclass(type(cls_instance), torch.nn.Module):
+    if issubclass(type(obj), torch.nn.Module):
         trans_class = TorchModuleTransform
     else:
         trans_class = ClassTransform
 
-    cls_copy = copy.copy(cls_instance)
-    cls_copy.__class__ = type(type(cls_instance).__name__, (trans_class, type(cls_instance)), {})
-    trans_class.__init__(cls_copy, ignore_scope=ignore_scope)
-    return cls_copy
+    obj_copy = copy.copy(obj)
+    obj_copy.__class__ = type(type(obj).__name__, (trans_class, type(obj)), {})
+
+    caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
+    call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
+    call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
+    call = re.sub(r'\n\s*', ' ', call)
+    obj_copy._pd_arguments = None
+
+    AtomicTransform.__init__(obj_copy, call=call, call_info=call_info)
+
+    return obj_copy
 
 
 def _wrap_lambda(fun, ignore_scope=False):

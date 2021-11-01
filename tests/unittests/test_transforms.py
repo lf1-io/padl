@@ -689,6 +689,6 @@ class TestClassInstance:
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 2
-        self.transform_2.pd_save(tmp_path / 'test.padl')
+        self.transform_2.pd_save(tmp_path / 'test.padl', True)
         t2 = pd.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 2
