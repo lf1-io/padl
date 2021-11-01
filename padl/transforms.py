@@ -391,7 +391,10 @@ class Transform:
         """
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
-                if parameters.device.type != self.pd_device:
+                parameter_device = parameters.device.type
+                if ':' in self.pd_device and 'cuda' in parameter_device:
+                    parameter_device += f':{parameters.device.index}'
+                if parameter_device != self.pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -467,7 +470,7 @@ class Transform:
         if use_preprocess:
             data = SimpleDataset(
                 args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage)
+                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
@@ -496,10 +499,15 @@ class Transform:
                     pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
-                yield from output
+                if hasattr(self, '_pd_output_format'):
+                    yield from self._pd_output_format(*output)
+                else:
+                    yield from output
                 continue
-
-            yield output
+            if hasattr(self, '_pd_output_format'):
+                yield self._pd_output_format(*output)
+            else:
+                yield output
 
     @property
     def pd_device(self) -> str:
@@ -540,6 +548,10 @@ class Transform:
         self._pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     @property
@@ -1054,6 +1066,10 @@ class CompoundTransform(Transform):
         self._pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
@@ -1374,8 +1390,9 @@ class Rollout(CompoundTransform):
         out = []
         for transform_ in self.transforms:
             out.append(transform_._pd_call_transform(arg))
-        out = self._pd_output_format(*out)
-        return out
+        if self.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1447,8 +1464,9 @@ class Parallel(CompoundTransform):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_._pd_call_transform(arg[ind]))
-        out = self._pd_output_format(*out)
-        return out
+        if self.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
