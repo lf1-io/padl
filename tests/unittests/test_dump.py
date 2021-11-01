@@ -1,4 +1,4 @@
-from padl import transform, group
+from padl import transform, group, IfTrain
 
 
 CONST = 1
@@ -16,6 +16,16 @@ def k(o):
 @transform
 def y(y):
     return CONST + k(y)
+
+
+@transform
+def lc1(y):
+    return [x + CONST for x in y]
+
+
+@transform
+def lc2(y):
+    return [x + y for x in CONST]
 
 
 def maketransform():
@@ -112,12 +122,6 @@ def test_nested_dump_a():
     assert maketransform()._pd_dumps() == read_dump('nested_a')
 
 
-def test_nested_dump_b():
-    t = maketransformclass()(1, 2, x)
-    # TODO: make this work, currently it gives maketransformclass()(1, 2, x)
-    assert t._pd_call == "MyClassTransform(1, 2, x)"
-
-
 def test_nested_dump_c():
     t = makeclasstransform(1, 2, x)
     assert t._pd_dumps() == read_dump('nested_c')
@@ -140,3 +144,15 @@ g_a = x + group(y + x + x)
 
 def test_grouped_dump_a():
     assert g_a._pd_dumps() == read_dump('grouped_a')
+
+
+def test_if_train():
+    assert IfTrain(x, y)._pd_dumps() == read_dump('iftrain')
+
+
+def test_lc1():
+    assert lc1._pd_dumps() == read_dump('list_comprehension_a')
+
+
+def test_lc2():
+    assert lc2._pd_dumps() == read_dump('list_comprehension_b')
