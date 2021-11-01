@@ -7,15 +7,4 @@ Welcome to PADL's documentation!
    :maxdepth: 3
    :caption: Contents:
 
-Transforms
-----------
-
-.. automodule:: padl.transforms
-    :members:
-
-Util Transforms
----------------
-
-.. automodule:: padl.util_transforms
-    :members:
 
