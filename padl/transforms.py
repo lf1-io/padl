@@ -467,7 +467,7 @@ class Transform:
         if use_preprocess:
             data = SimpleDataset(
                 args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage)
+                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
@@ -496,10 +496,15 @@ class Transform:
                     pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
-                yield from output
+                if hasattr(self, '_pd_output_format'):
+                    yield from self._pd_output_format(*output)
+                else:
+                    yield from output
                 continue
-
-            yield output
+            if hasattr(self, '_pd_output_format'):
+                yield self._pd_output_format(*output)
+            else:
+                yield output
 
     @property
     def pd_device(self) -> str:  # TODO: remove?
@@ -1344,8 +1349,9 @@ class Rollout(CompoundTransform):
         out = []
         for transform_ in self.transforms:
             out.append(transform_._pd_call_transform(arg))
-        out = self._pd_output_format(*out)
-        return out
+        if self.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1417,8 +1423,9 @@ class Parallel(CompoundTransform):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_._pd_call_transform(arg[ind]))
-        out = self._pd_output_format(*out)
-        return out
+        if self.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
