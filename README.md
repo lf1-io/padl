@@ -287,6 +287,21 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
     o.step()
 ```
 
+### Saving/ Loading
+
+Saving:
+
+```python
+model.save('test.padl')
+```
+
+Loading:
+
+```python
+from padl import load
+model = load('test.padl')
+```
+
 For the full notebook see `notebooks/example.ipynb` in the GitHub project.
 
 ## Licensing
