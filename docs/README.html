@@ -53,6 +53,7 @@
 <li><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
 <li><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
 <li><a class="reference internal" href="#model-training">Model training</a></li>
+<li><a class="reference internal" href="#saving-loading">Saving/ Loading</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#licensing">Licensing</a></li>
@@ -321,6 +322,18 @@
     <span class="n">o</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
     <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
     <span class="n">o</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="saving-loading">
+<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline"></a></h3>
+<p>Saving:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Loading:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For the full notebook see <code class="docutils literal notranslate"><span class="pre">notebooks/example.ipynb</span></code> in the GitHub project.</p>

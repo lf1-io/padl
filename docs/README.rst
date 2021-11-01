@@ -303,6 +303,22 @@ For a model which emits a tensor scalar, training is super straightforward using
        loss.backward()
        o.step()
 
+Saving/ Loading
+^^^^^^^^^^^^^^^
+
+Saving:
+
+.. code-block:: python
+
+   model.save('test.padl')
+
+Loading:
+
+.. code-block:: python
+
+   from padl import load
+   model = load('test.padl')
+
 For the full notebook see ``notebooks/example.ipynb`` in the GitHub project.
 
 Licensing
