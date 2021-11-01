@@ -38,6 +38,9 @@ class IfInStage(ClassTransform):
         self.if_ = if_
         self.else_ = else_
         self.target_stage = target_stage
+        self._pd_preprocess = None
+        self._pd_forward = None
+        self._pd_postprocess = None
 
         self._pd_component = set.union(*[t.pd_component for t in [self.if_, self.else_]])
 
@@ -52,27 +55,33 @@ class IfInStage(ClassTransform):
 
     @property
     def pd_preprocess(self):
-        return type(self)(
-            if_=self.if_.pd_preprocess,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_preprocess
-        )
+        if self._pd_preprocess is None:
+            self._pd_preprocess = type(self)(
+                if_=self.if_.pd_preprocess,
+                target_stage=self.target_stage,
+                else_=self.else_.pd_preprocess,
+            )
+        return self._pd_preprocess
 
     @property
     def pd_forward(self):
-        return type(self)(
-            if_=self.if_.pd_forward,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_forward
-        )
+        if self._pd_forward is None:
+            self._pd_forward = type(self)(
+                if_=self.if_.pd_forward,
+                target_stage=self.target_stage,
+                else_=self.else_.pd_forward,
+            )
+        return self._pd_forward
 
     @property
     def pd_postprocess(self):
-        return type(self)(
-            if_=self.if_.pd_postprocess,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_postprocess
-        )
+        if self._pd_postprocess is None:
+            self._pd_postprocess = type(self)(
+                if_=self.if_.pd_postprocess,
+                target_stage=self.target_stage,
+                else_=self.else_.pd_postprocess,
+            )
+        return self._pd_postprocess
 
 
 def IfInfer(if_: Transform, else_: Optional[Transform] = None):

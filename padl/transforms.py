@@ -548,6 +548,10 @@ class Transform:
         self._pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     @property
@@ -1053,7 +1057,9 @@ class CompoundTransform(Transform):
         for transform_ in self.transforms:
             transform_.pd_to(device)
 
+        self.pd_preprocess._pd_device = device
         self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
