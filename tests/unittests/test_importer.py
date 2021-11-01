@@ -25,7 +25,7 @@ def test_class_a():
     assert t._pd_call == 'torch.nn.Linear(10, 10)'
 
 
-class TestLFImporter:
+class TestPADLImporter:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         from padl.importer import numpy as inp

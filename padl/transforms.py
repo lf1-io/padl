@@ -502,7 +502,7 @@ class Transform:
             yield output
 
     @property
-    def pd_device(self) -> str:  # TODO: remove?
+    def pd_device(self) -> str:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
@@ -569,7 +569,7 @@ class Transform:
             yield
             return
 
-        layers = self.pd_layers  # TODO: set back?
+        layers = self.pd_layers
         try:
             for layer in layers:
                 if stage == 'train':
