@@ -24,6 +24,7 @@ from math import inf
 import sys
 from types import ModuleType
 from typing import List, Tuple
+from warnings import warn
 
 from padl.dumptools import sourceget
 
@@ -56,6 +57,14 @@ class _ThingFinder(ast.NodeVisitor):
             if self.found_something():
                 self.statement_n = i
                 return
+
+    def visit_With(self, node):
+        for item in node.items:
+            if item.optional_vars is not None and item.optional_vars.id == self.var_name:
+                raise NotImplementedError(f'"{self.var_name}" is defined in the head of a with'
+                                          ' statement. This is currently not supported.')
+        for subnode in node.body:
+            self.visit(subnode)
 
     def visit_ClassDef(self, node):
         # don't search definitions
@@ -338,7 +347,7 @@ class Scope:
             src = f'{k} = {v}'
             assignment = ast.parse(src).body[0]
             assignment._source = src
-            assignment._scope = calling_scope
+            # assignment._scope = calling_scope
             call_assignments.append(assignment)
 
         scopelist = []
@@ -429,6 +438,29 @@ def find_in_scope(var_name: str, scope: Scope):
     return find(var_name, scope.module), scope.global_()
 
 
+def replace_star_imports(tree: ast.Module):
+    """Replace star imports in the tree with their written out forms.
+
+    So that::
+
+    from padl import *
+
+    would become::
+
+    from padl import value, transform, Batchify, [...]
+    """
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom):
+            if node.names[0].name == '*':
+                try:
+                    node.names = [ast.alias(name=name, asname=None)
+                                  for name in sys.modules[node.module].__all__]
+                except AttributeError:
+                    warn(f'Discovered star-import from "{node.module}". Failed to deternmine '
+                         'what is behind the star. This will prevent saving anything imported'
+                         ' by that.')
+
+
 def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
@@ -439,6 +471,7 @@ def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]
     """
     if tree is None:
         tree = ast.parse(source)
+    replace_star_imports(tree)
     min_n = inf
     best = None
     finder_clss = _NameFinder.__subclasses__()

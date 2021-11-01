@@ -115,7 +115,8 @@ class TestLFCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one >> (times_two + times_two)
-        request.cls.transform_2 = transform(simple_func) + transform(simple_func) + transform(simple_func)
+        request.cls.transform_2 = transform(simple_func) + transform(simple_func) \
+            + transform(simple_func)
         request.cls.transform_3 = plus_one + times_two >> plus
         request.cls.transform_4 = plus_one + times_two >> complex_signature_func_1
         request.cls.transform_5 = plus_one >> complex_signature_func_1
