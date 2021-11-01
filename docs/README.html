@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Why PADL? &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
@@ -51,8 +52,6 @@
 <li><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
 <li><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
 <li><a class="reference internal" href="#model-training">Model training</a></li>
-<li><a class="reference internal" href="#nlp-example">NLP Example</a></li>
-<li><a class="reference internal" href="#weight-sharing-for-auxiliary-production-models">Weight sharing for auxiliary production models</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#licensing">Licensing</a></li>
@@ -85,10 +84,11 @@
   <p><span class="raw-html-m2r"><img src="img/logo.png" width="400"></span></p>
 <p><strong>Pytorch</strong> <em>abstractions for deep learning</em>.</p>
 <hr class="docutils" />
-<p>Technical documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
-<div class="section" id="why-padl">
+<p>Full documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
+<section id="why-padl">
 <h1>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h1>
-<div class="section" id="problem-statement">
+<p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>Pytorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
+<section id="problem-statement">
 <h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h2>
 <p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
@@ -98,8 +98,8 @@
 <li><p>in <em>classification</em> the label lookup dictionaries, formatting the tensor to human readable output</p></li>
 </ul>
 <p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
-</div>
-<div class="section" id="standard-approach">
+</section>
+<section id="standard-approach">
 <h2>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h2>
 <p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
 <ul class="simple">
@@ -108,8 +108,8 @@
 <li><p>It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar</p></li>
 <li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
 </ul>
-</div>
-<div class="section" id="padl-solutions">
+</section>
+<section id="padl-solutions">
 <h2>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h2>
 <p>In creating <strong>PADL</strong> we aimed to create:</p>
 <ul class="simple">
@@ -117,20 +117,16 @@
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
 <li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="installation">
+<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
+</section>
+</section>
+<section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
 </pre></div>
 </div>
-<p>Run tests to check:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r requirements-test.txt
-pytest tests/
-</pre></div>
-</div>
-</div>
-<div class="section" id="project-structure">
+</section>
+<section id="project-structure">
 <h1>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h1>
 <p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
 <ul class="simple">
@@ -142,17 +138,16 @@ pytest tests/
 <li><p><strong>Pytorch</strong> loss functions</p></li>
 </ul>
 <p>Loosely it can be thought of as a computational block with full support for <strong>Pytorch</strong> dynamical graphs and with the possibility to recursively combine blocks into larger blocks.</p>
-<p>Here’s a schematic of what this typically looks like:</p>
+<p>Here’s an example of what this might like:</p>
 <p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
-</div>
-<div class="section" id="basic-usage">
+</section>
+<section id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h1>
-<div class="section" id="defining-atomic-transforms">
+<section id="defining-atomic-transforms">
 <h2>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h2>
 <p>Imports:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tadl</span> <span class="k">as</span> <span class="nn">td</span>
-<span class="kn">from</span> <span class="nn">tadl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">this</span><span class="p">,</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">importer</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">importer</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 </pre></div>
 </div>
@@ -162,28 +157,26 @@ pytest tests/
     <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 
 <span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">pad_tensor</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">10</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)])</span>
-
-<span class="n">ALPHABET</span> <span class="o">=</span> <span class="s1">&#39;abcdefghijklmnopqrstuvwxyz .,-&#39;</span>
-
-<span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">lookup_letters</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="n">lookup</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">))))</span>
-    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">lookup</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="k">def</span> <span class="nf">to_tensor</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="mi">10</span><span class="p">][:]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">EOS_VALUE</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Any callable class implementing <code class="docutils literal notranslate"><span class="pre">__call__</span></code> can also become a transform:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">class</span> <span class="nc">Replace</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_replace</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span> <span class="o">=</span> <span class="n">to_replace</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">replacement</span> <span class="o">=</span> <span class="n">replacement</span>
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacement</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ToInteger</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;&lt;/s&gt;&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">))))</span>
 
-<span class="n">replace</span> <span class="o">=</span> <span class="n">Replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">:</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="s2">&quot;&lt;unk&gt;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
+
+<span class="n">to_integer</span> <span class="o">=</span> <span class="n">ToInteger</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">transform</span></code> also supports inline lambda functions as transforms:</p>
@@ -191,26 +184,30 @@ pytest tests/
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">this</span></code> yields inline transforms which reflexively reference object methods:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">index_one</span> <span class="o">=</span> <span class="n">this</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">left_shift</span> <span class="o">=</span> <span class="n">this</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">lower_case</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">lower_case</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Pytorch layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">td.transforms.TorchModuleTransform</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">class</span> <span class="nc">MyLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_input</span><span class="p">,</span> <span class="n">n_output</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">LM</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_words</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">n_input</span><span class="p">,</span> <span class="n">n_output</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">GRU</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">n_words</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="n">n_words</span><span class="p">)</span>
 
-<span class="n">layer</span> <span class="o">=</span> <span class="n">MyLayer</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ALPHABET</span><span class="p">),</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LM</span><span class="p">(</span><span class="n">N_WORDS</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">))</span>                 <span class="c1"># prints &quot;True&quot;</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-<p>Finally, it’s possibly to instantiate <code class="docutils literal notranslate"><span class="pre">Transform</span></code> directly from callables using <code class="docutils literal notranslate"><span class="pre">importer</span></code>.</p>
+<p>Finally, it’s possibly to instantiate <code class="docutils literal notranslate"><span class="pre">Transform</span></code> directly from importable callables using <code class="docutils literal notranslate"><span class="pre">importer</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">torchvision</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <span class="n">cosine</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">cos</span>
 
@@ -218,8 +215,8 @@ pytest tests/
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="defining-compound-transforms">
+</section>
+<section id="defining-compound-transforms">
 <h2>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h2>
 <p>Atomic transforms may be combined using 3 functional primitives:</p>
 <p>Transform composition: <strong>compose</strong></p>
@@ -242,43 +239,41 @@ pytest tests/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">+</span> <span class="n">transform_2</span>
 </pre></div>
 </div>
-<p>Large transforms may be built in terms of combinations of these operations. For example the schematic above would be implemented by:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span>
-     <span class="n">pre_00</span> <span class="o">/</span> <span class="n">pre_01</span>
-     <span class="o">&gt;&gt;</span> <span class="n">pre_1</span>
-     <span class="o">&gt;&gt;</span> <span class="n">pre_2</span>
-     <span class="o">&gt;&gt;</span> <span class="n">batch</span>
-     <span class="o">&gt;&gt;</span> <span class="n">model_1</span> <span class="o">+</span> <span class="n">model_2</span>
-     <span class="o">&gt;&gt;</span> <span class="n">unbatch</span>
-     <span class="o">&gt;&gt;</span> <span class="n">post</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Or a simple NLP string embedding model based on components defined above:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">this</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="o">&gt;&gt;</span> <span class="n">this</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-    <span class="o">&gt;&gt;</span> <span class="n">split_string</span>
-    <span class="o">&gt;&gt;</span> <span class="n">lookup_letters</span>
-    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<p>Large transforms may be built in terms of combinations of these operations. For example the branching example above would be implemented by:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">lower_case</span>
+    <span class="o">&gt;&gt;</span> <span class="n">clean</span>
+    <span class="o">&gt;&gt;</span> <span class="n">tokenize</span>
+    <span class="o">&gt;&gt;</span> <span class="o">~</span> <span class="n">to_integer</span>
+    <span class="o">&gt;&gt;</span> <span class="n">to_tensor</span>
     <span class="o">&gt;&gt;</span> <span class="n">batch</span>
-    <span class="o">&gt;&gt;</span> <span class="n">layer</span>
 <span class="p">)</span>
+
+<span class="n">forward_pass</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">left_shift</span>
+    <span class="o">&gt;&gt;</span> <span class="n">IfTrain</span><span class="p">(</span><span class="n">word_dropout</span><span class="p">)</span>
+    <span class="o">&gt;&gt;</span> <span class="n">model</span>
+<span class="p">)</span>
+
+<span class="n">train_model</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="n">preprocess</span> <span class="o">&gt;&gt;</span> <span class="n">model</span> <span class="o">&gt;&gt;</span> <span class="n">left_shift</span><span class="p">)</span>
+    <span class="o">+</span> <span class="p">(</span><span class="n">preprocess</span> <span class="o">&gt;&gt;</span> <span class="n">right_shift</span><span class="p">)</span>
+<span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">loss</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="decomposing-models">
+</section>
+<section id="decomposing-models">
 <h2>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h2>
 <p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span> <span class="o">=</span> <span class="n">model</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Individual components may be obtained using indexing:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step_1</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="naming-transforms-inside-models">
+</section>
+<section id="naming-transforms-inside-models">
 <h2>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h2>
 <p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
@@ -288,8 +283,8 @@ pytest tests/
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>    <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="applying-transforms-to-data">
+</section>
+<section id="applying-transforms-to-data">
 <h2>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h2>
 <p>To pass single data points may be passed through the transform:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
@@ -313,8 +308,8 @@ pytest tests/
     <span class="o">...</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="model-training">
+</section>
+<section id="model-training">
 <h2>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h2>
 <p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
@@ -327,59 +322,13 @@ pytest tests/
     <span class="n">o</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="nlp-example">
-<h2>NLP Example<a class="headerlink" href="#nlp-example" title="Permalink to this headline"></a></h2>
-<p>Suppose we define a simple classifier extending our NLP pipeline:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">this</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="o">&gt;&gt;</span> <span class="n">this</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-    <span class="o">&gt;&gt;</span> <span class="n">split_string</span>
-    <span class="o">&gt;&gt;</span> <span class="n">lookup_letters</span>
-    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
-    <span class="o">&gt;&gt;</span> <span class="n">layer</span>
-    <span class="o">&gt;&gt;</span> <span class="n">importer</span><span class="o">.</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="n">N_LABELS</span><span class="p">)</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Targets to be computed are simple labels:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">lookup_classes</span><span class="p">(</span><span class="n">class_</span><span class="p">):</span>
-    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="n">class_</span><span class="p">)</span>
-
-<span class="n">target</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">lookup_classes</span>
-    <span class="o">&gt;&gt;</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>In training the model outputs can be compared with the targets with:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">training_pipeline</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span> <span class="o">/</span> <span class="n">target</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">loss</span>
-</pre></div>
-</div>
-<p>Data points must be tuples of sentences and labels.</p>
-</div>
-<div class="section" id="weight-sharing-for-auxiliary-production-models">
-<h2>Weight sharing for auxiliary production models<a class="headerlink" href="#weight-sharing-for-auxiliary-production-models" title="Permalink to this headline"></a></h2>
-<p>At run-time in production we often will need important postprocessing steps on top of tensor outputs. For example, to serve meaningful predictions from our NLP model, we would want to lookup the best prediction in the <code class="docutils literal notranslate"><span class="pre">CLASSES</span></code> variable:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">reverse_lookup</span><span class="p">(</span><span class="n">prediction</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">prediction</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()]</span>
-</pre></div>
-</div>
-<p>A useful production model would be:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">reverse_lookup</span>
-</pre></div>
-</div>
-<p>Since the weights are tied to <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code> trains together with <code class="docutils literal notranslate"><span class="pre">training_pipeline</span></code>, but with the added capability of producing human readable outputs.</p>
-</div>
-</div>
-<div class="section" id="licensing">
+<p>For the full notebook see <code class="docutils literal notranslate"><span class="pre">notebooks/example.ipynb</span></code> in the GitHub project.</p>
+</section>
+</section>
+<section id="licensing">
 <h1>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h1>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
-</div>
+</section>
 
 
            </div>

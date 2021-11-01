@@ -10,10 +10,12 @@
 
 ----
 
-Technical documentation here: https://lf1-io.github.io/padl/
+Full documentation here: https://lf1-io.github.io/padl/
 
 Why PADL?
 ---------
+
+For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **Pytorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 Problem Statement
 ^^^^^^^^^^^^^^^^^
@@ -49,20 +51,14 @@ In creating **PADL** we aimed to create:
 * An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
 * An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
+With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central ``Transform`` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
+
 Installation
 ------------
 
 .. code-block:: bash
 
    pip install padl
-
-
-Run tests to check:
-
-.. code-block:: bash
-
-   pip install -r requirements-test.txt
-   pytest tests/
 
 
 Project Structure
@@ -80,7 +76,7 @@ PADL's chief abstraction is ``td.transforms.Transform``. This is an abstraction 
 
 Loosely it can be thought of as a computational block with full support for **Pytorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
 
-Here's a schematic of what this typically looks like:
+Here's an example of what this might like:
 
 :raw-html-m2r:`<img src="img/schematic.png" width="300">`
 
@@ -96,8 +92,7 @@ Imports:
 
 .. code-block:: python
 
-   import tadl as td
-   from tadl import transform, batch, unbatch, group, this, transforms, importer
+   from padl import this, transform, batch, unbatch, value, importer
    import torch
 
 
@@ -110,16 +105,11 @@ Transform definition using ``transform`` decorator:
        return x.split()
 
    @transform
-   def pad_tensor(x):
-       x = x[:10]
-       return torch.cat([x, torch.zeros(10 - len(x)).type(torch.long)])
-
-   ALPHABET = 'abcdefghijklmnopqrstuvwxyz .,-'
-
-   @transform
-   def lookup_letters(x):
-       lookup = dict(zip(list(ALPHABET), range(len(ALPHABET))))
-       return list(map(lookup.__getitem__, list(x)))
+   def to_tensor(x):
+       x = x[:10][:]
+       for _ in range(10 - len(x)):
+           x.append(EOS_VALUE)
+       return torch.tensor(x)
 
 
 Any callable class implementing ``__call__`` can also become a transform:
@@ -127,14 +117,17 @@ Any callable class implementing ``__call__`` can also become a transform:
 .. code-block:: python
 
    @transform
-   class Replace:
-       def __init__(self, to_replace, replacement):
-           self.to_replace = to_replace
-           self.replacement = replacement
-       def __call__(self, string):
-           return string.replace(self.to_replace, self.replacement)
+   class ToInteger:
+       def __init__(self, words):
+           self.words = words + ['</s>']
+           self.dictionary = dict(zip(self.words, range(len(self.words))))
 
-   replace = Replace('-', ' ')
+       def __call__(self, word):
+           if not word in self.dictionary:
+               word = "<unk>"
+           return self.dictionary[word]
+
+   to_integer = ToInteger('-', ' ')
 
 
 ``transform`` also supports inline lambda functions as transforms:
@@ -148,7 +141,7 @@ Any callable class implementing ``__call__`` can also become a transform:
 
 .. code-block:: python
 
-   index_one = this[0]
+   left_shift = this[:, :-1]
    lower_case = this.lower_case()
 
 
@@ -157,20 +150,24 @@ Pytorch layers are first class citizens via ``td.transforms.TorchModuleTransform
 .. code-block:: python
 
    @transform
-   class MyLayer(torch.nn.Module):
-       def __init__(self, n_input, n_output):
+   class LM(torch.nn.Module):
+       def __init__(self, n_words):
            super().__init__()
-           self.embed = torch.nn.Embedding(n_input, n_output)
-       def forward(self, x):
-           return self.embed(x)
+           self.rnn = torch.nn.GRU(64, 512, 2, batch_first=True)
+           self.embed = torch.nn.Embedding(n_words, 64)
+           self.project = torch.nn.Linear(512, n_words)
 
-   layer = MyLayer(len(ALPHABET), 20)
+       def forward(self, x):
+           output = self.rnn(self.embed(x))[0]
+           return self.project(output)
+
+   model = LM(N_WORDS)
 
    print(isinstance(layer, torch.nn.Module))                 # prints "True"
    print(isinstance(layer, td.transforms.Transform))         # prints "True"
 
 
-Finally, it's possibly to instantiate ``Transform`` directly from callables using ``importer``. 
+Finally, it's possibly to instantiate ``Transform`` directly from importable callables using ``importer``. 
 
 .. code-block:: python
 
@@ -222,35 +219,29 @@ Applying multiple transforms to a single input: **rollout**
    s = transform_1 + transform_2
 
 
-Large transforms may be built in terms of combinations of these operations. For example the schematic above would be implemented by:
+Large transforms may be built in terms of combinations of these operations. For example the branching example above would be implemented by:
 
 .. code-block:: python
 
-   s = (
-        pre_00 / pre_01
-        >> pre_1
-        >> pre_2
-        >> batch
-        >> model_1 + model_2
-        >> unbatch
-        >> post
-   )
-
-
-Or a simple NLP string embedding model based on components defined above:
-
-.. code-block:: python
-
-
-   model = (
-       this.lower()
-       >> this.strip()
-       >> split_string
-       >> lookup_letters
-       >> transform(lambda x: torch.tensor(x))
+   preprocess = (
+       lower_case
+       >> clean
+       >> tokenize
+       >> ~ to_integer
+       >> to_tensor
        >> batch
-       >> layer
    )
+
+   forward_pass = (
+       left_shift
+       >> IfTrain(word_dropout)
+       >> model
+   )
+
+   train_model = (
+       (preprocess >> model >> left_shift)
+       + (preprocess >> right_shift)
+   ) >> loss
 
 
 Decomposing models
@@ -260,7 +251,7 @@ Often it is instructive to look at slices of a model -- this helps with e.g. che
 
 .. code-block:: python
 
-   preprocess = model[:4]
+   preprocess[:3]
 
 
 Individual components may be obtained using indexing:
@@ -341,69 +332,7 @@ For a model which emits a tensor scalar, training is super straightforward using
        o.step()
 
 
-NLP Example
-^^^^^^^^^^^
-
-Suppose we define a simple classifier extending our NLP pipeline:
-
-.. code-block:: python
-
-   model = (
-       this.lower()
-       >> this.strip()
-       >> split_string
-       >> lookup_letters
-       >> transform(lambda x: torch.tensor(x))
-       >> batch
-       >> layer
-       >> importer.torch.nn.Linear(20, N_LABELS)
-   )
-
-
-Targets to be computed are simple labels:
-
-.. code-block:: python
-
-   @transform
-   def lookup_classes(class_):
-       return next(i for i, c in enumerate(CLASSES) if c == class_)
-
-   target = (
-       lookup_classes
-       >> transform(lambda x: torch.tensor(x))
-       >> batch
-   )
-
-
-In training the model outputs can be compared with the targets with:
-
-.. code-block:: python
-
-   training_pipeline = (model / target) >> loss
-
-
-Data points must be tuples of sentences and labels.
-
-Weight sharing for auxiliary production models
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-At run-time in production we often will need important postprocessing steps on top of tensor outputs. For example, to serve meaningful predictions from our NLP model, we would want to lookup the best prediction in the ``CLASSES`` variable:
-
-.. code-block:: python
-
-   @transform
-   def reverse_lookup(prediction):
-       return CLASSES[prediction.topk(1)[1].item()]
-
-
-A useful production model would be:
-
-.. code-block:: python
-
-   model >> unbatch >> reverse_lookup
-
-
-Since the weights are tied to ``training_pipeline``\ , ``model`` trains together with ``training_pipeline``\ , but with the added capability of producing human readable outputs.
+For the full notebook see ``notebooks/example.ipynb`` in the GitHub project.
 
 Licensing
 ---------
