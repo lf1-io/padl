@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Why PADL? &mdash; PADL 0.1.0 documentation</title>
+  <title>Introduction &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -37,7 +37,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Why PADL?</a><ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#why-padl">Why PADL?</a><ul>
 <li><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
 <li><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
 <li><a class="reference internal" href="#padl-solutions">PADL Solutions</a></li>
@@ -56,6 +57,8 @@
 </li>
 <li><a class="reference internal" href="#licensing">Licensing</a></li>
 </ul>
+</li>
+</ul>
 </div>
         </div>
       </div>
@@ -71,9 +74,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Why PADL?</li>
+      <li>Introduction</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="sources/README.rst.txt" rel="nofollow"> View page source</a>
+            <a href="sources/readme.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -81,15 +84,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <p><span class="raw-html-m2r"><img src="img/logo.png" width="400"></span></p>
-<p><strong>Pytorch</strong> <em>abstractions for deep learning</em>.</p>
-<hr class="docutils" />
-<p>Full documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
 <section id="why-padl">
-<h1>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h1>
+<h2>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h2>
 <p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>Pytorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
 <section id="problem-statement">
-<h2>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h2>
+<h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
 <p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
 <li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
@@ -100,7 +101,7 @@
 <p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
 </section>
 <section id="standard-approach">
-<h2>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h2>
+<h3>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h3>
 <p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
 <ul class="simple">
 <li><p>A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.</p></li>
@@ -110,7 +111,7 @@
 </ul>
 </section>
 <section id="padl-solutions">
-<h2>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h2>
+<h3>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h3>
 <p>In creating <strong>PADL</strong> we aimed to create:</p>
 <ul class="simple">
 <li><p>A beautiful functional API including all mission critical computational steps in a single formalism – pre-processing, post-processing, forward pass, batching and inference modes.</p></li>
@@ -121,13 +122,13 @@
 </section>
 </section>
 <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
 </pre></div>
 </div>
 </section>
 <section id="project-structure">
-<h1>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h1>
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
 <p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
 <ul class="simple">
 <li><p>preprocessing</p></li>
@@ -143,9 +144,9 @@
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
 </section>
 <section id="basic-usage">
-<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h1>
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h2>
 <section id="defining-atomic-transforms">
-<h2>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h2>
+<h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
 <p>Imports:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">importer</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -217,7 +218,7 @@
 </div>
 </section>
 <section id="defining-compound-transforms">
-<h2>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h2>
+<h3>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h3>
 <p>Atomic transforms may be combined using 3 functional primitives:</p>
 <p>Transform composition: <strong>compose</strong></p>
 <p><span class="raw-html-m2r"><img src="img/compose.png" width="100"></span></p>
@@ -263,7 +264,7 @@
 </div>
 </section>
 <section id="decomposing-models">
-<h2>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h2>
+<h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h3>
 <p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
 </pre></div>
@@ -274,7 +275,7 @@
 </div>
 </section>
 <section id="naming-transforms-inside-models">
-<h2>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h2>
+<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h3>
 <p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
 </pre></div>
@@ -285,7 +286,7 @@
 </div>
 </section>
 <section id="applying-transforms-to-data">
-<h2>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h2>
+<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
 <p>To pass single data points may be passed through the transform:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
 </pre></div>
@@ -310,7 +311,7 @@
 </div>
 </section>
 <section id="model-training">
-<h2>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h2>
+<h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
 <p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
 </pre></div>
@@ -326,8 +327,9 @@
 </section>
 </section>
 <section id="licensing">
-<h1>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h1>
+<h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h2>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
+</section>
 </section>
 
 

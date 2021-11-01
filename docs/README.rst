@@ -1,16 +1,9 @@
-
+====
+Introduction
+====
 .. role:: raw-html-m2r(raw)
    :format: html
 
-
-
-:raw-html-m2r:`<img src="img/logo.png" width="400">`
-
-**Pytorch** *abstractions for deep learning*.
-
-----
-
-Full documentation here: https://lf1-io.github.io/padl/
 
 Why PADL?
 ---------
@@ -60,7 +53,6 @@ Installation
 
    pip install padl
 
-
 Project Structure
 -----------------
 
@@ -95,7 +87,6 @@ Imports:
    from padl import this, transform, batch, unbatch, value, importer
    import torch
 
-
 Transform definition using ``transform`` decorator:
 
 .. code-block:: python
@@ -110,7 +101,6 @@ Transform definition using ``transform`` decorator:
        for _ in range(10 - len(x)):
            x.append(EOS_VALUE)
        return torch.tensor(x)
-
 
 Any callable class implementing ``__call__`` can also become a transform:
 
@@ -129,13 +119,11 @@ Any callable class implementing ``__call__`` can also become a transform:
 
    to_integer = ToInteger('-', ' ')
 
-
 ``transform`` also supports inline lambda functions as transforms:
 
 .. code-block:: python
 
    split_string = transform(lambda x: x.split())
-
 
 ``this`` yields inline transforms which reflexively reference object methods:
 
@@ -143,7 +131,6 @@ Any callable class implementing ``__call__`` can also become a transform:
 
    left_shift = this[:, :-1]
    lower_case = this.lower_case()
-
 
 Pytorch layers are first class citizens via ``td.transforms.TorchModuleTransform``\ :
 
@@ -166,7 +153,6 @@ Pytorch layers are first class citizens via ``td.transforms.TorchModuleTransform
    print(isinstance(layer, torch.nn.Module))                 # prints "True"
    print(isinstance(layer, td.transforms.Transform))         # prints "True"
 
-
 Finally, it's possibly to instantiate ``Transform`` directly from importable callables using ``importer``. 
 
 .. code-block:: python
@@ -176,7 +162,6 @@ Finally, it's possibly to instantiate ``Transform`` directly from importable cal
 
    print(isinstance(normalize, tf.transforms.Transform))         # prints "True"
    print(isinstance(cosine, td.transforms.Transform))            # prints "True"
-
 
 Defining compound transforms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,7 +176,6 @@ Transform composition: **compose**
 
    s = transform_1 >> transform_2
 
-
 Applying a single transform over multiple inputs: **map**
 
 :raw-html-m2r:`<img src="img/map.png" width="200">`
@@ -199,7 +183,6 @@ Applying a single transform over multiple inputs: **map**
 .. code-block:: python
 
    s = ~ transform
-
 
 Applying transforms in parallel to multiple inputs: **parallel**
 
@@ -209,7 +192,6 @@ Applying transforms in parallel to multiple inputs: **parallel**
 
    s = transform_1 / transform_2
 
-
 Applying multiple transforms to a single input: **rollout**
 
 :raw-html-m2r:`<img src="img/rollout.png" width="230">`
@@ -217,7 +199,6 @@ Applying multiple transforms to a single input: **rollout**
 .. code-block:: python
 
    s = transform_1 + transform_2
-
 
 Large transforms may be built in terms of combinations of these operations. For example the branching example above would be implemented by:
 
@@ -243,7 +224,6 @@ Large transforms may be built in terms of combinations of these operations. For 
        + (preprocess >> right_shift)
    ) >> loss
 
-
 Decomposing models
 ^^^^^^^^^^^^^^^^^^
 
@@ -253,13 +233,11 @@ Often it is instructive to look at slices of a model -- this helps with e.g. che
 
    preprocess[:3]
 
-
 Individual components may be obtained using indexing:
 
 .. code-block:: python
 
    step_1 = model[1]
-
 
 Naming transforms inside models
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -270,13 +248,11 @@ Component ``Transform`` instances may be named inline:
 
    s = (transform_1 - 'a') / (transform_2 - 'b')
 
-
 These components may then be referenced using ``__getitem__``\ :
 
 .. code-block:: python
 
    print(s['a'] == s[0])    # prints "True"
-
 
 Applying transforms to data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -286,7 +262,6 @@ To pass single data points may be passed through the transform:
 .. code-block:: python
 
    prediction = t.infer_apply('the cat sat on the mat .')
-
 
 To pass data points in batches but no gradients:
 
@@ -299,7 +274,6 @@ To pass data points in batches but no gradients:
    ):
        ...
 
-
 To pass data points in batches but with gradients:
 
 .. code-block:: python
@@ -311,7 +285,6 @@ To pass data points in batches but with gradients:
    ):
        ...
 
-
 Model training
 ^^^^^^^^^^^^^^
 
@@ -321,7 +294,6 @@ Important methods such as all model parameters are accessible via ``Transform.tl
 
    o = torch.optim.Adam(model.tl_parameters(), lr=LR)
 
-
 For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:
 
 .. code-block:: python
@@ -330,7 +302,6 @@ For a model which emits a tensor scalar, training is super straightforward using
        o.zero_grad()
        loss.backward()
        o.step()
-
 
 For the full notebook see ``notebooks/example.ipynb`` in the GitHub project.
 

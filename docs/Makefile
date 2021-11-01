@@ -22,8 +22,8 @@ help:
 github:
 	make clean
 	-mkdir _static
-	cd .. && m2r --overwrite README.md README.rst
-	mv ../README.rst ./
+	cd .. && tail +9 README.md > .README.md && m2r --overwrite .README.md && rm .README.md && mv .README.rst docs/readme.rst
+	(echo "====" && echo "Introduction" && echo "====" && cat readme.rst) > .readme.rst && mv .readme.rst readme.rst
 	cp -r ../img/* ./img/
 	make html
 	cp -r _build/html/* ./
@@ -35,7 +35,10 @@ github:
 	rm *.bak
 	
 clean:
-	-rm ../README.rst
+	-rm ../readme.rst
+	-rm ../.README.md
+	-rm ../.README.rst
+	-rm readme.rst
 	-rm -rf sources
 	-rm -rf static
 	-rm -rf _build
