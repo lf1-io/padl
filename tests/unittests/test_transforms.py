@@ -88,6 +88,16 @@ class Polynomial(torch.nn.Module):
         return x**self.a + x**self.b
 
 
+class PolynomialClass(torch.nn.Module):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = torch.nn.Parameter(torch.tensor(float(a)))
+        self.b = torch.nn.Parameter(torch.tensor(float(b)))
+
+    def forward(self, x):
+        return x**self.a + x**self.b
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -643,21 +653,29 @@ class TestLFImporter:
 class TestClassInstance:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        request.cls.transform_1 = transform(SimpleClass(1))
+        request.cls.class_1 = SimpleClass(1)
+        request.cls.class_2 = PolynomialClass(1, 2)
+        request.cls.transform_1 = transform(self.class_1)
+        request.cls.transform_2 = transform(self.class_2)
 
     def test_wrap(self):
-        print(self.transform_1)
         assert isinstance(self.transform_1, SimpleClass)
         assert isinstance(self.transform_1, pd.Transform)
+        assert isinstance(self.transform_2, PolynomialClass)
+        assert isinstance(self.transform_2, pd.Transform)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(1) == 2
+        assert self.transform_2.infer_apply(1) == 2
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([1])) == [2]
+        assert list(self.transform_2.eval_apply([2])) == [6]
 
     def test_train_apply(self):
         assert list(self.transform_1.train_apply([1])) == [2]
+        assert list(self.transform_2.train_apply([2])) == [6]
 
     def test_print(self):
         print(self.transform_1)
+        print(self.transform_2)

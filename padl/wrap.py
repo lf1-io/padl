@@ -4,6 +4,7 @@ import ast
 import dis
 import functools
 import inspect
+import copy
 
 import numpy as np
 import torch
@@ -102,8 +103,7 @@ def _wrap_class(cls, ignore_scope=False):
 
 
 def _wrap_class_instance(cls_instance, ignore_scope=False):
-    """Patch __init__ of class such that the initialization statement is stored
-    as an attribute `_pd_call`. In addition make class inherit from Transform.
+    """Patch __class__ of a class instance such that inherits from Transform.
 
     This is called by `transform`, don't call `_wrap_class_instance` directly, always use
     `transform`.
@@ -115,35 +115,16 @@ def _wrap_class_instance(cls_instance, ignore_scope=False):
             ...
 
     >>> myobj = transform(MyClass('hello'))
-    >>> myobj._pd_call
-    MyClass('hello')
     """
-    old__init__ = cls_instance.__class__.__init__
-    if issubclass(cls_instance.__class__, torch.nn.Module):
+    if issubclass(type(cls_instance), torch.nn.Module):
         trans_class = TorchModuleTransform
     else:
         trans_class = ClassTransform
 
-    module = cls_instance.__class__.__module__
-    # make cls inherit from AtomicTransform
-    cls = type(cls_instance.__class__.__name__, (trans_class, cls_instance.__class__), {})
-
-    @functools.wraps(cls.__init__)
-    def __init__(self, parent):
-        trans_class.__init__(self, ignore_scope=ignore_scope)
-        # Place contents of parent.__dict__ into cls.__dict__
-        vars(self).update(vars(parent))
-        self.parent = parent
-    functools.update_wrapper(__init__, old__init__)
-
-    # Backup attribute lookup if cls.__getattribute__ failse
-    def __getattr__(self, name):
-        return object.__getattribute__(self.parent, name)
-
-    cls.__init__ = __init__
-    cls.__module__ = module
-    cls.__getattr__ = __getattr__
-    return cls(parent=cls_instance)
+    cls_copy = copy.copy(cls_instance)
+    cls_copy.__class__ = type(type(cls_instance).__name__, (trans_class, type(cls_instance)), {})
+    trans_class.__init__(cls_copy, ignore_scope=ignore_scope)
+    return cls_copy
 
 
 def _wrap_lambda(fun, ignore_scope=False):
