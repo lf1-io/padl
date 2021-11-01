@@ -653,10 +653,8 @@ class TestLFImporter:
 class TestClassInstance:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        request.cls.class_1 = SimpleClass(1)
-        request.cls.class_2 = PolynomialClass(1, 2)
-        request.cls.transform_1 = transform(self.class_1)
-        request.cls.transform_2 = transform(self.class_2)
+        request.cls.transform_1 = transform(SimpleClass(1))
+        request.cls.transform_2 = transform(PolynomialClass(1, 2))
 
     def test_wrap(self):
         assert isinstance(self.transform_1, SimpleClass)
@@ -677,5 +675,20 @@ class TestClassInstance:
         assert list(self.transform_2.train_apply([2])) == [6]
 
     def test_print(self):
-        print(self.transform_1)
-        print(self.transform_2)
+        assert str(self.transform_1)
+        assert str(self.transform_2)
+
+    def test_pd_layers(self):
+        assert len(self.transform_2.pd_layers) > 0
+
+    def test_pd_parameters(self):
+        params = list(self.transform_2.pd_parameters())
+        assert len(params) == 2
+
+    def test_save_and_load(self, tmp_path):
+        self.transform_1.pd_save(tmp_path / 'test.padl')
+        t1 = pd.load(tmp_path / 'test.padl')
+        assert t1.infer_apply(1) == 2
+        self.transform_2.pd_save(tmp_path / 'test.padl')
+        t2 = pd.load(tmp_path / 'test.padl')
+        assert t2.infer_apply(1) == 2
