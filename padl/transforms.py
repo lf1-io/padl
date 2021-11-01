@@ -391,7 +391,10 @@ class Transform:
         """
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
-                if parameters.device.type != self.pd_device:
+                parameter_device = parameters.device.type
+                if ':' in self.pd_device and 'cuda' in parameter_device:
+                    parameter_device += f':{parameters.device.index}'
+                if parameter_device != self.pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -1049,6 +1052,8 @@ class CompoundTransform(Transform):
         self._pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
+
+        self.pd_forward._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
