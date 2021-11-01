@@ -638,3 +638,13 @@ class TestLFImporter:
             t_ = padl.load('test.padl')
             assert t_.infer_apply(1.3)
     """
+
+
+class TestClassInstance:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = transform(SimpleClass(1))
+
+    def test_infer_apply(self):
+        print(isinstance(self.transform_1, SimpleClass))
+        print(self.transform_1(1))

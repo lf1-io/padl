@@ -92,14 +92,58 @@ def _wrap_class(cls, ignore_scope=False):
         old__init__(self, *args, **kwargs)
         args = signature.bind(None, *args, **kwargs).arguments
         args.pop(next(iter(args.keys())))
-        trans_class.__init__(self, ignore_scope=ignore_scope,
-                             arguments=args)
+        trans_class.__init__(self, ignore_scope=ignore_scope, arguments=args)
 
     functools.update_wrapper(__init__, old__init__)
 
     cls.__init__ = __init__
     cls.__module__ = module
     return cls
+
+
+def _wrap_class_instance(cls_instance, ignore_scope=False):
+    """Patch __init__ of class such that the initialization statement is stored
+    as an attribute `_pd_call`. In addition make class inherit from Transform.
+
+    This is called by `transform`, don't call `_wrap_class_instance` directly, always use
+    `transform`.
+
+    Example:
+
+    class MyClass:
+        def __init__(self, x):
+            ...
+
+    >>> myobj = transform(MyClass('hello'))
+    >>> myobj._pd_call
+    MyClass('hello')
+    """
+    old__init__ = cls_instance.__class__.__init__
+    if issubclass(cls_instance.__class__, torch.nn.Module):
+        trans_class = TorchModuleTransform
+    else:
+        trans_class = ClassTransform
+
+    module = cls_instance.__class__.__module__
+    # make cls inherit from AtomicTransform
+    cls = type(cls_instance.__class__.__name__, (trans_class, cls_instance.__class__), {})
+
+    @functools.wraps(cls.__init__)
+    def __init__(self, parent):
+        trans_class.__init__(self, ignore_scope=ignore_scope)
+        # Place contents of parent.__dict__ into cls.__dict__
+        vars(self).update(vars(parent))
+        self.parent = parent
+    functools.update_wrapper(__init__, old__init__)
+
+    # Backup attribute lookup if cls.__getattribute__ failse
+    def __getattr__(self, name):
+        return object.__getattribute__(self.parent, name)
+
+    cls.__init__ = __init__
+    cls.__module__ = module
+    cls.__getattr__ = __getattr__
+    return cls(cls_instance)
 
 
 def _wrap_lambda(fun, ignore_scope=False):
@@ -134,7 +178,6 @@ def _wrap_lambda(fun, ignore_scope=False):
             (node.parent.lineno, node.parent.end_lineno,
              node.parent.col_offset, node.parent.end_col_offset)
         ))
-
 
     # compare candidate's bytecodes to that of `fun`
     # keep the call for the matching one
@@ -179,6 +222,8 @@ def transform(fun_or_cls, ignore_scope=False):
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
     if callable(fun_or_cls):
+        if not hasattr(fun_or_cls, '__name__'):
+            return _wrap_class_instance(fun_or_cls, ignore_scope)
         if fun_or_cls.__name__ == '<lambda>':
             return _wrap_lambda(fun_or_cls, ignore_scope)
         return _wrap_function(fun_or_cls, ignore_scope)
