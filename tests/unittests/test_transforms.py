@@ -88,6 +88,16 @@ class Polynomial(torch.nn.Module):
         return x**self.a + x**self.b
 
 
+class PolynomialClass(torch.nn.Module):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = torch.nn.Parameter(torch.tensor(float(a)))
+        self.b = torch.nn.Parameter(torch.tensor(float(b)))
+
+    def forward(self, x):
+        return x**self.a + x**self.b
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -105,7 +115,8 @@ class TestLFCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one >> (times_two + times_two)
-        request.cls.transform_2 = transform(simple_func) + transform(simple_func) + transform(simple_func)
+        request.cls.transform_2 = transform(simple_func) + transform(simple_func) \
+            + transform(simple_func)
         request.cls.transform_3 = plus_one + times_two >> plus
         request.cls.transform_4 = plus_one + times_two >> complex_signature_func_1
         request.cls.transform_5 = plus_one >> complex_signature_func_1
@@ -638,3 +649,47 @@ class TestLFImporter:
             t_ = padl.load('test.padl')
             assert t_.infer_apply(1.3)
     """
+
+
+class TestClassInstance:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = transform(SimpleClass(1))
+        request.cls.transform_2 = transform(PolynomialClass(1, 2))
+
+    def test_wrap(self):
+        assert isinstance(self.transform_1, SimpleClass)
+        assert isinstance(self.transform_1, pd.Transform)
+        assert isinstance(self.transform_2, PolynomialClass)
+        assert isinstance(self.transform_2, pd.Transform)
+
+    def test_infer_apply(self):
+        assert self.transform_1.infer_apply(1) == 2
+        assert self.transform_2.infer_apply(1) == 2
+
+    def test_eval_apply(self):
+        assert list(self.transform_1.eval_apply([1])) == [2]
+        assert list(self.transform_2.eval_apply([2])) == [6]
+
+    def test_train_apply(self):
+        assert list(self.transform_1.train_apply([1])) == [2]
+        assert list(self.transform_2.train_apply([2])) == [6]
+
+    def test_print(self):
+        assert str(self.transform_1)
+        assert str(self.transform_2)
+
+    def test_pd_layers(self):
+        assert len(self.transform_2.pd_layers) > 0
+
+    def test_pd_parameters(self):
+        params = list(self.transform_2.pd_parameters())
+        assert len(params) == 2
+
+    def test_save_and_load(self, tmp_path):
+        self.transform_1.pd_save(tmp_path / 'test.padl')
+        t1 = pd.load(tmp_path / 'test.padl')
+        assert t1.infer_apply(1) == 2
+        self.transform_2.pd_save(tmp_path / 'test.padl', True)
+        t2 = pd.load(tmp_path / 'test.padl')
+        assert t2.infer_apply(1) == 2

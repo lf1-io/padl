@@ -1,5 +1,5 @@
 """Module for getting source-code strings of various things (source files, modules, ipython cells).
-In addition, the module maitains a cache of source-strings in which the values can be modified.
+In addition, the module maintains a cache of source-strings in which the values can be modified.
 
 Use `get_source` to get source-strings given source filenames or ipython cell ids.
 `get_module_source` allows to get source of modules.

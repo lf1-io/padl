@@ -248,7 +248,6 @@ class Transform:
             except (KeyError, AttributeError):
                 pass
             else:
-                print(next_var, 'can deal with itself')
                 continue
 
             # find how next_var came into being
@@ -380,7 +379,8 @@ class Transform:
             to any variable.
         """
         if self._pd_varname is _notset:
-            self._pd_varname = self._pd_find_varname(self._pd_call_info.module.__dict__)
+            module = inspector.caller_module()
+            self._pd_varname = self._pd_find_varname(module.__dict__)
         return self._pd_varname
 
     def _pd_forward_device_check(self) -> bool:
@@ -746,7 +746,9 @@ class FunctionTransform(AtomicTransform):
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
-            warn(f"Couln't get closurevars ({exc}). This is usually fine.")
+            warn(f'Could not get closurevars ({exc}). This is usually fine as closurevars are only '
+                 'needed for user defined transforms.',
+                 RuntimeWarning)
             return {}, {}
         return closurevars.globals, closurevars.nonlocals
 
@@ -779,11 +781,16 @@ class ClassTransform(AtomicTransform):
         """The class source code. """
         (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
                                                 self._pd_call_info.scope)
-        body_msg = ''.join(re.split('(class )', body_msg, 1)[1:])
-        return 'class ' + body_msg.split('class ', 1)[1]
+        try:
+            return 'class ' + body_msg.split('class ', 1)[1]
+        except IndexError:
+            return body_msg
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
+        if self._pd_arguments is None:
+            return '-?-'
+
         args_list = []
         for key, value in self._pd_arguments.items():
             if key == 'args':
@@ -870,7 +877,10 @@ class Map(Transform):
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
         yield self.transform
 
-    def _pd_evaluable_repr_inner(self, indent: int=0) -> str:
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
+        varname = self.transform.pd_varname()
+        if varname:
+            return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):

@@ -1,21 +1,13 @@
 Welcome to PADL's documentation!
 ================================
 
-.. include:: README.rst
-
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
 
-Transforms
-----------
+.. image:: img/logo.png
 
-.. automodule:: padl.transforms
-    :members:
+Pytorch abstractions for deep learning.
 
-Util Transforms
----------------
-
-.. automodule:: padl.util_transforms
-    :members:
-
+* :ref:`introduction`
+* :ref:`package index`
