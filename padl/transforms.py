@@ -1139,7 +1139,7 @@ class Compose(CompoundTransform):
     :return: output from series of transforms
     """
     op = '>>'
-    display_op = '↓'
+    display_op = '>>'
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -1158,6 +1158,21 @@ class Compose(CompoundTransform):
             self._pd_component_list[i] = {'preprocess'}
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
+
+    def _pd_classify_nodetype(self, i, t, t_m1, cw, cw_m1):
+        if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
+            type_ = 'multi_2_multi'
+
+        elif i > 0 and cw == 1 and cw_m1 > 1:
+            type_ = 'multi_2_single'
+
+        elif cw == 1 or isinstance(t, Compose):
+            type_ = 'single_2_single'
+
+        else:
+            type_ = 'single_2_multi'
+
+        return type_
 
     def _pd_longrepr(self) -> str:
         """Create a detailed formatted representation of the transform. For multi-line inputs
@@ -1196,15 +1211,17 @@ class Compose(CompoundTransform):
             widths = [0]
             subarrows = []
 
+            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
+                                               children_widths[i], children_widths[i - 1])
+
             # if subsequent rows have the same number of "children" transforms
-            if i > 0 and isinstance(t, Parallel) and len(children_widths[i]) == len(children_widths[i - 1]):
+            if type_ == 'multi_2_multi':
                 for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
-            elif i > 0 and len(children_widths[i]) == 1 \
-                    and len(children_widths[i - 1]) > 1:
+            elif type_ == 'multi_2_single':
                 for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
                         0, sum(widths) - j + j * 4,
@@ -1212,8 +1229,13 @@ class Compose(CompoundTransform):
                     ))
                     widths.append(int(max_widths[j]))
 
+            # if previous has single output and current row has single input
+            elif type_ == 'single_2_single':
+                subarrows.append(create_arrow(0, 0, 0, 0))
+
             # if previous row has one output and current row has multiple inputs
             else:
+                assert type_ == 'single_2_multi'
                 for j, w in enumerate(children_widths[i]):
                     if isinstance(t, Rollout):
                         subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
