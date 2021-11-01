@@ -4,9 +4,11 @@
 
 ---
 
-Technical documentation here: https://lf1-io.github.io/padl/
+Full documentation here: https://lf1-io.github.io/padl/
 
 ## Why PADL?
+
+For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **Pytorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 ### Problem Statement
 
@@ -36,17 +38,12 @@ In creating **PADL** we aimed to create:
 - An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
 - An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
+With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central `Transform` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
+
 ## Installation
 
 ```bash
 pip install padl
-```
-
-Run tests to check:
-
-```bash
-pip install -r requirements-test.txt
-pytest tests/
 ```
 
 ## Project Structure
@@ -290,5 +287,8 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
     o.step()
 ```
 
+For the full notebook see `notebooks/example.ipynb` in the GitHub project.
+
 ## Licensing
+
 PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
