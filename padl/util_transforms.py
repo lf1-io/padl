@@ -24,6 +24,8 @@ class IfInStage(ClassTransform):
     :param else_: Transform to apply when the stage doesn't match (defaults to identity transform).
     """
 
+    pd_dont_dump_code = True
+
     def __init__(self, if_: Transform, target_stage: Stage, else_: Optional[Transform] = None):
         super().__init__(arguments=OrderedDict([('if_', if_),
                                                 ('target_stage', target_stage),
@@ -75,31 +77,34 @@ class IfInStage(ClassTransform):
         )
 
 
-def IfInfer(if_: Transform, else_: Optional[Transform] = None):
-    # pylint: disable=invalid-name,no-self-use
+class IfInfer(IfInStage):
     """Perform *if_* if called in "infer" stage, else perform *else_*.
 
     :param if_: Transform for the "infer" stage.
     :param else_: Transform otherwise (defaults to the identity transform).
     """
-    return IfInStage(if_, 'infer', else_=else_)
+
+    def __init__(self, if_: Transform, else_: Optional[Transform] = None):
+        super().__init__(if_, 'infer', else_)
 
 
-def IfTrain(if_: Transform, else_: Optional[Transform] = None):
-    # pylint: disable=invalid-name,no-self-use
+class IfEval(IfInStage):
+    """Perform *if_* if called in "eval" stage, else perform *else_*.
+
+    :param if_: Transform for the "eval" stage.
+    :param else_: Transform otherwise (defaults to the identity transform).
+    """
+
+    def __init__(self, if_: Transform, else_: Optional[Transform] = None):
+        super().__init__(if_, 'eval', else_)
+
+
+class IfTrain(IfInStage):
     """Perform *if_* if called in "train" stage, else perform *else_*.
 
     :param if_: Transform for the "train" stage.
     :param else_: Transform otherwise (defaults to the identity transform).
     """
-    return IfInStage(if_, 'train', else_=else_)
 
-
-def IfEval(if_: Transform, else_: Optional[Transform] = None):
-    # pylint: disable=invalid-name,no-self-use
-    """Perform *if_* if called in "train" stage, else perform *else_*.
-
-    :param if_: Transform for the "eval" stage.
-    :param else_: Transform otherwise (defaults to the identity transform).
-    """
-    return IfInStage(if_, 'eval', else_=else_)
+    def __init__(self, if_: Transform, else_: Optional[Transform] = None):
+        super().__init__(if_, 'train', else_)
