@@ -378,7 +378,6 @@ class Transform:
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
-        # module = self._pd_call_info.module
         if self._pd_varname is _notset:
             module = inspector.caller_module()
             self._pd_varname = self._pd_find_varname(module.__dict__)
