@@ -28,8 +28,10 @@ github:
 	make html
 	cp -r _build/html/* ./
 	mv _sources sources
+	mv _images images
 	mv _static static
 	sed -i'.bak' -e 's/_sources/sources/g' *.html
+	sed -i'.bak' -e 's/_images/images/g' *.html
 	sed -i'.bak' -e 's/_static/static/g' *.html
 	rm -rf _build
 	rm *.bak
@@ -40,6 +42,7 @@ clean:
 	-rm ../.README.rst
 	-rm readme.rst
 	-rm -rf sources
+	-rm -rf images
 	-rm -rf static
 	-rm -rf _build
 	-rm *.bak
