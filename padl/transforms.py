@@ -804,7 +804,7 @@ class ClassTransform(AtomicTransform):
     def source(self) -> str:
         """The class source code. """
         (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
-                                                self._pd_call_info.scope)
+                                                   self._pd_call_info.scope)
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
@@ -1044,8 +1044,9 @@ class CompoundTransform(Transform):
         start = self._pd_codegraph_startnode(name)
 
         if self._pd_group and 'padl' not in graph:
-            graph['padl', scope] = var2mod.CodeNode.from_source('import padl', scope)
-            scopemap['padl', scope] = scope
+            emptyscope = symfinder.Scope.empty()
+            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', emptyscope)
+            scopemap['padl', self._pd_call_info.scope] = emptyscope
 
         if name is not None:
             assert scope is not None
@@ -1568,17 +1569,19 @@ class BuiltinTransform(AtomicTransform):
             scopemap = {}
 
         if scope is None:
-            scope = symfinder.Scope.empty()
+            scope = self._pd_call_info.scope
+
         if ('padl', scope) not in graph:
-            graph['padl', scope] = var2mod.CodeNode.from_source('import padl', scope)
-            scopemap['padl', scope] = scope
+            emptyscope = symfinder.Scope.empty()
+            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', scope)
+            scopemap['padl', scope] = emptyscope
 
-        start_source = f'{name or "_pd_dummy"} = {self._pd_call}'
+        if name is not None:
+            start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
+            graph[name, scope] = \
+                var2mod.CodeNode.from_source(start_source, scope)
 
-        graph[self.__class__.__name__, scope] = \
-            var2mod.CodeNode.from_source(start_source, scope)
-
-        scopemap[self.__class__.__name__, scope] = scope
+            scopemap[name, scope] = scope
 
         return graph, scopemap
 
