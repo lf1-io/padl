@@ -1,4 +1,6 @@
-from padl import transform, group
+import pytest
+
+from padl import transform, group, IfTrain
 
 
 CONST = 1
@@ -16,6 +18,26 @@ def k(o):
 @transform
 def y(y):
     return CONST + k(y)
+
+
+@transform
+def listcomp_a(y):
+    return [x + CONST for x in y]
+
+
+@transform
+def listcomp_b(y):
+    return [x + y for x in CONST]
+
+
+@transform
+def dictcomp_a(y):
+    return {x: x + CONST for x in y}
+
+
+@transform
+def setcomp_a(y):
+    return {x + CONST for x in y}
 
 
 def maketransform():
@@ -112,12 +134,6 @@ def test_nested_dump_a():
     assert maketransform()._pd_dumps() == read_dump('nested_a')
 
 
-def test_nested_dump_b():
-    t = maketransformclass()(1, 2, x)
-    # TODO: make this work, currently it gives maketransformclass()(1, 2, x)
-    assert t._pd_call == "MyClassTransform(1, 2, x)"
-
-
 def test_nested_dump_c():
     t = makeclasstransform(1, 2, x)
     assert t._pd_dumps() == read_dump('nested_c')
@@ -140,3 +156,35 @@ g_a = x + group(y + x + x)
 
 def test_grouped_dump_a():
     assert g_a._pd_dumps() == read_dump('grouped_a')
+
+
+def test_if_train():
+    assert IfTrain(x, y)._pd_dumps() == read_dump('iftrain')
+
+
+def test_listcomp_a():
+    assert listcomp_a._pd_dumps() == read_dump('list_comprehension_a')
+
+
+def test_listcomp_b():
+    assert listcomp_b._pd_dumps() == read_dump('list_comprehension_b')
+
+
+def test_dictcomp_a():
+    assert dictcomp_a._pd_dumps() == read_dump('dict_comprehension_a')
+
+
+def test_setcomp_a():
+    assert setcomp_a._pd_dumps() == read_dump('set_comprehension_a')
+
+
+def test_with_raises():
+    with open(__file__) as f:
+        x = f.read()
+
+    @transform
+    def t(y):
+        return x + y
+
+    with pytest.raises(NotImplementedError):
+        t._pd_dumps()

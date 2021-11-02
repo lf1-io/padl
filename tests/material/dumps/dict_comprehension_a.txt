@@ -1,0 +1,12 @@
+from padl import transform
+
+
+CONST = 1
+
+
+@transform
+def dictcomp_a(y):
+    return {x: x + CONST for x in y}
+
+
+_pd_main = dictcomp_a

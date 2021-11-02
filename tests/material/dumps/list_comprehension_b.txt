@@ -1,0 +1,12 @@
+from padl import transform
+
+
+CONST = 1
+
+
+@transform
+def listcomp_b(y):
+    return [x + y for x in CONST]
+
+
+_pd_main = listcomp_b

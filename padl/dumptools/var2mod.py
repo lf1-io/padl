@@ -109,14 +109,23 @@ class _VarFinder(ast.NodeVisitor):
     def visit_NamedExpr(self, node):
         self.locals.update(Finder(ast.Name).find(node.target))
 
+    def visit_comprehension(self, node):
+        """Special case for comprehension - comprehension targets should be ignored. """
+        targets = set()
+        for gen in node.generators:
+            for name in Finder(ast.Name).find(gen.target):
+                targets.add(name.id)
+        all_ = set(x.id for x in Finder(ast.Name).find(node))
+        self.globals.update(all_ - targets - self.locals)
+
     def visit_DictComp(self, node):
-        pass
+        self.visit_comprehension(node)
 
     def visit_ListComp(self, node):
-        pass
+        self.visit_comprehension(node)
 
     def visit_SetComp(self, node):
-        pass
+        self.visit_comprehension(node)
 
     def visit_GeneratorExp(self, node):
         pass
@@ -323,6 +332,8 @@ def unscope_graph(graph, scopemap):
     the scope) to prevent conflicts."""
     counts = Counter(x[0] for x in graph)
     to_rename = set(k for k, c in counts.items() if c > 1)
+    scopemap = {**scopemap}
+    scopemap.update({(k[0], v): v for k, v in scopemap})
     def unscope(name, scope):
         if name in to_rename:
             return scope.unscoped(name)
