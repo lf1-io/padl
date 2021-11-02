@@ -514,7 +514,7 @@ class Transform:
                 if verbose:
                     pbar.update()
                 if not use_post:
-                    output = Unbatchify()(batch)
+                    output = Unbatchify(cpu=False)(batch)
                 if hasattr(self, '_pd_output_format'):
                     yield from self._pd_output_format(*output)
                 else:
@@ -1609,7 +1609,7 @@ class Unbatchify(ClassTransform):
     :param cpu: If *True*, moves output to cpu after unbatchify.
     """
 
-    def __init__(self, dim=0, cpu=False):
+    def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
         self._pd_component = {'postprocess'}
