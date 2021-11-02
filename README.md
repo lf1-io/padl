@@ -272,10 +272,10 @@ for x in t.train_apply(
 
 ### Model training
 
-Important methods such as all model parameters are accessible via `Transform.tl_*`.: 
+Important methods such as all model parameters are accessible via `Transform.pd_*`.: 
 
 ```python
-o = torch.optim.Adam(model.tl_parameters(), lr=LR)
+o = torch.optim.Adam(model.pd_parameters(), lr=LR)
 ```
 
 For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:
