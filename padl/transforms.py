@@ -880,11 +880,11 @@ class Map(Transform):
         self._pd_forward = None
         self._pd_postprocess = None
 
-    def __call__(self, arglist: Iterable):
+    def __call__(self, args: Iterable):
         """
-        :param arglist: Args list to call transforms with
+        :param args: Args list to call transforms with
         """
-        return [self.transform._pd_call_transform(arg) for arg in arglist]
+        return [self.transform._pd_call_transform(arg) for arg in args]
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()
@@ -1296,15 +1296,15 @@ class Compose(CompoundTransform):
             output.append(make_bold(f'{i}: ') + r)
         return '\n'.join(output)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Compose
 
-        :param arg: Arguments to call with.
+        :param args: Arguments to call with.
         :return: Output from series of transforms.
         """
         for transform_ in self.transforms:
-            arg = transform_._pd_call_transform(arg)
-        return arg
+            args = transform_._pd_call_transform(args)
+        return args
 
     @property
     def pd_forward(self) -> Transform:
@@ -1385,15 +1385,15 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Rollout
 
-        :param arg: Argument to call with
+        :param args: Argument to call with
         :return: namedtuple of outputs
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_._pd_call_transform(arg))
+            out.append(transform_._pd_call_transform(args))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
@@ -1459,15 +1459,15 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Parallel
 
-        :param arg: Argument to call with.
+        :param args: Argument to call with.
         :return: Namedtuple of output.
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._pd_call_transform(arg[ind]))
+            out.append(transform_._pd_call_transform(args[ind]))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
