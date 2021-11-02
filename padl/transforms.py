@@ -582,6 +582,7 @@ class Transform:
             return
 
         layers = self.pd_layers
+        training_before = [layer.training for layer in layers]
         try:
             for layer in layers:
                 if stage == 'train':
@@ -590,10 +591,13 @@ class Transform:
                     layer.eval()
             Transform.pd_stage = stage
             yield
-        # TODO: Should we put layers in eval mode by default?
         finally:
-            for layer in layers:
-                layer.eval()
+            for i, training in enumerate(training_before):
+                layer = layers[i]
+                if training:
+                    layer.train()
+                else:
+                    layer.eval()
             Transform.pd_stage = None
 
     @staticmethod
@@ -1390,7 +1394,7 @@ class Rollout(CompoundTransform):
         out = []
         for transform_ in self.transforms:
             out.append(transform_._pd_call_transform(arg))
-        if self.pd_stage is not None:
+        if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
@@ -1464,7 +1468,7 @@ class Parallel(CompoundTransform):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_._pd_call_transform(arg[ind]))
-        if self.pd_stage is not None:
+        if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
@@ -1586,8 +1590,9 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args) if self.cpu else args
@@ -1623,8 +1628,9 @@ class Batchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args)
