@@ -31,7 +31,12 @@ def _set_local_varname(frame, event, _args):
 
 
 def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None):
-    """Wrap *fun* in a Transform. Don't use directly, use `transform` instead."""
+    """Wrap *fun* in a Transform. Don't use directly, use `transform` instead.
+
+    :param fun: function to be wrapped
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
+    """
     caller = inspect.stack()[2]
 
     try:
@@ -79,6 +84,9 @@ def _wrap_class(cls, ignore_scope=False):
     >>> myobj = MyClass('hello')
     >>> myobj._pd_call
     MyClass('hello')
+
+    :param cls: class to be wrapped
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
     """
     old__init__ = cls.__init__
     if issubclass(cls, torch.nn.Module):
@@ -119,6 +127,9 @@ def _wrap_class_instance(obj, ignore_scope=False):
             ...
 
     >>> myobj = transform(MyClass('hello'))
+
+    :param obj: object to be wrapped
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
     """
     if issubclass(type(obj), torch.nn.Module):
         trans_class = TorchModuleTransform
@@ -141,7 +152,11 @@ def _wrap_class_instance(obj, ignore_scope=False):
 
 def _wrap_lambda(fun, ignore_scope=False):
     """Wrap a lambda function in a transform. Hacky hack that will hopefully
-    become obsolete with python 3.11 (see also inspector.CallInfo). """
+    become obsolete with python 3.11 (see also inspector.CallInfo).
+
+    :param fun: function to be wrapped
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
+    """
     # get the caller frame (it's 2 - [caller] -> [trans] -> [_wrap_lambda])
     caller_frame = inspector.caller_frame()
     # get the source
@@ -256,16 +271,20 @@ def _wrap_module(module):
     return PatchedModule(module)
 
 
-def transform(fun_or_cls, ignore_scope=False):
-    """Transform wrapper / decorator. Use to wrap a class or callable. """
-    if isinstance(fun_or_cls, ModuleType):
-        return _wrap_module(fun_or_cls)
-    if inspect.isclass(fun_or_cls):
-        return _wrap_class(fun_or_cls, ignore_scope)
-    if callable(fun_or_cls):
-        if not hasattr(fun_or_cls, '__name__'):
-            return _wrap_class_instance(fun_or_cls, ignore_scope)
-        if fun_or_cls.__name__ == '<lambda>':
-            return _wrap_lambda(fun_or_cls, ignore_scope)
-        return _wrap_function(fun_or_cls, ignore_scope)
+def transform(wrappee, ignore_scope=False):
+    """Transform wrapper / decorator. Use to wrap a class, module or callable.
+
+    :param wrappee: class, module or callable to be wrapped
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
+    """
+    if isinstance(wrappee, ModuleType):
+        return _wrap_module(wrappee)
+    if inspect.isclass(wrappee):
+        return _wrap_class(wrappee, ignore_scope)
+    if callable(wrappee):
+        if not hasattr(wrappee, '__name__'):
+            return _wrap_class_instance(wrappee, ignore_scope)
+        if wrappee.__name__ == '<lambda>':
+            return _wrap_lambda(wrappee, ignore_scope)
+        return _wrap_function(wrappee, ignore_scope)
     raise ValueError('Can only wrap classes or callables.')
