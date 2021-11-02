@@ -582,6 +582,7 @@ class Transform:
             return
 
         layers = self.pd_layers
+        training_before = [layer.training for layer in layers]
         try:
             for layer in layers:
                 if stage == 'train':
@@ -590,10 +591,13 @@ class Transform:
                     layer.eval()
             Transform.pd_stage = stage
             yield
-        # TODO: Should we put layers in eval mode by default?
         finally:
-            for layer in layers:
-                layer.eval()
+            for i, training in enumerate(training_before):
+                layer = layers[i]
+                if training:
+                    layer.train()
+                else:
+                    layer.eval()
             Transform.pd_stage = None
 
     @staticmethod
