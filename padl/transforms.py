@@ -1221,7 +1221,7 @@ class Compose(CompoundTransform):
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
-        
+        # pad the components of rows which are shorter than other parts in same column
         rows = [
             [s._pd_shortrepr() for s in t.transforms] if hasattr(t, 'transforms')
             else [t._pd_shortrepr()]
