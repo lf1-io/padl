@@ -391,7 +391,10 @@ class Transform:
         """
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
-                if parameters.device.type != self.pd_device:
+                parameter_device = parameters.device.type
+                if ':' in self.pd_device and 'cuda' in parameter_device:
+                    parameter_device += f':{parameters.device.index}'
+                if parameter_device != self.pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -467,7 +470,7 @@ class Transform:
         if use_preprocess:
             data = SimpleDataset(
                 args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage)
+                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
@@ -496,13 +499,18 @@ class Transform:
                     pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
-                yield from output
+                if hasattr(self, '_pd_output_format'):
+                    yield from self._pd_output_format(*output)
+                else:
+                    yield from output
                 continue
-
-            yield output
+            if hasattr(self, '_pd_output_format'):
+                yield self._pd_output_format(*output)
+            else:
+                yield output
 
     @property
-    def pd_device(self) -> str:  # TODO: remove?
+    def pd_device(self) -> str:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
@@ -540,6 +548,10 @@ class Transform:
         self._pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     @property
@@ -569,7 +581,8 @@ class Transform:
             yield
             return
 
-        layers = self.pd_layers  # TODO: set back?
+        layers = self.pd_layers
+        training_before = [layer.training for layer in layers]
         try:
             for layer in layers:
                 if stage == 'train':
@@ -578,10 +591,13 @@ class Transform:
                     layer.eval()
             Transform.pd_stage = stage
             yield
-        # TODO: Should we put layers in eval mode by default?
         finally:
-            for layer in layers:
-                layer.eval()
+            for i, training in enumerate(training_before):
+                layer = layers[i]
+                if training:
+                    layer.train()
+                else:
+                    layer.eval()
             Transform.pd_stage = None
 
     @staticmethod
@@ -1054,6 +1070,10 @@ class CompoundTransform(Transform):
         self._pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
@@ -1184,8 +1204,6 @@ class Compose(CompoundTransform):
     def _pd_longrepr(self) -> str:
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
-
-        :param name: Line or lines of input.
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
@@ -1376,8 +1394,9 @@ class Rollout(CompoundTransform):
         out = []
         for transform_ in self.transforms:
             out.append(transform_._pd_call_transform(arg))
-        out = self._pd_output_format(*out)
-        return out
+        if Transform.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1449,8 +1468,9 @@ class Parallel(CompoundTransform):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_._pd_call_transform(arg[ind]))
-        out = self._pd_output_format(*out)
-        return out
+        if Transform.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1570,8 +1590,9 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args) if self.cpu else args
@@ -1607,8 +1628,9 @@ class Batchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args)
