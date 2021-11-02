@@ -16,7 +16,7 @@ For data scientists, developing neural models is hard, due to the need to juggle
 Problem Statement
 ^^^^^^^^^^^^^^^^^
 
-While developing and deploying our deep learning models in **pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+While developing and deploying our deep learning models in **Pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
 
 
 * in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
@@ -47,7 +47,7 @@ In creating **PADL** we aimed to create:
 * An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
 * An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
-With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central ``Transform`` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
+With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central ``Transform`` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or **IPython** session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
 
 Installation
 ------------
@@ -59,7 +59,7 @@ Installation
 Project Structure
 -----------------
 
-PADL's chief abstraction is ``td.transforms.Transform``. This is an abstraction which includes all elements of a typical deep learning workflow in ``pytorch``\ :
+PADL's chief abstraction is ``padl.transforms.Transform``. This is an abstraction which includes all elements of a typical deep learning workflow in **Pytorch**\ :
 
 
 * preprocessing
@@ -135,7 +135,7 @@ Any callable class implementing ``__call__`` can also become a transform:
    left_shift = this[:, :-1]
    lower_case = this.lower_case()
 
-Pytorch layers are first class citizens via ``td.transforms.TorchModuleTransform``\ :
+**Pytorch** layers are first class citizens via ``padl.transforms.TorchModuleTransform``\ :
 
 .. code-block:: python
 
@@ -154,7 +154,7 @@ Pytorch layers are first class citizens via ``td.transforms.TorchModuleTransform
    model = LM(N_WORDS)
 
    print(isinstance(layer, torch.nn.Module))                 # prints "True"
-   print(isinstance(layer, td.transforms.Transform))         # prints "True"
+   print(isinstance(layer, padl.transforms.Transform))         # prints "True"
 
 Finally, it's possibly to instantiate ``Transform`` directly from importable callables using ``importer``. 
 
@@ -163,8 +163,8 @@ Finally, it's possibly to instantiate ``Transform`` directly from importable cal
    normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
    cosine = importer.numpy.cos
 
-   print(isinstance(normalize, tf.transforms.Transform))         # prints "True"
-   print(isinstance(cosine, td.transforms.Transform))            # prints "True"
+   print(isinstance(normalize, padl.transforms.Transform))         # prints "True"
+   print(isinstance(cosine, padl.transforms.Transform))            # prints "True"
 
 Defining compound transforms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -322,7 +322,7 @@ Loading:
    from padl import load
    model = load('test.padl')
 
-For the full notebook see ``notebooks/example.ipynb`` in the GitHub project.
+For the full notebook see ``notebooks/02_nlp_example.ipynb`` in the GitHub project.
 
 Licensing
 ---------
