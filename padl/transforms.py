@@ -59,7 +59,8 @@ Component = Literal['preprocess', 'forward', 'postprocess']
 class Transform:
     """Transform base class.
 
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
     :param pd_name: name of the transform
     """
     pd_stage = None
@@ -715,7 +716,7 @@ class FunctionTransform(AtomicTransform):
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
     :param pd_name: name of the transform
-    :param call: The call string (defaults to the function's name.
+    :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
     """
 
@@ -776,6 +777,10 @@ class ClassTransform(AtomicTransform):
     """Class Transform.
 
     Do not use this directly, instead, use the `transform` decorator to wrap a class.
+
+    :param pd_name: name of the transform
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
+    :param arguments: ordered dictionary of initialization arguments to be used in printing
     """
 
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
@@ -867,6 +872,9 @@ class Map(Transform):
     True
 
     :param transform: Transform to be applied to a list of inputs.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
+    :param pd_name: name of the transform
     """
 
     def __init__(self, transform: Transform, call_info: Optional[inspector.CallInfo] = None,
@@ -951,9 +959,11 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
 
     :param transforms: list of transforms
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
     :param pd_name: name of CompoundTransform
-    :param pd_group:
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `CompoundTransform`.
     """
     op = NotImplemented
     display_op = NotImplemented
@@ -1160,9 +1170,11 @@ class Compose(CompoundTransform):
     Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
 
     :param transforms: List of transforms to compose.
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: name of the Compose transform
-    :param pd_group:
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `CompoundTransform`.
     :return: output from series of transforms
     """
     op = '>>'
@@ -1372,6 +1384,8 @@ class Rollout(CompoundTransform):
     Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
 
     :param transforms: List of transforms to rollout.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `CompoundTransform`.
@@ -1447,6 +1461,8 @@ class Parallel(CompoundTransform):
     Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
 
     :param transforms: List of transforms to parallelize.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `CompoundTransform`.
@@ -1555,10 +1571,7 @@ class BuiltinTransform(AtomicTransform):
 
 
 class Identity(BuiltinTransform):
-    """Do nothing. Just pass on.
-
-    :param pd_name: Name of the transform.
-    """
+    """Do nothing. Just pass on."""
 
     def __init__(self):
         super().__init__('padl.Identity()')
