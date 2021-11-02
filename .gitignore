@@ -7,7 +7,7 @@ data/mnist/img
 build/
 dist/
 checkpoints
-notebooks/.ipynb_checkpoints
+/.ipynb_checkpoints
 *.pyc
 *.swp
 *.lf
@@ -15,7 +15,6 @@ notebooks/.ipynb_checkpoints
 data
 EXPLAINED.md
 .ipynb_checkpoints/
-*.ipynb
 /*.ipynb
 
 # Linting report
