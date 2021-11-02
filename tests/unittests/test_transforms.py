@@ -3,6 +3,7 @@ import pytest
 import torch
 from padl import transforms as pd, transform, Identity
 from padl.transforms import Batchify, Unbatchify
+from padl.dumptools.serialize import value
 from collections import namedtuple
 from padl.exceptions import WrongDeviceError
 
@@ -75,6 +76,15 @@ class ClassTransformWithManyArguments:
 @transform
 def trans_with_globals(x, y):
     return (plus >> times_two)(x, y)
+
+
+@transform
+class ClassLookup:
+    def __init__(self, dic):
+        self.dic = dic
+
+    def __call__(self, args):
+        return [self.dic.get(x, len(self.dic)) for x in args]
 
 
 @transform
@@ -568,10 +578,13 @@ class TestClassTransform:
     def init(self, request):
         request.cls.transform_1 = transform(SimpleClass)(2)
         request.cls.transform_2 = SimpleClassTransform(2)
+        dic = {s: i for i, s in enumerate('abcdefghijklmnop')}
+        request.cls.transform_3 = ClassLookup(dic=value(dic))
 
     def test_infer_apply(self):
-        self.transform_1.infer_apply(1) == 3
-        self.transform_2.infer_apply(1) == 3
+        assert self.transform_1.infer_apply(1) == 3
+        assert self.transform_2.infer_apply(1) == 3
+        assert self.transform_3.infer_apply('abc') == [0, 1, 2]
 
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
@@ -580,6 +593,10 @@ class TestClassTransform:
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
         t2 = pd.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 3
+        self.transform_3.pd_save(tmp_path / 'test.padl', True)
+        t3 = pd.load(tmp_path / 'test.padl')
+        assert t3.dic == {'a': 0, 'b': 1}
+        assert t3.infer_apply('abc') == [0, 1, 2]
 
     def test_stored_arguments(self):
         c = ClassTransformWithManyArguments(1, 2, 3, 4, 5)
