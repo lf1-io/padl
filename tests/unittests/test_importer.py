@@ -1,26 +1,29 @@
 import pytest
 
-from padl import load
+from padl import load, transform
 from padl.transforms import ClassTransform, FunctionTransform
 
-from padl.importer import numpy as np
-from padl.importer import torch
+import numpy as np
+import torch
+
+pdnp = transform(np)
+pdtorch = transform(torch)
 
 
 def test_function_a():
-    t = np.cos
+    t = pdnp.cos
     assert isinstance(t, FunctionTransform)
     assert t._pd_call == 'np.cos'
 
 
 def test_function_b():
-    t = np.random.rand
+    t = pdnp.random.rand
     assert isinstance(t, FunctionTransform)
     assert t._pd_call == 'np.random.rand'
 
 
 def test_class_a():
-    t = torch.nn.Linear(10, 10)
+    t = pdtorch.nn.Linear(10, 10)
     assert isinstance(t, ClassTransform)
     assert t._pd_call == 'torch.nn.Linear(10, 10)'
 
@@ -28,12 +31,11 @@ def test_class_a():
 class TestPADLImporter:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        from padl.importer import numpy as inp
-        request.cls.transform_1 = inp.sin
-        request.cls.transform_2 = (inp.sin >> inp.sin)
-        transform_temp = inp.sin
-        request.cls.transform_3 = transform_temp + transform_temp >> inp.add
-        request.cls.transform_4 = inp.cos + inp.cos >> inp.add
+        request.cls.transform_1 = pdnp.sin
+        request.cls.transform_2 = (pdnp.sin >> pdnp.sin)
+        transform_temp = pdnp.sin
+        request.cls.transform_3 = transform_temp + transform_temp >> pdnp.add
+        request.cls.transform_4 = pdnp.cos + pdnp.cos >> pdnp.add
 
     def test_save_load(self, tmp_path):
         for transform_ in [self.transform_1, self.transform_2, self.transform_3, self.transform_4]:

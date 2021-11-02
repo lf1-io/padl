@@ -5,6 +5,8 @@ import dis
 import functools
 import inspect
 import copy
+from types import MethodWrapperType, ModuleType
+import importlib
 
 import numpy as np
 import torch
@@ -208,8 +210,56 @@ def _wrap_lambda(fun, ignore_scope=False):
     return wrapper
 
 
+class PatchedModule:
+    """Class that patches a module, such that all functions and classes in that module come out
+    wrapped as Transforms.
+
+    Example:
+
+        >>> from padl import transform
+        >>> import numpy as np
+        >>> pd_np = transform(np)
+        >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
+        True
+    """
+
+    def __init__(self, module, parents=None):
+        self._module = module
+        if parents is None:
+            self._path = self._module.__name__
+        else:
+            self._path = parents + '.' + self._module.__name__
+
+    def __getattr__(self, key):
+        x = getattr(self._module, key)
+        if inspect.isclass(x):
+            if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
+                call_info = inspector.CallInfo()
+                return _wrap_class(x)
+            return x
+        if callable(x):
+            call_info = inspector.CallInfo()
+            return _wrap_function(x, ignore_scope=True, call_info=call_info)
+        if isinstance(x, ModuleType):
+            return PatchedModule(x, parents=self._path)
+        return x
+
+    def __repr__(self):
+        return f'Transform patched: {self._module}'
+
+    def __dir__(self):
+        return dir(self._module)
+
+
+def _wrap_module(module):
+    module = importlib.import_module(module.__name__)
+    return PatchedModule(module)
+
+
 def transform(fun_or_cls, ignore_scope=False):
     """Transform wrapper / decorator. Use to wrap a class or callable. """
+    if isinstance(fun_or_cls, ModuleType):
+        return _wrap_module(fun_or_cls)
     if inspect.isclass(fun_or_cls):
         return _wrap_class(fun_or_cls, ignore_scope)
     if callable(fun_or_cls):
