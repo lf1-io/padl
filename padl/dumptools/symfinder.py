@@ -154,7 +154,9 @@ class _ImportFinder(_NameFinder):
 
     def node(self):
         # TODO: cache deparse?
-        return ast.parse(self.deparse()).body[0]
+        node = ast.parse(self.deparse()).body[0]
+        node._scope = Scope.empty()
+        return node
 
 
 class _ImportFromFinder(_NameFinder):
@@ -425,17 +427,16 @@ def find_in_scope(var_name: str, scope: Scope):
     for _scopename, tree in scope.scopelist:
         try:
             source, node = find_in_source(var_name, scope.def_source, tree=tree)
-            try:
-                scope = node._scope
-            except AttributeError:
-                pass
+            scope = getattr(node, '_scope', scope)
             return (source, node), scope
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{var_name} not found in function hierarchy.')
-    return find(var_name, scope.module), scope.global_()
+    source, node = find(var_name, scope.module)
+    scope = getattr(node, '_scope', scope.global_())
+    return (source, node), scope
 
 
 def replace_star_imports(tree: ast.Module):

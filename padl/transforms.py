@@ -59,7 +59,8 @@ Component = Literal['preprocess', 'forward', 'postprocess']
 class Transform:
     """Transform base class.
 
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
     :param pd_name: name of the transform
     """
     pd_stage = None
@@ -326,7 +327,10 @@ class Transform:
             return code, versions
         return code
 
-    def __repr__(self) -> str:
+    def __repr__(self):
+        return self._pd_shortrepr(formatting=False)
+
+    def _repr_pretty_(self, p, cycle) -> str:
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
@@ -334,17 +338,17 @@ class Transform:
             title = make_bold(title)
         top_message = title + ':' + '\n\n'
         bottom_message = textwrap.indent(self._pd_longrepr(), '   ')
-        return top_message + bottom_message
+        p.text(top_message + bottom_message if not cycle else '...')
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
         """A lone string representation of the transform."""
         raise NotImplementedError
 
-    def _pd_shortrepr(self) -> str:
+    def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
         return self._pd_title()
 
-    def _pd_tinyrepr(self) -> str:
+    def _pd_tinyrepr(self, formatting=True) -> str:
         """A tiny string representation of the transform."""
         return self.pd_name or f'<anonymous {self.__class__.__name__}>'
 
@@ -391,7 +395,10 @@ class Transform:
         """
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
-                if parameters.device.type != self.pd_device:
+                parameter_device = parameters.device.type
+                if ':' in self.pd_device and 'cuda' in parameter_device:
+                    parameter_device += f':{parameters.device.index}'
+                if parameter_device != self.pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -467,7 +474,7 @@ class Transform:
         if use_preprocess:
             data = SimpleDataset(
                 args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage)
+                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
             )
             if loader_kwargs is None:
                 loader_kwargs = {}
@@ -496,13 +503,18 @@ class Transform:
                     pbar.update()
                 if not use_post:
                     output = Unbatchify()(batch)
-                yield from output
+                if hasattr(self, '_pd_output_format'):
+                    yield from self._pd_output_format(*output)
+                else:
+                    yield from output
                 continue
-
-            yield output
+            if hasattr(self, '_pd_output_format'):
+                yield self._pd_output_format(*output)
+            else:
+                yield output
 
     @property
-    def pd_device(self) -> str:  # TODO: remove?
+    def pd_device(self) -> str:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
@@ -540,6 +552,10 @@ class Transform:
         self._pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     @property
@@ -569,7 +585,8 @@ class Transform:
             yield
             return
 
-        layers = self.pd_layers  # TODO: set back?
+        layers = self.pd_layers
+        training_before = [layer.training for layer in layers]
         try:
             for layer in layers:
                 if stage == 'train':
@@ -578,10 +595,13 @@ class Transform:
                     layer.eval()
             Transform.pd_stage = stage
             yield
-        # TODO: Should we put layers in eval mode by default?
         finally:
-            for layer in layers:
-                layer.eval()
+            for i, training in enumerate(training_before):
+                layer = layers[i]
+                if training:
+                    layer.train()
+                else:
+                    layer.eval()
             Transform.pd_stage = None
 
     @staticmethod
@@ -699,7 +719,7 @@ class FunctionTransform(AtomicTransform):
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
     :param pd_name: name of the transform
-    :param call: The call string (defaults to the function's name.
+    :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
     """
 
@@ -727,19 +747,19 @@ class FunctionTransform(AtomicTransform):
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
         try:
             return '\n'.join(self.source.split('\n')[:30])
         except TypeError:
             return self._pd_call
 
-    def _pd_shortrepr(self) -> str:
+    def _pd_shortrepr(self, formatting=True) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
-            return self._pd_longrepr()
-        return super()._pd_shortrepr()
+            return self._pd_longrepr(formatting)
+        return super()._pd_shortrepr(formatting)
 
     def _pd_title(self) -> str:
-        return self._pd_call.split('(')[0]
+        return self.function.__name__
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
@@ -760,6 +780,10 @@ class ClassTransform(AtomicTransform):
     """Class Transform.
 
     Do not use this directly, instead, use the `transform` decorator to wrap a class.
+
+    :param pd_name: name of the transform
+    :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
+    :param arguments: ordered dictionary of initialization arguments to be used in printing
     """
 
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
@@ -780,7 +804,7 @@ class ClassTransform(AtomicTransform):
     def source(self) -> str:
         """The class source code. """
         (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
-                                                self._pd_call_info.scope)
+                                                   self._pd_call_info.scope)
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
@@ -851,6 +875,9 @@ class Map(Transform):
     True
 
     :param transform: Transform to be applied to a list of inputs.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
+    :param pd_name: name of the transform
     """
 
     def __init__(self, transform: Transform, call_info: Optional[inspector.CallInfo] = None,
@@ -864,11 +891,11 @@ class Map(Transform):
         self._pd_forward = None
         self._pd_postprocess = None
 
-    def __call__(self, arglist: Iterable):
+    def __call__(self, args: Iterable):
         """
-        :param arglist: Args list to call transforms with
+        :param args: Args list to call transforms with
         """
-        return [self.transform._pd_call_transform(arg) for arg in arglist]
+        return [self.transform._pd_call_transform(arg) for arg in args]
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()
@@ -935,9 +962,11 @@ class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
 
     :param transforms: list of transforms
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+    created (needed for saving).
     :param pd_name: name of CompoundTransform
-    :param pd_group:
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `CompoundTransform`.
     """
     op = NotImplemented
     display_op = NotImplemented
@@ -1015,8 +1044,9 @@ class CompoundTransform(Transform):
         start = self._pd_codegraph_startnode(name)
 
         if self._pd_group and 'padl' not in graph:
-            graph['padl', scope] = var2mod.CodeNode.from_source('import padl', scope)
-            scopemap['padl', scope] = scope
+            emptyscope = symfinder.Scope.empty()
+            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', emptyscope)
+            scopemap['padl', self._pd_call_info.scope] = emptyscope
 
         if name is not None:
             assert scope is not None
@@ -1034,11 +1064,13 @@ class CompoundTransform(Transform):
         rows = [make_bold(f'{i}: ') + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
-    def _pd_shortrepr(self):
-        return f' {make_green(self.op)} '.join(t._pd_tinyrepr() for t in self.transforms)
+    def _pd_shortrepr(self, formatting=True):
+        op = make_green(self.op) if formatting else self.op
+        return f' {op} '.join(t._pd_tinyrepr(formatting) for t in self.transforms)
 
-    def _pd_tinyrepr(self) -> str:
-        rep = f'..{make_green(self.op)}..'
+    def _pd_tinyrepr(self, formatting=True) -> str:
+        op = make_green(self.op) if not formatting else self.op
+        rep = f'..{op}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
         return f'[{rep}]'
@@ -1054,6 +1086,10 @@ class CompoundTransform(Transform):
         self._pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
+
+        self.pd_preprocess._pd_device = device
+        self.pd_forward._pd_device = device
+        self.pd_postprocess._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
@@ -1140,13 +1176,15 @@ class Compose(CompoundTransform):
     Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
 
     :param transforms: List of transforms to compose.
-    :param call_info:
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: name of the Compose transform
-    :param pd_group:
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `CompoundTransform`.
     :return: output from series of transforms
     """
     op = '>>'
-    display_op = '↓'
+    display_op = '>>'
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -1166,11 +1204,24 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
-    def _pd_longrepr(self) -> str:
+    def _pd_classify_nodetype(self, i, t, t_m1, cw, cw_m1):
+        if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
+            type_ = 'multi_2_multi'
+
+        elif i > 0 and cw == 1 and cw_m1 > 1:
+            type_ = 'multi_2_single'
+
+        elif cw == 1 or isinstance(t, Compose):
+            type_ = 'single_2_single'
+
+        else:
+            type_ = 'single_2_multi'
+
+        return type_
+
+    def _pd_longrepr(self, formatting=True) -> str:  # TODO: make it respect the formatting
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
-
-        :param name: Line or lines of input.
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
@@ -1203,15 +1254,17 @@ class Compose(CompoundTransform):
             widths = [0]
             subarrows = []
 
+            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
+                                               children_widths[i], children_widths[i - 1])
+
             # if subsequent rows have the same number of "children" transforms
-            if i > 0 and isinstance(t, Parallel) and len(children_widths[i]) == len(children_widths[i - 1]):
+            if type_ == 'multi_2_multi':
                 for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
-            elif i > 0 and len(children_widths[i]) == 1 \
-                    and len(children_widths[i - 1]) > 1:
+            elif type_ == 'multi_2_single':
                 for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
                         0, sum(widths) - j + j * 4,
@@ -1219,8 +1272,13 @@ class Compose(CompoundTransform):
                     ))
                     widths.append(int(max_widths[j]))
 
+            # if previous has single output and current row has single input
+            elif type_ == 'single_2_single':
+                subarrows.append(create_arrow(0, 0, 0, 0))
+
             # if previous row has one output and current row has multiple inputs
             else:
+                assert type_ == 'single_2_multi'
                 for j, w in enumerate(children_widths[i]):
                     if isinstance(t, Rollout):
                         subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
@@ -1256,15 +1314,15 @@ class Compose(CompoundTransform):
             output.append(make_bold(f'{i}: ') + r)
         return '\n'.join(output)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Compose
 
-        :param arg: Arguments to call with.
+        :param args: Arguments to call with.
         :return: Output from series of transforms.
         """
         for transform_ in self.transforms:
-            arg = transform_._pd_call_transform(arg)
-        return arg
+            args = transform_._pd_call_transform(args)
+        return args
 
     @property
     def pd_forward(self) -> Transform:
@@ -1332,6 +1390,8 @@ class Rollout(CompoundTransform):
     Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
 
     :param transforms: List of transforms to rollout.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `CompoundTransform`.
@@ -1345,17 +1405,18 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Rollout
 
-        :param arg: Argument to call with
+        :param args: Argument to call with
         :return: namedtuple of outputs
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_._pd_call_transform(arg))
-        out = self._pd_output_format(*out)
-        return out
+            out.append(transform_._pd_call_transform(args))
+        if Transform.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1391,11 +1452,17 @@ class Rollout(CompoundTransform):
                 self._pd_postprocess = Rollout(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
-    def _pd_longrepr(self) -> str:
-        between = f'\n{make_green("│ " + self.display_op)}  \n'
-        rows = [make_green('├─▶ ') + make_bold(f'{i}: ') + t._pd_shortrepr()
+    def _pd_longrepr(self, formatting=True) -> str:
+        if not formatting:
+            make_green_ = lambda x: x
+            make_bold_ = lambda x: x
+        else:
+            make_green_ = make_green
+            make_bold_ = make_bold
+        between = f'\n{make_green_("│ " + self.display_op)}  \n'
+        rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
                 for i, t in enumerate(self.transforms[:-1])]
-        rows.append(make_green('└─▶ ') + make_bold(f'{len(self.transforms) - 1}: ')
+        rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
                     + self.transforms[-1]._pd_shortrepr())
         return between.join(rows) + '\n'
 
@@ -1406,6 +1473,8 @@ class Parallel(CompoundTransform):
     Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
 
     :param transforms: List of transforms to parallelize.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `CompoundTransform`.
@@ -1418,17 +1487,18 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def __call__(self, arg):
+    def __call__(self, args):
         """Call method for Parallel
 
-        :param arg: Argument to call with.
+        :param args: Argument to call with.
         :return: Namedtuple of output.
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._pd_call_transform(arg[ind]))
-        out = self._pd_output_format(*out)
-        return out
+            out.append(transform_._pd_call_transform(args[ind]))
+        if Transform.pd_stage is not None:
+            return tuple(out)
+        return self._pd_output_format(*out)
 
     @property
     def pd_preprocess(self) -> Transform:
@@ -1460,23 +1530,28 @@ class Parallel(CompoundTransform):
                 self._pd_postprocess = Parallel(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
+        if not formatting:
+            make_green_ = lambda x: x
+            make_bold_ = lambda x: x
+        else:
+            make_green_ = make_green
+            make_bold_ = make_bold
         def pipes(n):
             return "│" * n
         def spaces(n):
             return " " * n
         def horizontal(n):
             return "─" * n
-        between = f'\n{make_green("│ " + self.display_op)}  \n'
         len_ = len(self.transforms)
         out = ''
         for i, t in enumerate(self.transforms):
             out += (
-                make_green(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold(f'{i}: ') + t._pd_shortrepr() + '\n'
+                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                make_bold_(f'{i}: ') + t._pd_shortrepr() + '\n'
             )
             if i < len(self.transforms) - 1:
-                out += f'{make_green(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
         return out
 
 
@@ -1494,29 +1569,28 @@ class BuiltinTransform(AtomicTransform):
             scopemap = {}
 
         if scope is None:
-            scope = symfinder.Scope.empty()
+            scope = self._pd_call_info.scope
+
         if ('padl', scope) not in graph:
-            graph['padl', scope] = var2mod.CodeNode.from_source('import padl', scope)
-            scopemap['padl', scope] = scope
+            emptyscope = symfinder.Scope.empty()
+            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', scope)
+            scopemap['padl', scope] = emptyscope
 
-        start_source = f'{name or "_pd_dummy"} = {self._pd_call}'
+        if name is not None:
+            start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
+            graph[name, scope] = \
+                var2mod.CodeNode.from_source(start_source, scope)
 
-        graph[self.__class__.__name__, scope] = \
-            var2mod.CodeNode.from_source(start_source, scope)
-
-        scopemap[self.__class__.__name__, scope] = scope
+            scopemap[name, scope] = scope
 
         return graph, scopemap
 
-    def _pd_longrepr(self):
+    def _pd_longrepr(self, formatting=True):
         return self._pd_call.split('padl.')[-1]
 
 
 class Identity(BuiltinTransform):
-    """Do nothing. Just pass on.
-
-    :param pd_name: Name of the transform.
-    """
+    """Do nothing. Just pass on."""
 
     def __init__(self):
         super().__init__('padl.Identity()')
@@ -1548,8 +1622,9 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args) if self.cpu else args
@@ -1585,8 +1660,9 @@ class Batchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None,\
-            'Stage is not set, use infer_apply, eval_apply or train_apply'
+        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
+                                                'or train_apply instead of calling the transform '
+                                                'directly.')
 
         if Transform.pd_stage != 'infer':
             return self._move_to_device(args)
