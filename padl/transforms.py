@@ -1059,9 +1059,8 @@ class CompoundTransform(Transform):
         return graph, scopemap
 
     def _pd_longrepr(self):
-        between = f'\n{make_green(self.display_op)}  \n'
         rows = [make_bold(f'{i}: ') + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
-        return between.join(rows) + '\n'
+        return '\n\n'.join(rows) + '\n'
 
     def _pd_shortrepr(self, formatting=True):
         op = make_green(self.op) if formatting else self.op
@@ -1222,12 +1221,11 @@ class Compose(CompoundTransform):
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
-        # pad the components of rows which are shorter than other parts in same column
+        
         rows = [
-            [s._pd_tinyrepr() for s in t.transforms] if hasattr(t, 'transforms')
+            [s._pd_shortrepr() for s in t.transforms] if hasattr(t, 'transforms')
             else [t._pd_shortrepr()]
-            for t in self.transforms
-        ]
+            for t in self.transforms]
 
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
@@ -1458,7 +1456,7 @@ class Rollout(CompoundTransform):
         else:
             make_green_ = make_green
             make_bold_ = make_bold
-        between = f'\n{make_green_("│ " + self.display_op)}  \n'
+        between = f'\n{make_green_("│ ")}  \n'
         rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
                 for i, t in enumerate(self.transforms[:-1])]
         rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
@@ -1538,8 +1536,6 @@ class Parallel(CompoundTransform):
             make_bold_ = make_bold
         def pipes(n):
             return "│" * n
-        def spaces(n):
-            return " " * n
         def horizontal(n):
             return "─" * n
         len_ = len(self.transforms)
@@ -1550,7 +1546,7 @@ class Parallel(CompoundTransform):
                 make_bold_(f'{i}: ') + t._pd_shortrepr() + '\n'
             )
             if i < len(self.transforms) - 1:
-                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+                out += f'{make_green_(pipes(len_ - i - 1))}  \n'
         return out
 
 
