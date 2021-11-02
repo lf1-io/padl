@@ -425,7 +425,7 @@ class TestModel:
             >> times_two
             >> Unbatchify()
             >> plus_one
-        )
+        ) - 'transform_2'
         request.cls.model_1 = (transform_1 / transform_2)
         request.cls.model_2 = (transform_1 + transform_2)
         request.cls.model_3 = (
@@ -439,7 +439,7 @@ class TestModel:
             >> Polynomial(1, 0) / Identity()
             >> Unbatchify()
             >> plus_one / times_two
-        )
+        ) - 'model_4'
 
     def test_pd_preprocess(self):
         assert isinstance(self.model_1.pd_preprocess, pd.Parallel)
