@@ -313,7 +313,7 @@ Saving:
 
 .. code-block:: python
 
-   model.save('test.padl')
+   model.pd_save('test.padl')
 
 Loading:
 
