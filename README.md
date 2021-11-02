@@ -302,7 +302,7 @@ from padl import load
 model = load('test.padl')
 ```
 
-For the full notebook see `notebooks/example.ipynb` in the GitHub project.
+For the full notebook see `notebooks/02_nlp_example.ipynb` in the GitHub project.
 
 ## Licensing
 
