@@ -27,8 +27,9 @@ from padl.dumptools.serialize import Serializer
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
-from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
-    make_green, create_arrow, format_argument, visible_len
+from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, \
+    create_arrow, format_argument, visible_len, FStr, \
+    put_box_around_string, pad_string_left
 
 
 class _Notset:
@@ -329,9 +330,12 @@ class Transform:
     def __repr__(self) -> str:
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
-            title = make_bold(title) + f' - "{self.pd_name}"'
+            # title = make_bold(title) + f' - "{self.pd_name}"'
+            # title = title + f' - "{self.pd_name}"'
+            title = FStr.span('BO!' + title) + f' - "{self.pd_name}"'
         else:
-            title = make_bold(title)
+            title = FStr.span('BO!' + title)
+            # ...
         top_message = title + ':' + '\n\n'
         bottom_message = textwrap.indent(self._pd_longrepr(), '   ')
         return top_message + bottom_message
@@ -1031,14 +1035,18 @@ class CompoundTransform(Transform):
 
     def _pd_longrepr(self):
         between = f'\n{make_green(self.display_op)}  \n'
+        # between = f'\n{self.display_op}  \n'
         rows = [make_bold(f'{i}: ') + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
+        # rows = [f'{i}: ' + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
     def _pd_shortrepr(self):
         return f' {make_green(self.op)} '.join(t._pd_tinyrepr() for t in self.transforms)
+        # return f' {self.op} '.join(t._pd_tinyrepr() for t in self.transforms)
 
     def _pd_tinyrepr(self) -> str:
         rep = f'..{make_green(self.op)}..'
+        # rep = f'..{self.op}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
         return f'[{rep}]'
@@ -1210,6 +1218,7 @@ class Compose(CompoundTransform):
         for i, r in enumerate(rows):
             if len(r) > 1:
                 rows[i] = f' {make_green(self.transforms[i].display_op)} '.join(r)
+                # rows[i] = f' {self.transforms[i].display_op} '.join(r)
             else:
                 rows[i] = r[0]
         output = []
@@ -1274,8 +1283,14 @@ class Compose(CompoundTransform):
             # combine the arrows
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
-            output.append(make_green(mark))
-            output.append(make_bold(f'{i}: ') + r)
+            output.append(pad_string_left(make_green(mark), 2))
+            # output.append(pad_string_left(mark, 2))
+            boxed = put_box_around_string(r)
+            boxed = pad_string_left(boxed, 3)
+            combined = combine_multi_line_strings([f'\n{i}:', boxed])
+            # combined = combine_multi_line_strings([f'\n{i}: ', boxed])
+            output.append(combined)
+
         return '\n'.join(output)
 
     def __call__(self, arg):
@@ -1415,10 +1430,17 @@ class Rollout(CompoundTransform):
 
     def _pd_longrepr(self) -> str:
         between = f'\n{make_green("│ " + self.display_op)}  \n'
-        rows = [make_green('├─▶ ') + make_bold(f'{i}: ') + t._pd_shortrepr()
-                for i, t in enumerate(self.transforms[:-1])]
+        # between = f'\n{"│ " + self.display_op}  \n'
+        rows = [
+            make_green('├─▶ ') + make_bold(f'{i}: ') + t._pd_shortrepr()
+            for i, t in enumerate(self.transforms[:-1])
+        ]
+        # rows = ['├─▶' + f'{i}: ' + t._pd_shortrepr()
+        #         for i, t in enumerate(self.transforms[:-1])]
         rows.append(make_green('└─▶ ') + make_bold(f'{len(self.transforms) - 1}: ')
                     + self.transforms[-1]._pd_shortrepr())
+        # rows.append('└─▶ ' + f'{len(self.transforms) - 1}: '
+        #             + self.transforms[-1]._pd_shortrepr())
         return between.join(rows) + '\n'
 
 
@@ -1490,6 +1512,7 @@ class Parallel(CompoundTransform):
         def horizontal(n):
             return "─" * n
         between = f'\n{make_green("│ " + self.display_op)}  \n'
+        # between = f'\n{"│ " + self.display_op}  \n'
         len_ = len(self.transforms)
         out = ''
         for i, t in enumerate(self.transforms):
@@ -1497,8 +1520,13 @@ class Parallel(CompoundTransform):
                 make_green(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
                 make_bold(f'{i}: ') + t._pd_shortrepr() + '\n'
             )
+            # out += (
+            #         pipes(len_ - i - 1 + '└' + horizontal(i + 1) + '▶ ') +
+            #         f'{i}: ' + t._pd_shortrepr() + '\n'
+            # )
             if i < len(self.transforms) - 1:
                 out += f'{make_green(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+                # out += f'{pipes(len_ - i - 1) + spaces(i + 2) + self.display_op}  \n'
         return out
 
 

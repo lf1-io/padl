@@ -48,7 +48,7 @@ pip install padl
 
 ## Project Structure
 
-PADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
 
 - preprocessing
 - data-loading
@@ -121,7 +121,7 @@ left_shift = this[:, :-1]
 lower_case = this.lower_case()
 ```
 
-Pytorch layers are first class citizens via `td.transforms.TorchModuleTransform`:
+Pytorch layers are first class citizens via `padl0.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -245,13 +245,13 @@ print(s['a'] == s[0])    # prints "True"
 To pass single data points may be passed through the transform:
 
 ```python
-prediction = t.infer_apply('the cat sat on the mat .')
+prediction = s.infer_apply('the cat sat on the mat .')
 ```
 
 To pass data points in batches but no gradients:
 
 ```python
-for x in t.eval_apply(
+for x in s.eval_apply(
     ['the cat sat on the mat', 'the dog sh...', 'the man stepped in th...', 'the man kic...'],
     batch_size=2,
     num_workers=2,
@@ -262,7 +262,7 @@ for x in t.eval_apply(
 To pass data points in batches but with gradients:
 
 ```python
-for x in t.train_apply(
+for x in s.train_apply(
     ['the cat sat on the mat', 'the dog sh...', 'the man stepped in th...', 'the man kic...'],
     batch_size=2,
     num_workers=2,
