@@ -28,8 +28,8 @@ def _maketrans(attr, getitem=False):
                 call_info=call_info,
             )
 
-        def __call__(self, input):
-            return getattr(input, attr)(*self._args, **self._kwargs)
+        def __call__(self, args):
+            return getattr(args, attr)(*self._args, **self._kwargs)
 
         def _formatted_args(self) -> str:
             """Format the object's init arguments for printing. """
