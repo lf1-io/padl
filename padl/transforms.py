@@ -331,6 +331,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle) -> str:
+        # pylint: disable=invalid-name
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
@@ -343,6 +344,15 @@ class Transform:
     def _pd_longrepr(self, formatting=True) -> str:
         """A lone string representation of the transform."""
         raise NotImplementedError
+
+    def _pd_parensrepr(self, formatting=True) -> str:
+        short = self._pd_shortrepr(formatting)
+        if len(short) < 50:
+            if len(getattr(self, 'transforms', [])) > 1:
+                short = f"{make_green('[', not formatting)}{short}{make_green(']', not formatting)}"
+            return short
+        return self._pd_tinyrepr(formatting)
+
 
     def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
@@ -1059,21 +1069,28 @@ class CompoundTransform(Transform):
                                           self._pd_call_info.scope)
         return graph, scopemap
 
-    def _pd_longrepr(self):
-        between = f'\n{make_green(self.display_op)}  \n'
-        rows = [make_bold(f'{i}: ') + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
+    def _pd_longrepr(self, formatting=True):
+        between = f'\n{make_green(self.display_op, not formatting)}  \n'
+        rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting) for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
     def _pd_shortrepr(self, formatting=True):
-        op = make_green(self.op) if formatting else self.op
-        return f' {op} '.join(t._pd_tinyrepr(formatting) for t in self.transforms)
+        def subrepr(transform):
+            short = transform._pd_shortrepr(formatting)
+            if len(short) < 20:
+                return short
+            return transform._pd_tinyrepr(formatting)
+
+        result = f' {make_green(self.op, not formatting)} '.join(subrepr(t) for t in self.transforms)
+        if self._pd_group:
+            result = f'group({result})'
+        return result
 
     def _pd_tinyrepr(self, formatting=True) -> str:
-        op = make_green(self.op) if not formatting else self.op
-        rep = f'..{op}..'
+        rep = f'..{make_green(self.op, not formatting)}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
-        return f'[{rep}]'
+        return f'{make_green("[", not formatting)}{rep}{make_green("]", not formatting)}'
 
     def _pd_title(self):
         return self.__class__.__name__
@@ -1225,7 +1242,7 @@ class Compose(CompoundTransform):
         """
         # pad the components of rows which are shorter than other parts in same column
         rows = [
-            [s._pd_tinyrepr() for s in t.transforms] if hasattr(t, 'transforms')
+            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
             else [t._pd_shortrepr()]
             for t in self.transforms
         ]
