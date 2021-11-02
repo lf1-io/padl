@@ -12,7 +12,7 @@ For data scientists, developing neural models is hard, due to the need to juggle
 
 ### Problem Statement
 
-While developing and deploying our deep learning models in **pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+While developing and deploying our deep learning models in **Pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
 
 - in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
 - in *neural translation* the details of beam search post-processing and filtering based on business logic
@@ -38,7 +38,7 @@ In creating **PADL** we aimed to create:
 - An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
 - An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
-With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central `Transform` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
+With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central `Transform` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or **IPython** session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
 
 ## Installation
 
@@ -48,7 +48,7 @@ pip install padl
 
 ## Project Structure
 
-PADL's chief abstraction is `td.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in `pytorch`:
+PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **Pytorch**:
 
 - preprocessing
 - data-loading
@@ -121,7 +121,7 @@ left_shift = this[:, :-1]
 lower_case = this.lower_case()
 ```
 
-Pytorch layers are first class citizens via `padl.transforms.TorchModuleTransform`:
+**Pytorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
 
 ```python
 @transform
