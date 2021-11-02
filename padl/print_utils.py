@@ -194,7 +194,6 @@ def put_box_around_string(string):
     string = [' ' * 2] + [' ' * 2 + x for x in string]
     box = create_box(max_length + 4, len(string) + 1)
     string = '\n'.join(string)
-    import pdb; pdb.set_trace()
     return combine_multi_line_strings([box, string])
 
 
