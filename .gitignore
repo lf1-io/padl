@@ -15,7 +15,7 @@ checkpoints
 data
 EXPLAINED.md
 .ipynb_checkpoints/
-*.ipynb
+/*.ipynb
 
 # Linting report
 linter_report.txt
