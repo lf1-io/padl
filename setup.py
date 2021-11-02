@@ -29,7 +29,7 @@ setuptools.setup(
     description="Pytorch abstractions for deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/lf1-io/lf",
+    url="https://github.com/lf1-io/padl",
     packages=setuptools.find_packages(),
     setup_requires=[],
     license="Apache 2.0",
