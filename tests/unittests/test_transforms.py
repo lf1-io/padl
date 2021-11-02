@@ -580,6 +580,7 @@ class TestClassTransform:
         request.cls.transform_2 = SimpleClassTransform(2)
         dic = {s: i for i, s in enumerate('abcdefghijklmnop')}
         request.cls.transform_3 = ClassLookup(dic=value(dic))
+        request.cls.dic = dic
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(1) == 3
@@ -595,7 +596,7 @@ class TestClassTransform:
         assert t2.infer_apply(1) == 3
         self.transform_3.pd_save(tmp_path / 'test.padl', True)
         t3 = pd.load(tmp_path / 'test.padl')
-        assert t3.dic == {'a': 0, 'b': 1}
+        assert t3.dic == self.dic
         assert t3.infer_apply('abc') == [0, 1, 2]
 
     def test_stored_arguments(self):
