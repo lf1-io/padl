@@ -52,6 +52,19 @@ def _isinstance_of_namedtuple(arg):
     return all(isinstance(field, str) for field in fields)
 
 
+def _move_to_device(args, device):
+    """Move args to given device
+
+    :param args: args to move to device
+    :param device: device to move to
+    """
+    if isinstance(args, (tuple, list)):
+        return tuple([_move_to_device(x, device) for x in args])
+    if isinstance(args, torch.Tensor):
+        return args.to(device)
+    return args
+
+
 Stage = Literal['infer', 'eval', 'train']
 Component = Literal['preprocess', 'forward', 'postprocess']
 
@@ -487,6 +500,8 @@ class Transform:
                 loader = tqdm(loader, total=len(loader))
 
         for batch in loader:
+            batch = _move_to_device(batch, self.pd_device)
+
             if use_forward:
                 output = forward._pd_call_transform(batch, stage)
             else:
@@ -615,14 +630,19 @@ class Transform:
             **loader_kwargs
         )
 
-    def infer_apply(self, input):
+    def infer_apply(self, inputs):
         """Call transform within the infer context.
 
         This expects a single argument and returns a single output.
 
-        :param input: The input.
+        :param inputs: The input.
         """
-        return self._pd_call_transform(input, stage='infer')
+        inputs = self.pd_preprocess._pd_call_transform(inputs, stage='infer')
+        inputs = _move_to_device(inputs, self.pd_device)
+        inputs = self.pd_forward._pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_postprocess._pd_call_transform(inputs, stage='infer')
+
+        return inputs
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
@@ -1633,26 +1653,19 @@ class Batchify(ClassTransform):
         self.dim = dim
         self._pd_component = {'preprocess'}
 
-    def _move_to_device(self, args):
-        if isinstance(args, (tuple, list)):
-            return tuple([self._move_to_device(x) for x in args])
-        if isinstance(args, torch.Tensor):
-            return args.to(self.pd_device)
-        return args
-
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
                                                 'or train_apply instead of calling the transform '
                                                 'directly.')
 
         if Transform.pd_stage != 'infer':
-            return self._move_to_device(args)
+            return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
         if isinstance(args, torch.Tensor):
-            return args.unsqueeze(self.dim).to(self.pd_device)
+            return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
-            return torch.tensor([args]).to(self.pd_device)
+            return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
