@@ -151,7 +151,7 @@
 <section id="defining-atomic-transforms">
 <h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
 <p>Imports:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">importer</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 </pre></div>
 </div>
@@ -211,9 +211,9 @@
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-<p>Finally, it’s possibly to instantiate <code class="docutils literal notranslate"><span class="pre">Transform</span></code> directly from importable callables using <code class="docutils literal notranslate"><span class="pre">importer</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">torchvision</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="n">cosine</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">cos</span>
+<p>Finally, it’s possibly to instantiate a module as a <code class="docutils literal notranslate"><span class="pre">Transform</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">torchvision</span><span class="p">)</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">cosine</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">numpy</span><span class="p">)</span><span class="o">.</span><span class="n">cos</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
@@ -315,8 +315,8 @@
 </section>
 <section id="model-training">
 <h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
-<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
+<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.pd_*</span></code>.:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">pd_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:</p>
