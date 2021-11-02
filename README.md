@@ -292,7 +292,7 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
 Saving:
 
 ```python
-model.save('test.padl')
+model.pd_save('test.padl')
 ```
 
 Loading:
