@@ -514,7 +514,7 @@ class Transform:
                 if verbose:
                     pbar.update()
                 if not use_post:
-                    output = Unbatchify()(batch)
+                    output = Unbatchify()(batch, cpu=False)
                 if hasattr(self, '_pd_output_format'):
                     yield from self._pd_output_format(*output)
                 else:
