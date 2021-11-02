@@ -121,7 +121,7 @@ left_shift = this[:, :-1]
 lower_case = this.lower_case()
 ```
 
-Pytorch layers are first class citizens via `td.transforms.TorchModuleTransform`:
+Pytorch layers are first class citizens via `padl.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -139,7 +139,7 @@ class LM(torch.nn.Module):
 model = LM(N_WORDS)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
-print(isinstance(layer, td.transforms.Transform))         # prints "True"
+print(isinstance(layer, padl.transforms.Transform))         # prints "True"
 ```
 
 Finally, it's possibly to instantiate `Transform` directly from importable callables using `importer`. 
@@ -148,8 +148,8 @@ Finally, it's possibly to instantiate `Transform` directly from importable calla
 normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
 cosine = importer.numpy.cos
 
-print(isinstance(normalize, tf.transforms.Transform))         # prints "True"
-print(isinstance(cosine, td.transforms.Transform))            # prints "True"
+print(isinstance(normalize, padl.transforms.Transform))         # prints "True"
+print(isinstance(cosine, padl.transforms.Transform))            # prints "True"
 ```
 
 ### Defining compound transforms
