@@ -327,7 +327,10 @@ class Transform:
             return code, versions
         return code
 
-    def __repr__(self) -> str:
+    def __repr__(self):
+        return self._pd_shortrepr(formatting=False)
+
+    def _repr_pretty_(self, p, cycle) -> str:
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
@@ -335,17 +338,17 @@ class Transform:
             title = make_bold(title)
         top_message = title + ':' + '\n\n'
         bottom_message = textwrap.indent(self._pd_longrepr(), '   ')
-        return top_message + bottom_message
+        p.text(top_message + bottom_message if not cycle else '...')
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
         """A lone string representation of the transform."""
         raise NotImplementedError
 
-    def _pd_shortrepr(self) -> str:
+    def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
         return self._pd_title()
 
-    def _pd_tinyrepr(self) -> str:
+    def _pd_tinyrepr(self, formatting=True) -> str:
         """A tiny string representation of the transform."""
         return self.pd_name or f'<anonymous {self.__class__.__name__}>'
 
@@ -744,19 +747,19 @@ class FunctionTransform(AtomicTransform):
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
         try:
             return '\n'.join(self.source.split('\n')[:30])
         except TypeError:
             return self._pd_call
 
-    def _pd_shortrepr(self) -> str:
+    def _pd_shortrepr(self, formatting=True) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
-            return self._pd_longrepr()
-        return super()._pd_shortrepr()
+            return self._pd_longrepr(formatting)
+        return super()._pd_shortrepr(formatting)
 
     def _pd_title(self) -> str:
-        return self._pd_call.split('(')[0]
+        return self.function.__name__
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
@@ -1060,11 +1063,13 @@ class CompoundTransform(Transform):
         rows = [make_bold(f'{i}: ') + t._pd_shortrepr() for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
-    def _pd_shortrepr(self):
-        return f' {make_green(self.op)} '.join(t._pd_tinyrepr() for t in self.transforms)
+    def _pd_shortrepr(self, formatting=True):
+        op = make_green(self.op) if formatting else self.op
+        return f' {op} '.join(t._pd_tinyrepr(formatting) for t in self.transforms)
 
-    def _pd_tinyrepr(self) -> str:
-        rep = f'..{make_green(self.op)}..'
+    def _pd_tinyrepr(self, formatting=True) -> str:
+        op = make_green(self.op) if not formatting else self.op
+        rep = f'..{op}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
         return f'[{rep}]'
@@ -1213,7 +1218,7 @@ class Compose(CompoundTransform):
 
         return type_
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:  # TODO: make it respect the formatting
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
@@ -1446,11 +1451,17 @@ class Rollout(CompoundTransform):
                 self._pd_postprocess = Rollout(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
-    def _pd_longrepr(self) -> str:
-        between = f'\n{make_green("│ " + self.display_op)}  \n'
-        rows = [make_green('├─▶ ') + make_bold(f'{i}: ') + t._pd_shortrepr()
+    def _pd_longrepr(self, formatting=True) -> str:
+        if not formatting:
+            make_green_ = lambda x: x
+            make_bold_ = lambda x: x
+        else:
+            make_green_ = make_green
+            make_bold_ = make_bold
+        between = f'\n{make_green_("│ " + self.display_op)}  \n'
+        rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
                 for i, t in enumerate(self.transforms[:-1])]
-        rows.append(make_green('└─▶ ') + make_bold(f'{len(self.transforms) - 1}: ')
+        rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
                     + self.transforms[-1]._pd_shortrepr())
         return between.join(rows) + '\n'
 
@@ -1518,23 +1529,28 @@ class Parallel(CompoundTransform):
                 self._pd_postprocess = Parallel(t_list, call_info=self._pd_call_info)
         return self._pd_postprocess
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, formatting=True) -> str:
+        if not formatting:
+            make_green_ = lambda x: x
+            make_bold_ = lambda x: x
+        else:
+            make_green_ = make_green
+            make_bold_ = make_bold
         def pipes(n):
             return "│" * n
         def spaces(n):
             return " " * n
         def horizontal(n):
             return "─" * n
-        between = f'\n{make_green("│ " + self.display_op)}  \n'
         len_ = len(self.transforms)
         out = ''
         for i, t in enumerate(self.transforms):
             out += (
-                make_green(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold(f'{i}: ') + t._pd_shortrepr() + '\n'
+                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                make_bold_(f'{i}: ') + t._pd_shortrepr() + '\n'
             )
             if i < len(self.transforms) - 1:
-                out += f'{make_green(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
         return out
 
 
@@ -1566,7 +1582,7 @@ class BuiltinTransform(AtomicTransform):
 
         return graph, scopemap
 
-    def _pd_longrepr(self):
+    def _pd_longrepr(self, formatting=True):
         return self._pd_call.split('padl.')[-1]
 
 
