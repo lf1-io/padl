@@ -56,14 +56,14 @@ class JSONSerializer(Serializer):
             with open(savepath, 'w') as f:
                 json.dump(self.val, f)
         load_source = (
-            f'with open(os.path.abspath(__file__ + \'/{savepath}\')) as f:\n'
+            f'with open(pathlib.Path(__file__).parent / \'{savepath.name}\') as f:\n'
             f'    {self.varname} = json.load(f)\n'
         )
         return {(self.varname, SCOPE): var2mod.CodeNode(source=load_source, globals_=set()),
                 ('json', SCOPE): var2mod.CodeNode(source='import json', globals_=set(),
                                                   ast_node=ast.parse('import json').body[0]),
-                ('os', SCOPE): var2mod.CodeNode(source='import os', globals_=set(),
-                                                ast_node=ast.parse('import os').body[0])}
+                ('pathlib', SCOPE): var2mod.CodeNode(source='import pathlib', globals_=set(),
+                                                     ast_node=ast.parse('import pathlib').body[0])}
 
 
 def _serialize(val):
