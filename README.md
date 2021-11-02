@@ -72,7 +72,7 @@ The schematic represents a model which is a `Transform` instance with multiple s
 Imports:
 
 ```python
-from padl import this, transform, batch, unbatch, value, importer
+from padl import this, transform, batch, unbatch, value
 import torch
 ```
 
@@ -142,11 +142,11 @@ print(isinstance(layer, torch.nn.Module))                 # prints "True"
 print(isinstance(layer, padl.transforms.Transform))         # prints "True"
 ```
 
-Finally, it's possibly to instantiate `Transform` directly from importable callables using `importer`. 
+Finally, it's possibly to instantiate a module as a `Transform`:
 
 ```python
-normalize = importer.torchvision.transforms.Normalize(*args, **kwargs)
-cosine = importer.numpy.cos
+normalize = transform(torchvision).transforms.Normalize(*args, **kwargs)
+cosine = transform(numpy).cos
 
 print(isinstance(normalize, padl.transforms.Transform))         # prints "True"
 print(isinstance(cosine, padl.transforms.Transform))            # prints "True"
