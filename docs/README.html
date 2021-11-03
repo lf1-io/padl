@@ -94,7 +94,7 @@
 <p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>Pytorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
 <section id="problem-statement">
 <h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
-<p>While developing and deploying our deep learning models in <strong>pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
+<p>While developing and deploying our deep learning models in <strong>Pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
 <li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
 <li><p>in <em>neural translation</em> the details of beam search post-processing and filtering based on business logic</p></li>
@@ -121,7 +121,7 @@
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
 <li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
 </ul>
-<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or IPython session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
+<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
 </section>
 </section>
 <section id="installation">
@@ -132,7 +132,7 @@
 </section>
 <section id="project-structure">
 <h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
-<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">td.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <code class="docutils literal notranslate"><span class="pre">pytorch</span></code>:</p>
+<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <strong>Pytorch</strong>:</p>
 <ul class="simple">
 <li><p>preprocessing</p></li>
 <li><p>data-loading</p></li>
@@ -151,7 +151,7 @@
 <section id="defining-atomic-transforms">
 <h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
 <p>Imports:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">importer</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 </pre></div>
 </div>
@@ -192,7 +192,7 @@
 <span class="n">lower_case</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">lower_case</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Pytorch layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">td.transforms.TorchModuleTransform</span></code>:</p>
+<p><strong>Pytorch</strong> layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">padl.transforms.TorchModuleTransform</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
 <span class="k">class</span> <span class="nc">LM</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_words</span><span class="p">):</span>
@@ -208,15 +208,15 @@
 <span class="n">model</span> <span class="o">=</span> <span class="n">LM</span><span class="p">(</span><span class="n">N_WORDS</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">))</span>                 <span class="c1"># prints &quot;True&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
-<p>Finally, it’s possibly to instantiate <code class="docutils literal notranslate"><span class="pre">Transform</span></code> directly from importable callables using <code class="docutils literal notranslate"><span class="pre">importer</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">torchvision</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="n">cosine</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">cos</span>
+<p>Finally, it’s possibly to instantiate a module as a <code class="docutils literal notranslate"><span class="pre">Transform</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">torchvision</span><span class="p">)</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">cosine</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">numpy</span><span class="p">)</span><span class="o">.</span><span class="n">cos</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="n">tf</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">td</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -315,8 +315,8 @@
 </section>
 <section id="model-training">
 <h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
-<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.tl_*</span></code>.:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tl_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
+<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.pd_*</span></code>.:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">pd_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:</p>
@@ -330,7 +330,7 @@
 <section id="saving-loading">
 <h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline"></a></h3>
 <p>Saving:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">pd_save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Loading:</p>
@@ -338,7 +338,7 @@
 <span class="n">model</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For the full notebook see <code class="docutils literal notranslate"><span class="pre">notebooks/example.ipynb</span></code> in the GitHub project.</p>
+<p>For the full notebook see <code class="docutils literal notranslate"><span class="pre">notebooks/02_nlp_example.ipynb</span></code> in the GitHub project.</p>
 </section>
 </section>
 <section id="licensing">
