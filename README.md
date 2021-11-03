@@ -19,7 +19,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 
 ## Why PADL?
 
-For data scientists, developing neural networls models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as preprocessing, **PyTorch** layers, loss functions and postprocessing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
+For data scientists, developing neural network models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as preprocessing, **PyTorch** layers, loss functions and postprocessing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 ### Problem Statement
 
