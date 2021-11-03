@@ -1,0 +1,15 @@
+Welcome to PADL's documentation!
+================================
+
+.. image:: img/logo.png
+
+**PyTorch** abstractions for deep learning.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   README
+   gettingstarted
+   saving
+   modules
