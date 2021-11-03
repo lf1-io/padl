@@ -14,7 +14,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 
 **PADL**:
 
-- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use **PADL** together with all of the great functionality you're used to with **Pytorch** for saving, and writing layers.
+- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use **PADL** together with all of the great functionality you're used to with **Pytorch** for writing layers.
 - allows users to build pre-processing, forward passes, loss functions **and** post-processing into the model
 - models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem
 - allows for converting standard functions to **PADL** components using a single keyword `transform`.
