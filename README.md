@@ -1,18 +1,33 @@
 <img src="img/logo.png" width="400">
 
-**Pytorch** *abstractions for deep learning*.
+[![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) 
+![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) 
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/) 
+[![Downloads](https://static.pepy.tech/personalized-badge/padl?period=month&units=international_system&left_color=black&right_color=orange&left_text=Downloads)](https://pepy.tech/project/padl)
+[![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues)
+
+**PyTorch** *abstractions for deep learning*.
 
 ---
 
 Full documentation here: https://lf1-io.github.io/padl/
 
+**PADL**:
+
+- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use **PADL** together with all of the great functionality you're used to with **Pytorch** for saving, and writing layers.
+- allows users to build pre-processing, forward passes, loss functions **and** post-processing into the model
+- models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem
+- allows for converting standard functions to **PADL** components using a single keyword `transform`.
+
+**PADL** was developed at [LF1](https://lf1.io/) an AI innovation lab based in Berlin, Germany.
+
 ## Why PADL?
 
-For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **Pytorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
+For data scientists, developing neural network models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as pre-processing, **PyTorch** layers, loss functions and post-processing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 ### Problem Statement
 
-While developing and deploying our deep learning models in **Pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+While developing and deploying our deep learning models in **PyTorch**, we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
 
 - in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
 - in *neural translation* the details of beam search post-processing and filtering based on business logic
@@ -26,8 +41,8 @@ In terms of the functional mental model for deep learning we typically enjoy wor
 The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.
 
 - A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.
-- To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing)
-- It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar
+- To import and use the correct pre- and post-processing is a laborious process when working interactively (as data scientists are accustomed to doing)
+- It is difficult to create exciting variants of a model based on slightly different pre- and post-processing without first going through the steps to modify the library in a git branch or similar
 - There is no easy way to robustly save and inspect the results of "quick and dirty" experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists' daily routine. 
 
 ### PADL Solutions
@@ -38,7 +53,7 @@ In creating **PADL** we aimed to create:
 - An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, "notebook" fashion.
 - An "interactive" or "notebook-friendly" philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.
 
-With **PADL** it's easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central `Transform` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or **IPython** session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
+With **PADL** it's easy to maintain a single pipeline object for each experiment which includes pre-processing, forward pass and post-processing, based on the central `Transform` abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a **Jupyter** or **IPython** session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output. 
 
 ## Installation
 
@@ -48,16 +63,16 @@ pip install padl
 
 ## Project Structure
 
-PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **Pytorch**:
+PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **PyTorch**:
 
-- preprocessing
+- pre-processing
 - data-loading
 - batching
-- forward passes in **Pytorch**
+- forward passes in **PyTorch**
 - postprocessing
-- **Pytorch** loss functions
+- **PyTorch** loss functions
 
-Loosely it can be thought of as a computational block with full support for **Pytorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
+Loosely it can be thought of as a computational block with full support for **PyTorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
 
 Here's an example of what this might like:
 
@@ -73,10 +88,11 @@ Imports:
 
 ```python
 from padl import this, transform, batch, unbatch, value
+import padl
 import torch
 ```
 
-Transform definition using `transform` decorator:
+Transform definition using `transform` decorator. Any callable class implementing `__call__` can also become a transform:
 
 ```python
 @transform
@@ -84,28 +100,26 @@ def split_string(x):
     return x.split()
 
 @transform
-def to_tensor(x):
-    x = x[:10][:]
-    for _ in range(10 - len(x)):
-        x.append(EOS_VALUE)
-    return torch.tensor(x)
-```
-
-Any callable class implementing `__call__` can also become a transform:
-
-```python
-@transform
 class ToInteger:
     def __init__(self, words):
-        self.words = words + ['</s>']
+        self.words = words + ['<unk>']
         self.dictionary = dict(zip(self.words, range(len(self.words))))
         
     def __call__(self, word):
         if not word in self.dictionary:
-            word = "<unk>"
+            word = '<unk>''
         return self.dictionary[word]
-      
-to_integer = ToInteger('-', ' ')
+   
+to_integer = ToInteger(WORDS)
+
+EOS_VALUE = to_integer.dictionary['</s>']
+  
+@transform
+def to_tensor(x):
+    x = x[:10][:]
+    for _ in range(10 - len(x)):
+        x.append(EOS_VALUE)
+    return torch.tensor(x)  
 ```
 
 `transform` also supports inline lambda functions as transforms:
@@ -118,10 +132,10 @@ split_string = transform(lambda x: x.split())
 
 ```python
 left_shift = this[:, :-1]
-lower_case = this.lower_case()
+lower_case = this.lower()
 ```
 
-**Pytorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
+**PyTorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -138,13 +152,16 @@ class LM(torch.nn.Module):
       
 model = LM(N_WORDS)
 
-print(isinstance(layer, torch.nn.Module))                 # prints "True"
-print(isinstance(layer, padl.transforms.Transform))         # prints "True"
+print(isinstance(model, torch.nn.Module))                   # prints "True"
+print(isinstance(model, padl.transforms.Transform))         # prints "True"
 ```
 
-Finally, it's possibly to instantiate a module as a `Transform`:
+Finally, it's possibly to invoke all callables from an imported module as `Transforms` directly. This saves writing the transforms explicitly:
 
 ```python
+import numpy
+import torchvision
+
 normalize = transform(torchvision).transforms.Normalize(*args, **kwargs)
 cosine = transform(numpy).cos
 
@@ -212,6 +229,13 @@ train_model = (
 ) >> loss
 ```
 
+
+### Passing inputs between transform stages
+
+In a compose model, if `transform_1` has 2 outputs and `transform_2` has 2 outputs, then in applying the composition: `transform_1 >> transform_2` to data, the outputs of `transform_1` are passed to `transform_2` **positionally**. So output-1 of `transform_1` is passed to input-1 of `transform_2`. If `transform_2` has only one input, then the outputs of `transform_1` are passed as a tuple to `transform_2`.
+
+In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.
+
 ### Decomposing models
 
 Often it is instructive to look at slices of a model -- this helps with e.g. checking intermediate computations:
@@ -268,6 +292,37 @@ for x in t.train_apply(
     num_workers=2,
 ):
     ...
+```
+
+### "batch" and "unbatch" key transforms
+
+The `batch` transform denotes where to split a transform between preprocessing and forward pass. The `unbatch` transform denotes where to split between forward pass and postprocessing. Everything before `batch` is performed in the data loader. This means that multiprocessing may be leveraged without extra boilerplate, to prepare data quickly for the forward pass. Every between `batch` and `unbatch` is performed on the GPU (is CUDA is being used) and in batches. Everything after `unbatch` downstream is applied in a for loop over the rows of output of the forward pass.
+
+When using `Transform.infer_apply` to apply a transform to a single data point, the transforms `batch` adds the additional dimension which is otherwise created by batching in the data loader implicit in `Transform.train_apply` and `Transform.eval_apply`. Analogously, in `Transform.infer_apply` the unbatch transform serves to remove this additional dimension, so that the output going to the postprocessing step has the same number of dimensions as the rows which come out of the forward pass in `Transform.eval_apply` and `Transform.train_apply`. 
+
+As a very simple example:
+
+```python
+m = transform(torch.nn.Linear)(10, 20)
+t = (
+  transform(lambda x: torch.tensor(x))
+	>> batch
+	>> m
+	>> unbatch
+	>> this.tolist()
+)
+```
+
+`t.infer_apply(x)` is approximately equivalent to:
+
+```
+m(torch.tensor(x).unsqueeze(0))[0, :, :].tolist()
+```
+
+Whereas `t.eval_apply(x)` and `t.train_apply(x)` are approximately equivalent to:
+
+```
+[y.tolist() for y in m(torch.stack([torch.tensor(y) for y in x]))]
 ```
 
 ### Model training

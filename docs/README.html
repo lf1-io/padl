@@ -15,6 +15,7 @@
         <script src="static/jquery.js"></script>
         <script src="static/underscore.js"></script>
         <script src="static/doctools.js"></script>
+        <script src="static/js/custom.js"></script>
     <script src="static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -49,6 +50,7 @@
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
 <li><a class="reference internal" href="#defining-atomic-transforms">Defining atomic transforms</a></li>
 <li><a class="reference internal" href="#defining-compound-transforms">Defining compound transforms</a></li>
+<li><a class="reference internal" href="#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
 <li><a class="reference internal" href="#decomposing-models">Decomposing models</a></li>
 <li><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
 <li><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
@@ -89,12 +91,21 @@
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
 <div class="toctree-wrapper compound">
 </div>
+<p>Full documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
+<p><strong>PADL</strong>:</p>
+<ul class="simple">
+<li><p>is a model builder for <strong>PyTorch</strong>. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use <strong>PADL</strong> together with all of the great functionality you’re used to with <strong>Pytorch</strong> for saving, and writing layers.</p></li>
+<li><p>allows users to build preprocessing, forward passes, loss functions <strong>and</strong> postprocessing into the model</p></li>
+<li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem</p></li>
+<li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
+</ul>
+<p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a> an AI innovation lab based in Berlin, Germany.</p>
 <section id="why-padl">
 <h2>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h2>
-<p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>Pytorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
+<p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>PyTorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
 <section id="problem-statement">
 <h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
-<p>While developing and deploying our deep learning models in <strong>Pytorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
+<p>While developing and deploying our deep learning models in <strong>PyTorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
 <li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
 <li><p>in <em>neural translation</em> the details of beam search post-processing and filtering based on business logic</p></li>
@@ -108,8 +119,8 @@
 <p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
 <ul class="simple">
 <li><p>A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.</p></li>
-<li><p>To import and use the correct pre and post processing is a laborious process when working interactively (as data scientists are accustomed to doing)</p></li>
-<li><p>It is difficult to create exciting variants of a model based on slightly different pre and postprocessing without first going through the steps to modify the library in a git branch or similar</p></li>
+<li><p>To import and use the correct pre- and post-processing is a laborious process when working interactively (as data scientists are accustomed to doing)</p></li>
+<li><p>It is difficult to create exciting variants of a model based on slightly different pre and post-processing without first going through the steps to modify the library in a git branch or similar</p></li>
 <li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
 </ul>
 </section>
@@ -121,7 +132,7 @@
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
 <li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
 </ul>
-<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes postprocessing, forward pass and posprocessing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
+<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes post-processing, forward pass and post-processing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
 </section>
 </section>
 <section id="installation">
@@ -132,16 +143,16 @@
 </section>
 <section id="project-structure">
 <h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
-<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <strong>Pytorch</strong>:</p>
+<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <strong>PyTorch</strong>:</p>
 <ul class="simple">
-<li><p>preprocessing</p></li>
+<li><p>pre-processing</p></li>
 <li><p>data-loading</p></li>
 <li><p>batching</p></li>
-<li><p>forward passes in <strong>Pytorch</strong></p></li>
+<li><p>forward passes in <strong>PyTorch</strong></p></li>
 <li><p>postprocessing</p></li>
-<li><p><strong>Pytorch</strong> loss functions</p></li>
+<li><p><strong>PyTorch</strong> loss functions</p></li>
 </ul>
-<p>Loosely it can be thought of as a computational block with full support for <strong>Pytorch</strong> dynamical graphs and with the possibility to recursively combine blocks into larger blocks.</p>
+<p>Loosely it can be thought of as a computational block with full support for <strong>PyTorch</strong> dynamical graphs and with the possibility to recursively combine blocks into larger blocks.</p>
 <p>Here’s an example of what this might like:</p>
 <p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
@@ -192,7 +203,7 @@
 <span class="n">lower_case</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">lower_case</span><span class="p">()</span>
 </pre></div>
 </div>
-<p><strong>Pytorch</strong> layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">padl.transforms.TorchModuleTransform</span></code>:</p>
+<p><strong>PyTorch</strong> layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">padl.transforms.TorchModuleTransform</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
 <span class="k">class</span> <span class="nc">LM</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_words</span><span class="p">):</span>
@@ -265,6 +276,11 @@
 <span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">loss</span>
 </pre></div>
 </div>
+</section>
+<section id="passing-inputs-between-transform-stages">
+<h3>Passing inputs between transform stages<a class="headerlink" href="#passing-inputs-between-transform-stages" title="Permalink to this headline"></a></h3>
+<p>In a compose model, if <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> has 2 outputs and <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has 2 outputs, then in applying the composition: <code class="docutils literal notranslate"><span class="pre">transform_1</span> <span class="pre">&gt;&gt;</span> <span class="pre">transform_2</span></code> to data, the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> <strong>positionally</strong>. So output-1 of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> is passed to input-1 of <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>. If <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has only one input, then the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed as a tuple to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>.</p>
+<p>In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.</p>
 </section>
 <section id="decomposing-models">
 <h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h3>
