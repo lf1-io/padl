@@ -548,26 +548,41 @@ class Transform:
         """Return the component (preprocess, forward or postprocess)."""
         return self._pd_component
 
+    def _pd_preprocess_part(self):
+        return Identity()
+
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. """
-        if 'preprocess' in self.pd_component:
+        if 'preprocess' in self.pd_component and len(self.pd_component) == 1:
             return self
+        t = self._pd_preprocess_part()
+        t._pd_device = self.pd_device
+        return t
+
+    def _pd_forward_part(self):
         return Identity()
 
     @property
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU)."""
-        if 'forward' in self.pd_component:
+        if 'forward' in self.pd_component and len(self.pd_component) == 1:
             return self
+        t = self._pd_forward_part()
+        t._pd_device = self.pd_device
+        return t
+
+    def _pd_post_process_part(self):
         return Identity()
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. """
-        if 'postprocess' in self.pd_component:
+        if 'postprocess' in self.pd_component and len(self.pd_component) == 1:
             return self
-        return Identity()
+        t = self._pd_post_process_part()
+        t._pd_device = self.pd_device
+        return t
 
     def pd_to(self, device: str) -> "Transform":
         """Set the transform's device to *device*.
@@ -577,10 +592,6 @@ class Transform:
         self._pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
-
-        self.pd_preprocess._pd_device = device
-        self.pd_forward._pd_device = device
-        self.pd_postprocess._pd_device = device
         return self
 
     @property
@@ -957,8 +968,7 @@ class Map(Transform):
         self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
         return graph, scopemap
 
-    @property
-    def pd_preprocess(self) -> Transform:
+    def _pd_preprocess_part(self) -> Transform:
         if self._pd_preprocess is None:
             t_pre = self.transform.pd_preprocess
             if isinstance(t_pre, Identity):
@@ -967,8 +977,7 @@ class Map(Transform):
                 self._pd_preprocess = Map(transform=t_pre, call_info=self._pd_call_info)
         return self._pd_preprocess
 
-    @property
-    def pd_postprocess(self) -> Transform:
+    def _pd_postprocess_part(self) -> Transform:
         if self._pd_postprocess is None:
             t_post = self.transform.pd_postprocess
             if isinstance(t_post, Identity):
@@ -977,8 +986,7 @@ class Map(Transform):
                 self._pd_postprocess = Map(transform=t_post, call_info=self._pd_call_info)
         return self._pd_postprocess
 
-    @property
-    def pd_forward(self) -> Transform:
+    def _pd_forward_part(self) -> Transform:
         if self._pd_forward is None:
             t_for = self.transform.pd_forward
             if isinstance(t_for, Identity):
@@ -1125,10 +1133,6 @@ class CompoundTransform(Transform):
         self._pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
-
-        self.pd_preprocess._pd_device = device
-        self.pd_forward._pd_device = device
-        self.pd_postprocess._pd_device = device
         return self
 
     def _pd_forward_device_check(self):
@@ -1363,8 +1367,7 @@ class Compose(CompoundTransform):
             args = transform_._pd_call_transform(args)
         return args
 
-    @property
-    def pd_forward(self) -> Transform:
+    def _pd_forward_part(self) -> Transform:
         if self._pd_forward is None:
             t_list = []
             for transform_, component_set in zip(self.transforms, self._pd_component_list):
@@ -1383,8 +1386,7 @@ class Compose(CompoundTransform):
 
         return self._pd_forward
 
-    @property
-    def pd_preprocess(self) -> Transform:
+    def _pd_preprocess_part(self) -> Transform:
         if self._pd_preprocess is None:
             t_list = []
             for transform_, component_set in zip(self.transforms, self._pd_component_list):
@@ -1403,8 +1405,7 @@ class Compose(CompoundTransform):
 
         return self._pd_preprocess
 
-    @property
-    def pd_postprocess(self) -> Transform:
+    def _pd_postprocess_part(self) -> Transform:
         if self._pd_postprocess is None:
             t_list = []
             for transform_, component_set in zip(self.transforms, self._pd_component_list):
@@ -1467,8 +1468,7 @@ class Rollout(CompoundTransform):
                 self._pd_preprocess = Rollout(t_list, call_info=self._pd_call_info)
         return self._pd_preprocess
 
-    @property
-    def pd_forward(self) -> Transform:
+    def _pd_forward_part(self) -> Transform:
         if self._pd_forward is None:
             t_list = [x.pd_forward for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
@@ -1479,8 +1479,7 @@ class Rollout(CompoundTransform):
                 self._pd_forward = Rollout(t_list, call_info=self._pd_call_info)
         return self._pd_forward
 
-    @property
-    def pd_postprocess(self) -> Transform:
+    def _pd_postprocess_part(self) -> Transform:
         if self._pd_postprocess is None:
             t_list = [x.pd_postprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
@@ -1535,8 +1534,7 @@ class Parallel(CompoundTransform):
             return tuple(out)
         return self._pd_output_format(*out)
 
-    @property
-    def pd_preprocess(self) -> Transform:
+    def _pd_preprocess_part(self) -> Transform:
         if self._pd_preprocess is None:
             t_list = [x.pd_preprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
@@ -1545,8 +1543,7 @@ class Parallel(CompoundTransform):
                 self._pd_preprocess = Parallel(t_list, call_info=self._pd_call_info)
         return self._pd_preprocess
 
-    @property
-    def pd_forward(self) -> Transform:
+    def _pd_forward_part(self) -> Transform:
         if self._pd_forward is None:
             t_list = [x.pd_forward for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
@@ -1555,8 +1552,7 @@ class Parallel(CompoundTransform):
                 self._pd_forward = Parallel(t_list, call_info=self._pd_call_info)
         return self._pd_forward
 
-    @property
-    def pd_postprocess(self) -> Transform:
+    def _pd_postprocess_part(self) -> Transform:
         if self._pd_postprocess is None:
             t_list = [x.pd_postprocess for x in self.transforms]
             if all([isinstance(t, Identity) for t in t_list]):
