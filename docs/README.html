@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Introduction &mdash; PADL 0.1.0 documentation</title>
-      <link rel="stylesheet" href="static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
-    <script src="static/js/html5shiv.min.js"></script>
+    <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
-        <script src="static/jquery.js"></script>
-        <script src="static/underscore.js"></script>
-        <script src="static/doctools.js"></script>
-        <script src="static/js/custom.js"></script>
-    <script src="static/js/theme.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="gettingstarted.html" />
+    <link rel="prev" title="Welcome to PADL’s documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,33 +36,54 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Introduction</a><ul>
-<li><a class="reference internal" href="#why-padl">Why PADL?</a><ul>
-<li><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
-<li><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
-<li><a class="reference internal" href="#padl-solutions">PADL Solutions</a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#why-padl">Why PADL?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#padl-solutions">PADL Solutions</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installation">Installation</a></li>
-<li><a class="reference internal" href="#project-structure">Project Structure</a></li>
-<li><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
-<li><a class="reference internal" href="#defining-atomic-transforms">Defining atomic transforms</a></li>
-<li><a class="reference internal" href="#defining-compound-transforms">Defining compound transforms</a></li>
-<li><a class="reference internal" href="#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
-<li><a class="reference internal" href="#decomposing-models">Decomposing models</a></li>
-<li><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
-<li><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
-<li><a class="reference internal" href="#model-training">Model training</a></li>
-<li><a class="reference internal" href="#saving-loading">Saving/ Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#licensing">Licensing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gettingstarted.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#project-structure">Project Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#decomposing-models">Decomposing models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#model-training">Model training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#saving-loading">Saving/ Loading</a></li>
 </ul>
 </li>
 </ul>
-</div>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="saving.html">Saving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-by-value">Saving by value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.transforms">Transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.util_transforms">Util Transforms</a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -79,7 +100,7 @@
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
       <li>Introduction</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="sources/README.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/README.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -87,25 +108,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="introduction">
+  <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
-<div class="toctree-wrapper compound">
-</div>
+<p><strong>PyTorch</strong> <em>abstractions for deep learning</em>.</p>
+<hr class="docutils" />
 <p>Full documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
 <p><strong>PADL</strong>:</p>
 <ul class="simple">
 <li><p>is a model builder for <strong>PyTorch</strong>. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use <strong>PADL</strong> together with all of the great functionality you’re used to with <strong>Pytorch</strong> for saving, and writing layers.</p></li>
-<li><p>allows users to build preprocessing, forward passes, loss functions <strong>and</strong> postprocessing into the model</p></li>
+<li><p>allows users to build pre-processing, forward passes, loss functions <strong>and</strong> post-processing into the model</p></li>
 <li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem</p></li>
 <li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
 </ul>
 <p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a> an AI innovation lab based in Berlin, Germany.</p>
-<section id="why-padl">
+<div class="section" id="why-padl">
 <h2>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h2>
-<p>For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, <strong>PyTorch</strong> layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
-<section id="problem-statement">
+<p>For data scientists, developing neural network models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as pre-processing, <strong>PyTorch</strong> layers, loss functions and post-processing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
+<div class="section" id="problem-statement">
 <h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
-<p>While developing and deploying our deep learning models in <strong>PyTorch</strong> we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
+<p>While developing and deploying our deep learning models in <strong>PyTorch</strong>, we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
 <ul class="simple">
 <li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
 <li><p>in <em>neural translation</em> the details of beam search post-processing and filtering based on business logic</p></li>
@@ -113,18 +134,18 @@
 <li><p>in <em>classification</em> the label lookup dictionaries, formatting the tensor to human readable output</p></li>
 </ul>
 <p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
-</section>
-<section id="standard-approach">
+</div>
+<div class="section" id="standard-approach">
 <h3>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h3>
 <p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
 <ul class="simple">
 <li><p>A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.</p></li>
 <li><p>To import and use the correct pre- and post-processing is a laborious process when working interactively (as data scientists are accustomed to doing)</p></li>
-<li><p>It is difficult to create exciting variants of a model based on slightly different pre and post-processing without first going through the steps to modify the library in a git branch or similar</p></li>
+<li><p>It is difficult to create exciting variants of a model based on slightly different pre- and post-processing without first going through the steps to modify the library in a git branch or similar</p></li>
 <li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
 </ul>
-</section>
-<section id="padl-solutions">
+</div>
+<div class="section" id="padl-solutions">
 <h3>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h3>
 <p>In creating <strong>PADL</strong> we aimed to create:</p>
 <ul class="simple">
@@ -132,241 +153,22 @@
 <li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
 <li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
 </ul>
-<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes post-processing, forward pass and post-processing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
-</section>
-</section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
-</pre></div>
+<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes pre-processing, forward pass and post-processing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
 </div>
-</section>
-<section id="project-structure">
-<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
-<p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <strong>PyTorch</strong>:</p>
-<ul class="simple">
-<li><p>pre-processing</p></li>
-<li><p>data-loading</p></li>
-<li><p>batching</p></li>
-<li><p>forward passes in <strong>PyTorch</strong></p></li>
-<li><p>postprocessing</p></li>
-<li><p><strong>PyTorch</strong> loss functions</p></li>
-</ul>
-<p>Loosely it can be thought of as a computational block with full support for <strong>PyTorch</strong> dynamical graphs and with the possibility to recursively combine blocks into larger blocks.</p>
-<p>Here’s an example of what this might like:</p>
-<p><span class="raw-html-m2r"><img src="img/schematic.png" width="300"></span></p>
-<p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
-</section>
-<section id="basic-usage">
-<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h2>
-<section id="defining-atomic-transforms">
-<h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
-<p>Imports:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-</pre></div>
 </div>
-<p>Transform definition using <code class="docutils literal notranslate"><span class="pre">transform</span></code> decorator:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">split_string</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-
-<span class="nd">@transform</span>
-<span class="k">def</span> <span class="nf">to_tensor</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span><span class="mi">10</span><span class="p">][:]</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)):</span>
-        <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">EOS_VALUE</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Any callable class implementing <code class="docutils literal notranslate"><span class="pre">__call__</span></code> can also become a transform:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">class</span> <span class="nc">ToInteger</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">words</span> <span class="o">=</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;&lt;/s&gt;&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">words</span><span class="p">))))</span>
-
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">:</span>
-            <span class="n">word</span> <span class="o">=</span> <span class="s2">&quot;&lt;unk&gt;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
-
-<span class="n">to_integer</span> <span class="o">=</span> <span class="n">ToInteger</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">transform</span></code> also supports inline lambda functions as transforms:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">split_string</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">this</span></code> yields inline transforms which reflexively reference object methods:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">left_shift</span> <span class="o">=</span> <span class="n">this</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">lower_case</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">lower_case</span><span class="p">()</span>
-</pre></div>
-</div>
-<p><strong>PyTorch</strong> layers are first class citizens via <code class="docutils literal notranslate"><span class="pre">padl.transforms.TorchModuleTransform</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
-<span class="k">class</span> <span class="nc">LM</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_words</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">GRU</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">n_words</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="n">n_words</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">x</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">LM</span><span class="p">(</span><span class="n">N_WORDS</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">))</span>                 <span class="c1"># prints &quot;True&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
-</pre></div>
-</div>
-<p>Finally, it’s possibly to instantiate a module as a <code class="docutils literal notranslate"><span class="pre">Transform</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">normalize</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">torchvision</span><span class="p">)</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="n">cosine</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">numpy</span><span class="p">)</span><span class="o">.</span><span class="n">cos</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">normalize</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>         <span class="c1"># prints &quot;True&quot;</span>
-<span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">cosine</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">))</span>            <span class="c1"># prints &quot;True&quot;</span>
-</pre></div>
-</div>
-</section>
-<section id="defining-compound-transforms">
-<h3>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h3>
-<p>Atomic transforms may be combined using 3 functional primitives:</p>
-<p>Transform composition: <strong>compose</strong></p>
-<p><span class="raw-html-m2r"><img src="img/compose.png" width="100"></span></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">&gt;&gt;</span> <span class="n">transform_2</span>
-</pre></div>
-</div>
-<p>Applying a single transform over multiple inputs: <strong>map</strong></p>
-<p><span class="raw-html-m2r"><img src="img/map.png" width="200"></span></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="o">~</span> <span class="n">transform</span>
-</pre></div>
-</div>
-<p>Applying transforms in parallel to multiple inputs: <strong>parallel</strong></p>
-<p><span class="raw-html-m2r"><img src="img/parallel.png" width="230"></span></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">/</span> <span class="n">transform_2</span>
-</pre></div>
-</div>
-<p>Applying multiple transforms to a single input: <strong>rollout</strong></p>
-<p><span class="raw-html-m2r"><img src="img/rollout.png" width="230"></span></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">transform_1</span> <span class="o">+</span> <span class="n">transform_2</span>
-</pre></div>
-</div>
-<p>Large transforms may be built in terms of combinations of these operations. For example the branching example above would be implemented by:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">lower_case</span>
-    <span class="o">&gt;&gt;</span> <span class="n">clean</span>
-    <span class="o">&gt;&gt;</span> <span class="n">tokenize</span>
-    <span class="o">&gt;&gt;</span> <span class="o">~</span> <span class="n">to_integer</span>
-    <span class="o">&gt;&gt;</span> <span class="n">to_tensor</span>
-    <span class="o">&gt;&gt;</span> <span class="n">batch</span>
-<span class="p">)</span>
-
-<span class="n">forward_pass</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">left_shift</span>
-    <span class="o">&gt;&gt;</span> <span class="n">IfTrain</span><span class="p">(</span><span class="n">word_dropout</span><span class="p">)</span>
-    <span class="o">&gt;&gt;</span> <span class="n">model</span>
-<span class="p">)</span>
-
-<span class="n">train_model</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="p">(</span><span class="n">preprocess</span> <span class="o">&gt;&gt;</span> <span class="n">model</span> <span class="o">&gt;&gt;</span> <span class="n">left_shift</span><span class="p">)</span>
-    <span class="o">+</span> <span class="p">(</span><span class="n">preprocess</span> <span class="o">&gt;&gt;</span> <span class="n">right_shift</span><span class="p">)</span>
-<span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">loss</span>
-</pre></div>
-</div>
-</section>
-<section id="passing-inputs-between-transform-stages">
-<h3>Passing inputs between transform stages<a class="headerlink" href="#passing-inputs-between-transform-stages" title="Permalink to this headline"></a></h3>
-<p>In a compose model, if <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> has 2 outputs and <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has 2 outputs, then in applying the composition: <code class="docutils literal notranslate"><span class="pre">transform_1</span> <span class="pre">&gt;&gt;</span> <span class="pre">transform_2</span></code> to data, the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> <strong>positionally</strong>. So output-1 of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> is passed to input-1 of <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>. If <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has only one input, then the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed as a tuple to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>.</p>
-<p>In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.</p>
-</section>
-<section id="decomposing-models">
-<h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h3>
-<p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
-</pre></div>
-</div>
-<p>Individual components may be obtained using indexing:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">step_1</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-</pre></div>
-</div>
-</section>
-<section id="naming-transforms-inside-models">
-<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h3>
-<p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>These components may then be referenced using <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>    <span class="c1"># prints &quot;True&quot;</span>
-</pre></div>
-</div>
-</section>
-<section id="applying-transforms-to-data">
-<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
-<p>To pass single data points may be passed through the transform:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>To pass data points in batches but no gradients:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">(</span>
-    <span class="p">[</span><span class="s1">&#39;the cat sat on the mat&#39;</span><span class="p">,</span> <span class="s1">&#39;the dog sh...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man stepped in th...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man kic...&#39;</span><span class="p">],</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="o">...</span>
-</pre></div>
-</div>
-<p>To pass data points in batches but with gradients:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">train_apply</span><span class="p">(</span>
-    <span class="p">[</span><span class="s1">&#39;the cat sat on the mat&#39;</span><span class="p">,</span> <span class="s1">&#39;the dog sh...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man stepped in th...&#39;</span><span class="p">,</span> <span class="s1">&#39;the man kic...&#39;</span><span class="p">],</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="o">...</span>
-</pre></div>
-</div>
-</section>
-<section id="model-training">
-<h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
-<p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.pd_*</span></code>.:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">pd_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">loss</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">train_apply</span><span class="p">(</span><span class="n">TRAIN_DATA</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span> <span class="n">num_workers</span><span class="o">=</span><span class="n">NUM_WORKERS</span><span class="p">):</span>
-    <span class="n">o</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
-    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
-    <span class="n">o</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
-</pre></div>
-</div>
-</section>
-<section id="saving-loading">
-<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline"></a></h3>
-<p>Saving:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">pd_save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Loading:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>For the full notebook see <code class="docutils literal notranslate"><span class="pre">notebooks/02_nlp_example.ipynb</span></code> in the GitHub project.</p>
-</section>
-</section>
-<section id="licensing">
-<h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h2>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h2>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
-</section>
-</section>
+</div>
+</div>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to PADL’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gettingstarted.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
