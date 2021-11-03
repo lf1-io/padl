@@ -22,8 +22,13 @@ help:
 github:
 	make clean
 	-mkdir _static
+	make build
+
+readme:
 	cd .. && tail +9 README.md > .README.md && m2r --overwrite .README.md && rm .README.md && mv .README.rst docs/README.rst
 	(echo "====" && echo "Introduction" && echo "====" && echo ".. toctree::" && echo "   :maxdepth: 3" && echo "   :caption: Contents:" && cat README.rst) > .README.rst && mv .README.rst README.rst
+
+build:
 	cp -r ../img/* ./img/
 	make html
 	cp -r _build/html/* ./
