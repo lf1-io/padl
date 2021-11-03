@@ -1,7 +1,7 @@
 <img src="img/logo.png" width="400">
 
 [![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
-![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/)
+![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/)[![Downloads](https://static.pepy.tech/personalized-badge/padl?period=month&units=international_system&left_color=black&right_color=orange&left_text=Downloads)](https://pepy.tech/project/padl)
 
 **PyTorch** *abstractions for deep learning*.
 
