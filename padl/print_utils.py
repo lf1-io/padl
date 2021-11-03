@@ -62,19 +62,25 @@ def create_reverse_arrow(start_left: int, finish_right: int, n_initial_rows: int
     return output
 
 
-def make_bold(x):
+def make_bold(x, disable=False):
     """Make input bold
 
+    :param disable: If *True*, don't apply formatting.
     :param x: string input
     """
+    if disable:
+        return x
     return f'\33[1m{x}\33[0m'
 
 
-def make_green(x):
+def make_green(x, disable=False):
     """Make input green
 
+    :param disable: If *True*, don't apply formatting.
     :param x: string input
     """
+    if disable:
+        return x
     return f'\33[32m{x}\33[0m'
 
 
