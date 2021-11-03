@@ -1,6 +1,7 @@
 <img src="img/logo.png" width="400">
 
-[![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
+ (https://opensource.org/licenses/Apache-2.0) [![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/)
 
 **PyTorch** *abstractions for deep learning*.
 
@@ -10,7 +11,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 
 **PADL**:
 
-- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use all of the **Great** functionality you're used to with **Pytorch** for saving, and writing models, as well as more.
+- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use **PADL** together with all of the great functionality you're used to with **Pytorch** for saving, and writing layers.
 - allows users to build preprocessing, forward passes, loss functions **and** postprocessing into the model
 - models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem
 - allows for converting standard functions to **PADL** components using a single keyword `transform`.
