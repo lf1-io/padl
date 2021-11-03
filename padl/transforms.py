@@ -1071,7 +1071,8 @@ class CompoundTransform(Transform):
 
     def _pd_longrepr(self, formatting=True):
         between = f'\n{make_green(self.display_op, not formatting)}  \n'
-        rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting) for i, t in enumerate(self.transforms)]
+        rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting)
+                for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
     def _pd_shortrepr(self, formatting=True):
@@ -1081,7 +1082,8 @@ class CompoundTransform(Transform):
                 return short
             return transform._pd_tinyrepr(formatting)
 
-        result = f' {make_green(self.op, not formatting)} '.join(subrepr(t) for t in self.transforms)
+        result = f' {make_green(self.op, not formatting)} ' \
+            .join(subrepr(t) for t in self.transforms)
         if self._pd_group:
             result = f'group({result})'
         return result
@@ -1470,12 +1472,8 @@ class Rollout(CompoundTransform):
         return self._pd_postprocess
 
     def _pd_longrepr(self, formatting=True) -> str:
-        if not formatting:
-            make_green_ = lambda x: x
-            make_bold_ = lambda x: x
-        else:
-            make_green_ = make_green
-            make_bold_ = make_bold
+        make_green_ = lambda x: make_green(x, not formatting)
+        make_bold_ = lambda x: make_bold(x, not formatting)
         between = f'\n{make_green_("│ " + self.display_op)}  \n'
         rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
                 for i, t in enumerate(self.transforms[:-1])]
