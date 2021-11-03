@@ -20,11 +20,11 @@ Full documentation here: https://lf1-io.github.io/padl/
 
 ## Why PADL?
 
-For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **PyTorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
+For data scientists, developing neural networls models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as preprocessing, **PyTorch** layers, loss functions and postprocessing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 ### Problem Statement
 
-While developing and deploying our deep learning models in **PyTorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+While developing and deploying our deep learning models in **PyTorch**, we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
 
 - in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
 - in *neural translation* the details of beam search post-processing and filtering based on business logic
