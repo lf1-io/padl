@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; PADL 0.1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> PADL
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="README.html#why-padl">Why PADL?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#problem-statement">Problem Statement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#standard-approach">Standard Approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#padl-solutions">PADL Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gettingstarted.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#project-structure">Project Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#decomposing-models">Decomposing models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#model-training">Model training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#saving-loading">Saving/ Loading</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="saving.html">Saving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-by-value">Saving by value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.transforms">Transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.util_transforms">Util Transforms</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PADL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Index</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.AtomicTransform">AtomicTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Batchify">Batchify (class in padl.transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.BuiltinTransform">BuiltinTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.ClassTransform">ClassTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Compose">Compose (class in padl.transforms)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.CompoundTransform">CompoundTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Transform.eval_apply">eval_apply() (padl.transforms.Transform method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.FunctionTransform">FunctionTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.group">group() (in module padl.transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.CompoundTransform.grouped">grouped() (padl.transforms.CompoundTransform method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Identity">Identity (class in padl.transforms)</a>
+</li>
+      <li><a href="modules.html#padl.util_transforms.IfEval">IfEval (class in padl.util_transforms)</a>
+</li>
+      <li><a href="modules.html#padl.util_transforms.IfInfer">IfInfer (class in padl.util_transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.util_transforms.IfInStage">IfInStage (class in padl.util_transforms)</a>
+</li>
+      <li><a href="modules.html#padl.util_transforms.IfTrain">IfTrain (class in padl.util_transforms)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.infer_apply">infer_apply() (padl.transforms.Transform method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.load">load() (in module padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Map">Map (class in padl.transforms)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="modules.html#module-padl.transforms">padl.transforms</a>
+</li>
+        <li><a href="modules.html#module-padl.util_transforms">padl.util_transforms</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    padl.transforms
+
+      <ul>
+        <li><a href="modules.html#module-padl.transforms">module</a>
+</li>
+      </ul></li>
+      <li>
+    padl.util_transforms
+
+      <ul>
+        <li><a href="modules.html#module-padl.util_transforms">module</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.Parallel">Parallel (class in padl.transforms)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_component">pd_component (padl.transforms.Transform property)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_device">pd_device (padl.transforms.Transform property)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Compose.pd_forward">pd_forward (padl.transforms.Compose property)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Map.pd_forward">(padl.transforms.Map property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Parallel.pd_forward">(padl.transforms.Parallel property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Rollout.pd_forward">(padl.transforms.Rollout property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Transform.pd_forward">(padl.transforms.Transform property)</a>
+</li>
+        <li><a href="modules.html#padl.util_transforms.IfInStage.pd_forward">(padl.util_transforms.IfInStage property)</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_layers">pd_layers (padl.transforms.Transform property)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_name">pd_name (padl.transforms.Transform property)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_parameters">pd_parameters() (padl.transforms.Transform method)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.TorchModuleTransform.pd_post_load">pd_post_load() (padl.transforms.TorchModuleTransform method)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Transform.pd_post_load">(padl.transforms.Transform method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Compose.pd_postprocess">pd_postprocess (padl.transforms.Compose property)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Map.pd_postprocess">(padl.transforms.Map property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Parallel.pd_postprocess">(padl.transforms.Parallel property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Rollout.pd_postprocess">(padl.transforms.Rollout property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Transform.pd_postprocess">(padl.transforms.Transform property)</a>
+</li>
+        <li><a href="modules.html#padl.util_transforms.IfInStage.pd_postprocess">(padl.util_transforms.IfInStage property)</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.TorchModuleTransform.pd_pre_save">pd_pre_save() (padl.transforms.TorchModuleTransform method)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Transform.pd_pre_save">(padl.transforms.Transform method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.Compose.pd_preprocess">pd_preprocess (padl.transforms.Compose property)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Map.pd_preprocess">(padl.transforms.Map property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Parallel.pd_preprocess">(padl.transforms.Parallel property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Rollout.pd_preprocess">(padl.transforms.Rollout property)</a>
+</li>
+        <li><a href="modules.html#padl.transforms.Transform.pd_preprocess">(padl.transforms.Transform property)</a>
+</li>
+        <li><a href="modules.html#padl.util_transforms.IfInStage.pd_preprocess">(padl.util_transforms.IfInStage property)</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_save">pd_save() (padl.transforms.Transform method)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_set_stage">pd_set_stage() (padl.transforms.Transform method)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.CompoundTransform.pd_to">pd_to() (padl.transforms.CompoundTransform method)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.Transform.pd_to">(padl.transforms.Transform method)</a>
+</li>
+      </ul></li>
+      <li><a href="modules.html#padl.transforms.Transform.pd_varname">pd_varname() (padl.transforms.Transform method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Rollout">Rollout (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.save">save() (in module padl.transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.ClassTransform.source">source (padl.transforms.ClassTransform property)</a>
+
+      <ul>
+        <li><a href="modules.html#padl.transforms.FunctionTransform.source">(padl.transforms.FunctionTransform property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.TorchModuleTransform">TorchModuleTransform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Transform.train_apply">train_apply() (padl.transforms.Transform method)</a>
+</li>
+      <li><a href="modules.html#padl.transforms.Transform">Transform (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="modules.html#padl.transforms.Unbatchify">Unbatchify (class in padl.transforms)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, LF1.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
