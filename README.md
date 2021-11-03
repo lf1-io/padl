@@ -229,6 +229,7 @@ train_model = (
 ) >> loss
 ```
 
+
 ### Passing inputs between transform stages
 
 In a compose model, if `transform_1` has 2 outputs and `transform_2` has 2 outputs, then in applying the composition: `transform_1 >> transform_2` to data, the outputs of `transform_1` are passed to `transform_2` **positionally**. So output-1 of `transform_1` is passed to input-1 of `transform_2`. If `transform_2` has only one input, then the outputs of `transform_1` are passed as a tuple to `transform_2`.
@@ -291,6 +292,37 @@ for x in t.train_apply(
     num_workers=2,
 ):
     ...
+```
+
+### "batch" and "unbatch" key transforms
+
+The `batch` transform denotes where to split a transform between preprocessing and forward pass. The `unbatch` transform denotes where to split between forward pass and postprocessing. Everything before `batch` is performed in the data loader. This means that multiprocessing may be leveraged without extra boilerplate, to prepare data quickly for the forward pass. Every between `batch` and `unbatch` is performed on the GPU (is CUDA is being used) and in batches. Everything after `unbatch` downstream is applied in a for loop over the rows of output of the forward pass.
+
+When using `Transform.infer_apply` to apply a transform to a single data point, the transforms `batch` adds the additional dimension which is otherwise created by batching in the data loader implicit in `Transform.train_apply` and `Transform.eval_apply`. Analogously, in `Transform.infer_apply` the unbatch transform serves to remove this additional dimension, so that the output going to the postprocessing step has the same number of dimensions as the rows which come out of the forward pass in `Transform.eval_apply` and `Transform.train_apply`. 
+
+As a very simple example:
+
+```python
+m = transform(torch.nn.Linear)(10, 20)
+t = (
+  transform(lambda x: torch.tensor(x))
+	>> batch
+	>> m
+	>> unbatch
+	>> this.tolist()
+)
+```
+
+`t.infer_apply(x)` is approximately equivalent to:
+
+```
+m(torch.tensor(x).unsqueeze(0))[0, :, :].tolist()
+```
+
+Whereas `t.eval_apply(x)` and `t.train_apply(x)` are approximately equivalent to:
+
+```
+[y.tolist() for y in m(torch.stack([torch.tensor(y) for y in x]))]
 ```
 
 ### Model training
