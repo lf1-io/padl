@@ -1,18 +1,29 @@
 <img src="img/logo.png" width="400">
 
-**Pytorch** *abstractions for deep learning*.
+[![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+**PyTorch** *abstractions for deep learning*.
 
 ---
 
 Full documentation here: https://lf1-io.github.io/padl/
 
+**PADL**:
+
+- is a model builder for **PyTorch**. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use all of the **Great** functionality you're used to with **Pytorch** for saving, and writing models, as well as more.
+- allows users to build preprocessing, forward passes, loss functions **and** postprocessing into the model
+- models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem
+- allows for converting standard functions to **PADL** components using a single keyword `transform`.
+
+**PADL** was developed at [LF1](https://lf1.io/) an AI innovation lab based in Berlin, Germany.
+
 ## Why PADL?
 
-For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **Pytorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
+For data scientists, developing neural models is hard, due to the need to juggle diverse tasks such as preprocessing, **PyTorch** layers, loss functions and postprocessing, as well as maintainance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.
 
 ### Problem Statement
 
-While developing and deploying our deep learning models in **Pytorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
+While developing and deploying our deep learning models in **PyTorch** we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:
 
 - in *NLP* the exact steps and objects necessary to convert a sentence to a tensor
 - in *neural translation* the details of beam search post-processing and filtering based on business logic
@@ -48,16 +59,16 @@ pip install padl
 
 ## Project Structure
 
-PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **Pytorch**:
+PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **PyTorch**:
 
 - preprocessing
 - data-loading
 - batching
-- forward passes in **Pytorch**
+- forward passes in **PyTorch**
 - postprocessing
-- **Pytorch** loss functions
+- **PyTorch** loss functions
 
-Loosely it can be thought of as a computational block with full support for **Pytorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
+Loosely it can be thought of as a computational block with full support for **PyTorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
 
 Here's an example of what this might like:
 
@@ -121,7 +132,7 @@ left_shift = this[:, :-1]
 lower_case = this.lower_case()
 ```
 
-**Pytorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
+**PyTorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
 
 ```python
 @transform
@@ -211,6 +222,12 @@ train_model = (
     + (preprocess >> right_shift)
 ) >> loss
 ```
+
+### Passing inputs between transform stages
+
+In a compose model, if `transform_1` has 2 outputs and `transform_2` has 2 outputs, then in applying the composition: `transform_1 >> transform_2` to data, the outputs of `transform_1` are passed to `transform_2` **positionally**. So output-1 of `transform_1` is passed to input-1 of `transform_2`. If `transform_2` has only one input, then the outputs of `transform_1` are passed as a tuple to `transform_2`.
+
+In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.
 
 ### Decomposing models
 
