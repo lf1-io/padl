@@ -13,7 +13,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read().split('\n')
 
 long_description = ['# PADL\n'] + [x for x in long_description if not x.strip().startswith('<img')] \
-    \ + [x for x in long_description if not x.strip().startswith('[!')]
+     + [x for x in long_description if not x.strip().startswith('[!')]
 long_description = '\n'.join(long_description)
 
 
