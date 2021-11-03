@@ -46,6 +46,9 @@ build:
 	rm *.bak
 	
 clean:
+	-rm searchindex.js
+	-rm *.rst.txt
+	-rm *.html
 	-rm -rf sources
 	-rm -rf images
 	-rm -rf static
