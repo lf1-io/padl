@@ -484,7 +484,7 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_pd_itercall can only be used with stage eval or train'
 
-        self._pd_forward_device_check()
+        # self._pd_forward_device_check()
 
         preprocess = self.pd_preprocess
         forward = self.pd_forward
