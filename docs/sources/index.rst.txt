@@ -6,7 +6,10 @@ Welcome to PADL's documentation!
 **PyTorch** abstractions for deep learning.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-   content
+   README
+   gettingstarted
+   saving
+   modules
