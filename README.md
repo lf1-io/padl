@@ -85,10 +85,11 @@ Imports:
 
 ```python
 from padl import this, transform, batch, unbatch, value
+import padl
 import torch
 ```
 
-Transform definition using `transform` decorator:
+Transform definition using `transform` decorator. Any callable class implementing `__call__` can also become a transform:
 
 ```python
 @transform
@@ -96,28 +97,26 @@ def split_string(x):
     return x.split()
 
 @transform
-def to_tensor(x):
-    x = x[:10][:]
-    for _ in range(10 - len(x)):
-        x.append(EOS_VALUE)
-    return torch.tensor(x)
-```
-
-Any callable class implementing `__call__` can also become a transform:
-
-```python
-@transform
 class ToInteger:
     def __init__(self, words):
-        self.words = words + ['</s>']
+        self.words = words + ['<unk>']
         self.dictionary = dict(zip(self.words, range(len(self.words))))
         
     def __call__(self, word):
         if not word in self.dictionary:
-            word = "<unk>"
+            word = '<unk>''
         return self.dictionary[word]
-      
-to_integer = ToInteger('-', ' ')
+   
+to_integer = ToInteger(WORDS)
+
+EOS_VALUE = to_integer.dictionary['</s>']
+  
+@transform
+def to_tensor(x):
+    x = x[:10][:]
+    for _ in range(10 - len(x)):
+        x.append(EOS_VALUE)
+    return torch.tensor(x)  
 ```
 
 `transform` also supports inline lambda functions as transforms:
@@ -130,7 +129,7 @@ split_string = transform(lambda x: x.split())
 
 ```python
 left_shift = this[:, :-1]
-lower_case = this.lower_case()
+lower_case = this.lower()
 ```
 
 **PyTorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
@@ -150,13 +149,16 @@ class LM(torch.nn.Module):
       
 model = LM(N_WORDS)
 
-print(isinstance(layer, torch.nn.Module))                 # prints "True"
-print(isinstance(layer, padl.transforms.Transform))         # prints "True"
+print(isinstance(model, torch.nn.Module))                   # prints "True"
+print(isinstance(model, padl.transforms.Transform))         # prints "True"
 ```
 
-Finally, it's possibly to instantiate a module as a `Transform`:
+Finally, it's possibly to invoke all callables from an imported module as `Transforms` directly. This saves writing the transforms explicitly:
 
 ```python
+import numpy
+import torchvision
+
 normalize = transform(torchvision).transforms.Normalize(*args, **kwargs)
 cosine = transform(numpy).cos
 
