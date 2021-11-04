@@ -125,7 +125,7 @@ Consider the following example::
     def load_data():
         with open('my/big/textcorpus.txt') as f:
             text = f.read()
-        list(set(text.split(' ')))
+        return list(set(text.split(' ')))
 
     words = load_data()
 
