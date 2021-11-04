@@ -274,6 +274,35 @@ def build_codegraph_old(x: set, module=None, all_=None, update_callback=None):
     return all_
 
 
+def build_codegraph(name, scope):
+    graph = {}
+    scopemap = {}
+
+    todo = {(name, scope)}
+
+    while todo and (next_ := todo.pop()):
+        # we know this already - go on
+        if next_ in scopemap:
+            continue
+
+        next_var, next_scope = next_
+
+        # find how next_var came into being
+        (source, node), scope_of_next_var = symfinder.find_in_scope(next_var, next_scope)
+        scopemap[next_var, next_scope] = scope_of_next_var
+
+        # find dependencies
+        globals_ = {
+            (var, scope_of_next_var)
+            for var in find_globals(node)
+        }
+        graph[next_var, scope_of_next_var] = CodeNode(source=source, globals_=globals_,
+                                                      ast_node=node)
+        todo.update(globals_)
+
+    return graph, scopemap
+
+
 def _get_nodes_without_in_edges(graph):
     """Get all nodes in directed graph *graph* that don't have incoming edges.
 
