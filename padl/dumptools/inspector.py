@@ -171,7 +171,7 @@ def get_statement(source: str, lineno: int):
         try:
             try:
                 statement = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - 1, -col_offset)
+                return statement, (lineno - row_offset - 1, -col_offset)
             except SyntaxError:
                 statement = _get_statement_from_block('(\n' + block + '\n)',
                                                       lineno_in_block + row_offset + 1)
