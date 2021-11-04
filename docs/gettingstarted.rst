@@ -273,7 +273,8 @@ Saving:
 
 .. code-block:: python
 
-   model.pd_save('test.padl')
+   from padl import save
+   save(model, 'test.padl')
 
 Loading:
 

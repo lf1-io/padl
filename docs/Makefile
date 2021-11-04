@@ -46,6 +46,8 @@ build:
 	rm *.bak
 	
 clean:
+	-rm *.html
+	-rm *.rst.txt
 	-rm -rf sources
 	-rm -rf images
 	-rm -rf static
