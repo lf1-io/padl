@@ -255,7 +255,7 @@ def find_globals(node: ast.AST, filter_builtins=True):
     return globals_
 
 
-def build_codegraph(x: set, module=None, all_=None, update_callback=None):
+def build_codegraph_old(x: set, module=None, all_=None, update_callback=None):
     if module is None:
         module = sys.modules['__main__']
     if all_ is None:

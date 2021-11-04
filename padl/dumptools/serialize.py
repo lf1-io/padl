@@ -65,54 +65,46 @@ class Serializer:
         for codenode in list(codegraph.values()):
             for serializer in cls.store:
                 if serializer.varname in codenode.source:
-                    codegraph.update(serializer.save(path))
+                    loader_graph, loader_scopemap = serializer.save(path)
+                    codegraph.update(loader_graph)
+                    scopemap.update(loader_scopemap)
                     for varname, scope in codenode.globals_:
                         if varname == serializer.varname:
                             scopemap[varname, scope] = SCOPE
 
 
-class JSONSerializer(Serializer):
-    """JSON Serializer (stores stuff as json).
-
-    :param val: The value to serialize.
-    """
-
-    def __init__(self, val):
-        self.val = val
-        super().__init__()
-
-    def save(self, path: Path):
-        """Method for saving *self.val*. """
-        if path is None:
-            savepath = '?.json'
-        else:
-            savepath = path / f'{self.i}.json'
-            with open(savepath, 'w') as f:
-                json.dump(self.val, f)
-        load_source = (
-            f'with open(pathlib.Path(__file__).parent / \'{savepath.name}\') as f:\n'
-            f'    {self.varname} = json.load(f)\n'
-        )
-        return {(self.varname, SCOPE): var2mod.CodeNode(source=load_source, globals_=set()),
-                ('json', SCOPE): var2mod.CodeNode(source='import json', globals_=set(),
-                                                  ast_node=ast.parse('import json').body[0]),
-                ('pathlib', SCOPE): var2mod.CodeNode(source='import pathlib', globals_=set(),
-                                                     ast_node=ast.parse('import pathlib').body[0])}
+def save_json(val, path, i):
+    """Saver for json. """
+    filename = f'{i}.json'
+    with open(path / filename, 'w') as f:
+        json.dump(val, f)
+    return filename
 
 
-def _serialize(val):
+def load_json(path):
+    """Loader for json. """
+    with open(path) as f:
+        return json.load(f)
+
+
+def json_serializer(val):
+    """Create a json serializer for *val*. """
+    return Serializer(val, save_json, load_json, sys.modules[__name__])
+
+
+def _serialize(val, serializer=None):
+    if serializer is not None:
+        return Serializer(val, *serializer).varname
     if hasattr(val, '__len__') and len(val) > 10:
-        serializer = JSONSerializer(val)
-        print('using json')
-        return serializer.varname
+        return json_serializer(val).varname
     return repr(val)
 
 
-def value(val):
+def value(val, serializer=None):
     """Helper function that marks things in the code that should be stored by value. """
     caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
     _call, locs = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call', True)
     source = sourceget.get_source(caller_frameinfo.filename)
     sourceget.put_into_cache(caller_frameinfo.filename, sourceget.original(source),
-                             _serialize(val), *locs)
+                             _serialize(val, serializer=serializer), *locs)
     return val
