@@ -484,7 +484,7 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_pd_itercall can only be used with stage eval or train'
 
-        # self._pd_forward_device_check()
+        self._pd_forward_device_check()
 
         preprocess = self.pd_preprocess
         forward = self.pd_forward
@@ -553,36 +553,37 @@ class Transform:
 
     @property
     def pd_preprocess(self) -> "Transform":
-        """The preprocessing part of the transform. """
-        if 'preprocess' in self.pd_component and len(self.pd_component) == 1:
+        """The preprocessing part of the transform. The device must be propagated from self."""
+        if {'preprocess'} == self.pd_component:
             return self
-        t = self._pd_preprocess_part()
-        t._pd_device = self.pd_device
-        return t
+        pre = self._pd_preprocess_part()
+        pre.pd_to(self.pd_device)
+        return pre
 
     def _pd_forward_part(self) -> "Transform":
         return Identity()
 
     @property
     def pd_forward(self) -> "Transform":
-        """The forward part of the transform (that what's typically done on the GPU)."""
-        if 'forward' in self.pd_component and len(self.pd_component) == 1:
+        """The forward part of the transform (that what's typically done on the GPU).
+        The device must be propagated from self."""
+        if {'forward'} == self.pd_component:
             return self
-        t = self._pd_forward_part()
-        t._pd_device = self.pd_device
-        return t
+        forward = self._pd_forward_part()
+        forward.pd_to(self.pd_device)
+        return forward
 
     def _pd_postprocess_part(self) -> "Transform":
         return Identity()
 
     @property
     def pd_postprocess(self) -> "Transform":
-        """The postprocessing part of the transform. """
-        if 'postprocess' in self.pd_component and len(self.pd_component) == 1:
+        """The postprocessing part of the transform. The device must be propagated from self."""
+        if {'postprocess'} == self.pd_component:
             return self
-        t = self._pd_postprocess_part()
-        t._pd_device = self.pd_device
-        return t
+        post = self._pd_postprocess_part()
+        post.pd_to(self.pd_device)
+        return post
 
     def pd_to(self, device: str) -> "Transform":
         """Set the transform's device to *device*.
