@@ -1,7 +1,10 @@
 import ast
+import inspect
 import json
 from pathlib import Path
 import sys
+from types import ModuleType
+from typing import Any, Callable, List, Optional
 
 from padl.dumptools import inspector, sourceget, var2mod, symfinder
 
@@ -10,15 +13,46 @@ SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])
 
 
 class Serializer:
-    """Serializer base class. """
+    """Serializer base class.
 
-    store = []
-    i = 0
+    :param val: The value to serialize.
+    :param save_function: The function to use for saving *val*.
+    :param load_function: The function to use for loading *val*.
+    """
 
-    def __init__(self):
+    store: List = []
+    i: int = 0
+
+    def __init__(self, val: Any, save_function: Callable, load_function: callable,
+                 module: Optional[ModuleType] = None):
         self.index = Serializer.i
         Serializer.i += 1
         self.store.append(self)
+        self.val = val
+        self.save_function = save_function
+        if module is None:
+            module = inspector.caller_module()
+        self.scope = symfinder.Scope.toplevel(module)
+        self.load_codegraph, self.load_scopemap = (
+            var2mod.build_codegraph(load_function.__name__, self.scope)
+        )
+        self.load_name = load_function.__name__
+        super().__init__()
+
+    def save(self, path: Path):
+        if path is None:
+            path = Path('?')
+        filename = self.save_function(self.val, path, self.i)
+        complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
+        return (
+            {**self.load_codegraph,
+             (self.varname, self.scope):
+                var2mod.CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
+                                 globals_={(self.load_name, self.scope)}),
+             ('pathlib', SCOPE): var2mod.CodeNode(source='import pathlib', globals_=set(),
+                                                  ast_node=ast.parse('import pathlib').body[0])},
+            self.load_scopemap
+        )
 
     @property
     def varname(self):
