@@ -117,7 +117,6 @@ class _FunctionDefFinder(_NameFinder):
         return '\n'.join(res)
 
 
-
 class _ClassDefFinder(_NameFinder):
     """Class for finding a *class definition* of a specified name in an AST tree. """
 
