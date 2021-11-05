@@ -55,35 +55,29 @@ class IfInStage(ClassTransform):
             return self.if_._pd_call_transform(args)
         return self.else_._pd_call_transform(args)
 
-    @property
-    def pd_preprocess(self):
-        if self._pd_preprocess is None:
-            self._pd_preprocess = type(self)(
-                if_=self.if_.pd_preprocess,
-                target_stage=self.target_stage,
-                else_=self.else_.pd_preprocess,
-            )
-        return self._pd_preprocess
+    def _pd_preprocess_part(self):
+        pre = type(self)(
+            if_=self.if_.pd_preprocess,
+            target_stage=self.target_stage,
+            else_=self.else_.pd_preprocess,
+        )
+        return pre
 
-    @property
-    def pd_forward(self):
-        if self._pd_forward is None:
-            self._pd_forward = type(self)(
-                if_=self.if_.pd_forward,
-                target_stage=self.target_stage,
-                else_=self.else_.pd_forward,
-            )
-        return self._pd_forward
+    def _pd_forward_part(self):
+        forward = type(self)(
+            if_=self.if_.pd_forward,
+            target_stage=self.target_stage,
+            else_=self.else_.pd_forward,
+        )
+        return forward
 
-    @property
-    def pd_postprocess(self):
-        if self._pd_postprocess is None:
-            self._pd_postprocess = type(self)(
-                if_=self.if_.pd_postprocess,
-                target_stage=self.target_stage,
-                else_=self.else_.pd_postprocess,
-            )
-        return self._pd_postprocess
+    def _pd_postprocess_part(self):
+        post = type(self)(
+            if_=self.if_.pd_postprocess,
+            target_stage=self.target_stage,
+            else_=self.else_.pd_postprocess,
+        )
+        return post
 
 
 class IfInfer(IfInStage):
