@@ -1041,7 +1041,9 @@ class CompoundTransform(Transform):
         if isinstance(item, int):
             return self.transforms[item]
         if isinstance(item, slice):
-            return type(self)(self.transforms[item])
+            transform_ = type(self)(self.transforms[item])
+            transform_.pd_to(self.pd_device)
+            return transform_
         if isinstance(item, str):
             for transform_ in self.transforms:
                 if transform_.pd_name == item:
