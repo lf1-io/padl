@@ -662,6 +662,7 @@ class Transform:
 
         :param inputs: The input.
         """
+        self._pd_forward_device_check()
         inputs = self.pd_preprocess._pd_call_transform(inputs, stage='infer')
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward._pd_call_transform(inputs, stage='infer')
