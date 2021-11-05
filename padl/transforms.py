@@ -1174,7 +1174,10 @@ class CompoundTransform(Transform):
 
     def grouped(self):
         """Return a grouped version of *self*. """
-        return type(self)(self.transforms, self._pd_call_info, pd_name=self.pd_name, pd_group=True)
+        transform_ = type(self)(self.transforms, self._pd_call_info, pd_name=self.pd_name,
+                                pd_group=True)
+        transform_.pd_to(self.pd_device)
+        return transform_
 
     @staticmethod
     def _pd_get_keys(transforms):
