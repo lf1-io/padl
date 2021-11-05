@@ -40,9 +40,6 @@ class IfInStage(ClassTransform):
         self.if_ = if_
         self.else_ = else_
         self.target_stage = target_stage
-        self._pd_preprocess = None
-        self._pd_forward = None
-        self._pd_postprocess = None
 
         self._pd_component = set.union(*[t.pd_component for t in [self.if_, self.else_]])
 
