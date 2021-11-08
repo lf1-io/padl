@@ -7,6 +7,8 @@ from types import ModuleType
 from typing import Any, Callable, List, Optional
 
 from padl.dumptools import inspector, sourceget, var2mod, symfinder
+from padl.dumptools.symfinder import ScopedName
+from padl.dumptools.var2mod import CodeNode
 
 
 SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])

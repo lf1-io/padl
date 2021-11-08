@@ -37,13 +37,13 @@ def _maketrans(attr, getitem=False):
             args_list += [f'{key}={format_argument(val)}' for key, val in self._kwargs.items()]
             return ', '.join(args_list)
 
-        def _pd_longrepr(self):
+        def _pd_longrepr(self, formatting=True):
             return self._pd_shortrepr()
 
-        def _pd_shortrepr(self):
+        def _pd_shortrepr(self, formatting=True):
             return f'{attr}({self._formatted_args()})'
 
-        def _pd_tinyrepr(self):
+        def _pd_tinyrepr(self, formatting=True):
             return self.pd_name or attr
 
     return T
