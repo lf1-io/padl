@@ -1581,7 +1581,9 @@ class Parallel(CompoundTransform):
 
 class BuiltinTransform(AtomicTransform):
     def __init__(self, call):
-        super().__init__(call)
+        caller_frameinfo = inspector.non_init_caller_frameinfo()
+        call_info = inspector.CallInfo(caller_frameinfo)
+        super().__init__(call, call_info=call_info)
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
@@ -1597,7 +1599,8 @@ class BuiltinTransform(AtomicTransform):
 
         if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', scope)
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
+                                                                                    scope)
             scopemap[ScopedName('padl', scope, 0)] = emptyscope
 
         if name is not None:

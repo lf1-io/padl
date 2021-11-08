@@ -179,6 +179,71 @@ The resulting :code:`transform.py` includes statements to load the json file::
     _pd_main = WordIndex(PADL_VALUE_0)
 
 Currently, this only works with values that can be serialized as JSON. Future versions of PADL will add support for other things.
+You can also add your own serializer:
+
+
+Custom serializers
+------------------
+
+You can save by value using your own serializer by defining two functions, one for saving, one for loading, and passing them to
+:py:meth:`padl.value`. 
+
+The *save* function expects two arguments, one for the value (*val*), one for the path (*path*)::
+
+    def mysaver(val, path):
+        ...
+
+It is responsible for saving *val* at *path*.
+
+The *load* function expects one argument (*path*). It must load the value from there and return it.
+
+These functions are then passed to :py:meth:`padl.value` in a tuple as the second argument. The tuple
+has a third entry which defines a file suffix::
+
+    x = value(val, (save, load, suffix))
+
+For example, to save a value using :py:meth:`numpy.save`, you could do::
+
+
+    def mysaver(val, path):
+        np.save(path, val)
+
+    def myloader(path):
+        return np.load(path)
+
+    [...]
+
+    x = value(x, (mysaver, myloader, '.npy'))
+
+    [...]
+
+
+The *save*-function can also return one filename or multiple filenames (in a list). If it does, that return
+value will be used as the path argument in the *load*-function. You can use this for more complex cases,
+for instance if the value needs to be serialized in more than one file. You will not need to provide a
+file suffix in this case.
+
+For example, to save a list of numpy arrays in multiple files::
+
+
+    def mysaver(val, path):
+        filenames = []
+        for i, subval in enumerate(val):
+            filename = str(path) + '_{i}.npy'
+            np.save(filename, val)
+            filenames.append(filename)
+        return filenames
+
+    def myloader(paths):
+        result = []
+        for path in paths:
+            result.append(np.load(path))
+
+    [...]
+
+    x = value(x, (mysaver, myloader))
+
+    [...]
 
 
 Saving pytorch modules
