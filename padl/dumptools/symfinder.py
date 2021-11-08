@@ -20,6 +20,7 @@ history.
 """
 
 import ast
+from dataclasses import dataclass
 from math import inf
 import sys
 from types import ModuleType
@@ -402,6 +403,16 @@ class Scope:
         return hash(str(self))
 
 
+@dataclass
+class ScopedName:
+    name: str
+    scope: Scope
+    n: int = 0
+
+    def __hash__(self):
+        return hash((self.name, self.scope))
+
+
 def find_in_function_def(var_name, source, lineno, call_source):
     """Find where *var_name* was assigned.
 
@@ -413,27 +424,28 @@ def find_in_function_def(var_name, source, lineno, call_source):
         determine argument values.
     """
     scope = Scope.from_source(source, lineno, call_source)
-    return find_in_scope(var_name, scope)
+    return find_in_scope(ScopedName(var_name, scope))
 
 
-def find_in_scope(var_name: str, scope: Scope):
+def find_in_scope(name: ScopedName):
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     scope *scope*.
 
     :param var_name: Name of the variable to look for.
     :param scope: Scope to search.
     """
+    scope = name.scope
     for _scopename, tree in scope.scopelist:
         try:
-            source, node = find_in_source(var_name, scope.def_source, tree=tree)
+            source, node = find_in_source(name.name, name.scope.def_source, tree=tree, i=name.n)
             scope = getattr(node, '_scope', scope)
             return (source, node), scope
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
-        raise NameNotFound(f'{var_name} not found in function hierarchy.')
-    source, node = find(var_name, scope.module)
+        raise NameNotFound(f'{name.name} not found in function hierarchy.')
+    source, node = find(name.name, scope.module, name.n)
     scope = getattr(node, '_scope', scope.global_())
     return (source, node), scope
 
@@ -461,7 +473,7 @@ def replace_star_imports(tree: ast.Module):
                          ' by that.')
 
 
-def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]:
+def find_in_source_old(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
@@ -486,7 +498,26 @@ def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST]
     return best.deparse(), best.node()
 
 
-def find_in_module(var_name: str, module) -> Tuple[str, ast.AST]:
+def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
+                   return_partial=False) -> Tuple[str, ast.AST]:
+    if tree is None:
+        tree = ast.parse(source)
+    replace_star_imports(tree)
+    finder_clss = _NameFinder.__subclasses__()
+    for statement in tree.body[::-1]:
+        for finder_cls in finder_clss:
+            finder = finder_cls(source, var_name)
+            finder.visit(statement)
+            if finder.found_something():
+                if i == 0:
+                    return finder.deparse(), finder.node()
+                i -= 1
+    if return_partial:
+        return i
+    raise NameNotFound(f'{var_name} not found.')
+
+
+def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -495,7 +526,7 @@ def find_in_module(var_name: str, module) -> Tuple[str, ast.AST]:
     :returns: Tuple with source code segment and corresponding ast node.
     """
     source = sourceget.get_module_source(module)
-    return find_in_source(var_name, source)
+    return find_in_source(var_name, source, i=i)
 
 
 def _find_branch(tree, lineno):
@@ -525,7 +556,7 @@ def _find_branch(tree, lineno):
     return [tree]
 
 
-def find_in_ipython(var_name: str) -> Tuple[str, ast.AST]:
+def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     ipython history.
 
@@ -535,7 +566,11 @@ def find_in_ipython(var_name: str) -> Tuple[str, ast.AST]:
     source = node = None
     for cell in sourceget._ipython_history()[::-1]:
         try:
-            source, node = find_in_source(var_name, cell)
+            res = find_in_source(var_name, cell, i=i, return_partial=True)
+            if isinstance(res, int):
+                i = res
+                continue
+            source, node = res
         except (NameNotFound, SyntaxError):
             continue
         break
@@ -544,7 +579,7 @@ def find_in_ipython(var_name: str) -> Tuple[str, ast.AST]:
     return source, node
 
 
-def find(var_name: str, module=None) -> Tuple[str, ast.AST]:
+def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -558,11 +593,11 @@ def find(var_name: str, module=None) -> Tuple[str, ast.AST]:
     if module is None:
         module = sys.modules['__main__']
     try:
-        return find_in_module(var_name, module)
+        return find_in_module(var_name, module, i)
     except TypeError as exc:
         if module is not sys.modules['__main__']:
             raise NameNotFound(f'"{var_name}" not found.') from exc
-        return find_in_ipython(var_name)
+        return find_in_ipython(var_name, i)
 
 
 class NameNotFound(Exception):
