@@ -263,30 +263,31 @@ def find_globals(node: ast.AST, filter_builtins=True):
     return globals_
 
 
-def build_codegraph(name, scope):
+def build_codegraph(scoped_name: ScopedName):
     graph = {}
     scopemap = {}
 
-    todo = {(name, scope)}
+    todo = {scoped_name}
 
     while todo and (next_ := todo.pop()):
         # we know this already - go on
         if next_ in scopemap:
             continue
 
-        next_var, next_scope = next_
-
         # find how next_var came into being
-        (source, node), scope_of_next_var = symfinder.find_in_scope(next_var, next_scope)
-        scopemap[next_var, next_scope] = scope_of_next_var
+        (source, node), scope_of_next_var = find_in_scope(next_)
+        scopemap[next_] = scope_of_next_var
 
         # find dependencies
-        globals_ = {
-            (var, scope_of_next_var)
-            for var in find_globals(node)
-        }
-        graph[next_var, scope_of_next_var] = CodeNode(source=source, globals_=globals_,
-                                                      ast_node=node)
+        globals_ = set()
+        for var, n in find_globals(node):
+            if var == next_.name and scope_of_next_var == scopemap[next_]:
+                globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
+            else:
+                globals_.add(ScopedName(var, scope_of_next_var, n))
+        graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = CodeNode(source=source,
+                                                                             globals_=globals_,
+                                                                             ast_node=node)
         todo.update(globals_)
 
     return graph, scopemap

@@ -60,6 +60,7 @@ class CallInfo:
             assert len(scope) <= 1, 'scope longer than 1 currently not supported'
             return scope
         except (SyntaxError, RuntimeError) as exc:
+            raise
             warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
             return symfinder.Scope.toplevel(module)
 
