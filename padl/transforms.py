@@ -23,6 +23,7 @@ from tqdm import tqdm
 
 from padl.data import SimpleDataset
 from padl.dumptools import var2mod, symfinder, inspector
+from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
 
 from padl.dumptools.packagefinder import dump_packages_versions
@@ -199,8 +200,8 @@ class Transform:
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
         start_node = ast.parse(start_source).body[0]
         start_globals = {
-            (var, self._pd_call_info.scope)  # this should be the current scope ...?
-            for var in var2mod.find_globals(start_node)
+            ScopedName(var, self._pd_call_info.scope, n)  # this should be the current scope ...?
+            for var, n in var2mod.find_globals(start_node)
         }
         return var2mod.CodeNode(
             source=start_source,
@@ -247,43 +248,50 @@ class Transform:
             if next_ in scopemap:
                 continue
 
-            next_var, next_scope = next_
-
-            if next_var.startswith('PADL_VALUE'):
+            if next_.name.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
-                if len(next_scope) > 0:
-                    next_obj = all_vars_dict[next_var]
+                if len(next_.scope) > 0:
+                    next_obj = all_vars_dict[next_.name]
                 else:
-                    next_obj = globals_dict[next_var]
-                next_obj._pd_build_codegraph(graph, scopemap, next_var)
+                    next_obj = globals_dict[next_.name]
+                next_obj._pd_build_codegraph(graph, scopemap, next_.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
-            # find how next_var came into being
-            (source, node), scope_of_next_var = symfinder.find_in_scope(next_var, next_scope)
-            scopemap[next_var, next_scope] = scope_of_next_var
+            # find how next_.name came into being
+            (source, node), scope_of_next_var = symfinder.find_in_scope(next_)
+            scopemap[next_] = scope_of_next_var
 
             # find dependencies
             globals_ = {
-                (var, scope_of_next_var)
-                for var in var2mod.find_globals(node)
+                ScopedName(var, scope_of_next_var, n)
+                for var, n in var2mod.find_globals(node)
             }
-            graph[next_var, scope_of_next_var] = var2mod.CodeNode(source=source, globals_=globals_,
-                                                                  ast_node=node)
+            globals_ = set()
+            for var, n in var2mod.find_globals(node):
+                if var == next_.name and scope_of_next_var == scopemap[next_]:
+                    globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
+                else:
+                    globals_.add(ScopedName(var, scope_of_next_var, n))
+
+            graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = \
+                var2mod.CodeNode(source=source,
+                                 globals_=globals_,
+                                 ast_node=node)
             todo.update(globals_)
         # find dependencies done
 
         if name is not None:
             assert scope is not None
-            graph[name, scope] = start
+            graph[ScopedName(name, scope, 0)] = start
 
         if given_name is not None:
-            scopemap[given_name, scope] = scope
+            scopemap[ScopedName(given_name, scope, 0)] = scope
 
         return graph, scopemap
 
@@ -833,8 +841,8 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self) -> str:
         """The class source code. """
-        (body_msg, _), _ = symfinder.find_in_scope(self.__class__.__name__,
-                                                   self._pd_call_info.scope)
+        (body_msg, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
+                                                              self._pd_call_info.scope))
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
@@ -950,8 +958,8 @@ class Map(Transform):
 
         if name is not None:
             assert scope is not None
-            graph[name, scope] = start
-            scopemap[name, scope] = scope
+            graph[ScopedName(name, scope, 0)] = start
+            scopemap[ScopedName(name, scope, 0)] = scope
 
         varname = self.transform.pd_varname()
         self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
@@ -1075,13 +1083,13 @@ class CompoundTransform(Transform):
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', emptyscope)
-            scopemap['padl', self._pd_call_info.scope] = emptyscope
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', emptyscope)
+            scopemap[ScopedName('padl', self._pd_call_info.scope, 0)] = emptyscope
 
         if name is not None:
             assert scope is not None
-            graph[name, scope] = start
-            scopemap[name, scope] = scope
+            graph[ScopedName(name, scope, 0)] = start
+            scopemap[ScopedName(name, scope, 0)] = scope
 
         for transform in self.transforms:
             varname = transform.pd_varname()
@@ -1606,17 +1614,17 @@ class BuiltinTransform(AtomicTransform):
         if scope is None:
             scope = self._pd_call_info.scope
 
-        if ('padl', scope) not in graph:
+        if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph['padl', emptyscope] = var2mod.CodeNode.from_source('import padl', scope)
-            scopemap['padl', scope] = emptyscope
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', scope)
+            scopemap[ScopedName('padl', scope, 0)] = emptyscope
 
         if name is not None:
             start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-            graph[name, scope] = \
+            graph[ScopedName(name, scope, 0)] = \
                 var2mod.CodeNode.from_source(start_source, scope)
 
-            scopemap[name, scope] = scope
+            scopemap[ScopedName(name, scope, 0)] = scope
 
         return graph, scopemap
 

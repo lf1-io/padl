@@ -7,6 +7,8 @@ from types import ModuleType
 from typing import Any, Callable, List, Optional
 
 from padl.dumptools import inspector, sourceget, var2mod, symfinder
+from padl.dumptools.symfinder import ScopedName
+from padl.dumptools.var2mod import CodeNode
 
 
 SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])
@@ -34,7 +36,7 @@ class Serializer:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
         self.load_codegraph, self.load_scopemap = (
-            var2mod.build_codegraph(load_function.__name__, self.scope)
+            var2mod.build_codegraph(ScopedName(load_function.__name__, self.scope))
         )
         self.load_name = load_function.__name__
         super().__init__()
@@ -46,11 +48,13 @@ class Serializer:
         complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
         return (
             {**self.load_codegraph,
-             (self.varname, self.scope):
-                var2mod.CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
-                                 globals_={(self.load_name, self.scope)}),
-             ('pathlib', SCOPE): var2mod.CodeNode(source='import pathlib', globals_=set(),
-                                                  ast_node=ast.parse('import pathlib').body[0])},
+             ScopedName(self.varname, self.scope):
+                 CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
+                          globals_={ScopedName(self.load_name, self.scope)}),
+             ScopedName('pathlib', SCOPE):
+                 CodeNode(source='import pathlib',
+                          globals_=set(),
+                          ast_node=ast.parse('import pathlib').body[0])},
             self.load_scopemap
         )
 
@@ -68,9 +72,9 @@ class Serializer:
                     loader_graph, loader_scopemap = serializer.save(path)
                     codegraph.update(loader_graph)
                     scopemap.update(loader_scopemap)
-                    for varname, scope in codenode.globals_:
-                        if varname == serializer.varname:
-                            scopemap[varname, scope] = SCOPE
+                    for scoped_name in codenode.globals_:
+                        if scoped_name.name == serializer.varname:
+                            scopemap[scoped_name] = SCOPE
 
 
 def save_json(val, path, i):
