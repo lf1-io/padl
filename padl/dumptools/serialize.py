@@ -18,18 +18,20 @@ class Serializer:
     :param val: The value to serialize.
     :param save_function: The function to use for saving *val*.
     :param load_function: The function to use for loading *val*.
+    :param file_suffix: If set, a string that will be appended to the path.
     """
 
     store: List = []
     i: int = 0
 
     def __init__(self, val: Any, save_function: Callable, load_function: callable,
-                 module: Optional[ModuleType] = None):
+                 file_suffix: Optional[str] = None, module: Optional[ModuleType] = None):
         self.index = Serializer.i
         Serializer.i += 1
         self.store.append(self)
         self.val = val
         self.save_function = save_function
+        self.file_suffix = file_suffix
         if module is None:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
@@ -42,8 +44,21 @@ class Serializer:
     def save(self, path: Path):
         if path is None:
             path = Path('?')
-        filename = self.save_function(self.val, path, self.i)
-        complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
+        if self.file_suffix is not None:
+            path = Path(str(path) + f'/{self.i}{self.file_suffix}')
+        filename = self.save_function(self.val, path)
+        breakpoint()
+        if filename is None:
+            assert self.file_suffix is not None, ('if no file file_suffix is passed to *value*, '
+                                                  'the *save*-function must return a filename')
+            filename = path.name
+        if isinstance(filename, (str, Path)):
+            complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
+        else:
+            complete_path = ('[pathlib.Path(__file__).parent / filename for filename in ['
+                             + ', '.join(f"'{fn}'"
+                                         for fn in filename)
+                             + ']]')
         return (
             {**self.load_codegraph,
              (self.varname, self.scope):
