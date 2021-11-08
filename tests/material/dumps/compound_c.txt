@@ -1,0 +1,28 @@
+from padl import Batchify
+from padl import transform
+from padl import Unbatchify
+
+
+CONST = 1
+
+
+def k(o):
+    return o * 7
+
+
+@transform
+def x(y):
+    return CONST + 1
+
+
+@transform
+def y(y):
+    return CONST + k(y)
+
+
+_pd_main = (
+    x
+    >> Batchify()
+    >> y
+    >> Unbatchify()
+)

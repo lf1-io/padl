@@ -1,6 +1,6 @@
 import pytest
 
-from padl import transform, group, IfTrain
+from padl import transform, group, IfTrain, Batchify, Unbatchify
 
 
 CONST = 1
@@ -141,6 +141,11 @@ def test_nested_dump_c():
 
 c_a = x >> y >> x
 c_b = x >> y >> x / x + c_a
+c_c = (x
+    >> Batchify()
+    >> y
+    >> Unbatchify()
+)
 
 
 def test_compound_dump_a():
@@ -149,6 +154,10 @@ def test_compound_dump_a():
 
 def test_compound_dump_b():
     assert c_b._pd_dumps() == read_dump('compound_b')
+
+
+def test_compound_dump_c():
+    assert c_c._pd_dumps() == read_dump('compound_c')
 
 
 g_a = x + group(y + x + x)
