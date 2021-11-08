@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import sys
 from typing import Optional
 
-from padl.dumptools import symfinder
+from padl.dumptools.symfinder import find, find_in_scope, ScopedName
 
 try:
     unparse = ast.unparse
@@ -78,44 +78,52 @@ class _VarFinder(ast.NodeVisitor):
     def _find_in_function_def(self, node):
         """Special case: exclude args from globals. """
         for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
-            self.locals.add(arg.arg)
+            self.locals.add((arg.arg, 0))
         if node.args.vararg is not None:
-            self.locals.add(node.args.vararg.arg)
+            self.locals.add((node.args.vararg.arg, 0))
         if node.args.kwarg is not None:
-            self.locals.add(node.args.kwarg.arg)
+            self.locals.add((node.args.kwarg.arg, 0))
         for n in ast.iter_child_nodes(node):
             self.visit(n)
         return Vars(self.globals, self.locals)
 
     def visit_Name(self, node):
-        if node.id not in self.locals:
-            self.globals.add(node.id)
+        if (node.id, 0) not in self.locals:
+            self.globals.add((node.id, 0))
 
     def visit_withitem(self, node):
         self.visit(node.context_expr)
         if node.optional_vars is not None:
-            self.locals.add(node.optional_vars.id)
+            self.locals.add((node.optional_vars.id, 0))
 
     def visit_Assign(self, node):
         for target in node.targets:
-            self.locals.update([x.id for x in Finder(ast.Name).find(target)])
-        self.visit(node.value)
+            targets = {(x.id, 0) for x in Finder(ast.Name).find(target)}
+        sub_globals = find_globals(node.value)
+        sub_dependencies = set()
+        for name, i in sub_globals:
+            if (name, i) in targets:
+                sub_dependencies.add((name, i + 1))
+            else:
+                sub_dependencies.add((name, i))
+        self.locals.update(targets)
+        self.globals.update(sub_dependencies - self.locals)
 
     def visit_For(self, node):
-        self.locals.update([x.id for x in Finder(ast.Name).find(node.target)])
+        self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
         for child in node.body:
             self.visit(child)
 
     def visit_NamedExpr(self, node):
-        self.locals.update(Finder(ast.Name).find(node.target))
+        self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
 
     def visit_comprehension(self, node):
         """Special case for comprehension - comprehension targets should be ignored. """
         targets = set()
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
-                targets.add(name.id)
-        all_ = set(x.id for x in Finder(ast.Name).find(node))
+                targets.add((name.id, 0))
+        all_ = set((x.id, 0) for x in Finder(ast.Name).find(node))
         self.globals.update(all_ - targets - self.locals)
 
     def visit_DictComp(self, node):
@@ -132,32 +140,32 @@ class _VarFinder(ast.NodeVisitor):
 
     def visit_Lambda(self, node):
         for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
-            self.locals.add(arg.arg)
+            self.locals.add((arg.arg, 0))
         self.visit(node.body)
 
     def visit_FunctionDef(self, node):
-        self.locals.add(node.name)
+        self.locals.add((node.name, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_ClassDef(self, node):
-        self.locals.add(node.name)
+        self.locals.add((node.name, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_Import(self, node):
         for name in node.names:
             if name.asname is None:
-                self.locals.add(name.name)
+                self.locals.add((name.name, 0))
             else:
-                self.locals.add(name.asname)
+                self.locals.add((name.asname, 0))
 
     def visit_ImportFrom(self, node):
         for name in node.names:
             if name.asname is None:
-                self.locals.add(name.name)
+                self.locals.add((name.name, 0))
             else:
-                self.locals.add(name.asname)
+                self.locals.add((name.asname, 0))
 
 
 class _Renamer(ast.NodeTransformer):
@@ -241,7 +249,7 @@ def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins=True):
     for method in methods.values():
         globals_.update(_VarFinder().find(method).globals)
     if filter_builtins:
-        globals_ = {x for x in globals_ if x not in builtins.__dict__}
+        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
     return globals_
 
 
@@ -251,27 +259,38 @@ def find_globals(node: ast.AST, filter_builtins=True):
         return _find_globals_in_classdef(node)
     globals_ = _VarFinder().find(node).globals
     if filter_builtins:
-        globals_ = {x for x in globals_ if x not in builtins.__dict__}
+        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
     return globals_
 
 
-def build_codegraph(x: set, module=None, all_=None, update_callback=None):
-    if module is None:
-        module = sys.modules['__main__']
-    if all_ is None:
-        all_ = {}
-    todo = set(x)
+def build_codegraph(scoped_name: ScopedName):
+    graph = {}
+    scopemap = {}
+
+    todo = {scoped_name}
+
     while todo and (next_ := todo.pop()):
-        if next_ in all_:
+        # we know this already - go on
+        if next_ in scopemap:
             continue
-        if update_callback is not None and update_callback(next_, module):
-            pass
-        else:
-            source, node = symfinder.find(next_, module)
-            globals_ = find_globals(node)
-            all_[next_] = (source, globals_, node)
+
+        # find how next_var came into being
+        (source, node), scope_of_next_var = find_in_scope(next_)
+        scopemap[next_] = scope_of_next_var
+
+        # find dependencies
+        globals_ = set()
+        for var, n in find_globals(node):
+            if var == next_.name and scope_of_next_var == scopemap[next_]:
+                globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
+            else:
+                globals_.add(ScopedName(var, scope_of_next_var, n))
+        graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = CodeNode(source=source,
+                                                                             globals_=globals_,
+                                                                             ast_node=node)
         todo.update(globals_)
-    return all_
+
+    return graph, scopemap
 
 
 def _get_nodes_without_in_edges(graph):
@@ -317,9 +336,9 @@ def _sort(graph):
     def sortkey(x):
         val = graph[x]
         try:
-            return _PRECEDENCE[val[2].__class__](x, val)
+            return _PRECEDENCE[val[2].__class__](x[0], val)
         except KeyError:
-            return 'zz' + x.lower()
+            return 'zz' + x[0].lower()
 
     res = []
     for level in top:
@@ -330,31 +349,33 @@ def _sort(graph):
 def unscope_graph(graph, scopemap):
     """Create a version of *graph* where all non-top level variables are renamed (by prepending
     the scope) to prevent conflicts."""
-    counts = Counter(x[0] for x in graph)
+    counts = Counter(x.name for x in graph)
     to_rename = set(k for k, c in counts.items() if c > 1)
     scopemap = {**scopemap}
-    scopemap.update({(k[0], v): v for k, v in scopemap})
+    scopemap.update({scoped_name: scoped_name.scope for scoped_name in scopemap})
+
     def unscope(name, scope):
         if name in to_rename:
             return scope.unscoped(name)
         return name
+
     res = {}
     for k, v in graph.items():
         changed = False
-        k_unscoped = unscope(*k)
-        changed = changed or k_unscoped != k[0]
+        k_unscoped = unscope(k.name, k.scope)
+        changed = changed or k_unscoped != k.name
         code = v.source
         tree = ast.parse(code)
-        rename(tree, k[0], k_unscoped, rename_locals=True)
+        rename(tree, k.name, k_unscoped, rename_locals=True)
         vars_ = set()
         for var in list(v.globals_):
-            var_unscoped = unscope(var[0], scopemap[var])
-            changed = changed or var_unscoped != var[0]
-            rename(tree, var[0], var_unscoped)
-            vars_.add(var_unscoped)
+            var_unscoped = unscope(var.name, scopemap[var])
+            changed = changed or var_unscoped != var.name
+            rename(tree, var.name, var_unscoped)
+            vars_.add((var_unscoped, var.n))
         if changed:
             code = unparse(tree).strip('\n')
-        res[k_unscoped] = (code, vars_, v.ast_node)
+        res[k_unscoped, k.n] = (code, vars_, v.ast_node)
     return res
 
 
@@ -368,7 +389,7 @@ class CodeNode:
     def from_source(cls, source, scope):
         node = ast.parse(source).body[0]
         globals_ = {
-            (var, scope)
+            ScopedName(var, scope)
             for var in find_globals(node)
         }
 
@@ -396,8 +417,3 @@ def dumps_graph(graph):
             else:
                 res += '\n\n\n'
     return res + '\n'
-
-
-def dumps(x: str, module=None):
-    graph = build_codegraph({x}, module)
-    return dumps_graph(graph)
