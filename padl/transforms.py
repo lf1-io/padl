@@ -155,6 +155,10 @@ class Transform:
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
         """
+        try:
+            return self.pre_save(path, i)
+        except AttributeError:
+            pass
 
     def pd_post_load(self, path: Path, i: int):
         """Method that is called on each transform after loading.
@@ -164,6 +168,10 @@ class Transform:
         :param path: The load path.
         :param i: Unique transform index, can be used to construct filenames.
         """
+        try:
+            return self.post_load(path, i)
+        except AttributeError:
+            pass
 
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
@@ -893,7 +901,7 @@ class TorchModuleTransform(ClassTransform):
     def _pd_get_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def pd_pre_save(self, path: Path, i: int):
+    def pre_save(self, path: Path, i: int):
         """Dump the model's parameters to a save-folder.
 
         :param path: The save-folder path.
@@ -904,7 +912,7 @@ class TorchModuleTransform(ClassTransform):
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def pd_post_load(self, path, i):
+    def post_load(self, path, i):
         """Load the model's parameters form a save-folder.
 
         :param path: The save-folder path.
@@ -1251,7 +1259,8 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
-    def _pd_classify_nodetype(self, i, t, t_m1, cw, cw_m1):
+    @staticmethod
+    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
             type_ = 'multi_2_multi'
 
