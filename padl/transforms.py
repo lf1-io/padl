@@ -542,13 +542,7 @@ class Transform:
         use_post = not isinstance(post, Identity)
 
         if use_preprocess:
-            data = SimpleDataset(
-                args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
-            )
-            if loader_kwargs is None:
-                loader_kwargs = {}
-            loader = self._pd_get_loader(sequence=data, loader_kwargs=loader_kwargs)
+            loader = self._pd_get_loader(args, preprocess, stage, **loader_kwargs)
         else:
             loader = args
 
@@ -689,17 +683,24 @@ class Transform:
             Transform.pd_stage = None
 
     @staticmethod
-    def _pd_get_loader(sequence, loader_kwargs=None) -> DataLoader:
+    def _pd_get_loader(args, preprocess, stage, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
-        :param sequence: A sequence of datapoints.
+        :param args: A sequence of datapoints.
+        :param preprocess: preprocessing step
+        :param stage: stage
         :param loader_kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
+        sequence = SimpleDataset(
+            args,
+            lambda *args: preprocess._pd_call_transform(*args, stage),
+        )
+
         return DataLoader(
             sequence,
             worker_init_fn=lambda _: np.random.seed(),
-            **loader_kwargs
+            **kwargs
         )
 
     def infer_apply(self, inputs):
