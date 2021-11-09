@@ -1724,8 +1724,9 @@ class Batchify(ClassTransform):
 
 
 def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
-         zipit: bool = False):
-    """Save the transform to a folder at *path* or a zipfile of the same name if *zipit* == True.
+         compress: bool = False):
+    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
+    *compress* == True.
 
     The folder's name should end with '.padl'. If no extension is given, it will be added
     automatically.
@@ -1760,7 +1761,9 @@ def load(path):
     return transform
 
 
-def zip_load(path: Union[Path, str]):
+def _zip_load(path: Union[Path, str]):
+    """Load a transform from a compressed '.padl' file. """
+    # we can't use a context because the files need to exist when using / saving again
     dirname = TemporaryDirectory('.padl').name
     with ZipFile(path, 'r') as zipf:
         zipf.extractall(dirname)
