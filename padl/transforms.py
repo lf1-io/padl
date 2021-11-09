@@ -202,7 +202,7 @@ class Transform:
         The folder's name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
-        If the folder exist, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+        If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
         """
         path = Path(path)
