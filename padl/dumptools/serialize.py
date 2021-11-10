@@ -1,4 +1,5 @@
 import ast
+from collections.abc import Iterable
 import inspect
 import json
 from pathlib import Path
@@ -21,6 +22,8 @@ class Serializer:
     :param save_function: The function to use for saving *val*.
     :param load_function: The function to use for loading *val*.
     :param file_suffix: If set, a string that will be appended to the path.
+    :param module: The module the serializer functions are defined in. Optional, default is to
+        use the calling module.
     """
 
     store: List = []
@@ -44,6 +47,10 @@ class Serializer:
         super().__init__()
 
     def save(self, path: Path):
+        """Save the serializer's value to *path*.
+
+        Returns a codegraph and a scopemap containing code needed to load the value.
+        """
         if path is None:
             path = Path('?')
         if self.file_suffix is not None:
@@ -55,11 +62,14 @@ class Serializer:
             filename = path.name
         if isinstance(filename, (str, Path)):
             complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
-        else:
+        elif isinstance(filename, Iterable):
             complete_path = ('[pathlib.Path(__file__).parent / filename for filename in ['
                              + ', '.join(f"'{fn}'"
                                          for fn in filename)
                              + ']]')
+        else:
+            raise ValueError('The save function must return a filename, a list of filenames or '
+                             'nothing.')
         return (
             {**self.load_codegraph,
              ScopedName(self.varname, self.scope):
@@ -89,7 +99,6 @@ class Serializer:
                     for scoped_name in codenode.globals_:
                         if scoped_name.name == serializer.varname:
                             scopemap[scoped_name] = SCOPE
-
 
 
 def save_json(val, path):
