@@ -1,4 +1,5 @@
 import ast
+from collections.abc import Iterable
 import inspect
 import json
 from pathlib import Path
@@ -20,18 +21,22 @@ class Serializer:
     :param val: The value to serialize.
     :param save_function: The function to use for saving *val*.
     :param load_function: The function to use for loading *val*.
+    :param file_suffix: If set, a string that will be appended to the path.
+    :param module: The module the serializer functions are defined in. Optional, default is to
+        use the calling module.
     """
 
     store: List = []
     i: int = 0
 
     def __init__(self, val: Any, save_function: Callable, load_function: callable,
-                 module: Optional[ModuleType] = None):
+                 file_suffix: Optional[str] = None, module: Optional[ModuleType] = None):
         self.index = Serializer.i
         Serializer.i += 1
         self.store.append(self)
         self.val = val
         self.save_function = save_function
+        self.file_suffix = file_suffix
         if module is None:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
@@ -42,10 +47,29 @@ class Serializer:
         super().__init__()
 
     def save(self, path: Path):
+        """Save the serializer's value to *path*.
+
+        Returns a codegraph and a scopemap containing code needed to load the value.
+        """
         if path is None:
             path = Path('?')
-        filename = self.save_function(self.val, path, self.i)
-        complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
+        if self.file_suffix is not None:
+            path = Path(str(path) + f'/{self.i}{self.file_suffix}')
+        filename = self.save_function(self.val, path)
+        if filename is None:
+            assert self.file_suffix is not None, ('if no file file_suffix is passed to *value*, '
+                                                  'the *save*-function must return a filename')
+            filename = path.name
+        if isinstance(filename, (str, Path)):
+            complete_path = f"pathlib.Path(__file__).parent / '{filename}'"
+        elif isinstance(filename, Iterable):
+            complete_path = ('[pathlib.Path(__file__).parent / filename for filename in ['
+                             + ', '.join(f"'{fn}'"
+                                         for fn in filename)
+                             + ']]')
+        else:
+            raise ValueError('The save function must return a filename, a list of filenames or '
+                             'nothing.')
         return (
             {**self.load_codegraph,
              ScopedName(self.varname, self.scope):
@@ -77,12 +101,10 @@ class Serializer:
                             scopemap[scoped_name] = SCOPE
 
 
-def save_json(val, path, i):
+def save_json(val, path):
     """Saver for json. """
-    filename = f'{i}.json'
-    with open(path / filename, 'w') as f:
+    with open(path, 'w') as f:
         json.dump(val, f)
-    return filename
 
 
 def load_json(path):
@@ -93,7 +115,7 @@ def load_json(path):
 
 def json_serializer(val):
     """Create a json serializer for *val*. """
-    return Serializer(val, save_json, load_json, sys.modules[__name__])
+    return Serializer(val, save_json, load_json, '.json', sys.modules[__name__])
 
 
 def _serialize(val, serializer=None):
