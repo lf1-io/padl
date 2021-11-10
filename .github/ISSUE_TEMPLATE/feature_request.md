@@ -1,6 +1,6 @@
 ---
 name: "Issue: 🛰️ Feature request"
-about: Suggest an idea for this project
+about: Submit a proposal/request for a new PADL feature
 title: ''
 labels: enhancement
 assignees: ''
