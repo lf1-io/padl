@@ -1,5 +1,5 @@
 ---
-name: "Issue: 🛰️ Feature request"
+name: "🛰️ Feature request"
 about: Submit a proposal/request for a new PADL feature
 title: ''
 labels: enhancement

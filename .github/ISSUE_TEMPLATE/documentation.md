@@ -1,5 +1,5 @@
 ---
-name: "Issue: \U0001F4DC Documentation "
+name: "\U0001F4DC Documentation "
 about: Report an issue related to Documentation of PADL
 title: ''
 labels: ''
