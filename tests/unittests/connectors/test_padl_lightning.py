@@ -47,10 +47,6 @@ def padl_loss(reconstruction, original):
 @pytest.mark.skipif('pytorch_lightning' not in sys.modules,
                     reason="requires the Pytorch Lightning library")
 def test_padl_lightning(tmp_path):
-    @transform
-    def padl_loss(reconstruction, original):
-        return torch.nn.functional.mse_loss(reconstruction, original)
-
     autoencoder = PadlEncoder() >> PadlDecoder()
     padl_training_model = (
         transform(lambda x: x.view(x.size(0), -1))
@@ -59,10 +55,7 @@ def test_padl_lightning(tmp_path):
     )
     train_data = [torch.randn([28, 28])] * 16
     val_data = [torch.randn([28, 28])] * 16
-    checkpoint_callback = ModelCheckpoint(dirpath=str(tmp_path))
-    trainer = pl.Trainer(max_steps=10, default_root_dir=str(tmp_path), log_every_n_steps=2,
-                         callbacks=[checkpoint_callback])
-    # trainer = pl.Trainer(max_steps=10, default_root_dir=str(tmp_path), log_every_n_steps=2)
+    trainer = pl.Trainer(max_steps=10, default_root_dir=str(tmp_path), log_every_n_steps=2)
     padl_lightning = PADLLightning(padl_training_model, train_data=train_data, val_data=val_data,
                                    batch_size=2, num_workers=0)
     trainer.fit(padl_lightning)

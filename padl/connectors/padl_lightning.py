@@ -1,6 +1,7 @@
 """Connector to Pytorch Lightning"""
 
 import os
+import inspect
 from pathlib import Path
 import torch
 
@@ -10,7 +11,7 @@ import pytorch_lightning as pl
 class PADLLightning(pl.LightningModule):
     """Connector to Pytorch Lightning
 
-    :param padl_model:
+    :param padl_model: PADL transform to be trained
     :param train_data: list of training data points
     :param val_data: list of validation data points
     :param test_data: list of test data points
@@ -79,19 +80,25 @@ class PADLLightning(pl.LightningModule):
         self.log("test_loss", loss)
 
     def on_save_checkpoint(self, checkpoint):
+        """Adding PADL saving to the checkpointing in Pytorch Lightning. It will save both at
+        `dirpath` and `best_model_path` as found in `ModelCheckpoint` callback. """
         dirpath = None
         best_model_path = None
         for key in checkpoint['callbacks']:
-            if 'ModelCheckpoint' in key:
-                dirpath = checkpoint['callbacks'][key]['dirpath']
-                best_model_path = checkpoint['callbacks'][key]['best_model_path']
 
-        best_model_path = best_model_path.replace(Path(best_model_path).suffix, '')
+            if (inspect.isclass(key) and 'ModelCheckpoint' in key.__name__) or \
+                    (isinstance(key, str) and 'ModelCheckpoint' in key):
+                dirpath = checkpoint['callbacks'][key].get('dirpath')
+                best_model_path = checkpoint['callbacks'][key].get('best_model_path')
+                best_model_path = best_model_path.replace(Path(best_model_path).suffix, '')
 
         if best_model_path == '':
             path = os.path.join(dirpath, 'model')
         else:
             path = best_model_path
+
+        if path is None:
+            path = os.path.join(os.getcwd(), 'model')
 
         self.model.pd_save(path, force_overwrite=True)
 
