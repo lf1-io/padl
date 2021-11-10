@@ -49,8 +49,8 @@ class IfInStage(ClassTransform):
                                                 'directly.')
 
         if Transform.pd_stage == self.target_stage:
-            return self.if_._pd_call_transform(args)
-        return self.else_._pd_call_transform(args)
+            return self.if_.pd_call_transform(args)
+        return self.else_.pd_call_transform(args)
 
     def _pd_preprocess_part(self):
         pre = type(self)(
