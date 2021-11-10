@@ -10,8 +10,10 @@ import contextlib
 import inspect
 from itertools import chain
 from pathlib import Path
+from os import remove
 from shutil import rmtree
 import textwrap
+from tempfile import TemporaryDirectory
 import types
 from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
 from warnings import warn
@@ -30,6 +32,7 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
+from zipfile import ZipFile
 
 
 class _Notset:
@@ -155,6 +158,10 @@ class Transform:
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
         """
+        try:
+            return self.pre_save(path, i)
+        except AttributeError:
+            pass
 
     def pd_post_load(self, path: Path, i: int):
         """Method that is called on each transform after loading.
@@ -164,6 +171,38 @@ class Transform:
         :param path: The load path.
         :param i: Unique transform index, can be used to construct filenames.
         """
+        try:
+            return self.post_load(path, i)
+        except AttributeError:
+            pass
+
+    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
+        """Save the transform to a zip-file at *path*.
+
+        The file's name should end with '.padl'. If no extension is given, it will be added
+        automatically.
+
+        If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+        will raise a FileExistsError.
+        """
+        path = Path(path)
+        if path.suffix == '':
+            path = path.parent / (path.name + '.padl')
+
+        if path.exists():
+            if not force_overwrite:
+                raise FileExistsError(f'{path} exists, call with *force_overwrite* to overwrite.')
+            try:
+                rmtree(path)
+            except NotADirectoryError:
+                remove(path)
+
+        with TemporaryDirectory('.padl') as dirname:
+            self.pd_save(dirname, True)
+            with ZipFile(path, 'w') as zipf:
+                for file in Path(dirname).glob('*'):
+                    if file.is_file():
+                        zipf.write(file, file.name)
 
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
@@ -171,7 +210,7 @@ class Transform:
         The folder's name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
-        If the folder exist, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+        If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
         """
         path = Path(path)
@@ -893,7 +932,7 @@ class TorchModuleTransform(ClassTransform):
     def _pd_get_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def pd_pre_save(self, path: Path, i: int):
+    def pre_save(self, path: Path, i: int):
         """Dump the model's parameters to a save-folder.
 
         :param path: The save-folder path.
@@ -904,7 +943,7 @@ class TorchModuleTransform(ClassTransform):
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def pd_post_load(self, path, i):
+    def post_load(self, path, i):
         """Load the model's parameters form a save-folder.
 
         :param path: The save-folder path.
@@ -1251,7 +1290,8 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
-    def _pd_classify_nodetype(self, i, t, t_m1, cw, cw_m1):
+    @staticmethod
+    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
             type_ = 'multi_2_multi'
 
@@ -1581,7 +1621,9 @@ class Parallel(CompoundTransform):
 
 class BuiltinTransform(AtomicTransform):
     def __init__(self, call):
-        super().__init__(call)
+        caller_frameinfo = inspector.non_init_caller_frameinfo()
+        call_info = inspector.CallInfo(caller_frameinfo)
+        super().__init__(call, call_info=call_info)
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
                             scopemap: Optional[dict] = None,
@@ -1597,7 +1639,8 @@ class BuiltinTransform(AtomicTransform):
 
         if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', scope)
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
+                                                                                    scope)
             scopemap[ScopedName('padl', scope, 0)] = emptyscope
 
         if name is not None:
@@ -1692,20 +1735,27 @@ class Batchify(ClassTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False):
-    """Save the transform to a folder at *path*.
+def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
+         compress: bool = False):
+    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
+    *compress* == True.
 
     The folder's name should end with '.padl'. If no extension is given, it will be added
     automatically.
 
-    If the folder exist, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+    If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
     will raise a FileExistsError.
     """
-    transform.pd_save(path, force_overwrite)
+    if compress:
+        transform.pd_zip_save(path, force_overwrite)
+    else:
+        transform.pd_save(path, force_overwrite)
 
 
 def load(path):
     """Load a transform (as saved with padl.save) from *path*. """
+    if Path(path).is_file():
+        return _zip_load(path)
     path = Path(path)
     with open(path / 'transform.py') as f:
         source = f.read()
@@ -1721,6 +1771,16 @@ def load(path):
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
     return transform
+
+
+def _zip_load(path: Union[Path, str]):
+    """Load a transform from a compressed '.padl' file. """
+    # we can't use TemporaryDirectory with a context because the files need to exist when
+    # using / saving again
+    dirname = TemporaryDirectory('.padl').name
+    with ZipFile(path, 'r') as zipf:
+        zipf.extractall(dirname)
+        return load(dirname)
 
 
 def group(transform: Union[Rollout, Parallel]):
