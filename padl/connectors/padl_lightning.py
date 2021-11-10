@@ -42,12 +42,12 @@ class PADLLightning(pl.LightningModule):
         return None
 
     def training_step(self, batch, batch_idx):
-        loss = self.model.pd_forward._pd_call_transform(batch, 'train')
+        loss = self.model.pd_forward.pd_call_transform(batch, 'train')
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss = self.model.pd_forward._pd_call_transform(batch, 'eval')
+        loss = self.model.pd_forward.pd_call_transform(batch, 'eval')
         self.log("val_loss", loss)
 
     def configure_optimizers(self):

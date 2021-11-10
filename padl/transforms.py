@@ -496,7 +496,7 @@ class Transform:
             return True
         return False
 
-    def _pd_call_transform(self, arg, stage: Optional[Stage] = None):
+    def pd_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call the transform, with possibility to pass multiple arguments.
 
         :param stage: The stage ("infer", "eval", "train") to perform the call with.
@@ -557,12 +557,12 @@ class Transform:
             batch = _move_to_device(batch, self.pd_device)
 
             if use_forward:
-                output = forward._pd_call_transform(batch, stage)
+                output = forward.pd_call_transform(batch, stage)
             else:
                 output = batch
 
             if use_post:
-                output = post._pd_call_transform(output, stage)
+                output = post.pd_call_transform(output, stage)
 
             if flatten:
                 if verbose:
@@ -694,7 +694,7 @@ class Transform:
         """
         sequence = SimpleDataset(
             args,
-            lambda *args: preprocess._pd_call_transform(*args, stage),
+            lambda *args: preprocess.pd_call_transform(*args, stage),
         )
 
         return DataLoader(
@@ -711,10 +711,10 @@ class Transform:
         :param inputs: The input.
         """
         self._pd_forward_device_check()
-        inputs = self.pd_preprocess._pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_preprocess.pd_call_transform(inputs, stage='infer')
         inputs = _move_to_device(inputs, self.pd_device)
-        inputs = self.pd_forward._pd_call_transform(inputs, stage='infer')
-        inputs = self.pd_postprocess._pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_forward.pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_postprocess.pd_call_transform(inputs, stage='infer')
 
         return inputs
 
@@ -982,7 +982,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return [self.transform._pd_call_transform(arg) for arg in args]
+        return [self.transform.pd_call_transform(arg) for arg in args]
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()
@@ -1409,7 +1409,7 @@ class Compose(CompoundTransform):
         :return: Output from series of transforms.
         """
         for transform_ in self.transforms:
-            args = transform_._pd_call_transform(args)
+            args = transform_.pd_call_transform(args)
         return args
 
     def _pd_forward_part(self) -> Transform:
@@ -1494,7 +1494,7 @@ class Rollout(CompoundTransform):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_._pd_call_transform(args))
+            out.append(transform_.pd_call_transform(args))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
@@ -1566,7 +1566,7 @@ class Parallel(CompoundTransform):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._pd_call_transform(args[ind]))
+            out.append(transform_.pd_call_transform(args[ind]))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
