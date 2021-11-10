@@ -79,6 +79,11 @@ class PADLLightning(pl.LightningModule):
         loss = self.model.pd_forward.pd_call_transform(batch, 'eval')
         self.log("test_loss", loss)
 
+    # TODO Some issues to resolve
+    #      If best_model_path is the same between two iterations this will still overwrite it, shoudn't do that
+    #      We leave behind previous versions of the best model. They should be removed when best_model_path is detected.
+    #      Should we be saving at best_model_path and dirpath?
+    #      Pytorch Lightning does an additional save at the end that doesn't call this function.
     def on_save_checkpoint(self, checkpoint):
         """Adding PADL saving to the checkpointing in Pytorch Lightning. It will save both at
         `dirpath` and `best_model_path` as found in `ModelCheckpoint` callback. """
