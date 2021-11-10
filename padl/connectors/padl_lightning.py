@@ -30,16 +30,16 @@ class PADLLightning(pl.LightningModule):
             setattr(self, key, layer)
 
     def train_dataloader(self):
-        return self.model._pd_get_loader(self.train_data, self.model.pd_preprocess, 'train',
-                                         **self.loader_kwargs)
+        return self.model.pd_get_loader(self.train_data, self.model.pd_preprocess, 'train',
+                                        **self.loader_kwargs)
 
     def val_dataloader(self):
-        return self.model._pd_get_loader(self.val_data, self.model.pd_preprocess, 'eval',
-                                         **self.loader_kwargs)
+        return self.model.pd_get_loader(self.val_data, self.model.pd_preprocess, 'eval',
+                                        **self.loader_kwargs)
 
     def test_dataloader(self):
-        return self.model._pd_get_loader(self.test_data, self.model.pd_preprocess, 'eval',
-                                         **self.loader_kwargs)
+        return self.model.pd_get_loader(self.test_data, self.model.pd_preprocess, 'eval',
+                                        **self.loader_kwargs)
 
     def forward(self, x):
         """In lightning, forward defines the prediction/inference actions"""

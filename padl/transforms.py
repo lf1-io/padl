@@ -543,7 +543,7 @@ class Transform:
         use_post = not isinstance(post, Identity)
 
         if use_preprocess:
-            loader = self._pd_get_loader(args, preprocess, stage, **loader_kwargs)
+            loader = self.pd_get_loader(args, preprocess, stage, **loader_kwargs)
         else:
             loader = args
 
@@ -684,7 +684,7 @@ class Transform:
             Transform.pd_stage = None
 
     @staticmethod
-    def _pd_get_loader(args, preprocess, stage, **kwargs) -> DataLoader:
+    def pd_get_loader(args, preprocess, stage, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
         :param args: A sequence of datapoints.
