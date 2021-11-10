@@ -66,7 +66,10 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Saving</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#saving-by-value">Saving by value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#what-does-not-save">What does not save</a><ul>
@@ -269,7 +272,64 @@ the data processing</em> in <code class="code docutils literal notranslate"><spa
 <span class="n">_pd_main</span> <span class="o">=</span> <span class="n">WordIndex</span><span class="p">(</span><span class="n">PADL_VALUE_0</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Currently, this only works with values that can be serialized as JSON. Future versions of PADL will add support for other things.</p>
+<p>Currently, this only works with values that can be serialized as JSON. Future versions of PADL will add support for other things.
+You can also add your own serializer:</p>
+<div class="section" id="custom-serializers">
+<h3>Custom serializers<a class="headerlink" href="#custom-serializers" title="Permalink to this headline"></a></h3>
+<p>You can save by value using your own serializer by defining two functions, one for saving, one for loading, and passing them to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code>.</p>
+<p>The <em>save</em> function expects two arguments, one for the value (<em>val</em>), one for the path (<em>path</em>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>It is responsible for saving <em>val</em> at <em>path</em>.</p>
+<p>The <em>load</em> function expects one argument (<em>path</em>). It must load the value from there and return it.</p>
+<p>These functions are then passed to <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code> in a tuple as the second argument. The tuple
+has a third entry which defines a file suffix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">suffix</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>For example, to save a value using <code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.save()</span></code>, you could do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">myloader</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">mysaver</span><span class="p">,</span> <span class="n">myloader</span><span class="p">,</span> <span class="s1">&#39;.npy&#39;</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <em>save</em>-function can also return one filename or multiple filenames (in a list). If it does, that return
+value will be used as the path argument in the <em>load</em>-function. You can use this for more complex cases,
+for instance if the value needs to be serialized in more than one file. You will not need to provide a
+file suffix in this case.</p>
+<p>For example, to save a list of numpy arrays in multiple files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="n">filenames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">subval</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_</span><span class="si">{i}</span><span class="s1">.npy&#39;</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">filenames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filenames</span>
+
+<span class="k">def</span> <span class="nf">myloader</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">mysaver</span><span class="p">,</span> <span class="n">myloader</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="saving-pytorch-modules">
 <h2>Saving pytorch modules<a class="headerlink" href="#saving-pytorch-modules" title="Permalink to this headline"></a></h2>
