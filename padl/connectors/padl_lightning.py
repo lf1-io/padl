@@ -20,14 +20,14 @@ class PADLLightning(pl.LightningModule):
         train_data,
         val_data=None,
         test_data=None,
-        loader_kwargs=None
+        **kwargs
     ):
         super().__init__()
         self.model = padl_model
         self.train_data = train_data
         self.val_data = val_data
         self.test_data = test_data
-        self.loader_kwargs = loader_kwargs
+        self.loader_kwargs = kwargs
 
         self.model.pd_forward_device_check()
 
@@ -48,19 +48,17 @@ class PADLLightning(pl.LightningModule):
 
     def val_dataloader(self):
         """Create the val dataloader using `pd_get_loader` if *self.val_data* is provided"""
-        if self.val_data is None:
-            return super().val_dataloader()
-        else:
+        if self.val_data is not None:
             return self.model.pd_get_loader(self.val_data, self.model.pd_preprocess, 'eval',
                                             **self.loader_kwargs)
+        return None
 
     def test_dataloader(self):
         """Create the test dataloader using `pd_get_loader` if *self.test_data* is provided"""
-        if self.test_data is None:
-            return super().test_dataloader()
-        else:
+        if self.test_data is not None:
             return self.model.pd_get_loader(self.test_data, self.model.pd_preprocess, 'eval',
                                             **self.loader_kwargs)
+        return None
 
     def training_step(self, batch, batch_idx):
         """Default training step"""
