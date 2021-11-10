@@ -1,5 +1,7 @@
 """Connector to Pytorch Lightning"""
 
+import os
+from pathlib import Path
 import torch
 
 import pytorch_lightning as pl
@@ -75,6 +77,27 @@ class PADLLightning(pl.LightningModule):
         """Default test step"""
         loss = self.model.pd_forward.pd_call_transform(batch, 'eval')
         self.log("test_loss", loss)
+
+    def on_save_checkpoint(self, checkpoint):
+        dirpath = None
+        best_model_path = None
+        for key in checkpoint['callbacks']:
+            if 'ModelCheckpoint' in key:
+                dirpath = checkpoint['callbacks'][key]['dirpath']
+                best_model_path = checkpoint['callbacks'][key]['best_model_path']
+
+        best_model_path = best_model_path.replace(Path(best_model_path).suffix, '')
+
+        if best_model_path == '':
+            path = os.path.join(dirpath, 'model')
+        else:
+            path = best_model_path
+
+        self.model.pd_save(path, force_overwrite=True)
+
+    # # TODO Do we need this one?
+    # def on_load_checkpoint(self, checkpoint):
+    #     return None
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
