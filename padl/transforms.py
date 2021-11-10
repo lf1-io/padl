@@ -330,7 +330,7 @@ class Transform:
             graph[ScopedName(name, scope, 0)] = start
 
         if given_name is not None:
-            scopemap[ScopedName(given_name, scope, 0)] = scope
+            scopemap[ScopedName(given_name, scope, 0)] = self._pd_call_info.scope
 
         return graph, scopemap
 
@@ -440,7 +440,7 @@ class Transform:
         except IndexError:
             return None
 
-    def pd_varname(self) -> Optional[str]:
+    def pd_varname(self, module=None) -> Optional[str]:
         """The name of the variable name the transform was last assigned to.
 
         Example:
@@ -452,8 +452,9 @@ class Transform:
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
-        if self._pd_varname is _notset:
-            module = inspector.caller_module()
+        if self._pd_varname is _notset or module is not None:
+            if module is None:
+                module = inspector.caller_module()
             self._pd_varname = self._pd_find_varname(module.__dict__)
         return self._pd_varname
 
@@ -1011,7 +1012,7 @@ class Map(Transform):
             graph[ScopedName(name, scope, 0)] = start
             scopemap[ScopedName(name, scope, 0)] = scope
 
-        varname = self.transform.pd_varname()
+        varname = self.transform.pd_varname(self._pd_call_info.module)
         self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
         return graph, scopemap
 
@@ -1134,7 +1135,7 @@ class CompoundTransform(Transform):
             scopemap[ScopedName(name, scope, 0)] = scope
 
         for transform in self.transforms:
-            varname = transform.pd_varname()
+            varname = transform.pd_varname(self._pd_call_info.module)
             transform._pd_build_codegraph(graph, scopemap, varname,
                                           self._pd_call_info.scope)
         return graph, scopemap

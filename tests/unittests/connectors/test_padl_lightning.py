@@ -38,7 +38,6 @@ class PadlDecoder(torch.nn.Module):
         return decoding
 
 
-# TODO Saving in test_padl_lightning fails because padl_loss cannot be found when declared here.
 @transform
 def padl_loss(reconstruction, original):
     return torch.nn.functional.mse_loss(reconstruction, original)
