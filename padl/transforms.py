@@ -1743,7 +1743,7 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
 def load(path):
     """Load a transform (as saved with padl.save) from *path*. """
     if Path(path).is_file():
-        return zip_load(path)
+        return _zip_load(path)
     path = Path(path)
     with open(path / 'transform.py') as f:
         source = f.read()
@@ -1763,7 +1763,8 @@ def load(path):
 
 def _zip_load(path: Union[Path, str]):
     """Load a transform from a compressed '.padl' file. """
-    # we can't use a context because the files need to exist when using / saving again
+    # we can't use TemporaryDirectory with a context because the files need to exist when
+    # using / saving again
     dirname = TemporaryDirectory('.padl').name
     with ZipFile(path, 'r') as zipf:
         zipf.extractall(dirname)
