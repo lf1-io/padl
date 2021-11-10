@@ -690,7 +690,7 @@ class Transform:
         :param args: A sequence of datapoints.
         :param preprocess: preprocessing step
         :param stage: stage
-        :param loader_kwargs: Keyword arguments passed to the data loader (see the pytorch
+        :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
         sequence = SimpleDataset(
