@@ -1,6 +1,6 @@
 ---
 name: "Issue: \U0001F4DC Documentation "
-about: Describe this issue template's purpose here.
+about: Report an issue related to Documentation of PADL
 title: ''
 labels: ''
 assignees: ''
