@@ -15,7 +15,6 @@ assignees: ''
 ## Solution
 <!-- A clear and concise description of what you want to happen - if possible, pseudocode/code/steps for solution -->
 
-
 ## Alternatives
 <!-- A clear and concise description of any alternative solutions or features you've considered. -->
 
