@@ -1,6 +1,6 @@
 ---
 name: "Issue: \U0001F41E Bug report"
-about: Create a report to help us improve
+about: Create a report to help us improve PADL
 title: ''
 labels: bug
 assignees: ''
