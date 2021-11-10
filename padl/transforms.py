@@ -10,8 +10,10 @@ import contextlib
 import inspect
 from itertools import chain
 from pathlib import Path
+from os import remove
 from shutil import rmtree
 import textwrap
+from tempfile import TemporaryDirectory
 import types
 from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
 from warnings import warn
@@ -30,6 +32,7 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
+from zipfile import ZipFile
 
 
 class _Notset:
@@ -173,13 +176,41 @@ class Transform:
         except AttributeError:
             pass
 
+    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
+        """Save the transform to a zip-file at *path*.
+
+        The file's name should end with '.padl'. If no extension is given, it will be added
+        automatically.
+
+        If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+        will raise a FileExistsError.
+        """
+        path = Path(path)
+        if path.suffix == '':
+            path = path.parent / (path.name + '.padl')
+
+        if path.exists():
+            if not force_overwrite:
+                raise FileExistsError(f'{path} exists, call with *force_overwrite* to overwrite.')
+            try:
+                rmtree(path)
+            except NotADirectoryError:
+                remove(path)
+
+        with TemporaryDirectory('.padl') as dirname:
+            self.pd_save(dirname, True)
+            with ZipFile(path, 'w') as zipf:
+                for file in Path(dirname).glob('*'):
+                    if file.is_file():
+                        zipf.write(file, file.name)
+
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
 
         The folder's name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
-        If the folder exist, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+        If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
         """
         path = Path(path)
@@ -1701,20 +1732,27 @@ class Batchify(ClassTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False):
-    """Save the transform to a folder at *path*.
+def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
+         compress: bool = False):
+    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
+    *compress* == True.
 
     The folder's name should end with '.padl'. If no extension is given, it will be added
     automatically.
 
-    If the folder exist, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+    If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
     will raise a FileExistsError.
     """
-    transform.pd_save(path, force_overwrite)
+    if compress:
+        transform.pd_zip_save(path, force_overwrite)
+    else:
+        transform.pd_save(path, force_overwrite)
 
 
 def load(path):
     """Load a transform (as saved with padl.save) from *path*. """
+    if Path(path).is_file():
+        return _zip_load(path)
     path = Path(path)
     with open(path / 'transform.py') as f:
         source = f.read()
@@ -1730,6 +1768,16 @@ def load(path):
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
     return transform
+
+
+def _zip_load(path: Union[Path, str]):
+    """Load a transform from a compressed '.padl' file. """
+    # we can't use TemporaryDirectory with a context because the files need to exist when
+    # using / saving again
+    dirname = TemporaryDirectory('.padl').name
+    with ZipFile(path, 'r') as zipf:
+        zipf.extractall(dirname)
+        return load(dirname)
 
 
 def group(transform: Union[Rollout, Parallel]):
