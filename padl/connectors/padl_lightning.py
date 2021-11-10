@@ -11,13 +11,17 @@ class PADLLightning(pl.LightningModule):
         padl_model,
         train_data,
         val_data,
-        test_data
+        test_data,
+        loader_kwargs
     ):
         super().__init__()
         self.model = padl_model
         self.train_data = train_data
         self.val_data = val_data
         self.test_data = test_data
+        self.loader_kwargs = loader_kwargs
+
+        self.model.pd_forward_device_check()
 
         # Set Pytorch layers as attributes from PADL model
         layers = padl_model.pd_layers
@@ -27,15 +31,15 @@ class PADLLightning(pl.LightningModule):
 
     def train_dataloader(self):
         return self.model._pd_get_loader(self.train_data, self.model.pd_preprocess, 'train',
-                                         batch_size=8, num_workers=4)
+                                         **self.loader_kwargs)
 
     def val_dataloader(self):
         return self.model._pd_get_loader(self.val_data, self.model.pd_preprocess, 'eval',
-                                         batch_size=8, num_workers=4)
+                                         **self.loader_kwargs)
 
     def test_dataloader(self):
         return self.model._pd_get_loader(self.test_data, self.model.pd_preprocess, 'eval',
-                                         batch_size=8, num_workers=4)
+                                         **self.loader_kwargs)
 
     def forward(self, x):
         """In lightning, forward defines the prediction/inference actions"""

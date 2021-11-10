@@ -457,7 +457,7 @@ class Transform:
             self._pd_varname = self._pd_find_varname(module.__dict__)
         return self._pd_varname
 
-    def _pd_forward_device_check(self) -> bool:
+    def pd_forward_device_check(self) -> bool:
         """Check if all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -499,6 +499,7 @@ class Transform:
     def pd_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call the transform, with possibility to pass multiple arguments.
 
+        :param arg: argument to call the transform with
         :param stage: The stage ("infer", "eval", "train") to perform the call with.
         :return: Whatever the transform returns.
         """
@@ -531,7 +532,7 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_pd_itercall can only be used with stage eval or train'
 
-        self._pd_forward_device_check()
+        self.pd_forward_device_check()
 
         preprocess = self.pd_preprocess
         forward = self.pd_forward
@@ -710,7 +711,7 @@ class Transform:
 
         :param inputs: The input.
         """
-        self._pd_forward_device_check()
+        self.pd_forward_device_check()
         inputs = self.pd_preprocess.pd_call_transform(inputs, stage='infer')
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, stage='infer')
@@ -1176,7 +1177,7 @@ class CompoundTransform(Transform):
             transform_.pd_to(device)
         return self
 
-    def _pd_forward_device_check(self):
+    def pd_forward_device_check(self):
         """Check all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -1190,13 +1191,13 @@ class CompoundTransform(Transform):
             for transform_ in self.pd_forward.transforms:
                 if self.pd_device != transform_.pd_device:
                     raise WrongDeviceError(self, transform_)
-                return_val = transform_._pd_forward_device_check()
+                return_val = transform_.pd_forward_device_check()
             return return_val
 
         if self.pd_device != self.pd_forward.pd_device:
             raise WrongDeviceError(self, self.pd_forward)
 
-        return self.pd_forward._pd_forward_device_check()
+        return self.pd_forward.pd_forward_device_check()
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
