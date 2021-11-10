@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: "Issue: \U0001F41E Bug report"
 about: Create a report to help us improve
 title: ''
 labels: bug
@@ -7,13 +7,13 @@ assignees: ''
 
 ---
 
-## 🐞 
+## 🐞 Bug
 
 <!-- Describe the bug -->
 A clear and concise description of what the bug is.
 
 <!-- Code or steps to reproduce the behaviour-->
-1. Steps : ...
+1. Steps: ...
 2. Code: ...
 3. Input: ...
 4. Error: ...
