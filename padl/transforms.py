@@ -330,7 +330,7 @@ class Transform:
             graph[ScopedName(name, scope, 0)] = start
 
         if given_name is not None:
-            scopemap[ScopedName(given_name, scope, 0)] = scope
+            scopemap[ScopedName(given_name, scope, 0)] = self._pd_call_info.scope
 
         return graph, scopemap
 
@@ -439,7 +439,7 @@ class Transform:
         except IndexError:
             return None
 
-    def pd_varname(self) -> Optional[str]:
+    def pd_varname(self, module=None) -> Optional[str]:
         """The name of the variable name the transform was last assigned to.
 
         Example:
@@ -448,15 +448,17 @@ class Transform:
         >>> foo._pd_varname
         "foo"
 
+        :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
-        if self._pd_varname is _notset:
-            module = inspector.caller_module()
+        if self._pd_varname is _notset or module is not None:
+            if module is None:
+                module = inspector.caller_module()
             self._pd_varname = self._pd_find_varname(module.__dict__)
         return self._pd_varname
 
-    def _pd_forward_device_check(self) -> bool:
+    def pd_forward_device_check(self) -> bool:
         """Check if all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -495,9 +497,10 @@ class Transform:
             return True
         return False
 
-    def _pd_call_transform(self, arg, stage: Optional[Stage] = None):
+    def pd_call_transform(self, arg, stage: Optional[Stage] = None):
         """Call the transform, with possibility to pass multiple arguments.
 
+        :param arg: argument to call the transform with
         :param stage: The stage ("infer", "eval", "train") to perform the call with.
         :return: Whatever the transform returns.
         """
@@ -530,7 +533,7 @@ class Transform:
         """
         assert stage in ('eval', 'train'), '_pd_itercall can only be used with stage eval or train'
 
-        self._pd_forward_device_check()
+        self.pd_forward_device_check()
 
         preprocess = self.pd_preprocess
         forward = self.pd_forward
@@ -541,13 +544,7 @@ class Transform:
         use_post = not isinstance(post, Identity)
 
         if use_preprocess:
-            data = SimpleDataset(
-                args,
-                lambda *args: self.pd_preprocess._pd_call_transform(*args, stage),
-            )
-            if loader_kwargs is None:
-                loader_kwargs = {}
-            loader = self._pd_get_loader(sequence=data, loader_kwargs=loader_kwargs)
+            loader = self.pd_get_loader(args, preprocess, stage, **loader_kwargs)
         else:
             loader = args
 
@@ -562,12 +559,12 @@ class Transform:
             batch = _move_to_device(batch, self.pd_device)
 
             if use_forward:
-                output = forward._pd_call_transform(batch, stage)
+                output = forward.pd_call_transform(batch, stage)
             else:
                 output = batch
 
             if use_post:
-                output = post._pd_call_transform(output, stage)
+                output = post.pd_call_transform(output, stage)
 
             if flatten:
                 if verbose:
@@ -688,17 +685,24 @@ class Transform:
             Transform.pd_stage = None
 
     @staticmethod
-    def _pd_get_loader(sequence, loader_kwargs=None) -> DataLoader:
+    def pd_get_loader(args, preprocess, stage, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
-        :param sequence: A sequence of datapoints.
-        :param loader_kwargs: Keyword arguments passed to the data loader (see the pytorch
+        :param args: A sequence of datapoints.
+        :param preprocess: preprocessing step
+        :param stage: stage
+        :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
+        sequence = SimpleDataset(
+            args,
+            lambda *args: preprocess.pd_call_transform(*args, stage),
+        )
+
         return DataLoader(
             sequence,
             worker_init_fn=lambda _: np.random.seed(),
-            **loader_kwargs
+            **kwargs
         )
 
     def infer_apply(self, inputs):
@@ -708,11 +712,11 @@ class Transform:
 
         :param inputs: The input.
         """
-        self._pd_forward_device_check()
-        inputs = self.pd_preprocess._pd_call_transform(inputs, stage='infer')
+        self.pd_forward_device_check()
+        inputs = self.pd_preprocess.pd_call_transform(inputs, stage='infer')
         inputs = _move_to_device(inputs, self.pd_device)
-        inputs = self.pd_forward._pd_call_transform(inputs, stage='infer')
-        inputs = self.pd_postprocess._pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_forward.pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_postprocess.pd_call_transform(inputs, stage='infer')
 
         return inputs
 
@@ -980,7 +984,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return tuple([self.transform._pd_call_transform(arg) for arg in args])
+        return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()
@@ -1008,7 +1012,7 @@ class Map(Transform):
             graph[ScopedName(name, scope, 0)] = start
             scopemap[ScopedName(name, scope, 0)] = scope
 
-        varname = self.transform.pd_varname()
+        varname = self.transform.pd_varname(self._pd_call_info.module)
         self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
         return graph, scopemap
 
@@ -1131,7 +1135,7 @@ class CompoundTransform(Transform):
             scopemap[ScopedName(name, scope, 0)] = scope
 
         for transform in self.transforms:
-            varname = transform.pd_varname()
+            varname = transform.pd_varname(self._pd_call_info.module)
             transform._pd_build_codegraph(graph, scopemap, varname,
                                           self._pd_call_info.scope)
         return graph, scopemap
@@ -1174,7 +1178,7 @@ class CompoundTransform(Transform):
             transform_.pd_to(device)
         return self
 
-    def _pd_forward_device_check(self):
+    def pd_forward_device_check(self):
         """Check all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
@@ -1188,13 +1192,13 @@ class CompoundTransform(Transform):
             for transform_ in self.pd_forward.transforms:
                 if self.pd_device != transform_.pd_device:
                     raise WrongDeviceError(self, transform_)
-                return_val = transform_._pd_forward_device_check()
+                return_val = transform_.pd_forward_device_check()
             return return_val
 
         if self.pd_device != self.pd_forward.pd_device:
             raise WrongDeviceError(self, self.pd_forward)
 
-        return self.pd_forward._pd_forward_device_check()
+        return self.pd_forward.pd_forward_device_check()
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
@@ -1407,7 +1411,7 @@ class Compose(CompoundTransform):
         :return: Output from series of transforms.
         """
         for transform_ in self.transforms:
-            args = transform_._pd_call_transform(args)
+            args = transform_.pd_call_transform(args)
         return args
 
     def _pd_forward_part(self) -> Transform:
@@ -1492,7 +1496,7 @@ class Rollout(CompoundTransform):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_._pd_call_transform(args))
+            out.append(transform_.pd_call_transform(args))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
@@ -1564,7 +1568,7 @@ class Parallel(CompoundTransform):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._pd_call_transform(args[ind]))
+            out.append(transform_.pd_call_transform(args[ind]))
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
