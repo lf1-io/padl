@@ -20,7 +20,7 @@ def test_function_a(tmp_path):
     t = np.cos
     assert isinstance(t, FunctionTransform)
     assert t._pd_call == 'np.cos'
-    t.pd_save(tmp_path / 'test.padl', True) # FIXME This hangs indefinitely
+    t.pd_save(tmp_path / 'test.padl', True) # FIXME This hangs in pytest
     # t_ = load(tmp_path / 'test.padl')
     # assert t_.infer_apply(1.3) == t.infer_apply(1.3)
 
