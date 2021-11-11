@@ -47,11 +47,13 @@ build:
 	
 clean:
 	-rm searchindex.js
-	-rm *.rst.txt
 	-rm *.html
 	-rm -rf sources
 	-rm -rf images
 	-rm -rf static
+	-rm -rf _sources
+	-rm -rf _images
+	-rm -rf _static
 	-rm -rf _build
 	-rm *.bak
 

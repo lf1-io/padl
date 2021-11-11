@@ -13,7 +13,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-import sphinx_rtd_theme
+import sphinx_book_theme
 
 
 
@@ -33,15 +33,16 @@ release = '0.1.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-  'sphinx_rtd_theme',
+  #'sphinx_book_theme',
   'sphinx.ext.autodoc',
   'sphinx.ext.intersphinx',
   'sphinx.ext.autosectionlabel',
+  'myst_parser',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-source_suffix = ['.rst']
+source_suffix = ['.md']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -54,7 +55,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
 
 html_theme_options = {
 #    'logo_only': False,
@@ -65,7 +66,6 @@ html_theme_options = {
 #    'style_nav_header_background': 'white',
 #    # Toc options
     'collapse_navigation': False,
-    'sticky_navigation': True,
     'navigation_depth': 5,
 #    'includehidden': True,
 #    'titles_only': False

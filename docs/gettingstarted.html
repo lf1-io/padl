@@ -1,126 +1,244 @@
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; PADL 0.1.0 documentation</title>
-      <link rel="stylesheet" href="static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
-        <script src="static/jquery.js"></script>
-        <script src="static/underscore.js"></script>
-        <script src="static/doctools.js"></script>
-    <script src="static/js/theme.js"></script>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Getting Started &#8212; PADL 0.1.0 documentation</title>
+    
+  <link href="static/css/theme.css" rel="stylesheet" />
+  <link href="static/css/index.c5995385ac14fb8791e8eb36b4908be2.css" rel="stylesheet" />
+
+    
+  <link rel="stylesheet"
+    href="static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="static/sphinx-book-theme.css?digest=c3fdc42140077d1ad13ad2f1588a4309" />
+    
+  <link rel="preload" as="script" href="static/js/index.1c5a1a01449ed65a7b51.js">
+
+    <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
+    <script src="static/jquery.js"></script>
+    <script src="static/underscore.js"></script>
+    <script src="static/doctools.js"></script>
+    <script src="static/sphinx-book-theme.12a9622fbb08dcb3a2a40b2c02b83a57.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Saving" href="saving.html" />
-    <link rel="prev" title="Introduction" href="README.html" /> 
-</head>
+    <link rel="prev" title="Introduction" href="README.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> PADL
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">PADL 0.1.0 documentation</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        <p class="caption" role="heading">
+ <span class="caption-text">
+  Contents:
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="README.html">
+   Introduction
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Getting Started
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="saving.html">
+   Saving
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="modules.html">
+   API Documentation
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav> <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="README.html#why-padl">Why PADL?</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="README.html#problem-statement">Problem Statement</a></li>
-<li class="toctree-l3"><a class="reference internal" href="README.html#standard-approach">Standard Approach</a></li>
-<li class="toctree-l3"><a class="reference internal" href="README.html#padl-solutions">PADL Solutions</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="README.html#license">License</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#project-structure">Project Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#defining-atomic-transforms">Defining atomic transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#defining-compound-transforms">Defining compound transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#decomposing-models">Decomposing models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#naming-transforms-inside-models">Naming transforms inside models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#applying-transforms-to-data">Applying transforms to data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#model-training">Model training</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#saving-loading">Saving/ Loading</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="saving.html">Saving</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-by-value">Saving by value</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#custom-serializers">Custom serializers</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#what-does-not-save">What does not save</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#mutated-objects">Mutated objects</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.transforms">Transforms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.util_transforms">Util Transforms</a></li>
-</ul>
-</li>
-</ul>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="topbar container-xl fixed-top">
+    <div class="topbar-contents row">
+        <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show"></div>
+        <div class="col pl-md-4 topbar-main">
+            
+            <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+                data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+                aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+                title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+                <i class="fas fa-bars"></i>
+                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            
+            
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="sources/gettingstarted.md.txt"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.md</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+</div>
+
+            <!-- Source interaction buttons -->
+
+            <!-- Full screen (wrap in <a> to have style consistency -->
+
+<a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+        data-placement="bottom" onclick="toggleFullScreen()" aria-label="Fullscreen mode"
+        title="Fullscreen mode"><i
+            class="fas fa-expand"></i></button></a>
+
+            <!-- Launch buttons -->
 
         </div>
-      </div>
-    </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">PADL</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Getting Started</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="sources/gettingstarted.rst.txt" rel="nofollow"> View page source</a>
-      </li>
+        <!-- Table of contents -->
+        <div class="d-none d-md-block col-md-2 bd-toc show">
+            
+            <div class="tocsection onthispage pt-5 pb-3">
+                <i class="fas fa-list"></i> Contents
+            </div>
+            <nav id="bd-toc-nav" aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#installation">
+   Installation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#project-structure">
+   Project Structure
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#basic-usage">
+   Basic Usage
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#defining-atomic-transforms">
+     Defining atomic transforms
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#defining-compound-transforms">
+     Defining compound transforms
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#passing-inputs-between-transform-stages">
+     Passing inputs between transform stages
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#decomposing-models">
+     Decomposing models
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#naming-transforms-inside-models">
+     Naming transforms inside models
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#applying-transforms-to-data">
+     Applying transforms to data
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#model-training">
+     Model training
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#saving-loading">
+     Saving/ Loading
+    </a>
+   </li>
   </ul>
-  <hr/>
+ </li>
+</ul>
+
+            </nav>
+        </div>
+    </div>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <div class="section" id="getting-started">
-<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <div class="tex2jax_ignore mathjax_ignore section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
 </pre></div>
 </div>
 </div>
 <div class="section" id="project-structure">
-<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline">¶</a></h2>
 <p>PADL’s chief abstraction is <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code>. This is an abstraction which includes all elements of a typical deep learning workflow in <strong>PyTorch</strong>:</p>
 <ul class="simple">
 <li><p>pre-processing</p></li>
@@ -136,9 +254,9 @@
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instance with multiple steps and component parts; each of these are also <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
 </div>
 <div class="section" id="basic-usage">
-<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h2>
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="defining-atomic-transforms">
-<h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline"></a></h3>
+<h3>Defining atomic transforms<a class="headerlink" href="#defining-atomic-transforms" title="Permalink to this headline">¶</a></h3>
 <p>Imports:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -210,7 +328,7 @@
 </div>
 </div>
 <div class="section" id="defining-compound-transforms">
-<h3>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline"></a></h3>
+<h3>Defining compound transforms<a class="headerlink" href="#defining-compound-transforms" title="Permalink to this headline">¶</a></h3>
 <p>Atomic transforms may be combined using 3 functional primitives:</p>
 <p>Transform composition: <strong>compose</strong></p>
 <p><span class="raw-html-m2r"><img src="img/compose.png" width="100"></span></p>
@@ -256,12 +374,12 @@
 </div>
 </div>
 <div class="section" id="passing-inputs-between-transform-stages">
-<h3>Passing inputs between transform stages<a class="headerlink" href="#passing-inputs-between-transform-stages" title="Permalink to this headline"></a></h3>
+<h3>Passing inputs between transform stages<a class="headerlink" href="#passing-inputs-between-transform-stages" title="Permalink to this headline">¶</a></h3>
 <p>In a compose model, if <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> has 2 outputs and <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has 2 outputs, then in applying the composition: <code class="docutils literal notranslate"><span class="pre">transform_1</span> <span class="pre">&gt;&gt;</span> <span class="pre">transform_2</span></code> to data, the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> <strong>positionally</strong>. So output-1 of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> is passed to input-1 of <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>. If <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has only one input, then the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed as a tuple to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>.</p>
 <p>In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.</p>
 </div>
 <div class="section" id="decomposing-models">
-<h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline"></a></h3>
+<h3>Decomposing models<a class="headerlink" href="#decomposing-models" title="Permalink to this headline">¶</a></h3>
 <p>Often it is instructive to look at slices of a model – this helps with e.g. checking intermediate computations:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
 </pre></div>
@@ -272,7 +390,7 @@
 </div>
 </div>
 <div class="section" id="naming-transforms-inside-models">
-<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h3>
+<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline">¶</a></h3>
 <p>Component <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
 </pre></div>
@@ -283,7 +401,7 @@
 </div>
 </div>
 <div class="section" id="applying-transforms-to-data">
-<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
+<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline">¶</a></h3>
 <p>To pass single data points may be passed through the transform:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
 </pre></div>
@@ -308,7 +426,7 @@
 </div>
 </div>
 <div class="section" id="model-training">
-<h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline"></a></h3>
+<h3>Model training<a class="headerlink" href="#model-training" title="Permalink to this headline">¶</a></h3>
 <p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">Transform.pd_*</span></code>.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">pd_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
 </pre></div>
@@ -322,7 +440,7 @@
 </div>
 </div>
 <div class="section" id="saving-loading">
-<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline"></a></h3>
+<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline">¶</a></h3>
 <p>Saving:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">pd_save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
 </pre></div>
@@ -339,34 +457,56 @@
 </div>
 
 
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="README.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="saving.html" class="btn btn-neutral float-right" title="Saving" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+              </div>
+              
+        
+            
+
+
+
+<div class='prev-next-bottom'>
+    
+    <div id="prev">
+        <a class="left-prev" href="README.html" title="previous page">
+            <i class="prevnext-label fas fa-angle-left"></i>
+            <div class="prevnext-info">
+                <p class="prevnext-label">previous</p>
+                <p class="prevnext-title">Introduction</p>
+            </div>
+        </a>
     </div>
+     <div id="next">
+        <a class="right-next" href="saving.html" title="next page">
+            <div class="prevnext-info">
+                <p class="prevnext-label">next</p>
+                <p class="prevnext-title">Saving</p>
+            </div>
+            <i class="prevnext-label fas fa-angle-right"></i>
+        </a>
+     </div>
 
-  <hr/>
-
-  <div role="contentinfo">
-    <p>&#169; Copyright 2021, LF1.</p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
+</div>
+        
         </div>
-      </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+    </div>
+    <footer class="footer">
+    <div class="container">
+      <p>
+        
+          By LF1<br/>
+        
+            &copy; Copyright 2021, LF1.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
 
-</body>
+
+      </div>
+    </div>
+  
+  <script src="static/js/index.1c5a1a01449ed65a7b51.js"></script>
+
+  
+  </body>
 </html>
