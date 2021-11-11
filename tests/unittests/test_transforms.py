@@ -6,6 +6,7 @@ from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
 from padl.exceptions import WrongDeviceError
+from pprint import pprint
 
 
 @transform
@@ -450,20 +451,24 @@ class TestModel:
             >> Unbatchify()
             >> plus_one / times_two
         ) - 'model_4'
+        request.cls.model_5 = ~transform_1
 
     def test_pd_preprocess(self):
         assert isinstance(self.model_1.pd_preprocess, pd.Parallel)
         assert isinstance(self.model_2.pd_preprocess, pd.Rollout)
         assert isinstance(self.model_4.pd_preprocess, pd.Compose)
+        assert isinstance(self.model_5.pd_preprocess, pd.Map)
 
     def test_pd_forward(self):
         assert isinstance(self.model_1.pd_forward, pd.Parallel)
         assert isinstance(self.model_2.pd_forward, pd.Parallel)
+        assert isinstance(self.model_5.pd_forward, pd.Map)
 
     def test_pd_postprocess(self):
         assert isinstance(self.model_1.pd_postprocess, pd.Parallel)
         assert isinstance(self.model_2.pd_postprocess, pd.Parallel)
         assert isinstance(self.model_4.pd_postprocess, pd.Compose)
+        assert isinstance(self.model_5.pd_postprocess, pd.Map)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
@@ -487,7 +492,7 @@ class TestModel:
         pd.save(self.model_1, tmp_path / 'test.padl', compress=True, force_overwrite=True)
         m1 = pd.load(tmp_path / 'test.padl')
         assert m1.infer_apply((5, 5)) == (13, 13)
-        self.model_2.pd_save(tmp_path / 'test1.padl', force_overwrite=True)
+        pd.save(self.model_2, tmp_path / 'test1.padl', force_overwrite=True)
         m2 = pd.load(tmp_path / 'test1.padl')
         assert m2.infer_apply(5) == (13, 13)
         self.model_3.pd_save(tmp_path / 'test1.padl', force_overwrite=True)

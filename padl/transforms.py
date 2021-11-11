@@ -413,7 +413,6 @@ class Transform:
             return short
         return self._pd_tinyrepr(formatting)
 
-
     def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
         return self._pd_title()
