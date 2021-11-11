@@ -6,7 +6,6 @@ from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
 from padl.exceptions import WrongDeviceError
-from pprint import pprint
 
 
 @transform
@@ -122,7 +121,7 @@ def test_isinstance_of_namedtuple():
     assert not pd._isinstance_of_namedtuple('something')
 
 
-class TestLFCallTransform:
+class TestPADLCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = plus_one >> (times_two + times_two)
