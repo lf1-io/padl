@@ -980,7 +980,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return [self.transform._pd_call_transform(arg) for arg in args]
+        return tuple([self.transform._pd_call_transform(arg) for arg in args])
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()
