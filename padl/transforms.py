@@ -93,6 +93,9 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_layers = None
 
+    def _pd_splits(self, batchified=0) -> 'Transform':
+        return batchified, tuple(self if i == batchified else Identity() for i in range(3))
+
     @property
     def pd_name(self) -> Optional[str]:
         """The "name" of the transform.
@@ -759,13 +762,14 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms - in contrast to `CompoundTransform`s).
+    other transforms - in contrast to :class:`CompoundTransform`).
 
-    Examples of `AtomicTransform`s are `ClassTransform`s and `FunctionTransform`s.
+    Examples of :class:`AtomicTransform` s are :class:`ClassTransform` and
+    :class:`FunctionTransform`.
 
     :param call: The transform's call string.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
+    :param call_info: A :class:`CallInfo` object containing information about the how the
+        transform was created (needed for saving).
     :param pd_name: The transform's name.
     """
 
@@ -979,6 +983,21 @@ class Map(Transform):
 
         self.transform = transform
         self._pd_component = transform.pd_component
+
+    def _pd_splits(self, batchified=0) -> Transform:
+        if not isinstance(batchified, list):
+            batchified_out, splits = self.transform._pd_splits(batchified)
+            return batchified_out, tuple(Map(split) for split in splits)
+
+        splits = ([], [], [])
+        batchified_out = []
+        for batchified_in in batchified:
+            sub_batchified, subsplits = self.transform._pd_splits(batchified_in)
+            batchified_out.append(sub_batchified)
+            for split, subsplit in zip(splits, subsplits):
+                split.append(subsplit)
+
+        return batchified_out, tuple(Parallel(s) if s else Identity() for s in splits)
 
     def __call__(self, args: Iterable):
         """
@@ -1293,6 +1312,21 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
+    def _pd_splits(self, batchified=0) -> Transform:
+        splits = ([], [], [])
+        for transform_ in self.transforms:
+            batchified, subsplits = transform_._pd_splits(batchified)
+            for split, subsplit in zip(splits, subsplits):
+                split.append(subsplit)
+        cleaned_splits = tuple(
+            [s for s in split if not isinstance(s, Identity)]
+            for split in splits
+        )
+        return batchified, tuple(Compose(s) if len(s) > 1
+                                 else s[0] if len(s) == 1
+                                 else Identity()
+                                 for s in cleaned_splits)
+
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
@@ -1432,6 +1466,7 @@ class Compose(CompoundTransform):
 
         return forward
 
+
     def _pd_preprocess_part(self) -> Transform:
         t_list = []
         for transform_, component_set in zip(self.transforms, self._pd_component_list):
@@ -1487,6 +1522,24 @@ class Rollout(CompoundTransform):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+
+    def _pd_splits(self, batchified=0) -> Transform:
+        splits = ([], [], [])
+        batchified_out = []
+        for transform_ in self.transforms:
+            sub_batchified, subsplits = transform_._pd_splits(batchified)
+            batchified_out.append(sub_batchified)
+            for split, subsplit in zip(splits, subsplits):
+                split.append(subsplit)
+
+        cleaned_splits = tuple(
+            [s for s in split if not isinstance(s, Identity)]
+            for split in splits[1:]
+        )
+
+        return batchified_out, (Rollout(splits[0]),) + tuple(Parallel(s) if isinstance(s, list)
+                                                             and s else Identity()
+                                                             for s in cleaned_splits)
 
     def __call__(self, args):
         """Call method for Rollout
@@ -1559,6 +1612,24 @@ class Parallel(CompoundTransform):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+
+    def _pd_splits(self, batchified=0) -> Transform:
+        splits = ([], [], [])
+        if not isinstance(batchified, list):
+            batchified = [batchified for _ in range(len(self.transforms))]
+        batchified_out = []
+        for transform_, batchified_in in zip(self.transforms, batchified):
+            sub_batchified, subsplits = transform_._pd_splits(batchified_in)
+            batchified_out.append(sub_batchified)
+            for split, subsplit in zip(splits, subsplits):
+                split.append(subsplit)
+
+        cleaned_splits = tuple(
+            Identity() if all(isinstance(s, Identity) for s in split) else split
+            for split in splits
+        )
+
+        return batchified_out, tuple(Parallel(s) if isinstance(s, list) and s else Identity() for s in cleaned_splits)
 
     def __call__(self, args):
         """Call method for Parallel
@@ -1684,6 +1755,9 @@ class Unbatchify(ClassTransform):
         self._pd_component = {'postprocess'}
         self.cpu = cpu
 
+    def _pd_splits(self, batchified=0) -> Transform:
+        return 2, (Identity(), Identity(), Identity())
+
     def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
             return tuple([self._move_to_device(x) for x in args])
@@ -1721,6 +1795,19 @@ class Batchify(ClassTransform):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
         self._pd_component = {'preprocess'}
+
+    @staticmethod
+    def _all_0(batchified):
+        if isinstance(batchified, list):
+            for sub in batchified:
+                if not Batchify._all_0(sub):
+                    return False
+            return True
+        return batchified == 0
+
+    def _pd_splits(self, batchified=0) -> Transform:
+        assert self._all_0(batchified), 'double batchify'
+        return 1, (Identity(), Identity(), Identity())
 
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
