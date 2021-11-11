@@ -484,17 +484,17 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
 
     def test_save_and_load(self, tmp_path):
-        pd.save(self.model_1, tmp_path / 'test.padl')
+        pd.save(self.model_1, tmp_path / 'test.padl', compress=True, force_overwrite=True)
         m1 = pd.load(tmp_path / 'test.padl')
         assert m1.infer_apply((5, 5)) == (13, 13)
-        self.model_2.pd_save(tmp_path / 'test.padl', True)
-        m2 = pd.load(tmp_path / 'test.padl')
+        self.model_2.pd_save(tmp_path / 'test1.padl', force_overwrite=True)
+        m2 = pd.load(tmp_path / 'test1.padl')
         assert m2.infer_apply(5) == (13, 13)
-        self.model_3.pd_save(tmp_path / 'test.padl', True)
-        m3 = pd.load(tmp_path / 'test.padl')
+        self.model_3.pd_save(tmp_path / 'test1.padl', force_overwrite=True)
+        m3 = pd.load(tmp_path / 'test1.padl')
         assert m3.infer_apply(5) == (7, 20)
-        self.model_4.pd_save(tmp_path / 'test.padl', True)
-        m4 = pd.load(tmp_path / 'test.padl')
+        self.model_4.pd_save(tmp_path / 'test1.padl', force_overwrite=True)
+        m4 = pd.load(tmp_path / 'test1.padl')
         assert m4.infer_apply(5) == (8, 20)
 
 
