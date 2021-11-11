@@ -34,6 +34,7 @@
     <script src="static/sphinx-book-theme.12a9622fbb08dcb3a2a40b2c02b83a57.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="All you need to know about PADL" href="minimal-complete.html" />
     <link rel="prev" title="Saving" href="saving.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -87,6 +88,11 @@
  <li class="toctree-l1 current active">
   <a class="current reference internal" href="#">
    API Documentation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="minimal-complete.html">
+   All you need to know about PADL
   </a>
  </li>
 </ul>
@@ -285,6 +291,12 @@ for the transform.</p>
 </dl>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="padl.batch">
+<span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">batch</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Batchify(dim=0)</span></em><a class="headerlink" href="#padl.batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <a class="reference internal" href="#padl.Batchify" title="padl.Batchify"><code class="xref py py-class docutils literal notranslate"><span class="pre">Batchify</span></code></a>.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.group">
 <span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.group" title="Permalink to this definition">¶</a></dt>
@@ -294,6 +306,12 @@ When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flat
 - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to <cite>a</cite>, <cite>b</cite>,
 <cite>c</cite> respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
 2-tuple whose first item will be passed to <cite>a</cite> and whose second item will be passed to <cite>b + c</cite>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="padl.identity">
+<span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">identity</span></span><em class="property"> <span class="pre">=</span> <span class="pre">padl.Identity()</span></em><a class="headerlink" href="#padl.identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <em>identity</em> Transform: <em>f(x) = x</em>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -325,6 +343,12 @@ will raise a FileExistsError.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="padl.unbatch">
+<span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">unbatch</span></span><em class="property"> <span class="pre">=</span> <span class="pre">Unbatchify(dim=0,</span> <span class="pre">cpu=True)</span></em><a class="headerlink" href="#padl.unbatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <a class="reference internal" href="#padl.Unbatchify" title="padl.Unbatchify"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unbatchify</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -937,6 +961,15 @@ will raise a FileExistsError.</p>
             </div>
         </a>
     </div>
+     <div id="next">
+        <a class="right-next" href="minimal-complete.html" title="next page">
+            <div class="prevnext-info">
+                <p class="prevnext-label">next</p>
+                <p class="prevnext-title">All you need to know about PADL</p>
+            </div>
+            <i class="prevnext-label fas fa-angle-right"></i>
+        </a>
+     </div>
 
 </div>
         

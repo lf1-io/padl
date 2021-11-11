@@ -13,4 +13,5 @@ README
 gettingstarted
 saving
 modules
+minimal-complete
 ```

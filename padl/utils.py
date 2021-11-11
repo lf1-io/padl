@@ -59,4 +59,5 @@ class _This:
         return _maketrans(attr)
 
 
+#: Transform factory for capturing attributes/ get-items.
 this = _This()
