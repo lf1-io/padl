@@ -7,6 +7,14 @@ from padl.dumptools.serialize import value
 from collections import namedtuple
 from padl.exceptions import WrongDeviceError
 
+GLOBAL_1 = 0
+GLOBAL_1 = GLOBAL_1 + 5
+
+
+@transform
+def plus_global(x):
+    return x + GLOBAL_1
+
 
 @transform
 def plus_one(x):
@@ -39,7 +47,7 @@ def complex_signature_func_1(a, b=10):
 
 
 @transform
-def complex_signature_func_2(*a, b= 10):
+def complex_signature_func_2(*a, b=10):
     return sum(a) + b
 
 
@@ -513,6 +521,7 @@ class TestFunctionTransform:
     def init(self, request):
         request.cls.transform_1 = plus_one
         request.cls.transform_2 = get_info
+        request.cls.transform_3 = plus_global
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
@@ -525,6 +534,7 @@ class TestFunctionTransform:
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(5) == 6
+        assert self.transform_3.infer_apply(5) == 10
 
     def test_eval_apply(self):
         out = list(self.transform_1.eval_apply([5, 6]))
@@ -559,6 +569,9 @@ class TestFunctionTransform:
         assert t1.infer_apply(5) == 6
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
         _ = pd.load(tmp_path / 'test.padl')
+        self.transform_3.pd_save('test.padl', True)
+        t3 = pd.load('test.padl')
+        assert t3.infer_apply(5) == 10
 
 
 def test_name():
@@ -598,7 +611,7 @@ class TestClassTransform:
         assert self.transform_3.infer_apply('abc') == [0, 1, 2]
 
     def test_save_and_load(self, tmp_path):
-        self.transform_1.pd_save(tmp_path / 'test.padl')
+        self.transform_1.pd_save(tmp_path / 'test')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 3
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
