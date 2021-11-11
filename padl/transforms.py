@@ -449,6 +449,7 @@ class Transform:
         >>> foo._pd_varname
         "foo"
 
+        :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
