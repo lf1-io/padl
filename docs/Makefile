@@ -48,9 +48,6 @@ build:
 clean:
 	-rm searchindex.js
 	-rm *.html
-	-rm -rf sources
-	-rm -rf images
-	-rm -rf static
 	-rm -rf _sources
 	-rm -rf _images
 	-rm -rf _static
