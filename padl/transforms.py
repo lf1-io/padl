@@ -1870,8 +1870,8 @@ class Unbatchify(ClassTransform):
 
         Unbatchify has empty splits and puts the component-number to 2 ("un-batchified").
         """
-        # put the output component to 2 ("un-batchified") and return empty splits
-        return 2, (Identity(), Identity(), Identity())
+        # put the output component to 2 ("un-batchified")
+        return 2, (Identity(), Identity(), Unbatchify())
 
     def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
@@ -1928,8 +1928,8 @@ class Batchify(ClassTransform):
         """
         # ensure that all inputs are "fresh"
         assert self._all_0(input_components), 'double batchify'
-        # put the output component to 1 ("batchified") and return empty splits
-        return 1, (Identity(), Identity(), Identity())
+        # put the output component to 1 ("batchified")
+        return 1, (Batchify(), Identity(), Identity())
 
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
