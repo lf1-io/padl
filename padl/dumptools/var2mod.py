@@ -3,10 +3,9 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-import sys
 from typing import Optional
 
-from padl.dumptools.symfinder import find, find_in_scope, ScopedName
+from padl.dumptools.symfinder import find_in_scope, ScopedName
 
 try:
     unparse = ast.unparse
