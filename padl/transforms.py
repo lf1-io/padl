@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 import types
 from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
 from warnings import warn
+from zipfile import ZipFile
 
 import numpy as np
 import torch
@@ -32,7 +33,6 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
-from zipfile import ZipFile
 
 
 class _Notset:
