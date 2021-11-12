@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 import types
 from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
 from warnings import warn
+from zipfile import ZipFile
 
 import numpy as np
 import torch
@@ -32,7 +33,6 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
-from zipfile import ZipFile
 
 
 class _Notset:
@@ -412,7 +412,6 @@ class Transform:
                 short = f"{make_green('[', not formatting)}{short}{make_green(']', not formatting)}"
             return short
         return self._pd_tinyrepr(formatting)
-
 
     def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
@@ -985,7 +984,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return [self.transform.pd_call_transform(arg) for arg in args]
+        return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
     def _pd_longrepr(self) -> str:
         return '~ ' + self.transform._pd_shortrepr()

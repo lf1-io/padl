@@ -155,7 +155,7 @@ class _ImportFinder(_NameFinder):
     def node(self):
         # TODO: cache deparse?
         node = ast.parse(self.deparse()).body[0]
-        node._scope = Scope.empty()
+        node._globalscope = True
         return node
 
 
@@ -435,17 +435,25 @@ def find_in_scope(name: ScopedName):
     :param scope: Scope to search.
     """
     scope = name.scope
+    i = name.n
     for _scopename, tree in scope.scopelist:
         try:
-            source, node = find_in_source(name.name, name.scope.def_source, tree=tree, i=name.n)
-            scope = getattr(node, '_scope', scope)
+            res = find_in_source(name.name, name.scope.def_source, tree=tree, i=i,
+                                 return_partial=True)
+            if isinstance(res, int):
+                i = res
+                continue
+            source, node = res
+            if getattr(node, '_globalscope', False):
+                scope = scope.global_()
+
             return (source, node), scope
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
-    source, node = find(name.name, scope.module, name.n)
+    source, node = find(name.name, scope.module, i)
     scope = getattr(node, '_scope', scope.global_())
     return (source, node), scope
 

@@ -3,10 +3,9 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-import sys
 from typing import Optional
 
-from padl.dumptools.symfinder import find, find_in_scope, ScopedName
+from padl.dumptools.symfinder import find_in_scope, ScopedName
 
 try:
     unparse = ast.unparse
@@ -349,7 +348,8 @@ def _sort(graph):
 def unscope_graph(graph, scopemap):
     """Create a version of *graph* where all non-top level variables are renamed (by prepending
     the scope) to prevent conflicts."""
-    counts = Counter(x.name for x in graph)
+    name_scope = {(x.name, x.scope) for x in graph}
+    counts = Counter(x[0] for x in name_scope)
     to_rename = set(k for k, c in counts.items() if c > 1)
     scopemap = {**scopemap}
     scopemap.update({scoped_name: scoped_name.scope for scoped_name in scopemap})
