@@ -1743,12 +1743,13 @@ class Parallel(CompoundTransform):
         splits = ([], [], [])
         # we need one component info per sub-transform - if it's not a list that means
         # all are the same - we make it a list
-        if not isinstance(input_components, list):
-            input_components = [input_components for _ in range(len(self.transforms))]
+        input_components_ = input_components
+        if not isinstance(input_components_, list):
+            input_components_ = [input_components for _ in range(len(self.transforms))]
 
         # go through the sub-transforms ...
         output_components = []
-        for transform_, input_component in zip(self.transforms, input_components):
+        for transform_, input_component in zip(self.transforms, input_components_):
             # and compute the sub-splits
             sub_output_components, subsplits = transform_._pd_splits(input_component)
             output_components.append(sub_output_components)
