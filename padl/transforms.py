@@ -413,7 +413,6 @@ class Transform:
             return short
         return self._pd_tinyrepr(formatting)
 
-
     def _pd_shortrepr(self, formatting=True) -> str:
         """A short string representation of the transform."""
         return self._pd_title()
@@ -1098,6 +1097,9 @@ class CompoundTransform(Transform):
                     return transform_
             raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
+
+    def __len__(self):
+        return len(self.transforms)
 
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [

@@ -1,7 +1,7 @@
 """Extra useful Transforms. """
 
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Union, List, Tuple
 
 from padl.transforms import ClassTransform, Identity, Transform, Stage
 
@@ -108,3 +108,51 @@ class IfTrain(IfInStage):
 
     def __init__(self, if_: Transform, else_: Optional[Transform] = None):
         super().__init__(if_, 'train', else_)
+
+
+class Try(ClassTransform):
+    """ Perform *transform*. If this fails with any exception from *exceptions*, perform
+    *catch_transform*.
+
+    :param transform: Transform to try
+    :param catch_transform: Transform to fall back on
+    :param exceptions: Catch conditions
+    """
+
+    def __init__(self,
+                 transform: Transform,
+                 catch_transform: Transform,
+                 exceptions: Union[List, Tuple, Exception],
+                 else_transform: Transform = Identity(),
+                 finally_transform: Transform = Identity(),
+                 pd_name: str = None):
+
+        if not isinstance(exceptions, (tuple, list)):
+            exceptions = (exceptions, )
+        exceptions = tuple(exceptions)
+        for exception in exceptions:
+            assert issubclass(exception, Exception)
+        super().__init__(pd_name=pd_name,
+                         arguments=OrderedDict([('transform', transform),
+                                                ('catch_transform', catch_transform),
+                                                ('exceptions', exceptions)]))
+        self.transform = transform
+        self.catch_transform = catch_transform
+        self._exceptions = exceptions
+        self.else_transform = else_transform
+        self.finally_transform = finally_transform
+        self._pd_component = set.union(self.transform._pd_component,
+                                       self.else_transform._pd_component,
+                                       self.finally_transform._pd_component)
+
+        assert len(self._pd_component) == 1, 'Stage must not change inside a Try Transform.'
+
+    def __call__(self, args):
+        try:
+            args = self.transform._pd_call_transform(args)
+        except self._exceptions:
+            args = self.catch_transform._pd_call_transform(args)
+        else:
+            args = self.else_transform._pd_call_transform(args)
+        finally:
+            return self.finally_transform._pd_call_transform(args)
