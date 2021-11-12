@@ -631,8 +631,8 @@ class Transform:
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        if {'preprocess'} == self.pd_component:
-            return self
+        # if {'preprocess'} == self.pd_component:
+        #     return self
         pre = self._pd_preprocess_part()
         pre.pd_to(self.pd_device)
         return pre
@@ -646,8 +646,8 @@ class Transform:
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        if {'forward'} == self.pd_component:
-            return self
+        # if {'forward'} == self.pd_component:
+        #     return self
         forward = self._pd_forward_part()
         forward.pd_to(self.pd_device)
         return forward
@@ -660,8 +660,8 @@ class Transform:
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        if {'postprocess'} == self.pd_component:
-            return self
+        # if {'postprocess'} == self.pd_component:
+        #     return self
         post = self._pd_postprocess_part()
         post.pd_to(self.pd_device)
         return post

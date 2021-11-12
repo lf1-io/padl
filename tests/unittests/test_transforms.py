@@ -155,8 +155,8 @@ class TestPADLCallTransform:
                            self.transform_4,
                            self.transform_5,
                            self.transform_6]:
-            transform_.pd_save(tmp_path / 'test.padl', True)
-            t_ = pd.load(tmp_path / 'test.padl')
+            transform_.pd_save('test.padl', True)
+            t_ = pd.load('test.padl')
             assert t_.infer_apply(1)
 
 
