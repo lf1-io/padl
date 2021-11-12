@@ -93,11 +93,12 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_layers = None
 
-    def _pd_splits(self, input_components=0) -> 'Transform':
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple['Transform', 'Transform', 'Transform']]:
         """ Split the transform into "preprocessing", "forward" and "postprocessing" parts.
 
         *input_components* contains information about the "split" the input is in. It is either an
-        int or a (potentially nesteed) list of ints. The ints have the following meaning:
+        int or a (potentially nested) list of ints. The ints have the following meaning:
             - 0 means "not batchified"
             - 1 means "batchified"
             - 2 means "unbatchified" a.k.a. post-process
@@ -110,7 +111,7 @@ class Transform:
         The method returns a tuple (*output_components*, *splits*).
 
         - *output_components* is the "split" information of the output, it has the same format as
-        the *input-components*.
+        the *input_components*.
 
         - *splits* is a 3-tuple of splits the entries are:
             - the "preprocess" part of the transform
@@ -1012,7 +1013,8 @@ class Map(Transform):
         self.transform = transform
         self._pd_component = transform.pd_component
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The *splits* of a map are:
@@ -1362,7 +1364,8 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The composition of `transforms` splits into
@@ -1596,7 +1599,8 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A rollout splits into:
@@ -1702,7 +1706,8 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A parallel splits into:
@@ -1859,7 +1864,8 @@ class Unbatchify(ClassTransform):
         self._pd_component = {'postprocess'}
         self.cpu = cpu
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Unbatchify has empty splits and puts the component-number to 2 ("un-batchified").
@@ -1914,7 +1920,8 @@ class Batchify(ClassTransform):
             return True
         return components == 0
 
-    def _pd_splits(self, input_components=0) -> Transform:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Batchify has empty splits and puts the component-number to 1 ("batchified").
