@@ -624,7 +624,9 @@ class Transform:
         return self._pd_component
 
     def _pd_preprocess_part(self) -> "Transform":
-        return Identity()
+        # return Identity()
+        _, splits = self._pd_splits()
+        return splits[0]
 
     @property
     def pd_preprocess(self) -> "Transform":
@@ -636,7 +638,9 @@ class Transform:
         return pre
 
     def _pd_forward_part(self) -> "Transform":
-        return Identity()
+        # return Identity()
+        _, splits = self._pd_splits()
+        return splits[1]
 
     @property
     def pd_forward(self) -> "Transform":
@@ -649,7 +653,9 @@ class Transform:
         return forward
 
     def _pd_postprocess_part(self) -> "Transform":
-        return Identity()
+        # return Identity()
+        _, splits = self._pd_splits()
+        return splits[2]
 
     @property
     def pd_postprocess(self) -> "Transform":
@@ -1087,28 +1093,34 @@ class Map(Transform):
         return graph, scopemap
 
     def _pd_preprocess_part(self) -> Transform:
-        t_pre = self.transform.pd_preprocess
-        if isinstance(t_pre, Identity):
-            pre = Identity()
-        else:
-            pre = Map(transform=t_pre, call_info=self._pd_call_info)
-        return pre
+        # t_pre = self.transform.pd_preprocess
+        # if isinstance(t_pre, Identity):
+        #     pre = Identity()
+        # else:
+        #     pre = Map(transform=t_pre, call_info=self._pd_call_info)
+        # return pre
+        _, splits = self._pd_splits()
+        return splits[0]
 
     def _pd_postprocess_part(self) -> Transform:
-        t_post = self.transform.pd_postprocess
-        if isinstance(t_post, Identity):
-            post = Identity()
-        else:
-            post = Map(transform=t_post, call_info=self._pd_call_info)
-        return post
+        # t_post = self.transform.pd_postprocess
+        # if isinstance(t_post, Identity):
+        #     post = Identity()
+        # else:
+        #     post = Map(transform=t_post, call_info=self._pd_call_info)
+        # return post
+        _, splits = self._pd_splits()
+        return splits[2]
 
     def _pd_forward_part(self) -> Transform:
-        t_for = self.transform.pd_forward
-        if isinstance(t_for, Identity):
-            forward = Identity()
-        else:
-            forward = Map(transform=t_for, call_info=self._pd_call_info)
-        return forward
+        # t_for = self.transform.pd_forward
+        # if isinstance(t_for, Identity):
+        #     forward = Identity()
+        # else:
+        #     forward = Map(transform=t_for, call_info=self._pd_call_info)
+        # return forward
+        _, splits = self._pd_splits()
+        return splits[1]
 
 
 class CompoundTransform(Transform):
@@ -1525,57 +1537,62 @@ class Compose(CompoundTransform):
         return args
 
     def _pd_forward_part(self) -> Transform:
-        t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'forward' in component_set:
-                if len(component_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_forward)
-
-        if len(t_list) == 1:
-            forward = t_list[0]
-        elif t_list:
-            forward = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            forward = Identity()
-
-        return forward
-
+        # t_list = []
+        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
+        #     if 'forward' in component_set:
+        #         if len(component_set) == 1:
+        #             t_list.append(transform_)
+        #         else:
+        #             t_list.append(transform_.pd_forward)
+        #
+        # if len(t_list) == 1:
+        #     forward = t_list[0]
+        # elif t_list:
+        #     forward = Compose(t_list, call_info=self._pd_call_info)
+        # else:
+        #     forward = Identity()
+        #
+        # return forward
+        _, splits = self._pd_splits()
+        return splits[1]
 
     def _pd_preprocess_part(self) -> Transform:
-        t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'preprocess' in component_set:
-                if len(component_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_preprocess)
-
-        if len(t_list) == 1:
-            pre = t_list[0]
-        elif t_list:
-            pre = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            pre = Identity()
-        return pre
+        # t_list = []
+        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
+        #     if 'preprocess' in component_set:
+        #         if len(component_set) == 1:
+        #             t_list.append(transform_)
+        #         else:
+        #             t_list.append(transform_.pd_preprocess)
+        #
+        # if len(t_list) == 1:
+        #     pre = t_list[0]
+        # elif t_list:
+        #     pre = Compose(t_list, call_info=self._pd_call_info)
+        # else:
+        #     pre = Identity()
+        # return pre
+        _, splits = self._pd_splits()
+        return splits[0]
 
     def _pd_postprocess_part(self) -> Transform:
-        t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'postprocess' in component_set:
-                if len(component_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_postprocess)
-
-        if len(t_list) == 1:
-            post = t_list[0]
-        elif t_list:
-            post = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            post = Identity()
-        return post
+        # t_list = []
+        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
+        #     if 'postprocess' in component_set:
+        #         if len(component_set) == 1:
+        #             t_list.append(transform_)
+        #         else:
+        #             t_list.append(transform_.pd_postprocess)
+        #
+        # if len(t_list) == 1:
+        #     post = t_list[0]
+        # elif t_list:
+        #     post = Compose(t_list, call_info=self._pd_call_info)
+        # else:
+        #     post = Identity()
+        # return post
+        _, splits = self._pd_splits()
+        return splits[2]
 
 
 class Rollout(CompoundTransform):
@@ -1648,32 +1665,38 @@ class Rollout(CompoundTransform):
         return self._pd_output_format(*out)
 
     def _pd_preprocess_part(self) -> Transform:
-        t_list = [x.pd_preprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            pre = Identity()
-        else:
-            pre = Rollout(t_list, call_info=self._pd_call_info)
-        return pre
+        # t_list = [x.pd_preprocess for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     pre = Identity()
+        # else:
+        #     pre = Rollout(t_list, call_info=self._pd_call_info)
+        # return pre
+        _, splits = self._pd_splits()
+        return splits[0]
 
     def _pd_forward_part(self) -> Transform:
-        t_list = [x.pd_forward for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            forward = Identity()
-        elif 'preprocess' in self._pd_component and 'forward' in self._pd_component:
-            forward = Parallel(t_list, call_info=self._pd_call_info)
-        else:
-            forward = Rollout(t_list, call_info=self._pd_call_info)
-        return forward
+        # t_list = [x.pd_forward for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     forward = Identity()
+        # elif 'preprocess' in self._pd_component and 'forward' in self._pd_component:
+        #     forward = Parallel(t_list, call_info=self._pd_call_info)
+        # else:
+        #     forward = Rollout(t_list, call_info=self._pd_call_info)
+        # return forward
+        _, splits = self._pd_splits()
+        return splits[1]
 
     def _pd_postprocess_part(self) -> Transform:
-        t_list = [x.pd_postprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            post = Identity()
-        elif len(list(self._pd_component)) >= 2 and 'postprocess' in self._pd_component:
-            post = Parallel(t_list, call_info=self._pd_call_info)
-        else:
-            post = Rollout(t_list, call_info=self._pd_call_info)
-        return post
+        # t_list = [x.pd_postprocess for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     post = Identity()
+        # elif len(list(self._pd_component)) >= 2 and 'postprocess' in self._pd_component:
+        #     post = Parallel(t_list, call_info=self._pd_call_info)
+        # else:
+        #     post = Rollout(t_list, call_info=self._pd_call_info)
+        # return post
+        _, splits = self._pd_splits()
+        return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
@@ -1754,28 +1777,34 @@ class Parallel(CompoundTransform):
         return self._pd_output_format(*out)
 
     def _pd_preprocess_part(self) -> Transform:
-        t_list = [x.pd_preprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            pre = Identity()
-        else:
-            pre = Parallel(t_list, call_info=self._pd_call_info)
-        return pre
+        # t_list = [x.pd_preprocess for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     pre = Identity()
+        # else:
+        #     pre = Parallel(t_list, call_info=self._pd_call_info)
+        # return pre
+        _, splits = self._pd_splits()
+        return splits[0]
 
     def _pd_forward_part(self) -> Transform:
-        t_list = [x.pd_forward for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            forward = Identity()
-        else:
-            forward = Parallel(t_list, call_info=self._pd_call_info)
-        return forward
+        # t_list = [x.pd_forward for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     forward = Identity()
+        # else:
+        #     forward = Parallel(t_list, call_info=self._pd_call_info)
+        # return forward
+        _, splits = self._pd_splits()
+        return splits[1]
 
     def _pd_postprocess_part(self) -> Transform:
-        t_list = [x.pd_postprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            post = Identity()
-        else:
-            post = Parallel(t_list, call_info=self._pd_call_info)
-        return post
+        # t_list = [x.pd_postprocess for x in self.transforms]
+        # if all([isinstance(t, Identity) for t in t_list]):
+        #     post = Identity()
+        # else:
+        #     post = Parallel(t_list, call_info=self._pd_call_info)
+        # return post
+        _, splits = self._pd_splits()
+        return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
         if not formatting:
