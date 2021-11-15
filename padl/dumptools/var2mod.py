@@ -97,7 +97,7 @@ class _VarFinder(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
-        targets = {}
+        targets = set()
         for target in node.targets:
             # exclude assignment to subscript ('x[1] = a')
             if isinstance(target, ast.Subscript):
