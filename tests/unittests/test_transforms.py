@@ -544,8 +544,8 @@ class TestFunctionTransform:
 
         out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}]))
         assert len(out) == 2
-        assert out[0] == 'hello'
-        assert out[1] == 'dog'
+        assert out[0] == ['hello']
+        assert out[1] == ['dog']
 
     def test_context(self):
         assert self.transform_1.pd_stage is None

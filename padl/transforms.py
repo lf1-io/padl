@@ -1032,7 +1032,7 @@ class Map(Transform):
                 # output_components is whatever the sub-transform does to it
                 output_components,
                 # the splits are the splits of the sub-transform, but mapped
-                tuple(Map(split) if not isinstance(split, Identity) else Identity
+                tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
                       for split in splits)
             )
 
