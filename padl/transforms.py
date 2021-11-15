@@ -624,22 +624,10 @@ class Transform:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
-    def _pd_preprocess_part(self) -> "Transform":
-        _, splits = self._pd_get_splits()
-        return splits[0]
-
-    def _pd_forward_part(self) -> "Transform":
-        _, splits = self._pd_get_splits()
-        return splits[1]
-
-    def _pd_postprocess_part(self) -> "Transform":
-        _, splits = self._pd_get_splits()
-        return splits[2]
-
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        pre = self._pd_preprocess_part()
+        pre = self._pd_get_splits()[1][0]
         pre.pd_to(self.pd_device)
         return pre
 
@@ -647,14 +635,14 @@ class Transform:
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        forward = self._pd_forward_part()
+        forward = self._pd_get_splits()[1][1]
         forward.pd_to(self.pd_device)
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        post = self._pd_postprocess_part()
+        post = self._pd_get_splits()[1][2]
         post.pd_to(self.pd_device)
         return post
 
@@ -1086,18 +1074,6 @@ class Map(Transform):
         varname = self.transform.pd_varname(self._pd_call_info.module)
         self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
         return graph, scopemap
-
-    def _pd_preprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[0]
-
-    def _pd_postprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[2]
-
-    def _pd_forward_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[1]
 
 
 class CompoundTransform(Transform):

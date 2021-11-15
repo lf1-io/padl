@@ -50,29 +50,24 @@ class IfInStage(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
-    def _pd_preprocess_part(self):
-        pre = type(self)(
+    def _pd_get_splits(self, input_components=0):
+        output_components = input_components
+        pre = IfInStage(
             if_=self.if_.pd_preprocess,
             target_stage=self.target_stage,
             else_=self.else_.pd_preprocess,
         )
-        return pre
-
-    def _pd_forward_part(self):
-        forward = type(self)(
+        forward = IfInStage(
             if_=self.if_.pd_forward,
             target_stage=self.target_stage,
             else_=self.else_.pd_forward,
         )
-        return forward
-
-    def _pd_postprocess_part(self):
-        post = type(self)(
+        post = IfInStage(
             if_=self.if_.pd_postprocess,
             target_stage=self.target_stage,
             else_=self.else_.pd_postprocess,
         )
-        return post
+        return output_components, (pre, forward, post)
 
 
 class IfInfer(IfInStage):
