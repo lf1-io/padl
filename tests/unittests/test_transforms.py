@@ -582,8 +582,8 @@ def test_name():
 class TestTransformDeviceCheck:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        request.cls.transform_1 = (plus_one >> times_two) >> times_two
-        request.cls.transform_2 = plus_one >> (times_two >> times_two)
+        request.cls.transform_1 = Batchify() >> (plus_one >> times_two) >> times_two
+        request.cls.transform_2 = Batchify() >> plus_one >> (times_two >> times_two)
 
     def test_device_check(self):
         self.transform_1.pd_to('gpu')
