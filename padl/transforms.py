@@ -93,7 +93,6 @@ class Transform:
         self._pd_name = pd_name
         self._pd_device = 'cpu'
         self._pd_layers = None
-        # self._pd_splits = self._pd_get_splits()
 
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple['Transform', 'Transform', 'Transform']]:
@@ -624,16 +623,20 @@ class Transform:
         _, splits = self._pd_get_splits()
         return splits[0]
 
+    def _pd_forward_part(self) -> "Transform":
+        _, splits = self._pd_get_splits()
+        return splits[1]
+
+    def _pd_postprocess_part(self) -> "Transform":
+        _, splits = self._pd_get_splits()
+        return splits[2]
+
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
         pre = self._pd_preprocess_part()
         pre.pd_to(self.pd_device)
         return pre
-
-    def _pd_forward_part(self) -> "Transform":
-        _, splits = self._pd_get_splits()
-        return splits[1]
 
     @property
     def pd_forward(self) -> "Transform":
@@ -642,10 +645,6 @@ class Transform:
         forward = self._pd_forward_part()
         forward.pd_to(self.pd_device)
         return forward
-
-    def _pd_postprocess_part(self) -> "Transform":
-        _, splits = self._pd_get_splits()
-        return splits[2]
 
     @property
     def pd_postprocess(self) -> "Transform":
@@ -1485,18 +1484,6 @@ class Compose(CompoundTransform):
             args = transform_.pd_call_transform(args)
         return args
 
-    def _pd_forward_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[1]
-
-    def _pd_preprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[0]
-
-    def _pd_postprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[2]
-
 
 class Rollout(CompoundTransform):
     """Apply a list of transform to same input and get tuple output
@@ -1566,18 +1553,6 @@ class Rollout(CompoundTransform):
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
-
-    def _pd_preprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[0]
-
-    def _pd_forward_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[1]
-
-    def _pd_postprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
@@ -1657,18 +1632,6 @@ class Parallel(CompoundTransform):
         if Transform.pd_stage is not None:
             return tuple(out)
         return self._pd_output_format(*out)
-
-    def _pd_preprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[0]
-
-    def _pd_forward_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[1]
-
-    def _pd_postprocess_part(self) -> Transform:
-        _, splits = self._pd_get_splits()
-        return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
         if not formatting:
