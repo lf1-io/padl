@@ -21,6 +21,22 @@ def y(y):
 
 
 @transform
+def indexset(x, i, j):
+    x[i] = x[j]
+    return x
+
+
+@transform
+class SelfAssign:
+    def __init__(self, x):
+        self.x = x
+        self.y = self.x
+
+    def __call__(self, x):
+        return self.x + self.y + x
+
+
+@transform
 def listcomp_a(y):
     return [x + CONST for x in y]
 
@@ -197,3 +213,11 @@ def test_with_raises():
 
     with pytest.raises(NotImplementedError):
         t._pd_dumps()
+
+
+def test_dumping_indexset():
+    write_dump(indexset._pd_dumps(), 'indexset')
+
+
+def test_dumping_selfassign():
+    write_dump(SelfAssign(1)._pd_dumps(), 'selfassign')
