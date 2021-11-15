@@ -324,11 +324,14 @@ def _get_nodes_without_in_edges(graph):
 
 def _topsort(graph):
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
-    Careful: Doesn't check for loops.
     """
     levels = []
+    graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
+        if graphlen == len(graph):  # graph didn't shrink
+            raise RuntimeError('Graph has a circle.')
+        graphlen = len(graph)
         levels.append(nextlevel)
     return levels
 
