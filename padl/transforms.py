@@ -1011,7 +1011,7 @@ class Map(Transform):
         """
         if self._pd_splits is None or self._pd_splits[0] != input_components:
             # if *input_components* is an integer rather than a list ...
-            if not isinstance(input_components, list):
+            if isinstance(input_components, int):
                 # ... get output_components and splits from the contained transform
                 output_components, splits = self.transform._pd_get_splits(input_components)
                 self._pd_splits = (
@@ -1021,22 +1021,21 @@ class Map(Transform):
                     tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
                           for split in splits)
                 )
-                return self._pd_splits
+            else:
+                assert isinstance(input_components, list)
+                # if it's a list, this means the input is structured and can potentially be in
+                # different states (fresh, batchified, unbatchified)
+                splits = ([], [], [])
+                output_components = []
+                for input_component in input_components:
+                    # for each input, we compute the *output_components* and the *splits* ...
+                    sub_output_components, sub_splits = self.transform._pd_get_splits(input_component)
+                    output_components.append(sub_output_components)
+                    for split, subsplit in zip(splits, sub_splits):
+                        split.append(subsplit)
 
-            # if it's a list, this means the input is structured and can potentially be in different
-            # states (fresh, batchified, unbatchified)
-            splits = ([], [], [])
-            output_components = []
-            for input_component in input_components:
-                # for each input, we compute the *output_components* and the *splits* ...
-                sub_output_components, sub_splits = self.transform._pd_get_splits(input_component)
-                output_components.append(sub_output_components)
-                for split, subsplit in zip(splits, sub_splits):
-                    split.append(subsplit)
-
-            # .. and combine them as a Parallel
-            self._pd_splits = output_components, tuple(Parallel(s) if s else builtin_identity for s in splits)
-            return self._pd_splits
+                # .. and combine them as a Parallel
+                self._pd_splits = output_components, tuple(Parallel(s) if s else builtin_identity for s in splits)
         return self._pd_splits
 
     def __call__(self, args: Iterable):
@@ -1502,6 +1501,7 @@ class Rollout(CompoundTransform):
             - the parallel of its sub-transforms' forward
             - the parallel of its sub-transforms' postprocess
 
+        # TODO Missing cases where Rollout starts in forward or preprocess
         To see why the preprocess is a rollout whereas the forward and postprocess are parallel,
         note that the preprocess splits the pipeline and it remains split for the rest:
 
