@@ -50,6 +50,8 @@ class IfInStage(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
+    # TODO This needs to be updated to call _pd_get_splits instead pd_pre, pd_for, pd_post
+    #      and return the correct output_components
     def _pd_get_splits(self, input_components=0):
         output_components = input_components
         pre = IfInStage(
