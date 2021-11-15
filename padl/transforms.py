@@ -62,8 +62,10 @@ def _move_to_device(args, device):
     :param args: args to move to device
     :param device: device to move to
     """
-    if isinstance(args, (tuple, list)):
+    if isinstance(args, tuple):
         return tuple([_move_to_device(x, device) for x in args])
+    if isinstance(args, list):
+        return list([_move_to_device(x, device) for x in args])
     if isinstance(args, torch.Tensor):
         return args.to(device)
     return args
