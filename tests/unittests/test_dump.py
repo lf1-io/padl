@@ -216,8 +216,8 @@ def test_with_raises():
 
 
 def test_dumping_indexset():
-    write_dump(indexset._pd_dumps(), 'indexset')
+    assert indexset._pd_dumps() == read_dump('indexset')
 
 
 def test_dumping_selfassign():
-    write_dump(SelfAssign(1)._pd_dumps(), 'selfassign')
+    assert SelfAssign(1)._pd_dumps() == read_dump('selfassign')
