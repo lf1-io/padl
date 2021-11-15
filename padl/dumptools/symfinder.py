@@ -481,7 +481,8 @@ def replace_star_imports(tree: ast.Module):
                          ' by that.')
 
 
-def find_in_source_old(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[str, ast.AST]:
+def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
+                   return_partial=False) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
@@ -489,25 +490,6 @@ def find_in_source_old(var_name: str, source: str, tree=None, i: int = 0) -> Tup
     :param source: Source code to search.
     :returns: Tuple with source code segment and corresponding AST node.
     """
-    if tree is None:
-        tree = ast.parse(source)
-    replace_star_imports(tree)
-    min_n = inf
-    best = None
-    finder_clss = _NameFinder.__subclasses__()
-    for finder_cls in finder_clss:
-        finder = finder_cls(source, var_name, max_n=min_n - 1)
-        finder.visit(tree)
-        if finder.found_something() and finder.statement_n < min_n:
-            best = finder
-            min_n = finder.statement_n
-    if best is None:
-        raise NameNotFound(f'{var_name} not found.')
-    return best.deparse(), best.node()
-
-
-def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
-                   return_partial=False) -> Tuple[str, ast.AST]:
     if tree is None:
         tree = ast.parse(source)
     replace_star_imports(tree)
