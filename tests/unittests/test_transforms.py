@@ -167,40 +167,45 @@ class TestMap:
         request.cls.transform_2 = transform(simple_func) / ~plus_one
         request.cls.transform_3 = ~times_two + ~plus_one
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
+        request.cls.transform_5 = Batchify() >> ~plus_one
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Map)
         assert isinstance(self.transform_2.pd_preprocess, pd.Parallel)
+        assert isinstance(self.transform_5.pd_preprocess, pd.Batchify)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Identity)
         assert isinstance(self.transform_2.pd_forward, pd.Identity)
+        assert isinstance(self.transform_5.pd_forward, pd.Map)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_2.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_5.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == (3, 4, 5)
         assert self.transform_2.infer_apply((1, [2, 3, 4])) == (1, (3, 4, 5))
         assert self.transform_3.infer_apply([2, 3, 4]) == ((4, 6, 8), (3, 4, 5))
         assert self.transform_4.infer_apply(1) == (2, 2, 2)
+        assert self.transform_5.infer_apply([1, 1, 1]) == (2, 2, 2)
 
     def test_eval_apply(self):
-        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
-        assert list(self.transform_2.eval_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, (3, 4)),
-                                                                                 (2, (4, 5))]
+        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
+        assert list(self.transform_2.eval_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
+                                                                                 (2, [4, 5])]
         assert list(self.transform_3.eval_apply([[2, 3], [2, 3]])) == \
-               [((4, 6), (3, 4)), ((4, 6), (3, 4))]
-        assert list(self.transform_4.eval_apply([1])) == [(2, 2, 2)]
+               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
+        assert list(self.transform_4.eval_apply([1])) == [[2, 2, 2]]
 
     def test_train_apply(self):
-        assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
-        assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, (3, 4)),
-                                                                                  (2, (4, 5))]
+        assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
+        assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
+                                                                                 (2, [4, 5])]
         assert list(self.transform_3.train_apply([[2, 3], [2, 3]])) == \
-               [((4, 6), (3, 4)), ((4, 6), (3, 4))]
-        assert list(self.transform_4.train_apply([1])) == [(2, 2, 2)]
+               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
+        assert list(self.transform_4.train_apply([1])) == [[2, 2, 2]]
 
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')

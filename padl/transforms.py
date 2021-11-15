@@ -1035,7 +1035,8 @@ class Map(Transform):
                         split.append(subsplit)
 
                 # .. and combine them as a Parallel
-                self._pd_splits = output_components, tuple(Parallel(s) if s else builtin_identity for s in splits)
+                self._pd_splits = (output_components,
+                                   tuple(Parallel(s) if s else builtin_identity for s in splits))
         return self._pd_splits
 
     def __call__(self, args: Iterable):
