@@ -92,9 +92,10 @@ class Transform:
         self._pd_component = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
+        # self._pd_splits = self._pd_get_splits()
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple['Transform', 'Transform', 'Transform']]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple['Transform', 'Transform', 'Transform']]:
         """ Split the transform into "preprocessing", "forward" and "postprocessing" parts.
 
         *input_components* contains information about the "split" the input is in. It is either an
@@ -624,44 +625,36 @@ class Transform:
         return self._pd_component
 
     def _pd_preprocess_part(self) -> "Transform":
-        # return Identity()
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[0]
 
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        # if {'preprocess'} == self.pd_component:
-        #     return self
         pre = self._pd_preprocess_part()
         pre.pd_to(self.pd_device)
         return pre
 
     def _pd_forward_part(self) -> "Transform":
-        # return Identity()
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[1]
 
     @property
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        # if {'forward'} == self.pd_component:
-        #     return self
         forward = self._pd_forward_part()
         forward.pd_to(self.pd_device)
         return forward
 
     def _pd_postprocess_part(self) -> "Transform":
         # return Identity()
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[2]
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        # if {'postprocess'} == self.pd_component:
-        #     return self
         post = self._pd_postprocess_part()
         post.pd_to(self.pd_device)
         return post
@@ -1019,8 +1012,8 @@ class Map(Transform):
         self.transform = transform
         self._pd_component = transform.pd_component
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The *splits* of a map are:
@@ -1033,7 +1026,7 @@ class Map(Transform):
         # if *input_components* is an integer rather than a list ...
         if not isinstance(input_components, list):
             # ... get output_components and splits from the contained transform
-            output_components, splits = self.transform._pd_splits(input_components)
+            output_components, splits = self.transform._pd_get_splits(input_components)
             return (
                 # output_components is whatever the sub-transform does to it
                 output_components,
@@ -1048,7 +1041,7 @@ class Map(Transform):
         output_components = []
         for input_component in input_components:
             # for each input, we compute the *output_components* and the *splits* ...
-            sub_output_components, sub_splits = self.transform._pd_splits(input_component)
+            sub_output_components, sub_splits = self.transform._pd_get_splits(input_component)
             output_components.append(sub_output_components)
             for split, subsplit in zip(splits, sub_splits):
                 split.append(subsplit)
@@ -1093,33 +1086,15 @@ class Map(Transform):
         return graph, scopemap
 
     def _pd_preprocess_part(self) -> Transform:
-        # t_pre = self.transform.pd_preprocess
-        # if isinstance(t_pre, Identity):
-        #     pre = Identity()
-        # else:
-        #     pre = Map(transform=t_pre, call_info=self._pd_call_info)
-        # return pre
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[0]
 
     def _pd_postprocess_part(self) -> Transform:
-        # t_post = self.transform.pd_postprocess
-        # if isinstance(t_post, Identity):
-        #     post = Identity()
-        # else:
-        #     post = Map(transform=t_post, call_info=self._pd_call_info)
-        # return post
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[2]
 
     def _pd_forward_part(self) -> Transform:
-        # t_for = self.transform.pd_forward
-        # if isinstance(t_for, Identity):
-        #     forward = Identity()
-        # else:
-        #     forward = Map(transform=t_for, call_info=self._pd_call_info)
-        # return forward
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[1]
 
 
@@ -1376,8 +1351,8 @@ class Compose(CompoundTransform):
         for i in range(postprocess_start+1, len(self.transforms)):
             self._pd_component_list[i] = {'postprocess'}
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The composition of `transforms` splits into
@@ -1395,7 +1370,9 @@ class Compose(CompoundTransform):
         # for each sub-transform ...
         for transform_ in self.transforms:
             # ... see what comes out ...
-            output_components, subsplits = transform_._pd_splits(output_components)
+            output_components, subsplits = transform_._pd_get_splits(output_components)
+            print(f'output_components: {output_components}')
+            print(f'subsplits: {subsplits}')
 
             # ... and combine
             # the preprocess split is the composition of the
@@ -1537,61 +1514,15 @@ class Compose(CompoundTransform):
         return args
 
     def _pd_forward_part(self) -> Transform:
-        # t_list = []
-        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
-        #     if 'forward' in component_set:
-        #         if len(component_set) == 1:
-        #             t_list.append(transform_)
-        #         else:
-        #             t_list.append(transform_.pd_forward)
-        #
-        # if len(t_list) == 1:
-        #     forward = t_list[0]
-        # elif t_list:
-        #     forward = Compose(t_list, call_info=self._pd_call_info)
-        # else:
-        #     forward = Identity()
-        #
-        # return forward
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[1]
 
     def _pd_preprocess_part(self) -> Transform:
-        # t_list = []
-        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
-        #     if 'preprocess' in component_set:
-        #         if len(component_set) == 1:
-        #             t_list.append(transform_)
-        #         else:
-        #             t_list.append(transform_.pd_preprocess)
-        #
-        # if len(t_list) == 1:
-        #     pre = t_list[0]
-        # elif t_list:
-        #     pre = Compose(t_list, call_info=self._pd_call_info)
-        # else:
-        #     pre = Identity()
-        # return pre
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[0]
 
     def _pd_postprocess_part(self) -> Transform:
-        # t_list = []
-        # for transform_, component_set in zip(self.transforms, self._pd_component_list):
-        #     if 'postprocess' in component_set:
-        #         if len(component_set) == 1:
-        #             t_list.append(transform_)
-        #         else:
-        #             t_list.append(transform_.pd_postprocess)
-        #
-        # if len(t_list) == 1:
-        #     post = t_list[0]
-        # elif t_list:
-        #     post = Compose(t_list, call_info=self._pd_call_info)
-        # else:
-        #     post = Identity()
-        # return post
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[2]
 
 
@@ -1616,8 +1547,8 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A rollout splits into:
@@ -1637,7 +1568,7 @@ class Rollout(CompoundTransform):
         splits = ([], [], [])
         output_components = []
         for transform_ in self.transforms:
-            sub_output_components, subsplits = transform_._pd_splits(input_components)
+            sub_output_components, subsplits = transform_._pd_get_splits(input_components)
             output_components.append(sub_output_components)
             for split, subsplit in zip(splits, subsplits):
                 split.append(subsplit)
@@ -1665,37 +1596,15 @@ class Rollout(CompoundTransform):
         return self._pd_output_format(*out)
 
     def _pd_preprocess_part(self) -> Transform:
-        # t_list = [x.pd_preprocess for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     pre = Identity()
-        # else:
-        #     pre = Rollout(t_list, call_info=self._pd_call_info)
-        # return pre
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[0]
 
     def _pd_forward_part(self) -> Transform:
-        # t_list = [x.pd_forward for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     forward = Identity()
-        # elif 'preprocess' in self._pd_component and 'forward' in self._pd_component:
-        #     forward = Parallel(t_list, call_info=self._pd_call_info)
-        # else:
-        #     forward = Rollout(t_list, call_info=self._pd_call_info)
-        # return forward
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[1]
 
     def _pd_postprocess_part(self) -> Transform:
-        # t_list = [x.pd_postprocess for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     post = Identity()
-        # elif len(list(self._pd_component)) >= 2 and 'postprocess' in self._pd_component:
-        #     post = Parallel(t_list, call_info=self._pd_call_info)
-        # else:
-        #     post = Rollout(t_list, call_info=self._pd_call_info)
-        # return post
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
@@ -1729,8 +1638,8 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A parallel splits into:
@@ -1751,7 +1660,7 @@ class Parallel(CompoundTransform):
         output_components = []
         for transform_, input_component in zip(self.transforms, input_components_):
             # and compute the sub-splits
-            sub_output_components, subsplits = transform_._pd_splits(input_component)
+            sub_output_components, subsplits = transform_._pd_get_splits(input_component)
             output_components.append(sub_output_components)
             for split, subsplit in zip(splits, subsplits):
                 split.append(subsplit)
@@ -1778,33 +1687,15 @@ class Parallel(CompoundTransform):
         return self._pd_output_format(*out)
 
     def _pd_preprocess_part(self) -> Transform:
-        # t_list = [x.pd_preprocess for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     pre = Identity()
-        # else:
-        #     pre = Parallel(t_list, call_info=self._pd_call_info)
-        # return pre
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[0]
 
     def _pd_forward_part(self) -> Transform:
-        # t_list = [x.pd_forward for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     forward = Identity()
-        # else:
-        #     forward = Parallel(t_list, call_info=self._pd_call_info)
-        # return forward
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[1]
 
     def _pd_postprocess_part(self) -> Transform:
-        # t_list = [x.pd_postprocess for x in self.transforms]
-        # if all([isinstance(t, Identity) for t in t_list]):
-        #     post = Identity()
-        # else:
-        #     post = Parallel(t_list, call_info=self._pd_call_info)
-        # return post
-        _, splits = self._pd_splits()
+        _, splits = self._pd_get_splits()
         return splits[2]
 
     def _pd_longrepr(self, formatting=True) -> str:
@@ -1894,8 +1785,8 @@ class Unbatchify(ClassTransform):
         self._pd_component = {'postprocess'}
         self.cpu = cpu
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Unbatchify has empty splits and puts the component-number to 2 ("un-batchified").
@@ -1950,8 +1841,8 @@ class Batchify(ClassTransform):
             return True
         return components == 0
 
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform]]:
+    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                          Tuple[Transform, Transform, Transform]]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Batchify has empty splits and puts the component-number to 1 ("batchified").
