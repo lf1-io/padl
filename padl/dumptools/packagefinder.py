@@ -12,7 +12,7 @@ def standard_lib_names_gen(include_underscored=False):
         if not include_underscored and filename.startswith('_'):
             continue
         filepath = os.path.join(standard_lib_dir, filename)
-        name, ext = os.path.splitext(filename)
+        name, _ = os.path.splitext(filename)
         if filename.endswith('.py') and os.path.isfile(filepath):
             if str.isidentifier(name):
                 yield name

@@ -155,7 +155,7 @@ class _ImportFinder(_NameFinder):
     def node(self):
         # TODO: cache deparse?
         node = ast.parse(self.deparse()).body[0]
-        node._scope = Scope.empty()
+        node._globalscope = True
         return node
 
 
@@ -435,17 +435,25 @@ def find_in_scope(name: ScopedName):
     :param scope: Scope to search.
     """
     scope = name.scope
+    i = name.n
     for _scopename, tree in scope.scopelist:
         try:
-            source, node = find_in_source(name.name, name.scope.def_source, tree=tree, i=name.n)
-            scope = getattr(node, '_scope', scope)
+            res = find_in_source(name.name, name.scope.def_source, tree=tree, i=i,
+                                 return_partial=True)
+            if isinstance(res, int):
+                i = res
+                continue
+            source, node = res
+            if getattr(node, '_globalscope', False):
+                scope = scope.global_()
+
             return (source, node), scope
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
-    source, node = find(name.name, scope.module, name.n)
+    source, node = find(name.name, scope.module, i)
     scope = getattr(node, '_scope', scope.global_())
     return (source, node), scope
 
@@ -473,7 +481,8 @@ def replace_star_imports(tree: ast.Module):
                          ' by that.')
 
 
-def find_in_source_old(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[str, ast.AST]:
+def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
+                   return_partial=False) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
@@ -481,25 +490,6 @@ def find_in_source_old(var_name: str, source: str, tree=None, i: int = 0) -> Tup
     :param source: Source code to search.
     :returns: Tuple with source code segment and corresponding AST node.
     """
-    if tree is None:
-        tree = ast.parse(source)
-    replace_star_imports(tree)
-    min_n = inf
-    best = None
-    finder_clss = _NameFinder.__subclasses__()
-    for finder_cls in finder_clss:
-        finder = finder_cls(source, var_name, max_n=min_n - 1)
-        finder.visit(tree)
-        if finder.found_something() and finder.statement_n < min_n:
-            best = finder
-            min_n = finder.statement_n
-    if best is None:
-        raise NameNotFound(f'{var_name} not found.')
-    return best.deparse(), best.node()
-
-
-def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
-                   return_partial=False) -> Tuple[str, ast.AST]:
     if tree is None:
         tree = ast.parse(source)
     replace_star_imports(tree)

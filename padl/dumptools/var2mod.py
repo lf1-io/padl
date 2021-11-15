@@ -3,10 +3,9 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-import sys
 from typing import Optional
 
-from padl.dumptools.symfinder import find, find_in_scope, ScopedName
+from padl.dumptools.symfinder import find_in_scope, ScopedName
 
 try:
     unparse = ast.unparse
@@ -97,10 +96,22 @@ class _VarFinder(ast.NodeVisitor):
             self.locals.add((node.optional_vars.id, 0))
 
     def visit_Assign(self, node):
+        # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
+        targets = set()
         for target in node.targets:
-            targets = {(x.id, 0) for x in Finder(ast.Name).find(target)}
+            # exclude assignment to subscript ('x[1] = a')
+            if isinstance(target, ast.Subscript):
+                continue
+            # exclude assignment to attribute ('x.y = a')
+            if isinstance(target, ast.Attribute):
+                continue
+            targets.update(
+                {(x.id, 0) for x in Finder(ast.Name).find(target)}
+            )
+        # find globals in RHS
         sub_globals = find_globals(node.value)
         sub_dependencies = set()
+        # if a variable on the RHS is one of the targets, increase its counter
         for name, i in sub_globals:
             if (name, i) in targets:
                 sub_dependencies.add((name, i + 1))
@@ -313,11 +324,14 @@ def _get_nodes_without_in_edges(graph):
 
 def _topsort(graph):
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
-    Careful: Doesn't check for loops.
     """
     levels = []
+    graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
+        if graphlen == len(graph):  # graph didn't shrink
+            raise RuntimeError('Graph has a circle.')
+        graphlen = len(graph)
         levels.append(nextlevel)
     return levels
 
@@ -349,7 +363,8 @@ def _sort(graph):
 def unscope_graph(graph, scopemap):
     """Create a version of *graph* where all non-top level variables are renamed (by prepending
     the scope) to prevent conflicts."""
-    counts = Counter(x.name for x in graph)
+    name_scope = {(x.name, x.scope) for x in graph}
+    counts = Counter(x[0] for x in name_scope)
     to_rename = set(k for k, c in counts.items() if c > 1)
     scopemap = {**scopemap}
     scopemap.update({scoped_name: scoped_name.scope for scoped_name in scopemap})
