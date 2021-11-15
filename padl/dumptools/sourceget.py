@@ -46,7 +46,7 @@ def get_module_source(module: ModuleType, use_replace_cache: bool = True) -> str
     """
     if use_replace_cache:
         try:
-            return replace_cache[module.__filename__]
+            return replace_cache[module.__file__]
         except (KeyError, AttributeError):
             pass
     return inspect.getsource(module)
