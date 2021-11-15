@@ -149,10 +149,10 @@ class Try(ClassTransform):
 
     def __call__(self, args):
         try:
-            args = self.transform._pd_call_transform(args)
+            args = self.transform.pd_call_transform(args)
         except self._exceptions:
-            args = self.catch_transform._pd_call_transform(args)
+            args = self.catch_transform.pd_call_transform(args)
         else:
-            args = self.else_transform._pd_call_transform(args)
+            args = self.else_transform.pd_call_transform(args)
         finally:
-            return self.finally_transform._pd_call_transform(args)
+            return self.finally_transform.pd_call_transform(args)

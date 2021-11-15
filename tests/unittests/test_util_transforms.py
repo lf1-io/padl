@@ -163,7 +163,6 @@ class TestTry:
         assert list(self.try_transform_3.eval_apply([2, 6])) == [18, 42]
 
     def test_save_and_load_1(self, tmp_path):
-        breakpoint()
         self.try_transform_1.pd_save(tmp_path / 'test.padl')
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(4) == 10
