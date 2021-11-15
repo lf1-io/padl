@@ -91,7 +91,6 @@ class Transform:
         self._pd_call_info = call_info
         self._pd_varname = _notset
         self._pd_name = pd_name
-        self._pd_component = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
         # self._pd_splits = self._pd_get_splits()
@@ -621,11 +620,6 @@ class Transform:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
-    @property
-    def pd_component(self) -> Set[Component]:
-        """Return the component (preprocess, forward or postprocess)."""
-        return self._pd_component
-
     def _pd_preprocess_part(self) -> "Transform":
         _, splits = self._pd_get_splits()
         return splits[0]
@@ -1011,7 +1005,6 @@ class Map(Transform):
         super().__init__(call_info, pd_name)
 
         self.transform = transform
-        self._pd_component = transform.pd_component
 
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple[Transform, Transform, Transform]]:
@@ -1119,12 +1112,6 @@ class CompoundTransform(Transform):
 
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
-
-        self._pd_component_list = [t.pd_component for t in self.transforms]
-        try:
-            self._pd_component = set.union(*self._pd_component_list)
-        except (AttributeError, TypeError):
-            self._pd_component = None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1337,20 +1324,6 @@ class Compose(CompoundTransform):
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-
-        preprocess_end = 0
-        postprocess_start = len(self.transforms)
-        set_postprocess = True
-        for i, transform_ in enumerate(self.transforms):
-            if 'preprocess' in transform_.pd_component:
-                preprocess_end = i
-            if 'postprocess' in transform_.pd_component and set_postprocess:
-                postprocess_start = i
-                set_postprocess = False
-        for i in range(preprocess_end):
-            self._pd_component_list[i] = {'preprocess'}
-        for i in range(postprocess_start+1, len(self.transforms)):
-            self._pd_component_list[i] = {'postprocess'}
 
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple[Transform, Transform, Transform]]:
@@ -1784,7 +1757,6 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
-        self._pd_component = {'postprocess'}
         self.cpu = cpu
 
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
@@ -1832,7 +1804,6 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-        self._pd_component = {'preprocess'}
 
     @staticmethod
     def _all_0(components):

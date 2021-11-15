@@ -41,8 +41,6 @@ class IfInStage(ClassTransform):
         self.else_ = else_
         self.target_stage = target_stage
 
-        self._pd_component = set.union(*[t.pd_component for t in [self.if_, self.else_]])
-
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
                                                 'or train_apply instead of calling the transform '
