@@ -569,8 +569,8 @@ class TestFunctionTransform:
         assert t1.infer_apply(5) == 6
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
         _ = pd.load(tmp_path / 'test.padl')
-        self.transform_3.pd_save('test.padl', True)
-        t3 = pd.load('test.padl')
+        self.transform_3.pd_save(tmp_path / 'test.padl', True)
+        t3 = pd.load(tmp_path / 'test.padl')
         assert t3.infer_apply(5) == 10
 
 
