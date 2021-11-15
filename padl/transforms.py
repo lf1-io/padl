@@ -1372,8 +1372,6 @@ class Compose(CompoundTransform):
         for transform_ in self.transforms:
             # ... see what comes out ...
             output_components, subsplits = transform_._pd_get_splits(output_components)
-            print(f'output_components: {output_components}')
-            print(f'subsplits: {subsplits}')
 
             # ... and combine
             # the preprocess split is the composition of the

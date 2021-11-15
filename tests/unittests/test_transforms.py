@@ -169,12 +169,12 @@ class TestMap:
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
-        assert isinstance(self.transform_2.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Map)
+        assert isinstance(self.transform_2.pd_preprocess, pd.Parallel)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Map)
-        assert isinstance(self.transform_2.pd_forward, pd.Parallel)
+        assert isinstance(self.transform_1.pd_forward, pd.Identity)
+        assert isinstance(self.transform_2.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -239,10 +239,10 @@ class TestParallel:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Parallel)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Parallel)
+        assert isinstance(self.transform_1.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -293,10 +293,10 @@ class TestRollout:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Rollout)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Rollout)
+        assert isinstance(self.transform_1.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -348,11 +348,11 @@ class TestCompose:
         assert self.transform_4(1) == 4
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Compose)
         assert isinstance(self.transform_5.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Compose)
+        assert isinstance(self.transform_1.pd_forward, pd.Identity)
         assert isinstance(self.transform_5.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
@@ -524,10 +524,10 @@ class TestFunctionTransform:
         request.cls.transform_3 = plus_global
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.FunctionTransform)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.FunctionTransform)
+        assert isinstance(self.transform_1.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
