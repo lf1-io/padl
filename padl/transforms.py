@@ -1730,7 +1730,7 @@ class Batchify(ClassTransform):
         if Transform.pd_stage != 'infer':
             return args
         if isinstance(args, (tuple, list)):
-            return tuple([self(x) for x in args])
+            return torch.tensor([self(x) for x in args])
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
