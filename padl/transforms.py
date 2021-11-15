@@ -123,7 +123,7 @@ class Transform:
             # a normal transform doesn't change the components
             input_components,
             # for the component the transform is in, return the transform, else Identity
-            tuple(self if i == input_components else Identity() for i in range(3))
+            tuple(self if i == input_components else builtin_identity for i in range(3))
         )
 
     @property
@@ -648,7 +648,6 @@ class Transform:
         return forward
 
     def _pd_postprocess_part(self) -> "Transform":
-        # return Identity()
         _, splits = self._pd_get_splits()
         return splits[2]
 
@@ -1047,7 +1046,7 @@ class Map(Transform):
                 split.append(subsplit)
 
         # .. and combine them as a Parallel
-        return output_components, tuple(Parallel(s) if s else Identity() for s in splits)
+        return output_components, tuple(Parallel(s) if s else builtin_identity for s in splits)
 
     def __call__(self, args: Iterable):
         """
@@ -1389,7 +1388,7 @@ class Compose(CompoundTransform):
 
         return output_components, tuple(Compose(s) if len(s) > 1  # combine subsplits
                                         else s[0] if len(s) == 1  # if it's just one, no need to combine
-                                        else Identity()  # if it's empty: identity
+                                        else builtin_identity  # if it's empty: identity
                                         for s in cleaned_splits)
 
     @staticmethod
@@ -1579,7 +1578,7 @@ class Rollout(CompoundTransform):
         )
 
         return output_components, (Rollout(splits[0]),) + tuple(Parallel(s) if isinstance(s, list)
-                                                                and s else Identity()
+                                                                and s else builtin_identity
                                                                 for s in cleaned_splits)
 
     def __call__(self, args):
@@ -1666,11 +1665,11 @@ class Parallel(CompoundTransform):
                 split.append(subsplit)
 
         cleaned_splits = tuple(
-            Identity() if all(isinstance(s, Identity) for s in split) else split
+            builtin_identity if all(isinstance(s, Identity) for s in split) else split
             for split in splits
         )
 
-        return output_components, tuple(Parallel(s) if isinstance(s, list) and s else Identity()
+        return output_components, tuple(Parallel(s) if isinstance(s, list) and s else builtin_identity
                                         for s in cleaned_splits)
 
     def __call__(self, args):
@@ -1770,6 +1769,9 @@ class Identity(BuiltinTransform):
         return args
 
 
+builtin_identity = Identity()
+
+
 class Unbatchify(ClassTransform):
     """Mark start of postprocessing.
 
@@ -1792,7 +1794,7 @@ class Unbatchify(ClassTransform):
         Unbatchify has empty splits and puts the component-number to 2 ("un-batchified").
         """
         # put the output component to 2 ("un-batchified")
-        return 2, (Identity(), Identity(), Unbatchify())
+        return 2, (builtin_identity, builtin_identity, Unbatchify())
 
     def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
@@ -1850,7 +1852,7 @@ class Batchify(ClassTransform):
         # ensure that all inputs are "fresh"
         assert self._all_0(input_components), 'double batchify'
         # put the output component to 1 ("batchified")
-        return 1, (Batchify(), Identity(), Identity())
+        return 1, (Batchify(), builtin_identity, builtin_identity)
 
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
