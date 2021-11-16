@@ -143,7 +143,7 @@ class Try(ClassTransform):
                                                 ('finally_transform', finally_transform)]))
         self.transform = transform
         self.catch_transform = catch_transform
-        self._exceptions = exceptions
+        self.exceptions = exceptions
         self.else_transform = else_transform
         self.finally_transform = finally_transform
         self._pd_component = set.union(self.transform._pd_component,
