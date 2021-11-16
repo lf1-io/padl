@@ -69,7 +69,7 @@ class IfInStage(ClassTransform):
             target_stage=self.target_stage,
             else_=self.else_.pd_postprocess,
         )
-        return output_components, (pre, forward, post)
+        return (input_components, output_components), (pre, forward, post)
 
 
 class IfInfer(IfInStage):

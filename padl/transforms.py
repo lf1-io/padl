@@ -122,10 +122,10 @@ class Transform:
         """
         # Need to recompute if None or if the incoming input_components doesn't matched the cached
         # version
-        if self._pd_splits is None or self._pd_splits[0] != input_components:
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
             self._pd_splits = (
                 # a normal transform doesn't change the components
-                input_components,
+                (input_components, input_components),
                 # for the component the transform is in, return the transform, else Identity
                 tuple(self if i == input_components else builtin_identity for i in range(3))
             )
@@ -1009,14 +1009,14 @@ class Map(Transform):
 
         The *output_components* of a map are the mapped input components.
         """
-        if self._pd_splits is None or self._pd_splits[0] != input_components:
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
             # if *input_components* is an integer rather than a list ...
             if isinstance(input_components, int):
                 # ... get output_components and splits from the contained transform
-                output_components, splits = self.transform._pd_get_splits(input_components)
+                (_, output_components), splits = self.transform._pd_get_splits(input_components)
                 self._pd_splits = (
                     # output_components is whatever the sub-transform does to it
-                    output_components,
+                    (input_components, output_components),
                     # the splits are the splits of the sub-transform, but mapped
                     tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
                           for split in splits)
@@ -1029,13 +1029,13 @@ class Map(Transform):
                 output_components = []
                 for input_component in input_components:
                     # for each input, we compute the *output_components* and the *splits* ...
-                    sub_output_components, sub_splits = self.transform._pd_get_splits(input_component)
+                    (_, sub_output_components), sub_splits = self.transform._pd_get_splits(input_component)
                     output_components.append(sub_output_components)
                     for split, subsplit in zip(splits, sub_splits):
                         split.append(subsplit)
 
                 # .. and combine them as a Parallel
-                self._pd_splits = (output_components,
+                self._pd_splits = ((input_components, output_components),
                                    tuple(Parallel(s) if s else builtin_identity for s in splits))
         return self._pd_splits
 
@@ -1322,14 +1322,14 @@ class Compose(CompoundTransform):
         sub-transforms.
         """
 
-        if self._pd_splits is None or self._pd_splits[0] != input_components:
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
             splits = ([], [], [])
 
             output_components = input_components
             # for each sub-transform ...
             for transform_ in self.transforms:
                 # ... see what comes out ...
-                output_components, subsplits = transform_._pd_get_splits(output_components)
+                (_, output_components), subsplits = transform_._pd_get_splits(output_components)
 
                 # ... and combine
                 # the preprocess split is the composition of the
@@ -1345,15 +1345,15 @@ class Compose(CompoundTransform):
             )
 
             final_splits = []
-            for s in cleaned_splits:
-                if len(s) > 1:  # combine subsplits
-                    final_splits.append(Compose(s))
-                elif len(s) == 1:  # if it's just one, no need to combine
-                    final_splits.append(s[0])
+            for split in cleaned_splits:
+                if len(split) > 1:  # combine subsplits
+                    final_splits.append(Compose(split))
+                elif len(split) == 1:  # if it's just one, no need to combine
+                    final_splits.append(split[0])
                 else:  # if it's empty: identity
                     final_splits.append(builtin_identity)
 
-            self._pd_splits = (output_components, final_splits)
+            self._pd_splits = ((input_components, output_components), final_splits)
         return self._pd_splits
 
     @staticmethod
@@ -1518,11 +1518,11 @@ class Rollout(CompoundTransform):
 
         The *output_components* are the list of output components of the sub-transforms.
         """
-        if self._pd_splits is None or self._pd_splits[0] != input_components:
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
             splits = ([], [], [])
             output_components = []
             for transform_ in self.transforms:
-                sub_output_components, subsplits = transform_._pd_get_splits(input_components)
+                (_, sub_output_components), subsplits = transform_._pd_get_splits(input_components)
                 output_components.append(sub_output_components)
                 for split, subsplit in zip(splits, subsplits):
                     split.append(subsplit)
@@ -1552,7 +1552,7 @@ class Rollout(CompoundTransform):
                     final_splits.append(s)
             final_splits = tuple(final_splits)
 
-            self._pd_splits = (output_components, final_splits)
+            self._pd_splits = ((input_components, output_components), final_splits)
         return self._pd_splits
 
     def __call__(self, args):
@@ -1610,7 +1610,7 @@ class Parallel(CompoundTransform):
 
         The *output_components* are the list of output components of the sub-transforms.
         """
-        if self._pd_splits is None or self._pd_splits[0] != input_components:
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
             splits = ([], [], [])
             # we need one component info per sub-transform - if it's not a list that means
             # all are the same - we make it a list
@@ -1622,7 +1622,7 @@ class Parallel(CompoundTransform):
             output_components = []
             for transform_, input_component in zip(self.transforms, input_components_):
                 # and compute the sub-splits
-                sub_output_components, subsplits = transform_._pd_get_splits(input_component)
+                (_, sub_output_components), subsplits = transform_._pd_get_splits(input_component)
                 output_components.append(sub_output_components)
                 for split, subsplit in zip(splits, subsplits):
                     split.append(subsplit)
@@ -1634,7 +1634,7 @@ class Parallel(CompoundTransform):
             )
 
             final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
-            self._pd_splits = (output_components, final_splits)
+            self._pd_splits = ((input_components, output_components), final_splits)
         return self._pd_splits
 
     def __call__(self, args):
@@ -1746,7 +1746,7 @@ class Unbatchify(ClassTransform):
         Unbatchify has empty splits and puts the component-number to 2 ("un-batchified").
         """
         # put the output component to 2 ("un-batchified")
-        return 2, (builtin_identity, builtin_identity, self)
+        return (input_components, 2), (builtin_identity, builtin_identity, self)
 
     def _move_to_device(self, args):
         if isinstance(args, (tuple, list)):
@@ -1803,7 +1803,7 @@ class Batchify(ClassTransform):
         # ensure that all inputs are "fresh"
         assert self._all_0(input_components), 'double batchify'
         # put the output component to 1 ("batchified")
-        return 1, (self, builtin_identity, builtin_identity)
+        return (input_components, 1), (self, builtin_identity, builtin_identity)
 
     def __call__(self, args):
         assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
