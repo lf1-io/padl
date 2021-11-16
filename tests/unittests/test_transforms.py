@@ -168,21 +168,28 @@ class TestMap:
         request.cls.transform_3 = ~times_two + ~plus_one
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
         request.cls.transform_5 = Batchify() >> ~plus_one
+        request.cls.transform_6 = (
+            Batchify() / Identity()
+            >> ~plus_one
+        )
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Map)
         assert isinstance(self.transform_2.pd_preprocess, pd.Parallel)
         assert isinstance(self.transform_5.pd_preprocess, pd.Batchify)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Identity)
         assert isinstance(self.transform_2.pd_forward, pd.Identity)
         assert isinstance(self.transform_5.pd_forward, pd.Map)
+        assert isinstance(self.transform_6.pd_forward, pd.Parallel)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_2.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_5.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Parallel)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == (3, 4, 5)
@@ -190,6 +197,7 @@ class TestMap:
         assert self.transform_3.infer_apply([2, 3, 4]) == ((4, 6, 8), (3, 4, 5))
         assert self.transform_4.infer_apply(1) == (2, 2, 2)
         assert self.transform_5.infer_apply([1, 1, 1]) == (2, 2, 2)
+        assert self.transform_6.infer_apply([1, 2]) == (2, 3)
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
