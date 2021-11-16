@@ -1,5 +1,5 @@
 import pytest
-from padl import transform, Batchify
+from padl import transform, Batchify, Unbatchify
 import padl.transforms as padl
 from padl.util_transforms import IfTrain, IfEval, IfInfer
 
@@ -38,45 +38,34 @@ class TestIfInStage:
             >> Batchify()
             >> times_three
         )
+        compose = plus_one >> Batchify() >> times_three >> Unbatchify() >> times_two
+        request.cls.transform_4 = times_three >> IfInfer(compose) >> plus_one
 
-    def test_infer_apply_1(self):
+    def test_infer_apply(self):
         assert self.transform_1.infer_apply(1) == 9
-
-    def test_infer_apply_2(self):
         assert self.transform_2.infer_apply(1) == 6
-
-    def test_infer_apply_3(self):
         assert self.transform_3.infer_apply(1) == 12
+        assert self.transform_4.infer_apply(1) == 24
 
-    def test_eval_apply_1(self):
+    def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([1, 2])) == [9, 12]
-
-    def test_eval_apply_2(self):
         assert list(self.transform_2.eval_apply([1, 2])) == [12, 18]
-
-    def test_eval_apply_3(self):
         assert list(self.transform_3.eval_apply([1, 2])) == [6, 9]
+        assert list(self.transform_4.eval_apply([1])) == [4]
 
-    def test_train_apply_1(self):
+    def test_train_apply(self):
         assert list(self.transform_1.train_apply([1, 2])) == [12, 18]
-
-    def test_train_apply_2(self):
         assert list(self.transform_2.train_apply([1, 2])) == [6, 9]
-
-    def test_train_apply_3(self):
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
+        assert list(self.transform_4.train_apply([1])) == [4]
 
-    def test_save_and_load_1(self, tmp_path):
-        self.transform_1.pd_save(tmp_path / 'test.padl')
+    def test_save_and_load(self, tmp_path):
+        self.transform_1.pd_save(tmp_path / 'test.padl', True)
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 9
-
-    def test_save_and_load_2(self, tmp_path):
-        self.transform_2.pd_save(tmp_path / 'test.padl')
+        self.transform_2.pd_save(tmp_path / 'test.padl', True)
         t2 = padl.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 6
-
-    def test_save_and_load_3(self, tmp_path):
-        self.transform_3.pd_save(tmp_path / 'test.padl')
+        self.transform_3.pd_save(tmp_path / 'test.padl', True)
         t3 = padl.load(tmp_path / 'test.padl')
         assert t3.infer_apply(1) == 12

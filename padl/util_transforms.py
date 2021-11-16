@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from typing import Optional
 
-from padl.transforms import ClassTransform, Identity, Transform, Stage
+from padl.transforms import ClassTransform, Identity, Transform, Stage, builtin_identity
 
 
 class IfInStage(ClassTransform):
@@ -50,26 +50,39 @@ class IfInStage(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
-    # TODO This needs to be updated to call _pd_get_splits instead pd_pre, pd_for, pd_post
-    #      and return the correct output_components
     def _pd_get_splits(self, input_components=0):
-        output_components = input_components
-        pre = IfInStage(
-            if_=self.if_.pd_preprocess,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_preprocess,
-        )
-        forward = IfInStage(
-            if_=self.if_.pd_forward,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_forward,
-        )
-        post = IfInStage(
-            if_=self.if_.pd_postprocess,
-            target_stage=self.target_stage,
-            else_=self.else_.pd_postprocess,
-        )
-        return (input_components, output_components), (pre, forward, post)
+        if self._pd_splits is None or self._pd_splits[0][0] != input_components:
+            transforms = [self.if_, self.else_]
+            splits = ([], [], [])
+            # we need one component info per sub-transform - if it's not a list that means
+            # all are the same - we make it a list
+            input_components_ = input_components
+            if not isinstance(input_components_, list):
+                input_components_ = [input_components for _ in range(len(transforms))]
+
+            # go through the sub-transforms ...
+            output_components = []
+            for transform_, input_component in zip(transforms, input_components_):
+                (_, sub_output_components), subsplits = transform_._pd_get_splits(input_component)
+                output_components.append(sub_output_components)
+                for split, subsplit in zip(splits, subsplits):
+                    split.append(subsplit)
+
+            cleaned_splits = tuple(
+                builtin_identity if all(isinstance(s, Identity) for s in split) else split
+                for split in splits
+            )
+
+            final_splits = tuple(
+                IfInStage(
+                    if_=s[0],
+                    target_stage=self.target_stage,
+                    else_=s[1]
+                ) if isinstance(s, list) else s for s in cleaned_splits
+            )
+
+            self._pd_splits = ((input_components, output_components), final_splits)
+        return self._pd_splits
 
 
 class IfInfer(IfInStage):
