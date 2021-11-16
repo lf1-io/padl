@@ -376,6 +376,10 @@ class Scope:
         """Return the global scope surrounding *self*. """
         return type(self)(self.module, self.def_source, [])
 
+    def is_global(self) -> bool:
+        """*True* iff the scope is global. """
+        return len(self.scopelist) == 0
+
     @property
     def module_name(self) -> str:
         """The name of the scope's module. """
