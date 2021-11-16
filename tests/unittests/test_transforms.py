@@ -699,3 +699,6 @@ class TestClassInstance:
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
         t2 = pd.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 2
+
+    def test_long_list(self):
+        import tests.material.long_list
