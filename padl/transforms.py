@@ -1498,17 +1498,17 @@ class Rollout(CompoundTransform):
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A rollout splits into:
-            - the rollout of its sub-transforms' preprocess
-            - the parallel of its sub-transforms' forward
-            - the parallel of its sub-transforms' postprocess
+            - the rollout of its sub-transform' first non-Identity stage
+            - the parallel of its sub-transform' remaining stages
 
-        # TODO Missing cases where Rollout starts in forward or preprocess
-        To see why the preprocess is a rollout whereas the forward and postprocess are parallel,
-        note that the preprocess splits the pipeline and it remains split for the rest:
+        To see why the first non-Identity stage is a rollout whereas the remaining stages are
+        parallel, note that the first non-Identity stage splits the pipeline and it remains
+        split for the rest:
 
-            pre + pre
-            for / for
-            pos / pos
+            Case 1:     Case 2:     Case 3:
+            pre + pre   Identity    Identity
+            for / for   for + for   Identity
+            pos / pos   pos / pos   pos + pos
 
         The *output_components* are the list of output components of the sub-transforms.
         """
@@ -1523,13 +1523,27 @@ class Rollout(CompoundTransform):
 
             cleaned_splits = tuple(
                 [s for s in split if not isinstance(s, Identity)]
-                for split in splits[1:]
+                for split in splits
             )
+            lengths = [len(s) > 0 for s in cleaned_splits]
+            first_non_identity = [i for i, l in enumerate(lengths) if l][0]
 
-            self._pd_splits = (output_components,
-                               (Rollout(splits[0]),) + tuple(Parallel(s) if isinstance(s, list)
-                                                             and s else builtin_identity
-                                                             for s in cleaned_splits))
+            res = []
+            for i, s in enumerate(cleaned_splits):
+                if isinstance(s, list) and len(s) > 0:
+                    # TODO This doesn't work, don't know which pips are missing identities
+                    # Needed to preserve the correct number of pipes
+                    while len(s) < len(self.transforms):
+                        s.append(builtin_identity)
+                    if i == first_non_identity:
+                        res.append(Rollout(s))
+                    else:
+                        res.append(Parallel(s))
+                else:
+                    res.append(builtin_identity)
+            res = tuple(res)
+
+            self._pd_splits = (output_components, res)
         return self._pd_splits
 
     def __call__(self, args):
