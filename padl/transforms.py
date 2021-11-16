@@ -1527,6 +1527,7 @@ class Rollout(CompoundTransform):
                 for split, subsplit in zip(splits, subsplits):
                     split.append(subsplit)
 
+            # only replace with builtin_identity if all Identity to preserve number of pipes
             cleaned_splits = tuple(
                 builtin_identity if all(isinstance(s, Identity) for s in split) else split
                 for split in splits
@@ -1626,14 +1627,14 @@ class Parallel(CompoundTransform):
                 for split, subsplit in zip(splits, subsplits):
                     split.append(subsplit)
 
+            # only replace with builtin_identity if all Identity to preserve number of pipes
             cleaned_splits = tuple(
                 builtin_identity if all(isinstance(s, Identity) for s in split) else split
                 for split in splits
             )
 
-            self._pd_splits = (output_components,
-                               tuple(Parallel(s) if isinstance(s, list) else s
-                                     for s in cleaned_splits))
+            final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
+            self._pd_splits = (output_components, final_splits)
         return self._pd_splits
 
     def __call__(self, args):
