@@ -40,6 +40,13 @@ def setcomp_a(y):
     return {x + CONST for x in y}
 
 
+@transform
+def recursive(x):
+    if x == 0:
+        return x
+    return x, recursive(x - 1)
+
+
 def maketransform():
     @transform
     def z(x):
@@ -185,6 +192,10 @@ def test_dictcomp_a():
 
 def test_setcomp_a():
     assert setcomp_a._pd_dumps() == read_dump('set_comprehension_a')
+
+
+def test_recursive():
+    assert recursive._pd_dumps() == read_dump('recursive')
 
 
 def test_with_raises():

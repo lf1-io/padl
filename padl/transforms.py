@@ -863,7 +863,10 @@ class FunctionTransform(AtomicTransform):
                  'needed for user defined transforms.',
                  RuntimeWarning)
             return {}, {}
-        return closurevars.globals, closurevars.nonlocals
+        return (
+            {k: v for k, v in closurevars.globals.items() if v is not self},
+            {k: v for k, v in closurevars.nonlocals.items() if v is not self}
+        )
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)

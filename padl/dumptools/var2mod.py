@@ -299,7 +299,7 @@ def _get_nodes_without_in_edges(graph):
     """
     nextlevel = set()
     for node, deps in graph.items():
-        if not deps:
+        if not deps or deps == {node}:
             nextlevel.add(node)
     filtered_graph = {}
     for node, deps in graph.items():
