@@ -17,7 +17,7 @@ def times_two(x):
 times_three = transform(lambda x: x * 3)
 
 
-class TestIfInStage:
+class TestIfInMode:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = (
