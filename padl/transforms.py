@@ -71,7 +71,7 @@ def _move_to_device(args, device):
     return args
 
 
-Stage = Literal['infer', 'eval', 'train']
+Mode = Literal['infer', 'eval', 'train']
 Component = Literal['preprocess', 'forward', 'postprocess']
 
 
@@ -82,7 +82,7 @@ class Transform:
     created (needed for saving).
     :param pd_name: name of the transform
     """
-    pd_stage = None
+    pd_mode = None
 
     def __init__(self, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
@@ -536,20 +536,20 @@ class Transform:
             return True
         return False
 
-    def pd_call_transform(self, arg, stage: Optional[Stage] = None):
+    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
         """Call the transform, with possibility to pass multiple arguments.
 
         :param arg: argument to call the transform with
-        :param stage: The stage ("infer", "eval", "train") to perform the call with.
+        :param mode: The mode ("infer", "eval", "train") to perform the call with.
         :return: Whatever the transform returns.
         """
 
-        if stage in ('eval', 'infer'):
+        if mode in ('eval', 'infer'):
             torch_context = torch.no_grad()
         else:
             torch_context = contextlib.suppress()
 
-        with self.pd_set_stage(stage), torch_context:
+        with self.pd_set_mode(mode), torch_context:
             if self._pd_unpack_argument(arg):
                 return self(*arg)
             return self(arg)
@@ -558,19 +558,19 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
-    def _pd_itercall(self, args, stage: Stage, loader_kwargs: Optional[dict] = None,
+    def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
                      verbose: bool = False, flatten: bool = False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
-        :param stage: Stage to call in ("eval", "train" or "infer")
+        :param mode: Mode to call in ("eval", "train" or "infer")
         :param loader_kwargs: Data loader keyword arguments.
         :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
 
         :return: A generator that allows iterating over the output.
         """
-        assert stage in ('eval', 'train'), '_pd_itercall can only be used with stage eval or train'
+        assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
 
         self.pd_forward_device_check()
 
@@ -583,7 +583,7 @@ class Transform:
         use_post = not isinstance(post, Identity)
 
         if use_preprocess:
-            loader = self.pd_get_loader(args, preprocess, stage, **loader_kwargs)
+            loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
             loader = args
 
@@ -598,12 +598,12 @@ class Transform:
             batch = _move_to_device(batch, self.pd_device)
 
             if use_forward:
-                output = forward.pd_call_transform(batch, stage)
+                output = forward.pd_call_transform(batch, mode)
             else:
                 output = batch
 
             if use_post:
-                output = post.pd_call_transform(output, stage)
+                output = post.pd_call_transform(output, mode)
 
             if flatten:
                 if verbose:
@@ -673,14 +673,14 @@ class Transform:
             yield from layer.parameters()
 
     @contextlib.contextmanager
-    def pd_set_stage(self, stage: Optional[str] = None):
-        """Set of stage of Transform
+    def pd_set_mode(self, mode: Optional[str] = None):
+        """Set of mode of Transform
 
-        :param stage: stage ('train', 'eval', 'infer')
+        :param mode: mode ('train', 'eval', 'infer')
         """
-        assert stage in ('train', 'eval', 'infer', None)
+        assert mode in ('train', 'eval', 'infer', None)
 
-        if stage is None:
+        if mode is None:
             yield
             return
 
@@ -688,11 +688,11 @@ class Transform:
         training_before = [layer.training for layer in layers]
         try:
             for layer in layers:
-                if stage == 'train':
+                if mode == 'train':
                     layer.train()
                 else:
                     layer.eval()
-            Transform.pd_stage = stage
+            Transform.pd_mode = mode
             yield
         finally:
             for i, training in enumerate(training_before):
@@ -701,21 +701,21 @@ class Transform:
                     layer.train()
                 else:
                     layer.eval()
-            Transform.pd_stage = None
+            Transform.pd_mode = None
 
     @staticmethod
-    def pd_get_loader(args, preprocess, stage, **kwargs) -> DataLoader:
+    def pd_get_loader(args, preprocess, mode, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
         :param args: A sequence of datapoints.
         :param preprocess: preprocessing step
-        :param stage: stage
+        :param mode: mode
         :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
         sequence = SimpleDataset(
             args,
-            lambda *args: preprocess.pd_call_transform(*args, stage),
+            lambda *args: preprocess.pd_call_transform(*args, mode),
         )
 
         return DataLoader(
@@ -732,10 +732,10 @@ class Transform:
         :param inputs: The input.
         """
         self.pd_forward_device_check()
-        inputs = self.pd_preprocess.pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
         inputs = _move_to_device(inputs, self.pd_device)
-        inputs = self.pd_forward.pd_call_transform(inputs, stage='infer')
-        inputs = self.pd_postprocess.pd_call_transform(inputs, stage='infer')
+        inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
+        inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
 
         return inputs
 
@@ -1567,7 +1567,7 @@ class Rollout(CompoundTransform):
         out = []
         for transform_ in self.transforms:
             out.append(transform_.pd_call_transform(args))
-        if Transform.pd_stage is not None:
+        if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
@@ -1649,7 +1649,7 @@ class Parallel(CompoundTransform):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_.pd_call_transform(args[ind]))
-        if Transform.pd_stage is not None:
+        if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
@@ -1759,11 +1759,11 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
-                                                'or train_apply instead of calling the transform '
-                                                'directly.')
+        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+                                               'or train_apply instead of calling the transform '
+                                               'directly.')
 
-        if Transform.pd_stage != 'infer':
+        if Transform.pd_mode != 'infer':
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
@@ -1809,11 +1809,11 @@ class Batchify(ClassTransform):
         return (input_components, 1), (self, builtin_identity, builtin_identity)
 
     def __call__(self, args):
-        assert Transform.pd_stage is not None, ('Stage is not set, use infer_apply, eval_apply '
-                                                'or train_apply instead of calling the transform '
-                                                'directly.')
+        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+                                               'or train_apply instead of calling the transform '
+                                               'directly.')
 
-        if Transform.pd_stage != 'infer':
+        if Transform.pd_mode != 'infer':
             return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
