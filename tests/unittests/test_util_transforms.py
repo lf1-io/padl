@@ -38,7 +38,7 @@ class TensorDivide(torch.nn.Module):
         return x / self.div
 
 
-class TestIfInStage:
+class TestIfInMode:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = (
