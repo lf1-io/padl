@@ -114,9 +114,12 @@ class Try(ClassTransform):
     """ Perform *transform*. If this fails with any exception from *exceptions*, perform
     *catch_transform*.
 
-    :param transform: Transform to try
-    :param catch_transform: Transform to fall back on
-    :param exceptions: Catch conditions
+    :param transform: Transform to try.
+    :param catch_transform: Transform to fall back on.
+    :param exceptions: Catch conditions.
+    :param else_transform: Transform to carry on the `else` clause of the `try` statement.
+    :param finally_transform: Transform to carry on on the `finally` clause of the `try` statement.
+    :param pd_name:
     """
 
     def __init__(self,
@@ -135,17 +138,21 @@ class Try(ClassTransform):
         super().__init__(pd_name=pd_name,
                          arguments=OrderedDict([('transform', transform),
                                                 ('catch_transform', catch_transform),
-                                                ('exceptions', exceptions)]))
+                                                ('exceptions', exceptions),
+                                                ('else_transform', else_transform),
+                                                ('finally_transform', finally_transform)]))
         self.transform = transform
         self.catch_transform = catch_transform
         self._exceptions = exceptions
         self.else_transform = else_transform
         self.finally_transform = finally_transform
         self._pd_component = set.union(self.transform._pd_component,
+                                       self.catch_transform._pd_component,
                                        self.else_transform._pd_component,
                                        self.finally_transform._pd_component)
 
-        assert len(self._pd_component) == 1, 'Stage must not change inside a Try Transform.'
+        assert len(self._pd_component) == 1, 'Try Transform cannot contain transforms that have ' \
+                                             'multiple components.'
 
     def __call__(self, args):
         try:
