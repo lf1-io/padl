@@ -1,0 +1,10 @@
+from padl import transform
+
+
+@transform
+def indexset(x, i, j):
+    x[i] = x[j]
+    return x
+
+
+_pd_main = indexset

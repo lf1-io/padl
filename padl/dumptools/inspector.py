@@ -321,10 +321,16 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         if len(instrs) > len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-            if instr.argval != target_instr.argval:
+            if (target_instr.opname == 'LOAD_FAST'
+                    and target_instr.argval in caller_frame.f_locals
+                    and target_instr.argval in caller_frame.f_code.co_varnames):
+                argval = caller_frame.f_locals[target_instr.argval]
+            else:
+                argval = target_instr.argval
+            if instr.argval != target_instr.argval and instr.argval != argval:
                 break
             same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL')
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST')
             both_load = instr.opname in load_ops and target_instr.opname in load_ops
             if not (same_opname or both_load):
                 break
