@@ -107,15 +107,16 @@ class Transform:
         If it's a (nested) list, the structure represents the input structure for the transform,
         whereas the entries represent the "split" of parts of the input.
 
+        # TODO When input_components is a list/tuple of ints does this indicate there are multiple "pipes"?
         For example, if a transform expects a tuple of inputs, *input_components* could be
         (0, 1), meaning that the first input item is not batchified whereas the second is.
 
-        The method returns a tuple (*output_components*, *splits*).
+        The method returns a tuple ((*input_compoenents*, *output_components*), *splits*).
 
         - *output_components* is the "split" information of the output, it has the same format as
         the *input_components*.
 
-        - *splits* is a 3-tuple of splits the entries are:
+        - *splits* is a 3-tuple of splits, the entries are:
             - the "preprocess" part of the transform
             - the "forward" part of the transform
             - the "postprocess" part of the transform
@@ -1519,6 +1520,8 @@ class Rollout(CompoundTransform):
         The *output_components* are the list of output components of the sub-transforms.
         """
         if self._pd_splits is None or self._pd_splits[0][0] != input_components:
+            # TODO Should Rollout be able to accept input_components consisting of a list of ints?
+            assert isinstance(input_components, int), 'Rollout can only accept one input'
             splits = ([], [], [])
             output_components = []
             for transform_ in self.transforms:
