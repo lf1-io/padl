@@ -107,14 +107,11 @@ class TestTry:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.to_int = transform(lambda x: 1)
-        request.cls.divide_by_zero = transform(lambda x: x / 0)
         request.cls.str_sum = transform(lambda x: x + 'a')
         request.cls.return_zero = transform(lambda x: 0)
-        request.cls.mult_two = TensorMult(2)
-        request.cls.mult_three = TensorMult(3)
-        request.cls.div_char = TensorDivide('a')
+        tmp = transform(lambda x: x / 0)
         request.cls.try_transform_1 = (
-            Try(self.divide_by_zero,
+            Try(tmp,
                 times_two,
                 (TypeError, ZeroDivisionError),
                 plus_one,
@@ -126,13 +123,13 @@ class TestTry:
             plus_one
             >> transform(lambda x: torch.LongTensor([x]))
             >> Batchify()
-            >> Try(self.div_char, self.mult_two, TypeError, self.mult_two, self.mult_two)
+            >> Try(TensorDivide('a'), TensorMult(2), TypeError, TensorMult(2), TensorMult(2))
         )
         request.cls.try_transform_3 = (
             plus_one
             >> transform(lambda x: torch.LongTensor([x]))
             >> Batchify()
-            >> Try(self.mult_three, self.div_char, TypeError, self.div_char, self.mult_two)
+            >> Try(TensorMult(3), TensorDivide('a'), TypeError, TensorDivide('a'), TensorMult(2))
         )
 
     def test_infer_apply_1(self):
@@ -166,7 +163,7 @@ class TestTry:
         self.try_transform_1.pd_save(tmp_path / 'test.padl')
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(4) == 10
-'''
+
     def test_save_and_load_2(self, tmp_path):
         self.try_transform_2.pd_save(tmp_path / 'test.padl')
         t2 = padl.load(tmp_path / 'test.padl')
@@ -176,4 +173,3 @@ class TestTry:
         self.try_transform_3.pd_save(tmp_path / 'test.padl')
         t3 = padl.load(tmp_path / 'test.padl')
         assert t3.infer_apply(2) == 18
-'''
