@@ -1344,10 +1344,16 @@ class Compose(CompoundTransform):
                 for split in splits
             )
 
-            self._pd_splits = (output_components, tuple(Compose(s) if len(s) > 1  # combine subsplits
-                                            else s[0] if len(s) == 1  # if it's just one, no need to combine
-                                            else builtin_identity  # if it's empty: identity
-                                            for s in cleaned_splits))
+            final_splits = []
+            for s in cleaned_splits:
+                if len(s) > 1:  # combine subsplits
+                    final_splits.append(Compose(s))
+                elif len(s) == 1:  # if it's just one, no need to combine
+                    final_splits.append(s[0])
+                else:  # if it's empty: identity
+                    final_splits.append(builtin_identity)
+
+            self._pd_splits = (output_components, final_splits)
         return self._pd_splits
 
     @staticmethod
@@ -1522,28 +1528,30 @@ class Rollout(CompoundTransform):
                     split.append(subsplit)
 
             cleaned_splits = tuple(
-                [s for s in split if not isinstance(s, Identity)]
+                builtin_identity if all(isinstance(s, Identity) for s in split) else split
                 for split in splits
             )
-            lengths = [len(s) > 0 for s in cleaned_splits]
-            first_non_identity = [i for i, l in enumerate(lengths) if l][0]
 
-            res = []
+            first_non_identity = \
+                [i for i, s in enumerate(cleaned_splits) if not isinstance(s, Identity)]
+            if len(first_non_identity) == 0:
+                # Catches scenario where all splits are Identities
+                first_non_identity = 0
+            else:
+                first_non_identity = first_non_identity[0]
+
+            final_splits = []
             for i, s in enumerate(cleaned_splits):
-                if isinstance(s, list) and len(s) > 0:
-                    # TODO This doesn't work, don't know which pips are missing identities
-                    # Needed to preserve the correct number of pipes
-                    while len(s) < len(self.transforms):
-                        s.append(builtin_identity)
+                if isinstance(s, list):
                     if i == first_non_identity:
-                        res.append(Rollout(s))
+                        final_splits.append(Rollout(s))
                     else:
-                        res.append(Parallel(s))
+                        final_splits.append(Parallel(s))
                 else:
-                    res.append(builtin_identity)
-            res = tuple(res)
+                    final_splits.append(s)
+            final_splits = tuple(final_splits)
 
-            self._pd_splits = (output_components, res)
+            self._pd_splits = (output_components, final_splits)
         return self._pd_splits
 
     def __call__(self, args):
@@ -1624,7 +1632,7 @@ class Parallel(CompoundTransform):
             )
 
             self._pd_splits = (output_components,
-                               tuple(Parallel(s) if isinstance(s, list) and s else builtin_identity
+                               tuple(Parallel(s) if isinstance(s, list) else s
                                      for s in cleaned_splits))
         return self._pd_splits
 
