@@ -1750,6 +1750,8 @@ class Unbatchify(ClassTransform):
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
+        if isinstance(args, list):
+            return [self(x) for x in args]
         if isinstance(args, torch.Tensor):
             args = args.squeeze(self.dim)
             return args.to('cpu') if self.cpu else args
