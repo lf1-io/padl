@@ -119,7 +119,7 @@ class Try(ClassTransform):
     :param exceptions: Catch conditions.
     :param else_transform: Transform to carry on the `else` clause of the `try` statement.
     :param finally_transform: Transform to carry on on the `finally` clause of the `try` statement.
-    :param pd_name:
+    :param pd_name: The Transform's name.
     """
 
     def __init__(self,
