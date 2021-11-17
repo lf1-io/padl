@@ -1851,6 +1851,13 @@ def group(transform: Union[Rollout, Parallel]):
 
 
 class _ItemGetter:
+    """A simple item getter. Takes *samples* and applies *transform* to it.
+
+    :param samples: An object implementing __getitem__ and __len__.
+    :param transform: Preprocessing transform.
+    :param exception: Exception to catch for (fall back to *default*).
+    :param default: The default value to fall back to in case of exception.
+    """
     def __init__(self, samples, transform, exception=None, default=None):
         self.samples = samples
         self.transform = transform
