@@ -1930,7 +1930,7 @@ class Batchify(ClassTransform):
         Batchify has empty splits and puts the component-number to 1 ("batchified").
         """
         # ensure that all inputs are "fresh"
-        assert self._all_0(input_components), 'double batchify'
+        assert self._component_set(input_components) == {0}, 'double batchify'
         # put the output component to 1 ("batchified")
         return (input_components, 1), (self, builtin_identity, builtin_identity)
 
