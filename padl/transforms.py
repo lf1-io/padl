@@ -586,7 +586,6 @@ class Transform:
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
         use_post = not isinstance(post, Identity)
-        # assert not(use_post and not flatten), 'postprocessing only possible with flatten=True'
 
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
@@ -625,7 +624,6 @@ class Transform:
                 else:
                     yield from output
                 continue
-            print(output)
             if hasattr(self, '_pd_output_format'):
                 yield self._pd_output_format(*output)
             else:
