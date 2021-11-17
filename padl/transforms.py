@@ -77,7 +77,9 @@ def _batch_get(args, i):
     """
     if isinstance(args, torch.Tensor):
         return args[i]
-    if isinstance(args, list) or isinstance(args, tuple):
+    if isinstance(args, list):
+        return list([_batch_get(args[j], i) for j in range(len(args))])
+    if isinstance(args, tuple):
         return tuple([_batch_get(args[j], i) for j in range(len(args))])
     if isinstance(args, dict):
         return {k: _batch_get(args[k], i) for k in args}
@@ -105,7 +107,7 @@ def _move_to_device(args, device):
     if isinstance(args, tuple):
         return tuple([_move_to_device(x, device) for x in args])
     if isinstance(args, list):
-        return list([_move_to_device(x, device) for x in args])
+        return [_move_to_device(x, device) for x in args]
     if isinstance(args, torch.Tensor):
         return args.to(device)
     return args
@@ -584,7 +586,7 @@ class Transform:
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
         use_post = not isinstance(post, Identity)
-        assert not(use_post and not flatten), 'postprocessing only possible with flatten=True'
+        # assert not(use_post and not flatten), 'postprocessing only possible with flatten=True'
 
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
@@ -606,29 +608,24 @@ class Transform:
             else:
                 output = batch
 
-            # if use_post:
-                # output = post.pd_call_transform(output, mode)
+            if use_post:
+                output = _unpack_batch(output)
+                output = [post.pd_call_transform(x, mode) for x in output]
 
             if flatten:
 
                 if verbose:
                     pbar.update()
 
-                # TODO this was edited
-                if use_post:
-                    # any latency induced here?
-                    # output = Unbatchify(cpu=False).infer_apply(batch)
-                    output = _unpack_batch(batch)
-                    output = [post.pd_call_transform(x, mode) for x in output]
+                if not use_post:
+                    output = _unpack_batch(output)
 
-                # isn't this in the wrong place?
-                # if not use_post:
-                #     output = Unbatchify(cpu=False)(batch)
                 if hasattr(self, '_pd_output_format'):
                     yield from self._pd_output_format(*output)
                 else:
                     yield from output
                 continue
+            print(output)
             if hasattr(self, '_pd_output_format'):
                 yield self._pd_output_format(*output)
             else:
@@ -1738,8 +1735,10 @@ class Unbatchify(ClassTransform):
         self.cpu = cpu
 
     def _move_to_device(self, args):
-        if isinstance(args, (tuple, list)):
+        if isinstance(args, tuple):
             return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, list):
+            return [self._move_to_device(x) for x in args]
         if isinstance(args, torch.Tensor):
             return args.to('cpu')
         return args

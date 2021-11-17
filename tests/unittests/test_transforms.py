@@ -364,18 +364,18 @@ class TestCompose:
         assert self.transform_5.infer_apply(1) == torch.tensor(8)
 
     def test_eval_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [[torch.tensor(8)], [torch.tensor(8)]]
 
     def test_train_apply(self):
         # default
-        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.train_apply([1, 1])) == [[torch.tensor(8)], [torch.tensor(8)]]
         # loader kwargs
         for batch in list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             verbose=True,
             batch_size=2)
         ):
-            assert torch.all(batch == torch.tensor([8, 12]))
+            assert batch == [torch.tensor(8), torch.tensor(12)]
         # flatten = True
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
