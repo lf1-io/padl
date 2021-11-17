@@ -24,7 +24,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from padl.data import SimpleDataset
 from padl.dumptools import var2mod, symfinder, inspector
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
@@ -42,6 +41,47 @@ class _Notset:
 
 
 _notset = _Notset()
+
+
+def _unpack_batch(args):
+    """
+    Convert an input in batch-form into a tuple of datapoints.
+    E.g:
+        ([1, 4], ([2, 5], [3, 6])) -> [(1, (2, 3)), (4, (5, 6))]
+    :param args: arguments to be unbatched
+    """
+    out = []
+    itr = 0
+    while True:
+        try:
+            temp = _batch_get(args, itr)
+            out.append(temp)
+            itr += 1
+        except IndexError:
+            return out
+
+
+def _batch_get(args, i):
+    """
+    Get the *i*th element of a tensor
+    or
+    get a tuple of the *i*th elements of a tuple (or list) of tensors
+    >>> t1 = torch.Tensor([1,2,3])
+    >>> t2 = torch.Tensor([4,5,6])
+    >>> _batch_get(t1, 1)
+    tensor(2)
+    >>> _batch_get((t1, t2), 1)
+    (tensor(2), tensor(5))
+    :param args: arguments
+    :param i: index in batch
+    """
+    if isinstance(args, torch.Tensor):
+        return args[i]
+    if isinstance(args, list) or isinstance(args, tuple):
+        return tuple([_batch_get(args[j], i) for j in range(len(args))])
+    if isinstance(args, dict):
+        return {k: _batch_get(args[k], i) for k in args}
+    raise TypeError
 
 
 def _isinstance_of_namedtuple(arg):
@@ -544,6 +584,7 @@ class Transform:
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
         use_post = not isinstance(post, Identity)
+        assert not(use_post and not flatten), 'postprocessing only possible with flatten=True'
 
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
@@ -565,14 +606,24 @@ class Transform:
             else:
                 output = batch
 
-            if use_post:
-                output = post.pd_call_transform(output, mode)
+            # if use_post:
+                # output = post.pd_call_transform(output, mode)
 
             if flatten:
+
                 if verbose:
                     pbar.update()
-                if not use_post:
-                    output = Unbatchify(cpu=False)(batch)
+
+                # TODO this was edited
+                if use_post:
+                    # any latency induced here?
+                    # output = Unbatchify(cpu=False).infer_apply(batch)
+                    output = _unpack_batch(batch)
+                    output = [post.pd_call_transform(x, mode) for x in output]
+
+                # isn't this in the wrong place?
+                # if not use_post:
+                #     output = Unbatchify(cpu=False)(batch)
                 if hasattr(self, '_pd_output_format'):
                     yield from self._pd_output_format(*output)
                 else:
@@ -696,7 +747,7 @@ class Transform:
         :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
-        sequence = SimpleDataset(
+        sequence = _ItemGetter(
             args,
             lambda *args: preprocess.pd_call_transform(*args, mode),
         )
@@ -944,7 +995,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
@@ -955,7 +1006,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
@@ -1733,6 +1784,8 @@ class Batchify(ClassTransform):
             return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
@@ -1798,3 +1851,22 @@ def group(transform: Union[Rollout, Parallel]):
     2-tuple whose first item will be passed to `a` and whose second item will be passed to `b + c`.
     """
     return transform.grouped()
+
+
+class _ItemGetter:
+    def __init__(self, samples, transform, exception=None, default=None):
+        self.samples = samples
+        self.transform = transform
+        self.exception = exception
+        self.default = default
+
+    def __getitem__(self, item):
+        if self.exception:
+            try:
+                return self.transform(self.samples[item])
+            except self.exception:
+                return self.default
+        return self.transform(self.samples[item])
+
+    def __len__(self):
+        return len(self.samples)
