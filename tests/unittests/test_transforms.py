@@ -702,3 +702,47 @@ class TestClassInstance:
 
     def test_long_list(self):
         import tests.material.long_list
+
+
+class TestComposeWithComments:
+    def test_lambda_1(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_lambda_2(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+            #
+            >> transform(lambda x: x)
+        )
+
+    def test_identity(self):
+        # should not fail
+        t = (
+            Identity()
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_function_1(self, tmp_path):
+        t = (
+            Identity()
+            #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
+
+    def test_function_2(self, tmp_path):
+        t = (
+            Identity()
+        #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
