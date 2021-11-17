@@ -236,6 +236,10 @@ class TestParallel:
         request.cls.transform_1 = plus_one / times_two / times_two
         request.cls.transform_2 = transform(simple_func) / transform(simple_func) / transform(simple_func)
         request.cls.transform_3 = plus_one / plus_one / transform(simple_func)
+        request.cls.transform_4 = (
+            plus_one / plus_one
+            >> transform(lambda x: x[0] * x[1])
+        )
 
     def test_output(self):
         in_ = (2, 2, 2)
@@ -253,15 +257,19 @@ class TestParallel:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Parallel)
+        assert isinstance(self.transform_4.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Identity)
+        assert isinstance(self.transform_4.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_4.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
+        assert self.transform_4.infer_apply((2, 4)) == 15
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
