@@ -257,6 +257,49 @@ class Transform:
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
+        """Build a codegraph defining the transform.
+
+        A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
+        code defining the name and a set of dependencies (other scoped names). The dependencies
+        can be understood as the edges in the graph.
+
+        A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
+        representing an assignment of the transform's evaluable representation to a variable
+        called *name*.
+
+        From there, iteratively, all :class:`CodeNode`s representing the existing dependencies are
+        searched for and added to the graph.
+
+        Example:
+
+        Given the following code ...::
+
+            from padl import transform
+
+            a = 100
+
+            @transform
+            def f(x):
+                return x + a
+
+        ... ``f._pd_build_codegraph(name='mytransform')`` would first create the start-node::
+
+            "mytransform": CodeNode(source='mytransform = f',
+                                    globals_={('f', 0)})
+
+        By iterating though the dependencies ("globals_"), the code-node of 'f' would be added::
+
+            "f": CodeNode(source='@transform\ndef f(x):\n [...]',
+                          globals_={('transform', 0), ('a', 0)})
+
+        This adds two new dependencies for which code-nodes are added::
+
+            "transform": CodeNode(source='from padl import transform', globals_={})
+            "a": CodeNode(source='a = 100', globals_={})
+
+        This leaves no more dependencies to be found. These four nodes are ``f``'s codegraph.
+        The codegraph can be used to compile a python module defining ``f``.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:
@@ -277,54 +320,53 @@ class Transform:
         start = self._pd_codegraph_startnode(name)
         # <-
 
+        # if this has closurevars, get them (if there are transforms in the closure, we want to
+        # allow them to build their codegraph themselves, see below)
         globals_dict, nonlocals_dict = self._pd_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
         todo = {*start.globals_}
-        while todo and (next_ := todo.pop()):
+        while todo and (next_name := todo.pop()):
             # we know this already - go on
-            if next_ in scopemap:
+            if next_name in scopemap:
                 continue
 
-            if next_.name.startswith('PADL_VALUE'):
+            if next_name.name.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
-                if len(next_.scope) > 0:
-                    next_obj = all_vars_dict[next_.name]
+                if next_name.scope.is_global():
+                    next_obj = globals_dict[next_name.name]
                 else:
-                    next_obj = globals_dict[next_.name]
-                next_obj._pd_build_codegraph(graph, scopemap, next_.name)
+                    next_obj = all_vars_dict[next_name.name]
+                next_obj._pd_build_codegraph(graph, scopemap, next_name.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
-            # find how next_.name came into being
-            (source, node), scope_of_next_var = symfinder.find_in_scope(next_)
-            scopemap[next_] = scope_of_next_var
+            # find how next_ came into being
+            (source, node), scope_of_next_var = symfinder.find_in_scope(next_name)
+
+            # store a mapping from *next_name* to it's defining scope
+            scopemap[next_name] = scope_of_next_var
 
             # find dependencies
-            globals_ = {
-                ScopedName(var, scope_of_next_var, n)
-                for var, n in var2mod.find_globals(node)
-            }
-            globals_ = set()
-            for var, n in var2mod.find_globals(node):
-                if var == next_.name and scope_of_next_var == scopemap[next_]:
-                    globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
-                else:
-                    globals_.add(ScopedName(var, scope_of_next_var, n))
+            dependencies = var2mod.find_globals(node)
+            # fix the scope of *next_name* (from where it was a dependency to where it was defined)
+            next_name = ScopedName(next_name.name, scope_of_next_var, next_name.n)
+            dependencies = var2mod.increment_same_name_var(dependencies, next_name)
 
-            graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = \
-                var2mod.CodeNode(source=source,
-                                 globals_=globals_,
-                                 ast_node=node)
-            todo.update(globals_)
-        # find dependencies done
+            graph[next_name] = var2mod.CodeNode(source=source,
+                                                globals_=dependencies,
+                                                ast_node=node)
+            todo.update(dependencies)
+        # finding dependencies done
 
+        # if *name* is not ``None``, add the start node (i.e. the node assigning the transform to
+        # *name*) to the codegraph
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
@@ -856,6 +898,25 @@ class FunctionTransform(AtomicTransform):
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
+        """Return the closurevars (globals and nonlocals) the transform depends on.
+
+        Closurevars are variables that are used inside a transform but weren't define there.
+
+        Example:
+
+        In this case...
+
+            z = 100
+            def make_transform():
+                b = 1
+                @transform
+                def f(x):
+                    a = 10
+                    return a + x + z + b
+
+        ... "f" has a global closurevar "z" (defined in the global scope) and nonlocal closurevar
+        "b" (defined in the scope surrounding "f", but not the global scope).
+        """
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
@@ -905,6 +966,9 @@ class ClassTransform(AtomicTransform):
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
             return body_msg
+
+    def _split_call(self):
+        return symfinder.split_call(self._pd_call)
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
@@ -1001,23 +1065,6 @@ class Map(Transform):
         if varname:
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
-
-    def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
-        if graph is None:
-            graph = {}
-        if scopemap is None:
-            scopemap = {}
-
-        start = self._pd_codegraph_startnode(name)
-
-        if name is not None:
-            assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
-            scopemap[ScopedName(name, scope, 0)] = scope
-
-        varname = self.transform.pd_varname(self._pd_call_info.module)
-        self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
-        return graph, scopemap
 
     def _pd_preprocess_part(self) -> Transform:
         t_pre = self.transform.pd_preprocess
@@ -1120,6 +1167,13 @@ class CompoundTransform(Transform):
         return result
 
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        """Build a codegraph defining the transform.
+
+        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
+
+        The codegraph of a :class:`CompoundTransform` is the union of the codegraphs of the
+        contained transforms plus the node defining the transform itself.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:

@@ -614,3 +614,24 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
 
 class NameNotFound(Exception):
     """Exception indicating that a name could not be found. """
+
+
+def split_call(call_source):
+    """Split the function of a call from its arguments.
+
+    Example:
+
+    >>> split_call_args('f(1, 2, 3)')
+    ("f", "1, 2, 3")
+    """
+    node = ast.parse(call_source).body[0].value
+    call = ast.get_source_segment(call_source, node.func)
+    if not node.args:
+        args = ''
+    else:
+        args = sourceget.cut(call_source,
+                             node.args[0].lineno - 1,
+                             node.args[-1].end_lineno - 1,
+                             node.args[0].col_offset,
+                             node.args[-1].end_col_offset)
+    return call, args

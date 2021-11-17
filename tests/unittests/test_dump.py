@@ -44,7 +44,7 @@ def setcomp_a(y):
 def recursive(x):
     if x == 0:
         return x
-    return x, recursive(x - 1)
+    return 1 + recursive(x - 1)
 
 
 def maketransform():
