@@ -78,7 +78,7 @@ def _batch_get(args, i):
     if isinstance(args, torch.Tensor):
         return args[i]
     if isinstance(args, list):
-        return list([_batch_get(args[j], i) for j in range(len(args))])
+        return [_batch_get(args[j], i) for j in range(len(args))]
     if isinstance(args, tuple):
         return tuple([_batch_get(args[j], i) for j in range(len(args))])
     if isinstance(args, dict):
@@ -594,7 +594,7 @@ class Transform:
 
         pbar = None
         if verbose:
-            if flatten:
+            if use_post or flatten:
                 pbar = tqdm(total=len(args))
             else:
                 loader = tqdm(loader, total=len(loader))
@@ -602,32 +602,27 @@ class Transform:
         for batch in loader:
             batch = _move_to_device(batch, self.pd_device)
 
+            output = batch
             if use_forward:
                 output = forward.pd_call_transform(batch, mode)
-            else:
-                output = batch
 
-            if use_post:
-                output = _unpack_batch(output)
-                output = [post.pd_call_transform(x, mode) for x in output]
-
-            if flatten:
-
+            if use_post or flatten:
                 if verbose:
                     pbar.update()
 
-                if not use_post:
-                    output = _unpack_batch(output)
-
-                if hasattr(self, '_pd_output_format'):
-                    yield from self._pd_output_format(*output)
-                else:
-                    yield from output
-                continue
-            if hasattr(self, '_pd_output_format'):
-                yield self._pd_output_format(*output)
+                output = _unpack_batch(output)
+                if use_post:
+                    output = [post.pd_call_transform(x, mode) for x in output]
+                for out in output:
+                    if hasattr(self, '_pd_output_format'):
+                        yield self._pd_output_format(*out)
+                    else:
+                        yield out
             else:
-                yield output
+                if hasattr(self, '_pd_output_format'):
+                    yield self._pd_output_format(*output)
+                else:
+                    yield output
 
     @property
     def pd_device(self) -> str:
