@@ -339,7 +339,7 @@ class TestRollout:
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
         assert self.transform_4.infer_apply(2) == (3, 4)
         assert self.transform_5.infer_apply(2) == (4, 3)
-        assert self.transform_6.infer_apply((2, 2)) == [(6, 6), (8, 8)]
+        assert self.transform_6.infer_apply((2, 2)) == ((3, 4, 3, 4), (3, 4, 3, 4))
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
