@@ -618,8 +618,7 @@ class TestTransformDeviceCheck:
         self.transform_1.pd_to('gpu')
         self.transform_1.transforms[1].pd_to('cpu')
 
-        with pytest.raises(WrongDeviceError):
-            self.transform_1.pd_forward_device_check()
+        assert self.transform_1.pd_forward_device_check()
 
         self.transform_2.pd_to('gpu')
         assert self.transform_2.pd_forward_device_check()
