@@ -1635,8 +1635,6 @@ class Rollout(CompoundTransform):
         The *output_components* are the list of output components of the sub-transforms.
         """
         if self._pd_splits is None or self._pd_splits[0][0] != input_components:
-            # TODO Should Rollout be able to accept input_components consisting of a list of ints?
-            assert isinstance(input_components, int), 'Rollout can only accept one input'
             splits = ([], [], [])
             output_components = []
             for transform_ in self.transforms:

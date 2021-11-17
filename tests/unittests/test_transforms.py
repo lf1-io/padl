@@ -296,6 +296,10 @@ class TestRollout:
         request.cls.transform_5 = (
             (times_two >> Batchify()) + (Batchify() >> plus_one)
         )
+        request.cls.transform_6 = (
+            plus_one / times_two
+            >> times_two + times_two
+        )
 
     def test_output(self):
         in_ = 123
@@ -313,17 +317,21 @@ class TestRollout:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Rollout)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Identity)
+        assert isinstance(self.transform_6.pd_forward, pd.Identity)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
         assert self.transform_4.infer_apply(2) == (3, 4)
         assert self.transform_5.infer_apply(2) == (4, 3)
+        assert self.transform_6.infer_apply((2, 2)) == [(6, 6), (8, 8)]
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
