@@ -157,7 +157,7 @@ class Try(ClassTransform):
     def __call__(self, args):
         try:
             args = self.transform.pd_call_transform(args)
-        except self._exceptions:
+        except self.exceptions:
             args = self.catch_transform.pd_call_transform(args)
         else:
             args = self.else_transform.pd_call_transform(args)
