@@ -137,6 +137,21 @@ class Transform:
         self._pd_layers = None
         self._pd_splits = None
 
+    @staticmethod
+    def _component_set(components):
+        """Compute the set of components.
+
+        :param components: can be an integer or a (nested) list of integers.
+        :return: The set of all contained integers.
+        """
+        res = set()
+        if isinstance(components, list):
+            for sub in components:
+                res.update(Transform._component_set(sub))
+            return res
+        res.add(components)
+        return res
+
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple['Transform', 'Transform', 'Transform']]:
         """ Split the transform into "preprocessing", "forward" and "postprocessing" parts.
@@ -166,6 +181,9 @@ class Transform:
         # Need to recompute if None or if the incoming input_components doesn't matched the cached
         # version
         if self._pd_splits is None or self._pd_splits[0][0] != input_components:
+            component_set = Transform._component_set(input_components)
+            assert len(component_set) == 1
+            input_components = list(component_set)[0]
             self._pd_splits = (
                 # a normal transform doesn't change the components
                 (input_components, input_components),
@@ -1904,15 +1922,6 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-
-    @staticmethod
-    def _all_0(components):
-        if isinstance(components, list):
-            for sub in components:
-                if not Batchify._all_0(sub):
-                    return False
-            return True
-        return components == 0
 
     def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple[Transform, Transform, Transform]]:
