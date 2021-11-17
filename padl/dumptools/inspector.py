@@ -216,7 +216,8 @@ def get_surrounding_block(source: str, lineno: int):
     while before:
         next_ = before.pop(-1)
         next_white = _count_leading_whitespace(next_)
-        if next_white is None or next_white >= white:
+        starts_with_comment = next_.lstrip().startswith('#')
+        if next_white is None or next_white >= white or starts_with_comment:
             block = [next_[white:]] + block
         else:
             break

@@ -1,0 +1,11 @@
+from padl import transform
+
+
+@transform
+def recursive(x):
+    if x == 0:
+        return x
+    return 1 + recursive(x - 1)
+
+
+_pd_main = recursive

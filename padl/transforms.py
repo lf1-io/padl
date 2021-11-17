@@ -24,7 +24,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from padl.data import SimpleDataset
 from padl.dumptools import var2mod, symfinder, inspector
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
@@ -42,6 +41,49 @@ class _Notset:
 
 
 _notset = _Notset()
+
+
+def _unpack_batch(args):
+    """
+    Convert an input in batch-form into a tuple of datapoints.
+    E.g:
+        ([1, 4], ([2, 5], [3, 6])) -> [(1, (2, 3)), (4, (5, 6))]
+    :param args: arguments to be unbatched
+    """
+    out = []
+    itr = 0
+    while True:
+        try:
+            temp = _batch_get(args, itr)
+            out.append(temp)
+            itr += 1
+        except IndexError:
+            return out
+
+
+def _batch_get(args, i):
+    """
+    Get the *i*th element of a tensor
+    or
+    get a tuple of the *i*th elements of a tuple (or list) of tensors
+    >>> t1 = torch.Tensor([1,2,3])
+    >>> t2 = torch.Tensor([4,5,6])
+    >>> _batch_get(t1, 1)
+    tensor(2)
+    >>> _batch_get((t1, t2), 1)
+    (tensor(2), tensor(5))
+    :param args: arguments
+    :param i: index in batch
+    """
+    if isinstance(args, torch.Tensor):
+        return args[i]
+    if isinstance(args, list):
+        return [_batch_get(args[j], i) for j in range(len(args))]
+    if isinstance(args, tuple):
+        return tuple([_batch_get(args[j], i) for j in range(len(args))])
+    if isinstance(args, dict):
+        return {k: _batch_get(args[k], i) for k in args}
+    raise TypeError
 
 
 def _isinstance_of_namedtuple(arg):
@@ -65,7 +107,7 @@ def _move_to_device(args, device):
     if isinstance(args, tuple):
         return tuple([_move_to_device(x, device) for x in args])
     if isinstance(args, list):
-        return list([_move_to_device(x, device) for x in args])
+        return [_move_to_device(x, device) for x in args]
     if isinstance(args, torch.Tensor):
         return args.to(device)
     return args
@@ -296,6 +338,49 @@ class Transform:
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
+        """Build a codegraph defining the transform.
+
+        A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
+        code defining the name and a set of dependencies (other scoped names). The dependencies
+        can be understood as the edges in the graph.
+
+        A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
+        representing an assignment of the transform's evaluable representation to a variable
+        called *name*.
+
+        From there, iteratively, all :class:`CodeNode`s representing the existing dependencies are
+        searched for and added to the graph.
+
+        Example:
+
+        Given the following code ...::
+
+            from padl import transform
+
+            a = 100
+
+            @transform
+            def f(x):
+                return x + a
+
+        ... ``f._pd_build_codegraph(name='mytransform')`` would first create the start-node::
+
+            "mytransform": CodeNode(source='mytransform = f',
+                                    globals_={('f', 0)})
+
+        By iterating though the dependencies ("globals_"), the code-node of 'f' would be added::
+
+            "f": CodeNode(source='@transform\ndef f(x):\n [...]',
+                          globals_={('transform', 0), ('a', 0)})
+
+        This adds two new dependencies for which code-nodes are added::
+
+            "transform": CodeNode(source='from padl import transform', globals_={})
+            "a": CodeNode(source='a = 100', globals_={})
+
+        This leaves no more dependencies to be found. These four nodes are ``f``'s codegraph.
+        The codegraph can be used to compile a python module defining ``f``.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:
@@ -316,54 +401,53 @@ class Transform:
         start = self._pd_codegraph_startnode(name)
         # <-
 
+        # if this has closurevars, get them (if there are transforms in the closure, we want to
+        # allow them to build their codegraph themselves, see below)
         globals_dict, nonlocals_dict = self._pd_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
         todo = {*start.globals_}
-        while todo and (next_ := todo.pop()):
+        while todo and (next_name := todo.pop()):
             # we know this already - go on
-            if next_ in scopemap:
+            if next_name in scopemap:
                 continue
 
-            if next_.name.startswith('PADL_VALUE'):
+            if next_name.name.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
-                if len(next_.scope) > 0:
-                    next_obj = all_vars_dict[next_.name]
+                if next_name.scope.is_global():
+                    next_obj = globals_dict[next_name.name]
                 else:
-                    next_obj = globals_dict[next_.name]
-                next_obj._pd_build_codegraph(graph, scopemap, next_.name)
+                    next_obj = all_vars_dict[next_name.name]
+                next_obj._pd_build_codegraph(graph, scopemap, next_name.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
-            # find how next_.name came into being
-            (source, node), scope_of_next_var = symfinder.find_in_scope(next_)
-            scopemap[next_] = scope_of_next_var
+            # find how next_ came into being
+            (source, node), scope_of_next_var = symfinder.find_in_scope(next_name)
+
+            # store a mapping from *next_name* to it's defining scope
+            scopemap[next_name] = scope_of_next_var
 
             # find dependencies
-            globals_ = {
-                ScopedName(var, scope_of_next_var, n)
-                for var, n in var2mod.find_globals(node)
-            }
-            globals_ = set()
-            for var, n in var2mod.find_globals(node):
-                if var == next_.name and scope_of_next_var == scopemap[next_]:
-                    globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
-                else:
-                    globals_.add(ScopedName(var, scope_of_next_var, n))
+            dependencies = var2mod.find_globals(node)
+            # fix the scope of *next_name* (from where it was a dependency to where it was defined)
+            next_name = ScopedName(next_name.name, scope_of_next_var, next_name.n)
+            dependencies = var2mod.increment_same_name_var(dependencies, next_name)
 
-            graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = \
-                var2mod.CodeNode(source=source,
-                                 globals_=globals_,
-                                 ast_node=node)
-            todo.update(globals_)
-        # find dependencies done
+            graph[next_name] = var2mod.CodeNode(source=source,
+                                                globals_=dependencies,
+                                                ast_node=node)
+            todo.update(dependencies)
+        # finding dependencies done
 
+        # if *name* is not ``None``, add the start node (i.e. the node assigning the transform to
+        # *name*) to the codegraph
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
@@ -589,7 +673,7 @@ class Transform:
 
         pbar = None
         if verbose:
-            if flatten:
+            if use_post or flatten:
                 pbar = tqdm(total=len(args))
             else:
                 loader = tqdm(loader, total=len(loader))
@@ -597,28 +681,27 @@ class Transform:
         for batch in loader:
             batch = _move_to_device(batch, self.pd_device)
 
+            output = batch
             if use_forward:
                 output = forward.pd_call_transform(batch, mode)
-            else:
-                output = batch
 
-            if use_post:
-                output = post.pd_call_transform(output, mode)
-
-            if flatten:
+            if use_post or flatten:
                 if verbose:
                     pbar.update()
-                if not use_post:
-                    output = Unbatchify(cpu=False)(batch)
-                if hasattr(self, '_pd_output_format'):
-                    yield from self._pd_output_format(*output)
-                else:
-                    yield from output
-                continue
-            if hasattr(self, '_pd_output_format'):
-                yield self._pd_output_format(*output)
+
+                output = _unpack_batch(output)
+                if use_post:
+                    output = [post.pd_call_transform(x, mode) for x in output]
+                for out in output:
+                    if hasattr(self, '_pd_output_format'):
+                        yield self._pd_output_format(*out)
+                    else:
+                        yield out
             else:
-                yield output
+                if hasattr(self, '_pd_output_format'):
+                    yield self._pd_output_format(*output)
+                else:
+                    yield output
 
     @property
     def pd_device(self) -> str:
@@ -713,7 +796,7 @@ class Transform:
         :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
-        sequence = SimpleDataset(
+        sequence = _ItemGetter(
             args,
             lambda *args: preprocess.pd_call_transform(*args, mode),
         )
@@ -876,6 +959,25 @@ class FunctionTransform(AtomicTransform):
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
+        """Return the closurevars (globals and nonlocals) the transform depends on.
+
+        Closurevars are variables that are used inside a transform but weren't define there.
+
+        Example:
+
+        In this case...
+
+            z = 100
+            def make_transform():
+                b = 1
+                @transform
+                def f(x):
+                    a = 10
+                    return a + x + z + b
+
+        ... "f" has a global closurevar "z" (defined in the global scope) and nonlocal closurevar
+        "b" (defined in the scope surrounding "f", but not the global scope).
+        """
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
@@ -883,7 +985,10 @@ class FunctionTransform(AtomicTransform):
                  'needed for user defined transforms.',
                  RuntimeWarning)
             return {}, {}
-        return closurevars.globals, closurevars.nonlocals
+        return (
+            {k: v for k, v in closurevars.globals.items() if v is not self},
+            {k: v for k, v in closurevars.nonlocals.items() if v is not self}
+        )
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
@@ -922,6 +1027,9 @@ class ClassTransform(AtomicTransform):
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
             return body_msg
+
+    def _split_call(self):
+        return symfinder.split_call(self._pd_call)
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
@@ -962,7 +1070,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
@@ -973,7 +1081,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
@@ -1147,6 +1255,13 @@ class CompoundTransform(Transform):
         return result
 
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        """Build a codegraph defining the transform.
+
+        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
+
+        The codegraph of a :class:`CompoundTransform` is the union of the codegraphs of the
+        contained transforms plus the node defining the transform itself.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:
@@ -1752,8 +1867,10 @@ class Unbatchify(ClassTransform):
         return (input_components, 2), (builtin_identity, builtin_identity, self)
 
     def _move_to_device(self, args):
-        if isinstance(args, (tuple, list)):
+        if isinstance(args, tuple):
             return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, list):
+            return [self._move_to_device(x) for x in args]
         if isinstance(args, torch.Tensor):
             return args.to('cpu')
         return args
@@ -1767,6 +1884,8 @@ class Unbatchify(ClassTransform):
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
+        if isinstance(args, list):
+            return [self(x) for x in args]
         if isinstance(args, torch.Tensor):
             args = args.squeeze(self.dim)
             return args.to('cpu') if self.cpu else args
@@ -1817,6 +1936,8 @@ class Batchify(ClassTransform):
             return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
@@ -1882,3 +2003,29 @@ def group(transform: Union[Rollout, Parallel]):
     2-tuple whose first item will be passed to `a` and whose second item will be passed to `b + c`.
     """
     return transform.grouped()
+
+
+class _ItemGetter:
+    """A simple item getter. Takes *samples* and applies *transform* to it.
+
+    :param samples: An object implementing __getitem__ and __len__.
+    :param transform: Preprocessing transform.
+    :param exception: Exception to catch for (fall back to *default*).
+    :param default: The default value to fall back to in case of exception.
+    """
+    def __init__(self, samples, transform, exception=None, default=None):
+        self.samples = samples
+        self.transform = transform
+        self.exception = exception
+        self.default = default
+
+    def __getitem__(self, item):
+        if self.exception:
+            try:
+                return self.transform(self.samples[item])
+            except self.exception:
+                return self.default
+        return self.transform(self.samples[item])
+
+    def __len__(self):
+        return len(self.samples)

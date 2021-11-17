@@ -3,6 +3,7 @@
 from padl.dumptools import inspector
 from padl.print_utils import format_argument
 from padl.transforms import AtomicTransform
+import torch
 
 
 def _maketrans(attr, getitem=False):
@@ -60,3 +61,4 @@ class _This:
 
 
 this = _This()
+

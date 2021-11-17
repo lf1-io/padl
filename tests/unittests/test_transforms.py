@@ -385,25 +385,24 @@ class TestCompose:
         assert self.transform_5.infer_apply(1) == torch.tensor(8)
 
     def test_eval_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor(8), torch.tensor(8)]
 
     def test_train_apply(self):
         # default
-        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor(8), torch.tensor(8)]
         # loader kwargs
-        for batch in list(self.transform_5.train_apply(
-            [1, 2, 1, 2],
+        for out in list(self.transform_5.train_apply(
+            [1, 1, 1, 1],
             verbose=True,
             batch_size=2)
         ):
-            assert torch.all(batch == torch.tensor([8, 12]))
-        # flatten = True
+            assert out == torch.tensor(8)
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             flatten=True,
             verbose=True,
             batch_size=2)
-        ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
+        ) == [torch.tensor(8), torch.tensor(12), torch.tensor(8), torch.tensor(12)]
 
     def test_context(self):
         assert self.transform_1.pd_mode is None
@@ -732,3 +731,47 @@ class TestClassInstance:
 
     def test_long_list(self):
         import tests.material.long_list
+
+
+class TestComposeWithComments:
+    def test_lambda_1(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_lambda_2(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+            #
+            >> transform(lambda x: x)
+        )
+
+    def test_identity(self):
+        # should not fail
+        t = (
+            Identity()
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_function_1(self, tmp_path):
+        t = (
+            Identity()
+            #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
+
+    def test_function_2(self, tmp_path):
+        t = (
+            Identity()
+        #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
