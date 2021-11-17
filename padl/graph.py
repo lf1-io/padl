@@ -8,8 +8,8 @@ class Graph:
         self.start_node = None
         if transform is not None:
             self.start_node = Node(transform, graph=self, id=self._node_id)
-        self.input_node = InputNode()
-        self.output_node = OutputNode()
+        self.input_node = InputNode(graph=self)
+        self.output_node = OutputNode(graph=self)
         self.nodes.extend([self.input_node, self.output_node])
 
         if self.start_node:
@@ -37,8 +37,9 @@ class Node:
             self.graph = graph
 
         self.id = id if id is not None else 0
-        self.input_node = self._init_input(input)
-        self.output_node = self._init_output(output)
+        if self.graph is None:
+            self.input_node = self._init_input(input)
+            self.output_node = self._init_output(output)
         self._input_args = {node: None for node in self.input_node}
         self._updated_args = []
         self.transform = transform
@@ -50,10 +51,20 @@ class Node:
     @graph.setter
     def graph(self, new_graph):
         self._graph = new_graph
+        if new_graph is None:
+            return
         new_graph.add_node(self)
 
     def update_id(self, new_id):
         self.id = new_id
+
+    def outnode_iter(self):
+        for node in self.output_node:
+            yield node
+
+    def innode_iter(self):
+        for node in self.input_node:
+            yield node
 
     def _drop_inbuilt_output_node(self):
         out_nodes = [out_node for out_node in self.output_node if not isinstance(out_node, OutputNode)]
@@ -101,12 +112,12 @@ class Node:
 
     def _init_input(self, input):
         if input is None:
-            return [InputNode()]
+            return [InputNode(self.graph)]
         return [input]
 
     def _init_output(self, output):
         if output is None:
-            return [OutputNode()]
+            return [OutputNode(self.graph)]
         return [output]
 
     def __hash__(self):
@@ -133,14 +144,14 @@ class Node:
 
 
 
-class InputNode:
+class InputNode(Node):
 
     def __init__(self, graph=None, id=None):
         self.graph = graph
         self.id = id if id is not None else 0
 
 
-class OutputNode:
+class OutputNode(Node):
 
     def __init__(self, graph=None, id=None):
         self.graph = graph
