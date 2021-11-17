@@ -96,10 +96,22 @@ class _VarFinder(ast.NodeVisitor):
             self.locals.add((node.optional_vars.id, 0))
 
     def visit_Assign(self, node):
+        # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
+        targets = set()
         for target in node.targets:
-            targets = {(x.id, 0) for x in Finder(ast.Name).find(target)}
+            # exclude assignment to subscript ('x[1] = a')
+            if isinstance(target, ast.Subscript):
+                continue
+            # exclude assignment to attribute ('x.y = a')
+            if isinstance(target, ast.Attribute):
+                continue
+            targets.update(
+                {(x.id, 0) for x in Finder(ast.Name).find(target)}
+            )
+        # find globals in RHS
         sub_globals = find_globals(node.value) - self.locals
         sub_dependencies = set()
+        # if a variable on the RHS is one of the targets, increase its counter
         for name, i in sub_globals:
             if (name, i) in targets:
                 sub_dependencies.add((name, i + 1))
@@ -327,11 +339,14 @@ def _get_nodes_without_in_edges(graph):
 
 def _topsort(graph):
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
-    Careful: Doesn't check for loops.
     """
     levels = []
+    graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
+        if graphlen == len(graph):  # graph didn't shrink
+            raise RuntimeError('Graph has a circle.')
+        graphlen = len(graph)
         levels.append(nextlevel)
     return levels
 

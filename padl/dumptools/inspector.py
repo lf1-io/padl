@@ -302,10 +302,14 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     # for each candidate, disassemble and compare the instructions to what we
     # actually have, a match means this is the correct statement
     if not candidate_segments:
-        raise RuntimeError('No attributes found.')
+        raise RuntimeError(f'{segment_type} not found.')
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
                                                caller_frame.f_lasti)
+
+    # filter out EXTENDED_ARG (instruction used for very large args in target_instrs, this won't
+    # be present in instrs)
+    target_instrs = [x for x in target_instrs if x.opname != 'EXTENDED_ARG']
 
     segment = None
     locs = None
@@ -317,10 +321,16 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         if len(instrs) > len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-            if instr.argval != target_instr.argval:
+            if (target_instr.opname == 'LOAD_FAST'
+                    and target_instr.argval in caller_frame.f_locals
+                    and target_instr.argval in caller_frame.f_code.co_varnames):
+                argval = caller_frame.f_locals[target_instr.argval]
+            else:
+                argval = target_instr.argval
+            if instr.argval != target_instr.argval and instr.argval != argval:
                 break
             same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL')
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST')
             both_load = instr.opname in load_ops and target_instr.opname in load_ops
             if not (same_opname or both_load):
                 break

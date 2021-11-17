@@ -6,5 +6,5 @@ LABELS = value(x)
 
 @transform
 def test(x):
-        return LABELS[x]
+    return LABELS[x]
 
