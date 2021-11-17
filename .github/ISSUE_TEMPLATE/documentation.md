@@ -2,7 +2,7 @@
 name: "\U0001F4DC Documentation "
 about: Report an issue related to Documentation of PADL
 title: ''
-labels: ''
+labels: 'documentation'
 assignees: ''
 
 ---

@@ -302,10 +302,14 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     # for each candidate, disassemble and compare the instructions to what we
     # actually have, a match means this is the correct statement
     if not candidate_segments:
-        raise RuntimeError('No attributes found.')
+        raise RuntimeError(f'{segment_type} not found.')
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
                                                caller_frame.f_lasti)
+
+    # filter out EXTENDED_ARG (instruction used for very large args in target_instrs, this won't
+    # be present in instrs)
+    target_instrs = [x for x in target_instrs if x.opname != 'EXTENDED_ARG']
 
     segment = None
     locs = None
