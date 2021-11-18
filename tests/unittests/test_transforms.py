@@ -500,6 +500,14 @@ class TestModel:
             >> plus_one
             >> plus_one + times_two
         )
+        request.cls.model_7 = (
+            plus_one + times_two
+            >> plus_one / Batchify()
+            >> plus_one / plus_one
+            >> Batchify() / times_two
+            >> Unbatchify()
+            >> plus_one / plus_one
+        )
 
     def test_pd_preprocess(self):
         assert isinstance(self.model_1.pd_preprocess, pd.Parallel)
@@ -507,12 +515,14 @@ class TestModel:
         assert isinstance(self.model_4.pd_preprocess, pd.Compose)
         assert isinstance(self.model_5.pd_preprocess, pd.Map)
         assert isinstance(self.model_6.pd_preprocess, pd.Batchify)
+        assert isinstance(self.model_7.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.model_1.pd_forward, pd.Parallel)
         assert isinstance(self.model_2.pd_forward, pd.Parallel)
         assert isinstance(self.model_5.pd_forward, pd.Map)
         assert isinstance(self.model_6.pd_forward, pd.Compose)
+        assert isinstance(self.model_7.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.model_1.pd_postprocess, pd.Parallel)
@@ -520,6 +530,7 @@ class TestModel:
         assert isinstance(self.model_4.pd_postprocess, pd.Compose)
         assert isinstance(self.model_5.pd_postprocess, pd.Map)
         assert isinstance(self.model_6.pd_postprocess, pd.Identity)
+        assert isinstance(self.model_7.pd_postprocess, pd.Compose)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
@@ -528,6 +539,7 @@ class TestModel:
         assert self.model_4.infer_apply(5) == (8, 20)
         assert self.model_5.infer_apply((5, 5)) == (13, 13)
         assert self.model_6.infer_apply(5) == (7, 12)
+        assert self.model_7.infer_apply(5) == (9, 23)
 
     def test_eval_apply(self):
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
@@ -535,6 +547,8 @@ class TestModel:
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
         assert list(self.model_4.eval_apply([5, 6])) == [(8, 20), (9, 24)]
         assert list(self.model_5.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
+        assert list(self.model_6.eval_apply([5, 6])) == [(7, 12), (8, 14)]
+        assert list(self.model_7.eval_apply([5, 6])) == [(9, 23), (10, 27)]
 
     def test_train_apply(self):
         assert list(self.model_1.train_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
