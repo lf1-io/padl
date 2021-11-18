@@ -1,6 +1,7 @@
 import pytest
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify
+from tests.material import transforms_in_module as tim
 
 
 CONST = 1
@@ -21,6 +22,22 @@ def y(y):
 
 
 @transform
+def indexset(x, i, j):
+    x[i] = x[j]
+    return x
+
+
+@transform
+class SelfAssign:
+    def __init__(self, x):
+        self.x = x
+        self.y = self.x
+
+    def __call__(self, x):
+        return self.x + self.y + x
+
+
+@transform
 def listcomp_a(y):
     return [x + CONST for x in y]
 
@@ -38,6 +55,13 @@ def dictcomp_a(y):
 @transform
 def setcomp_a(y):
     return {x + CONST for x in y}
+
+
+@transform
+def recursive(x):
+    if x == 0:
+        return x
+    return 1 + recursive(x - 1)
 
 
 def maketransform():
@@ -187,6 +211,10 @@ def test_setcomp_a():
     assert setcomp_a._pd_dumps() == read_dump('set_comprehension_a')
 
 
+def test_recursive():
+    assert recursive._pd_dumps() == read_dump('recursive')
+
+
 def test_with_raises():
     with open(__file__) as f:
         x = f.read()
@@ -197,3 +225,17 @@ def test_with_raises():
 
     with pytest.raises(NotImplementedError):
         t._pd_dumps()
+
+
+def test_dumping_indexset():
+    assert indexset._pd_dumps() == read_dump('indexset')
+
+
+def test_dumping_selfassign():
+    assert SelfAssign(1)._pd_dumps() == read_dump('selfassign')
+
+
+def test_othermodule_function():
+    x = tim.function._pd_dumps()
+    # TODO: wip
+    #  assert 'todo' == 'done'

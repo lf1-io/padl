@@ -3,10 +3,9 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-import sys
-from typing import Optional
+from typing import Optional, List, Tuple
 
-from padl.dumptools.symfinder import find, find_in_scope, ScopedName
+from padl.dumptools.symfinder import find_in_scope, ScopedName
 
 try:
     unparse = ast.unparse
@@ -97,10 +96,22 @@ class _VarFinder(ast.NodeVisitor):
             self.locals.add((node.optional_vars.id, 0))
 
     def visit_Assign(self, node):
+        # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
+        targets = set()
         for target in node.targets:
-            targets = {(x.id, 0) for x in Finder(ast.Name).find(target)}
-        sub_globals = find_globals(node.value)
+            # exclude assignment to subscript ('x[1] = a')
+            if isinstance(target, ast.Subscript):
+                continue
+            # exclude assignment to attribute ('x.y = a')
+            if isinstance(target, ast.Attribute):
+                continue
+            targets.update(
+                {(x.id, 0) for x in Finder(ast.Name).find(target)}
+            )
+        # find globals in RHS
+        sub_globals = find_globals(node.value) - self.locals
         sub_dependencies = set()
+        # if a variable on the RHS is one of the targets, increase its counter
         for name, i in sub_globals:
             if (name, i) in targets:
                 sub_dependencies.add((name, i + 1))
@@ -263,6 +274,24 @@ def find_globals(node: ast.AST, filter_builtins=True):
     return globals_
 
 
+def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: ScopedName):
+    """Go through *variables* and increment the the counter for those with the same name as
+    *scoped_name* by *scoped_name.n*.
+
+    Example:
+
+    >>> increment_same_name_var({('a', 1), ('b', 2)'}, ScopedName('b', somemodule, 2)
+    {('a', 1), ('b', 4)}
+    """
+    result = set()
+    for var, n in variables:
+        if var == scoped_name.name:
+            result.add(ScopedName(var, scoped_name.scope, n + scoped_name.n))
+        else:
+            result.add(ScopedName(var, scoped_name.scope, n))
+    return result
+
+
 def build_codegraph(scoped_name: ScopedName):
     graph = {}
     scopemap = {}
@@ -279,15 +308,12 @@ def build_codegraph(scoped_name: ScopedName):
         scopemap[next_] = scope_of_next_var
 
         # find dependencies
-        globals_ = set()
-        for var, n in find_globals(node):
-            if var == next_.name and scope_of_next_var == scopemap[next_]:
-                globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
-            else:
-                globals_.add(ScopedName(var, scope_of_next_var, n))
-        graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = CodeNode(source=source,
-                                                                             globals_=globals_,
-                                                                             ast_node=node)
+        globals_ = find_globals(node)
+        next_name = ScopedName(next_.name, scope_of_next_var, next_.n)
+        globals_ = increment_same_name_var(globals_, next_name)
+        graph[next_name] = CodeNode(source=source,
+                                    globals_=globals_,
+                                    ast_node=node)
         todo.update(globals_)
 
     return graph, scopemap
@@ -300,7 +326,7 @@ def _get_nodes_without_in_edges(graph):
     """
     nextlevel = set()
     for node, deps in graph.items():
-        if not deps:
+        if not deps or deps == {node}:
             nextlevel.add(node)
     filtered_graph = {}
     for node, deps in graph.items():
@@ -313,11 +339,14 @@ def _get_nodes_without_in_edges(graph):
 
 def _topsort(graph):
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
-    Careful: Doesn't check for loops.
     """
     levels = []
+    graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
+        if graphlen == len(graph):  # graph didn't shrink
+            raise RuntimeError('Graph has a circle.')
+        graphlen = len(graph)
         levels.append(nextlevel)
     return levels
 
@@ -349,7 +378,8 @@ def _sort(graph):
 def unscope_graph(graph, scopemap):
     """Create a version of *graph* where all non-top level variables are renamed (by prepending
     the scope) to prevent conflicts."""
-    counts = Counter(x.name for x in graph)
+    name_scope = {(x.name, x.scope) for x in graph}
+    counts = Counter(x[0] for x in name_scope)
     to_rename = set(k for k, c in counts.items() if c > 1)
     scopemap = {**scopemap}
     scopemap.update({scoped_name: scoped_name.scope for scoped_name in scopemap})
@@ -389,8 +419,8 @@ class CodeNode:
     def from_source(cls, source, scope):
         node = ast.parse(source).body[0]
         globals_ = {
-            ScopedName(var, scope)
-            for var in find_globals(node)
+            ScopedName(var, scope, n)
+            for var, n in find_globals(node)
         }
 
         return cls(

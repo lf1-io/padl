@@ -170,11 +170,11 @@ def get_statement(source: str, lineno: int):
             continue
         try:
             try:
-                statement = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - row_offset - 1, -col_offset)
+                statement, offset = _get_statement_from_block(block, lineno_in_block + row_offset)
+                return statement, (lineno - offset - 1, -col_offset)
             except SyntaxError:
-                statement = _get_statement_from_block('(\n' + block + '\n)',
-                                                      lineno_in_block + row_offset + 1)
+                statement, offset = _get_statement_from_block('(\n' + block + '\n)',
+                                                              lineno_in_block + row_offset + 1)
                 return statement, (lineno - lineno_in_block - 1, -col_offset)
         except SyntaxError:
             continue
@@ -182,13 +182,16 @@ def get_statement(source: str, lineno: int):
 
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
-    """Get a statement from ."""
+    """Get a statement from a block."""
     module = ast.parse(block)
     stmts = []
+    offset = 0
     for stmt in module.body:
         if stmt.lineno <= lineno_in_block <= stmt.end_lineno:
             stmts.append(ast.get_source_segment(block, stmt))
-    return '\n'.join(stmts)
+            offset = lineno_in_block - stmt.lineno
+    assert len(stmts) == 1
+    return '\n'.join(stmts), offset
 
 
 def get_surrounding_block(source: str, lineno: int):
@@ -216,7 +219,8 @@ def get_surrounding_block(source: str, lineno: int):
     while before:
         next_ = before.pop(-1)
         next_white = _count_leading_whitespace(next_)
-        if next_white is None or next_white >= white:
+        starts_with_comment = next_.lstrip().startswith('#')
+        if next_white is None or next_white >= white or starts_with_comment:
             block = [next_[white:]] + block
         else:
             break
@@ -302,10 +306,14 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     # for each candidate, disassemble and compare the instructions to what we
     # actually have, a match means this is the correct statement
     if not candidate_segments:
-        raise RuntimeError('No attributes found.')
+        raise RuntimeError(f'{segment_type} not found.')
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
                                                caller_frame.f_lasti)
+
+    # filter out EXTENDED_ARG (instruction used for very large args in target_instrs, this won't
+    # be present in instrs)
+    target_instrs = [x for x in target_instrs if x.opname != 'EXTENDED_ARG']
 
     segment = None
     locs = None
@@ -317,10 +325,16 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         if len(instrs) > len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-            if instr.argval != target_instr.argval:
+            if (target_instr.opname == 'LOAD_FAST'
+                    and target_instr.argval in caller_frame.f_locals
+                    and target_instr.argval in caller_frame.f_code.co_varnames):
+                argval = caller_frame.f_locals[target_instr.argval]
+            else:
+                argval = target_instr.argval
+            if instr.argval != target_instr.argval and instr.argval != argval:
                 break
             same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL')
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST')
             both_load = instr.opname in load_ops and target_instr.opname in load_ops
             if not (same_opname or both_load):
                 break

@@ -1,0 +1,14 @@
+from padl import transform
+
+
+@transform
+class SelfAssign:
+    def __init__(self, x):
+        self.x = x
+        self.y = self.x
+
+    def __call__(self, x):
+        return self.x + self.y + x
+
+
+_pd_main = SelfAssign(1)
