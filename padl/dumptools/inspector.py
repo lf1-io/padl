@@ -170,11 +170,11 @@ def get_statement(source: str, lineno: int):
             continue
         try:
             try:
-                statement = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - row_offset - 1, -col_offset)
+                statement, offset = _get_statement_from_block(block, lineno_in_block + row_offset)
+                return statement, (lineno - offset - 1, -col_offset)
             except SyntaxError:
-                statement = _get_statement_from_block('(\n' + block + '\n)',
-                                                      lineno_in_block + row_offset + 1)
+                statement, offset = _get_statement_from_block('(\n' + block + '\n)',
+                                                              lineno_in_block + row_offset + 1)
                 return statement, (lineno - lineno_in_block - 1, -col_offset)
         except SyntaxError:
             continue
@@ -182,13 +182,16 @@ def get_statement(source: str, lineno: int):
 
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
-    """Get a statement from ."""
+    """Get a statement from a block."""
     module = ast.parse(block)
     stmts = []
+    offset = 0
     for stmt in module.body:
         if stmt.lineno <= lineno_in_block <= stmt.end_lineno:
             stmts.append(ast.get_source_segment(block, stmt))
-    return '\n'.join(stmts)
+            offset = lineno_in_block - stmt.lineno
+    assert len(stmts) == 1
+    return '\n'.join(stmts), offset
 
 
 def get_surrounding_block(source: str, lineno: int):

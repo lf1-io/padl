@@ -200,7 +200,7 @@ def _wrap_lambda(fun, ignore_scope=False):
         if not len(instrs) == len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs):
-            if (instr.opname, target_instr.argval) != (instr.opname, target_instr.argval):
+            if (instr.opname, instr.argval) != (target_instr.opname, target_instr.argval):
                 break
         else:
             found = True
