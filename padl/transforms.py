@@ -802,8 +802,10 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-
-        return inputs
+        if hasattr(self, '_pd_output_format'):
+            return self._pd_output_format(*inputs)
+        else:
+            return inputs
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
