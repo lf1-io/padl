@@ -156,15 +156,16 @@ class Transform:
                                                           Tuple['Transform', 'Transform', 'Transform']]:
         """ Split the transform into "preprocessing", "forward" and "postprocessing" parts.
 
-        *input_components* contains information about the "split" the input is in. It is either an
-        int or a (potentially nested) list of ints. The ints have the following meaning:
+        *input_components* contains information about the "split" the input is in and potentially
+        how many "pipes" of input there are. It is either an int or a (potentially nested)
+        list of ints. A list of ints indicates there are multiple "pipes".
+        The ints have the following meaning:
             - 0 means "not batchified"
             - 1 means "batchified"
             - 2 means "unbatchified" a.k.a. post-process
         If it's a (nested) list, the structure represents the input structure for the transform,
         whereas the entries represent the "split" of parts of the input.
 
-        # TODO When input_components is a list/tuple of ints does this indicate there are multiple "pipes"?
         For example, if a transform expects a tuple of inputs, *input_components* could be
         (0, 1), meaning that the first input item is not batchified whereas the second is.
 
