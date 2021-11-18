@@ -13,6 +13,7 @@ from pathlib import Path
 from os import remove
 from shutil import rmtree
 import textwrap
+import traceback
 from tempfile import TemporaryDirectory
 import types
 from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
@@ -94,6 +95,7 @@ class Transform:
         self._pd_component = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
+        self._pd_traceback = traceback.extract_stack()
 
     @property
     def pd_name(self) -> Optional[str]:
@@ -336,6 +338,13 @@ class Transform:
 
         return graph, scopemap
 
+#    def _trace_error(self, position: int, arg):
+#        try:
+#            str_ = self._repr_pretty_(marker)
+#            _pd_trace.append((str_, self._process_traceback, arg, self))
+#        except Exception:
+#            warn('Error tracing failed')
+
     def _pd_evaluable_repr(self, indent: int = 0) -> str:
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
@@ -534,6 +543,9 @@ class Transform:
         :return: A generator that allows iterating over the output.
         """
         assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
+
+        global _pd_trace
+        _pd_trace = []
 
         self.pd_forward_device_check()
 
@@ -1415,8 +1427,13 @@ class Compose(CompoundTransform):
         :param args: Arguments to call with.
         :return: Output from series of transforms.
         """
-        for transform_ in self.transforms:
-            args = transform_.pd_call_transform(args)
+        _in_args = args
+        for i, transform_ in enumerate(self.transforms):
+            try:
+                args = transform_.pd_call_transform(args)
+            except Exception as err:
+                self._trace_error(i, _in_args)
+                raise err
         return args
 
     def _pd_forward_part(self) -> Transform:
@@ -1500,8 +1517,12 @@ class Rollout(CompoundTransform):
         :return: namedtuple of outputs
         """
         out = []
-        for transform_ in self.transforms:
-            out.append(transform_.pd_call_transform(args))
+        for i, transform_ in enumerate(self.transforms):
+            try:
+                out.append(transform_.pd_call_transform(args))
+            except Exception as err:
+                self._trace_error(i, args)
+                raise err
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
@@ -1573,7 +1594,11 @@ class Parallel(CompoundTransform):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_.pd_call_transform(args[ind]))
+            try:
+                out.append(transform_.pd_call_transform(args[ind]))
+            except Exception as err:
+                self._trace_error(ind, args)
+                raise err
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
