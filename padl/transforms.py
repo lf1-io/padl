@@ -660,14 +660,12 @@ class Transform:
                 if use_post:
                     output = [post.pd_call_transform(x, mode) for x in output]
                 for out in output:
-                    # if hasattr(self, '_pd_output_format'):
                     output_format = self._pd_get_output_format()
                     if output_format is not None:
                         yield output_format(*out)
                     else:
                         yield out
             else:
-                # if hasattr(self, '_pd_output_format'):
                 output_format = self._pd_get_output_format()
                 if output_format is not None:
                     yield output_format(*output)
@@ -810,7 +808,6 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        # if hasattr(self, '_pd_output_format'):
         output_format = self._pd_get_output_format()
         if output_format is not None:
             return output_format(*inputs)
@@ -1609,7 +1606,6 @@ class Rollout(CompoundTransform):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
-
 
     def __call__(self, args):
         """Call method for Rollout
