@@ -114,7 +114,7 @@ def _move_to_device(args, device):
 
 
 Mode = Literal['infer', 'eval', 'train']
-Component = Literal['preprocess', 'forward', 'postprocess']
+Stage = Literal['preprocess', 'forward', 'postprocess']
 
 
 class Transform:
@@ -133,7 +133,7 @@ class Transform:
         self._pd_call_info = call_info
         self._pd_varname = _notset
         self._pd_name = pd_name
-        self._pd_component = {'forward'}
+        self._pd_stage = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
 
@@ -672,9 +672,9 @@ class Transform:
         return self._pd_device
 
     @property
-    def pd_component(self) -> Set[Component]:
-        """Return the component (preprocess, forward or postprocess)."""
-        return self._pd_component
+    def pd_stage(self) -> Set[Stage]:
+        """Return the stage (preprocess, forward or postprocess)."""
+        return self._pd_stage
 
     def _pd_preprocess_part(self) -> "Transform":
         return Identity()
@@ -682,7 +682,7 @@ class Transform:
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        if {'preprocess'} == self.pd_component:
+        if {'preprocess'} == self.pd_stage:
             return self
         pre = self._pd_preprocess_part()
         pre.pd_to(self.pd_device)
@@ -695,7 +695,7 @@ class Transform:
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        if {'forward'} == self.pd_component:
+        if {'forward'} == self.pd_stage:
             return self
         forward = self._pd_forward_part()
         forward.pd_to(self.pd_device)
@@ -707,7 +707,7 @@ class Transform:
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        if {'postprocess'} == self.pd_component:
+        if {'postprocess'} == self.pd_stage:
             return self
         post = self._pd_postprocess_part()
         post.pd_to(self.pd_device)
@@ -1090,7 +1090,7 @@ class Map(Transform):
         super().__init__(call_info, pd_name)
 
         self.transform = transform
-        self._pd_component = transform.pd_component
+        self._pd_stage = transform.pd_stage
 
     def __call__(self, args: Iterable):
         """
@@ -1157,11 +1157,11 @@ class CompoundTransform(Transform):
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
 
-        self._pd_component_list = [t.pd_component for t in self.transforms]
+        self._pd_stage_list = [t.pd_stage for t in self.transforms]
         try:
-            self._pd_component = set.union(*self._pd_component_list)
+            self._pd_stage = set.union(*self._pd_stage_list)
         except (AttributeError, TypeError):
-            self._pd_component = None
+            self._pd_stage = None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1385,15 +1385,15 @@ class Compose(CompoundTransform):
         postprocess_start = len(self.transforms)
         set_postprocess = True
         for i, transform_ in enumerate(self.transforms):
-            if 'preprocess' in transform_.pd_component:
+            if 'preprocess' in transform_.pd_stage:
                 preprocess_end = i
-            if 'postprocess' in transform_.pd_component and set_postprocess:
+            if 'postprocess' in transform_.pd_stage and set_postprocess:
                 postprocess_start = i
                 set_postprocess = False
         for i in range(preprocess_end):
-            self._pd_component_list[i] = {'preprocess'}
+            self._pd_stage_list[i] = {'preprocess'}
         for i in range(postprocess_start+1, len(self.transforms)):
-            self._pd_component_list[i] = {'postprocess'}
+            self._pd_stage_list[i] = {'postprocess'}
 
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
@@ -1518,9 +1518,9 @@ class Compose(CompoundTransform):
 
     def _pd_forward_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'forward' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'forward' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_forward)
@@ -1536,9 +1536,9 @@ class Compose(CompoundTransform):
 
     def _pd_preprocess_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'preprocess' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'preprocess' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_preprocess)
@@ -1553,9 +1553,9 @@ class Compose(CompoundTransform):
 
     def _pd_postprocess_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'postprocess' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'postprocess' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_postprocess)
@@ -1615,7 +1615,7 @@ class Rollout(CompoundTransform):
         t_list = [x.pd_forward for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             forward = Identity()
-        elif 'preprocess' in self._pd_component and 'forward' in self._pd_component:
+        elif 'preprocess' in self._pd_stage and 'forward' in self._pd_stage:
             forward = Parallel(t_list, call_info=self._pd_call_info)
         else:
             forward = Rollout(t_list, call_info=self._pd_call_info)
@@ -1625,7 +1625,7 @@ class Rollout(CompoundTransform):
         t_list = [x.pd_postprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             post = Identity()
-        elif len(list(self._pd_component)) >= 2 and 'postprocess' in self._pd_component:
+        elif len(list(self._pd_stage)) >= 2 and 'postprocess' in self._pd_stage:
             post = Parallel(t_list, call_info=self._pd_call_info)
         else:
             post = Rollout(t_list, call_info=self._pd_call_info)
@@ -1783,7 +1783,7 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
-        self._pd_component = {'postprocess'}
+        self._pd_stage = {'postprocess'}
         self.cpu = cpu
 
     def _move_to_device(self, args):
@@ -1826,7 +1826,7 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-        self._pd_component = {'preprocess'}
+        self._pd_stage = {'preprocess'}
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
