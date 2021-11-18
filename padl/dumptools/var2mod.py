@@ -419,8 +419,8 @@ class CodeNode:
     def from_source(cls, source, scope):
         node = ast.parse(source).body[0]
         globals_ = {
-            ScopedName(var, scope)
-            for var in find_globals(node)
+            ScopedName(var, scope, n)
+            for var, n in find_globals(node)
         }
 
         return cls(
