@@ -2,7 +2,7 @@ import torch
 from padl.utils import same
 
 
-def test_this():
+def test_same():
     t = same.tolist()
     assert t(torch.tensor([1, 2, 3])) == [1, 2, 3]
 
