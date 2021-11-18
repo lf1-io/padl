@@ -7,7 +7,8 @@ class Graph:
     def __init__(self):
         self.nodes = []
         self.input_node = InputNode(graph=self)
-        self.output_node = OutputNode(graph=self)
+        self.output_node = OutputNode(graph=self, in_node=self.input_node)
+        self.input_node.out_nodes = [self.output_node]
 
     def add_node(self, node):
         if node in self.nodes:
@@ -16,10 +17,9 @@ class Graph:
         node.update_graph(self)
         node.update_id(self.get_next_node_id())
 
-    @classmethod
-    def get_next_node_id(cls):
-        cls._node_id += 1
-        return cls._node_id
+    def get_next_node_id(self):
+        self._node_id += 1
+        return self._node_id
 
 
 class BaseNode:
@@ -33,8 +33,8 @@ class BaseNode:
         self.transform = transform
         self.id = id
 
-        self.in_node = in_node
-        self.out_node = out_node
+        self.in_nodes = [in_node]
+        self.out_nodes = [out_node]
 
     @property
     def graph(self):
@@ -60,11 +60,11 @@ class BaseNode:
         self.id = new_id
 
     def outnode_iter(self):
-        for node in self.output_node:
+        for node in self.out_nodes:
             yield node
 
     def innode_iter(self):
-        for node in self.input_node:
+        for node in self.in_nodes:
             yield node
 
 
@@ -126,11 +126,13 @@ class Node(BaseNode):
     def _init_input(self, input):
         if input is None:
             return [InputNode(self.graph)]
+        input.insert_output_node(self)
         return [input]
 
     def _init_output(self, output):
         if output is None:
             return [OutputNode(self.graph)]
+        output.insert_input_node(self)
         return [output]
 
     def __hash__(self):
@@ -159,11 +161,11 @@ class Node(BaseNode):
 
 class InputNode(BaseNode):
 
-    def __init__(self, graph=None, id=None):
-        super().__init__(padl.Identity(), graph=graph, id=id)
+    def __init__(self, graph=None, id=None, out_node=None):
+        super().__init__(padl.Identity(), graph=graph, id=id, out_node=out_node)
 
 
 class OutputNode(BaseNode):
 
-    def __init__(self, graph=None, id=None):
-        super().__init__(padl.Identity(), graph=graph, id=id)
+    def __init__(self, graph=None, id=None, in_node=None):
+        super().__init__(padl.Identity(), graph=graph, id=id, in_node=in_node)
