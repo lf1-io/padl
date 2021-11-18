@@ -142,14 +142,38 @@ class TestNamedTupleOutput:
         assert pd._isinstance_of_namedtuple(self.transform_3.infer_apply(1))
 
     def test_eval_apply(self):
-        assert not pd._isinstance_of_namedtuple(self.transform_1.eval_apply([1, 2, 3]))
-        assert pd._isinstance_of_namedtuple(self.transform_2.eval_apply([1, 2, 3]))
-        assert pd._isinstance_of_namedtuple(self.transform_3.eval_apply([1, 2, 3]))
+        assert not any(list(map(pd._isinstance_of_namedtuple,
+                                self.transform_1.eval_apply([1, 2, 3])
+                                )
+                            )
+                       )
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_2.eval_apply([1, 2, 3])
+                            )
+                        )
+                   )
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_3.eval_apply([1, 2, 3])
+                            )
+                        )
+                   )
 
     def test_train_apply(self):
-        assert not pd._isinstance_of_namedtuple(self.transform_1.train_apply([1, 2, 3]))
-        assert pd._isinstance_of_namedtuple(self.transform_2.train_apply([1, 2, 3]))
-        assert pd._isinstance_of_namedtuple(self.transform_3.train_apply([1, 2, 3]))
+        assert not any(list(map(pd._isinstance_of_namedtuple,
+                                self.transform_1.train_apply([1, 2, 3])
+                                )
+                            )
+                       )
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_2.train_apply([1, 2, 3])
+                            )
+                        )
+                   )
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_3.train_apply([1, 2, 3])
+                            )
+                        )
+                   )
 
 
 class TestPADLCallTransform:

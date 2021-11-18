@@ -606,8 +606,8 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
-    def _pd_check_output_to_namedtuple(self):
-        return False
+    def _pd_get_output_format(self):
+        return None
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
                      verbose: bool = False, flatten: bool = False) -> Iterator:
@@ -660,13 +660,17 @@ class Transform:
                 if use_post:
                     output = [post.pd_call_transform(x, mode) for x in output]
                 for out in output:
-                    if hasattr(self, '_pd_output_format'):
-                        yield self._pd_output_format(*out)
+                    # if hasattr(self, '_pd_output_format'):
+                    output_format = self._pd_get_output_format()
+                    if output_format is not None:
+                        yield output_format(*out)
                     else:
                         yield out
             else:
-                if hasattr(self, '_pd_output_format'):
-                    yield self._pd_output_format(*output)
+                # if hasattr(self, '_pd_output_format'):
+                output_format = self._pd_get_output_format()
+                if output_format is not None:
+                    yield output_format(*output)
                 else:
                     yield output
 
@@ -806,8 +810,10 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        if hasattr(self, '_pd_output_format'):
-            return self._pd_output_format(*inputs)
+        # if hasattr(self, '_pd_output_format'):
+        output_format = self._pd_get_output_format()
+        if output_format is not None:
+            return output_format(*inputs)
         else:
             return inputs
 
@@ -1166,6 +1172,12 @@ class CompoundTransform(Transform):
             self._pd_stage = set.union(*self._pd_stage_list)
         except (AttributeError, TypeError):
             self._pd_stage = None
+
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1598,8 +1610,6 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_check_output_to_namedtuple(self):
-        return True
 
     def __call__(self, args):
         """Call method for Rollout
