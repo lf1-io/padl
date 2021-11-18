@@ -605,6 +605,9 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
+    def _pd_check_output_to_namedtuple(self):
+        return False
+
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
                      verbose: bool = False, flatten: bool = False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -1589,6 +1592,9 @@ class Rollout(CompoundTransform):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+
+    def _pd_check_output_to_namedtuple(self):
+        return True
 
     def __call__(self, args):
         """Call method for Rollout
