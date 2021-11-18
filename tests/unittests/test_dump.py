@@ -1,6 +1,7 @@
 import pytest
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify
+from tests.material import transforms_in_module as tim
 
 
 CONST = 1
@@ -232,3 +233,9 @@ def test_dumping_indexset():
 
 def test_dumping_selfassign():
     assert SelfAssign(1)._pd_dumps() == read_dump('selfassign')
+
+
+def test_othermodule_function():
+    x = tim.function._pd_dumps()
+    # TODO: wip
+    #  assert 'todo' == 'done'

@@ -2,7 +2,6 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
-import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
@@ -44,10 +43,12 @@ _notset = _Notset()
 
 
 def _unpack_batch(args):
-    """
-    Convert an input in batch-form into a tuple of datapoints.
+    """Convert an input in batch-form into a tuple of datapoints.
+
     E.g:
+
         ([1, 4], ([2, 5], [3, 6])) -> [(1, (2, 3)), (4, (5, 6))]
+
     :param args: arguments to be unbatched
     """
     out = []
@@ -62,16 +63,17 @@ def _unpack_batch(args):
 
 
 def _batch_get(args, i):
-    """
-    Get the *i*th element of a tensor
+    """Get the *i*th element of a tensor
     or
     get a tuple of the *i*th elements of a tuple (or list) of tensors
+
     >>> t1 = torch.Tensor([1,2,3])
     >>> t2 = torch.Tensor([4,5,6])
     >>> _batch_get(t1, 1)
     tensor(2)
     >>> _batch_get((t1, t2), 1)
     (tensor(2), tensor(5))
+
     :param args: arguments
     :param i: index in batch
     """
@@ -281,16 +283,7 @@ class Transform:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        start_node = ast.parse(start_source).body[0]
-        start_globals = {
-            ScopedName(var, self._pd_call_info.scope, n)  # this should be the current scope ...?
-            for var, n in var2mod.find_globals(start_node)
-        }
-        return var2mod.CodeNode(
-            source=start_source,
-            ast_node=start_node,
-            globals_=start_globals
-        )
+        return var2mod.CodeNode.from_source(start_source, self._pd_call_info.scope)
 
     @property
     def _pd_closurevars(self) -> Tuple[dict, dict]:
@@ -343,25 +336,31 @@ class Transform:
 
         This leaves no more dependencies to be found. These four nodes are ``f``'s codegraph.
         The codegraph can be used to compile a python module defining ``f``.
+
+        :param graph: A codegraph to extend. If *None* a new codegraph will be created.
+        :param scopemap: A dict mapping scoped names to the scopes they were created in.
+        :param name: The name to give the transform.
+        :param scope: The scope for the start-node. Default is to use the scope of the transform.
+        :return: Updated graph and scopemap.
         """
         if graph is None:
             graph = {}
         if scopemap is None:
             scopemap = {}
 
+        # the default is to use the scope of the transform
         if scope is None:
             scope = self._pd_call_info.scope
 
-        given_name = name
-
-        try:
-            if self._pd_call == name:
-                name = None
-        except AttributeError:
-            pass
-
         # build the start node ->
-        start = self._pd_codegraph_startnode(name)
+        # if the *name* is the same as the call, we don't need to assign to the name
+        # this can be the case for function transforms
+        if getattr(self, '_pd_call', None) == name:
+            new_name = None
+        else:
+            new_name = name
+
+        start = self._pd_codegraph_startnode(new_name)
         # <-
 
         # if this has closurevars, get them (if there are transforms in the closure, we want to
@@ -376,6 +375,7 @@ class Transform:
             if next_name in scopemap:
                 continue
 
+            # ignoring this (it comes from the serializer)
             if next_name.name.startswith('PADL_VALUE'):
                 continue
 
@@ -385,6 +385,7 @@ class Transform:
                     next_obj = globals_dict[next_name.name]
                 else:
                     next_obj = all_vars_dict[next_name.name]
+                # pylint: disable=protected-access
                 next_obj._pd_build_codegraph(graph, scopemap, next_name.name)
             except (KeyError, AttributeError):
                 pass
@@ -409,14 +410,14 @@ class Transform:
             todo.update(dependencies)
         # finding dependencies done
 
-        # if *name* is not ``None``, add the start node (i.e. the node assigning the transform to
-        # *name*) to the codegraph
-        if name is not None:
+        # if *new_name* is not ``None``, add the start node (i.e. the node assigning the transform
+        # to *new_name*) to the codegraph
+        if new_name is not None:
             assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
+            graph[ScopedName(new_name, scope, 0)] = start
 
-        if given_name is not None:
-            scopemap[ScopedName(given_name, scope, 0)] = self._pd_call_info.scope
+        if name is not None:
+            scopemap[ScopedName(name, scope, 0)] = self._pd_call_info.scope
 
         return graph, scopemap
 
@@ -1098,8 +1099,8 @@ class Map(Transform):
         """
         return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
-    def _pd_longrepr(self) -> str:
-        return '~ ' + self.transform._pd_shortrepr()
+    def _pd_longrepr(self, formatting=True) -> str:
+        return '~ ' + self.transform._pd_shortrepr(formatting)
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
@@ -1228,16 +1229,20 @@ class CompoundTransform(Transform):
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', emptyscope)
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
+                                                                                    emptyscope)
             scopemap[ScopedName('padl', self._pd_call_info.scope, 0)] = emptyscope
 
+        # if a name is given, add the start-node to the codegraph
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
             scopemap[ScopedName(name, scope, 0)] = scope
 
+        # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.module)
+            # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, scopemap, varname,
                                           self._pd_call_info.scope)
         return graph, scopemap
@@ -1494,7 +1499,7 @@ class Compose(CompoundTransform):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                params = [x for x in t._pd_get_signature()]
+                params = t._pd_get_signature()
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
@@ -1706,10 +1711,13 @@ class Parallel(CompoundTransform):
         else:
             make_green_ = make_green
             make_bold_ = make_bold
+
         def pipes(n):
             return "│" * n
+
         def spaces(n):
             return " " * n
+
         def horizontal(n):
             return "─" * n
         len_ = len(self.transforms)
@@ -1742,6 +1750,7 @@ class BuiltinTransform(AtomicTransform):
         if scope is None:
             scope = self._pd_call_info.scope
 
+        # if padl is not in the scope, add it
         if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
@@ -1842,6 +1851,7 @@ class Batchify(ClassTransform):
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
+            # pylint: disable=not-callable
             return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
@@ -1878,6 +1888,7 @@ def load(path):
     })
     code = compile(source, path/'transform.py', 'exec')
     exec(code, module.__dict__)
+    # pylint: disable=no-member,protected-access
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
@@ -1898,6 +1909,7 @@ def group(transform: Union[Rollout, Parallel]):
     """Group transforms. This prevents them from being flattened when used
 
     Example:
+
     When writing a Rollout as `(a + (b + c))`, this is automatically flattened to `(a + b + c)`
     - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to `a`, `b`,
     `c` respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
@@ -1909,11 +1921,22 @@ def group(transform: Union[Rollout, Parallel]):
 class _ItemGetter:
     """A simple item getter. Takes *samples* and applies *transform* to it.
 
+    Example:
+
+    >>> ig = _ItemGetter([1, 2, 3], tranform(lambda x: x + 1))
+    >>> len(ig)
+    3
+    >>> ig[0]
+    2
+    >>> ig[1]
+    3
+
     :param samples: An object implementing __getitem__ and __len__.
     :param transform: Preprocessing transform.
     :param exception: Exception to catch for (fall back to *default*).
     :param default: The default value to fall back to in case of exception.
     """
+
     def __init__(self, samples, transform, exception=None, default=None):
         self.samples = samples
         self.transform = transform
