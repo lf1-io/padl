@@ -534,7 +534,7 @@ class Transform:
         >>> from padl import transform
         >>> foo = transform(lambda x: x + 1)
         >>> foo.pd_varname()
-        "foo"
+        'foo'
 
         :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
@@ -1945,7 +1945,8 @@ class _ItemGetter:
 
     Example:
 
-    >>> ig = _ItemGetter([1, 2, 3], tranform(lambda x: x + 1))
+    >>> from padl import transform
+    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
     >>> len(ig)
     3
     >>> ig[0]
