@@ -174,14 +174,14 @@ class TestMap:
         )
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Map)
-        assert isinstance(self.transform_2.pd_preprocess, pd.Parallel)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_2.pd_preprocess, pd.Identity)
         assert isinstance(self.transform_5.pd_preprocess, pd.Batchify)
         assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Identity)
-        assert isinstance(self.transform_2.pd_forward, pd.Identity)
+        assert isinstance(self.transform_1.pd_forward, pd.Map)
+        assert isinstance(self.transform_2.pd_forward, pd.Parallel)
         assert isinstance(self.transform_5.pd_forward, pd.Map)
         assert isinstance(self.transform_6.pd_forward, pd.Parallel)
 
@@ -200,20 +200,20 @@ class TestMap:
         assert self.transform_6.infer_apply([1, 2]) == (2, 3)
 
     def test_eval_apply(self):
-        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
-        assert list(self.transform_2.eval_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
-                                                                                 (2, [4, 5])]
+        assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
+        assert list(self.transform_2.eval_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, (3, 4)),
+                                                                                 (2, (4, 5))]
         assert list(self.transform_3.eval_apply([[2, 3], [2, 3]])) == \
-               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
-        assert list(self.transform_4.eval_apply([1])) == [[2, 2, 2]]
+               [((4, 6), (3, 4)), ((4, 6), (3, 4))]
+        assert list(self.transform_4.eval_apply([1])) == [(2, 2, 2)]
 
     def test_train_apply(self):
-        assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [[3, 4], [4, 5]]
-        assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, [3, 4]),
-                                                                                 (2, [4, 5])]
-        assert list(self.transform_3.train_apply([[2, 3], [2, 3]])) == \
-               [([4, 6], [3, 4]), ([4, 6], [3, 4])]
-        assert list(self.transform_4.train_apply([1])) == [[2, 2, 2]]
+        assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
+        assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, (3, 4)),
+                                                                                  (2, (4, 5))]
+        assert list(self.transform_3.eval_apply([[2, 3], [2, 3]])) == \
+               [((4, 6), (3, 4)), ((4, 6), (3, 4))]
+        assert list(self.transform_4.train_apply([1])) == [(2, 2, 2)]
 
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
@@ -256,12 +256,12 @@ class TestParallel:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Parallel)
-        assert isinstance(self.transform_4.pd_preprocess, pd.Compose)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_4.pd_preprocess, pd.Identity)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Identity)
-        assert isinstance(self.transform_4.pd_forward, pd.Identity)
+        assert isinstance(self.transform_1.pd_forward, pd.Parallel)
+        assert isinstance(self.transform_4.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -324,12 +324,12 @@ class TestRollout:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Rollout)
-        assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Identity)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Identity)
-        assert isinstance(self.transform_6.pd_forward, pd.Identity)
+        assert isinstance(self.transform_1.pd_forward, pd.Rollout)
+        assert isinstance(self.transform_6.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -385,11 +385,11 @@ class TestCompose:
         assert self.transform_4(1) == 4
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Compose)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
         assert isinstance(self.transform_5.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Identity)
+        assert isinstance(self.transform_1.pd_forward, pd.Compose)
         assert isinstance(self.transform_5.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
@@ -583,10 +583,10 @@ class TestFunctionTransform:
         request.cls.transform_3 = plus_global
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.FunctionTransform)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Identity)
+        assert isinstance(self.transform_1.pd_forward, pd.FunctionTransform)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
@@ -603,8 +603,8 @@ class TestFunctionTransform:
 
         out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}]))
         assert len(out) == 2
-        assert out[0] == ['hello']
-        assert out[1] == ['dog']
+        assert out[0] == 'hello'
+        assert out[1] == 'dog'
 
     def test_context(self):
         assert self.transform_1.pd_mode is None
