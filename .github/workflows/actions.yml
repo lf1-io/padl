@@ -33,4 +33,4 @@ jobs:
         pip install -r requirements-test.txt
     - name: Test with pytest
       run: |
-        python -m pytest -n 2
+        python -m pytest --cov=padl -n 2
