@@ -19,6 +19,8 @@ class _Debug:
             q(uit): quit'
         """
         pos = len(_pd_trace)
+        breakpoint()
+        msg = _pd_trace[pos][0]
         default_msg = (
                         'Command not understood.\n\n'
                         'Options are: \n'

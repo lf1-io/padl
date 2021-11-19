@@ -340,18 +340,20 @@ class Transform:
 
         return graph, scopemap
 
-    def _process_traceback(self):
+    def _pd_process_traceback(self):
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
+            breakpoint()
             if 'padl/transforms' in a_tb[0]:
                 continue
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
 
-    def _trace_error(self, position: int, arg):
+    def _pd_trace_error(self, position: int, arg):
         try:
-            str_ = self._repr_pretty_()
-            _pd_trace.append((str_, self._process_traceback(), arg, self))
+            breakpoint()
+            str_ = self._pd_longrepr()
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
         except Exception:
             warn('Error tracing failed')
 
@@ -532,9 +534,13 @@ class Transform:
             torch_context = contextlib.suppress()
 
         with self.pd_set_mode(mode), torch_context:
-            if self._pd_unpack_argument(arg):
-                return self(*arg)
-            return self(arg)
+            try:
+                if self._pd_unpack_argument(arg):
+                    return self(*arg)
+                return self(arg)
+            except Exception as err:
+                self._pd_trace_error(0, arg)
+                raise err
 
     def _pd_get_signature(self):
         """Get the signature of the transform. """
@@ -1129,6 +1135,24 @@ class CompoundTransform(Transform):
     def __len__(self):
         return len(self.transforms)
 
+    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+        """Call the transform, with possibility to pass multiple arguments.
+
+        :param arg: argument to call the transform with
+        :param mode: The mode ("infer", "eval", "train") to perform the call with.
+        :return: Whatever the transform returns.
+        """
+
+        if mode in ('eval', 'infer'):
+            torch_context = torch.no_grad()
+        else:
+            torch_context = contextlib.suppress()
+
+        with self.pd_set_mode(mode), torch_context:
+            if self._pd_unpack_argument(arg):
+                return self(*arg)
+            return self(arg)
+
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
             x.pd_varname() or x._pd_evaluable_repr(indent + 4)
@@ -1442,7 +1466,7 @@ class Compose(CompoundTransform):
             try:
                 args = transform_.pd_call_transform(args)
             except Exception as err:
-                self._trace_error(i, _in_args)
+                self._pd_trace_error(i, _in_args)
                 raise err
         return args
 
@@ -1531,7 +1555,7 @@ class Rollout(CompoundTransform):
             try:
                 out.append(transform_.pd_call_transform(args))
             except Exception as err:
-                self._trace_error(i, args)
+                self._pd_trace_error(i, args)
                 raise err
         if Transform.pd_mode is not None:
             return tuple(out)
@@ -1607,7 +1631,7 @@ class Parallel(CompoundTransform):
             try:
                 out.append(transform_.pd_call_transform(args[ind]))
             except Exception as err:
-                self._trace_error(ind, args)
+                self._pd_trace_error(ind, args)
                 raise err
         if Transform.pd_mode is not None:
             return tuple(out)
