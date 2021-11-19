@@ -140,23 +140,29 @@ class Transform:
         self._pd_stages = None
 
     @staticmethod
-    def _component_set(components):
-        """Compute the set of components.
+    def _pd_merge_components(components):
+        """Merge components recusively such that lists consisting of all the same integers are
+        merged to that integer.
 
-        :param components: can be an integer or a (nested) list of integers.
-        :return: The set of all contained integers.
+        >>> Transform._pd_merge_components(0)
+        0
+        >>> Transform._pd_merge_components([1, 1, 1])
+        1
+        >>> Transform._pd_merge_components([1, 2, [1, 1]])
+        [1, 2, 1]
         """
-        res = set()
-        if isinstance(components, list):
-            for sub in components:
-                res.update(Transform._component_set(sub))
-            return res
-        res.add(components)
+        if isinstance(components, int):
+            return components
+        if all(isinstance(x, int) for x in components) and len(set(components)) == 1:
+            return components[0]
+        res = [Transform._pd_merge_components(x) for x in components]
+        if res != components:
+            return Transform._pd_merge_components(res)
         return res
 
     def _pd_get_stages(self):
         if self._pd_stages is None:
-            _, splits, has_batchify = self._pd_get_splits()
+            _, splits, has_batchify = self._pd_splits()
             if has_batchify:
                 preprocess, forward, postprocess = splits
             else:
