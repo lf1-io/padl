@@ -1518,7 +1518,8 @@ class Compose(CompoundTransform):
                 to_format = combine_multi_line_strings(to_combine)
             else:
                 params = t._pd_get_signature()
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
+                    list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
