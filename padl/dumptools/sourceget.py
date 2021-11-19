@@ -61,12 +61,12 @@ def put_into_cache(key, source: str, repl: str, *loc):
 
         >>> put_into_cache('mykey', 'f(value(x))', 'CONSTANT', 0, 0, 2, 9)
         >>> x = replace_cache['mykey']
-        >>> type(x)
-        ReplaceString
+        >>> isinstance(x, ReplaceStrings)
+        True
         >>> x
-        "f(CONSTANT)"
+        'f(CONSTANT))'
         >>> x.original
-        "f(value(x))"
+        'f(value(x))'
 
     :param key: The key for the cache dict.
     :param source: The source.
