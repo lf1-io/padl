@@ -11,6 +11,12 @@ GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
 
 
+class PrettyMock:
+    @staticmethod
+    def text(x):
+        return x
+
+
 @transform
 def plus_global(x):
     return x + GLOBAL_1
@@ -148,6 +154,14 @@ class TestPADLCallTransform:
         assert self.transform_5.infer_apply(11.1)
         assert self.transform_6.infer_apply(19)
 
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
+
     def test_save_load(self, tmp_path):
         for transform_ in [self.transform_1,
                            self.transform_2,
@@ -172,6 +186,14 @@ class TestMap:
             Batchify() / Identity()
             >> ~plus_one
         )
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
@@ -241,6 +263,12 @@ class TestParallel:
             >> transform(lambda x: x[0] * x[1])
         )
 
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+
     def test_output(self):
         in_ = (2, 2, 2)
         out = self.transform_1(in_)
@@ -309,6 +337,14 @@ class TestRollout:
             >> times_two + times_two
         )
 
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
+
     def test_output(self):
         in_ = 123
         out = self.transform_1(in_)
@@ -376,6 +412,13 @@ class TestCompose:
             >> times_two
             >> Unbatchify()
         )
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
 
     def test_associative(self):
         in_ = 123
@@ -508,6 +551,14 @@ class TestModel:
             >> Unbatchify()
             >> plus_one / plus_one
         )
+
+    def test_pprintt(self):
+        self.model_1._repr_pretty_(PrettyMock, False)
+        self.model_2._repr_pretty_(PrettyMock, False)
+        self.model_3._repr_pretty_(PrettyMock, False)
+        self.model_4._repr_pretty_(PrettyMock, False)
+        self.model_5._repr_pretty_(PrettyMock, False)
+        self.model_6._repr_pretty_(PrettyMock, False)
 
     def test_pd_preprocess(self):
         assert isinstance(self.model_1.pd_preprocess, pd.Parallel)
