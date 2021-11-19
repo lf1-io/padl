@@ -156,9 +156,9 @@ class Transform:
 
     def _pd_get_stages(self, input_components=0) -> Tuple[Union[int, List],
                                                           Tuple['Transform', 'Transform', 'Transform']]:
-        """ Split the transform into "preprocessing", "forward" and "postprocessing" stages.
+        """ Stage the transform into "preprocessing", "forward" and "postprocessing" stages.
 
-        *input_components* contains information about the "split" the input is in and potentially
+        *input_components* contains information about the "stage" the input is in and potentially
         how many "pipes" of input there are. It is either an int or a (potentially nested)
         list of ints. A list of ints indicates there are multiple "pipes".
         The ints have the following meaning:
@@ -166,14 +166,14 @@ class Transform:
             - 1 means "batchified"
             - 2 means "unbatchified" a.k.a. post-process
         If it's a (nested) list, the structure represents the input structure for the transform,
-        whereas the entries represent the "split" of parts of the input.
+        whereas the entries represent the "stage" of parts of the input.
 
         For example, if a transform expects a tuple of inputs, *input_components* could be
         (0, 1), meaning that the first input item is not batchified whereas the second is.
 
         The method returns a tuple ((*input_compoenents*, *output_components*), *stages*).
 
-        - *output_components* is the "split" information of the output, it has the same format as
+        - *output_components* is the "stage" information of the output, it has the same format as
         the *input_components*.
 
         - *stages* is a 3-tuple of stages, the entries are:
@@ -1149,8 +1149,8 @@ class Map(Transform):
                     # output_components is whatever the sub-transform does to it
                     (input_components, output_components),
                     # the stages are the stages of the sub-transform, but mapped
-                    tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
-                          for split in stages)
+                    tuple(Map(stage) if not isinstance(stage, Identity) else builtin_identity
+                          for stage in stages)
                 )
             else:
                 assert isinstance(input_components, list)
@@ -1162,8 +1162,8 @@ class Map(Transform):
                     # for each input, we compute the *output_components* and the *stages* ...
                     (_, sub_output_components), sub_stages = self.transform._pd_get_stages(input_component)
                     output_components.append(sub_output_components)
-                    for split, subsplit in zip(stages, sub_stages):
-                        split.append(subsplit)
+                    for stage, sub_stage in zip(stages, sub_stages):
+                        stage.append(sub_stage)
 
                 # .. and combine them as a Parallel
                 self._pd_stages = ((input_components, output_components),
@@ -1476,21 +1476,21 @@ class Compose(CompoundTransform):
                 # the preprocess stage is the composition of the
                 # preprocess stages of all subtransforms
                 # (same for forward and postprocess)
-                for split, subsplit in zip(stages, sub_stages):
-                    split.append(subsplit)
+                for stage, sub_stage in zip(stages, sub_stages):
+                    stage.append(sub_stage)
 
             # .. some cleanup - remove identities ..
             cleaned_stages = tuple(
-                [s for s in split if not isinstance(s, Identity)]
-                for split in stages
+                [s for s in stage if not isinstance(s, Identity)]
+                for stage in stages
             )
 
             final_stages = []
-            for split in cleaned_stages:
-                if len(split) > 1:  # combine sub_stages
-                    final_stages.append(Compose(split))
-                elif len(split) == 1:  # if it's just one, no need to combine
-                    final_stages.append(split[0])
+            for stage in cleaned_stages:
+                if len(stage) > 1:  # combine sub_stages
+                    final_stages.append(Compose(stage))
+                elif len(stage) == 1:  # if it's just one, no need to combine
+                    final_stages.append(stage[0])
                 else:  # if it's empty: identity
                     final_stages.append(builtin_identity)
 
@@ -1665,13 +1665,13 @@ class Rollout(CompoundTransform):
             for transform_ in self.transforms:
                 (_, sub_output_components), sub_stages = transform_._pd_get_stages(input_components)
                 output_components.append(sub_output_components)
-                for split, subsplit in zip(stages, sub_stages):
-                    split.append(subsplit)
+                for stage, sub_stage in zip(stages, sub_stages):
+                    stage.append(sub_stage)
 
             # only replace with builtin_identity if all Identity to preserve number of pipes
             cleaned_stages = tuple(
-                builtin_identity if all(isinstance(s, Identity) for s in split) else split
-                for split in stages
+                builtin_identity if all(isinstance(s, Identity) for s in stage) else stage
+                for stage in stages
             )
 
             first_non_identity = \
@@ -1765,13 +1765,13 @@ class Parallel(CompoundTransform):
                 # and compute the sub-stages
                 (_, sub_output_components), sub_stages = transform_._pd_get_stages(input_component)
                 output_components.append(sub_output_components)
-                for split, subsplit in zip(stages, sub_stages):
-                    split.append(subsplit)
+                for stage, sub_stage in zip(stages, sub_stages):
+                    stage.append(sub_stage)
 
             # only replace with builtin_identity if all Identity to preserve number of pipes
             cleaned_stages = tuple(
-                builtin_identity if all(isinstance(s, Identity) for s in split) else split
-                for split in stages
+                builtin_identity if all(isinstance(s, Identity) for s in stage) else stage
+                for stage in stages
             )
 
             final_stages = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_stages)
