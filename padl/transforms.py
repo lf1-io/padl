@@ -70,9 +70,9 @@ def _batch_get(args, i):
     >>> t1 = torch.Tensor([1,2,3])
     >>> t2 = torch.Tensor([4,5,6])
     >>> _batch_get(t1, 1)
-    tensor(2)
+    tensor(2.)
     >>> _batch_get((t1, t2), 1)
-    (tensor(2), tensor(5))
+    (tensor(2.), tensor(5.))
 
     :param args: arguments
     :param i: index in batch

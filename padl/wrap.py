@@ -231,9 +231,9 @@ class PatchedModule:
 
     Example:
 
-        >>> from padl import transform
+        >>> import padl
         >>> import numpy as np
-        >>> pd_np = transform(np)
+        >>> pd_np = padl.transform(np)
         >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
         True
     """
