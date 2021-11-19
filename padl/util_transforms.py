@@ -51,38 +51,39 @@ class IfInMode(ClassTransform):
         return self.else_.pd_call_transform(args)
 
     def _pd_get_stages(self, input_components=0):
-        if self._pd_stages is None or self._pd_stages[0][0] != input_components:
-            transforms = [self.if_, self.else_]
-            stages = ([], [], [])
-            # we need one component info per sub-transform - if it's not a list that means
-            # all are the same - we make it a list
-            input_components_ = input_components
-            if not isinstance(input_components_, list):
-                input_components_ = [input_components for _ in range(len(transforms))]
+        transforms = [self.if_, self.else_]
+        splits = ([], [], [])
+        # we need one component info per sub-transform - if it's not a list that means
+        # all are the same - we make it a list
+        input_components_ = input_components
+        if not isinstance(input_components_, list):
+            input_components_ = [input_components for _ in range(len(transforms))]
 
-            # go through the sub-transforms ...
-            output_components = []
-            for transform_, input_component in zip(transforms, input_components_):
-                (_, sub_output_components), sub_stages = transform_._pd_get_stages(input_component)
-                output_components.append(sub_output_components)
-                for stage, sub_stage in zip(stages, sub_stages):
-                    stage.append(sub_stage)
+        # go through the sub-transforms ...
+        output_components = []
+        has_batchify = False
+        for transform_, input_component in zip(transforms, input_components_):
+            sub_output_components, sub_splits, sub_has_batchify = \
+                transform_._pd_get_splits(input_component)
+            has_batchify = has_batchify or sub_has_batchify
+            output_components.append(sub_output_components)
+            for split, sub_split in zip(splits, sub_splits):
+                split.append(sub_split)
 
-            cleaned_stages = tuple(
-                builtin_identity if all(isinstance(s, Identity) for s in stage) else stage
-                for stage in stages
-            )
+        cleaned_splits = tuple(
+            builtin_identity if all(isinstance(s, Identity) for s in split) else split
+            for split in splits
+        )
 
-            final_stages = tuple(
-                IfInMode(
-                    if_=s[0],
-                    target_mode=self.target_mode,
-                    else_=s[1]
-                ) if isinstance(s, list) else s for s in cleaned_stages
-            )
+        final_splits = tuple(
+            IfInMode(
+                if_=s[0],
+                target_mode=self.target_mode,
+                else_=s[1]
+            ) if isinstance(s, list) else s for s in cleaned_splits
+        )
 
-            self._pd_stages = ((input_components, output_components), final_stages)
-        return self._pd_stages
+        return output_components, final_splits, has_batchify
 
 
 class IfInfer(IfInMode):
