@@ -5,7 +5,9 @@ name: Padl-CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - ci/cd
   pull_request:
     branches: [ main ]
 
