@@ -1,13 +1,13 @@
 import torch
-from padl.utils import this
+from padl.utils import same
 
 
-def test_this():
-    t = this.tolist()
+def test_same():
+    t = same.tolist()
     assert t(torch.tensor([1, 2, 3])) == [1, 2, 3]
 
-    t = this[0]
+    t = same[0]
     assert t([1, 2, 3]) == 1
 
-    t = this[:2]
+    t = same[:2]
     assert t([1, 2, 3]) == [1, 2]
