@@ -18,7 +18,7 @@ class _Debug:
             r(epeat): repeat here (will produce the same exception)\n'
             q(uit): quit'
         """
-        pos = len(_pd_trace)
+        pos = len(_pd_trace) - 1
         breakpoint()
         msg = _pd_trace[pos][0]
         default_msg = (
