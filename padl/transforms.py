@@ -171,11 +171,11 @@ class Transform:
 
         return self._pd_stages
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple['Transform',
-                                                                'Transform',
-                                                                'Transform'],
-                                                          bool]:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple['Transform',
+                                                            'Transform',
+                                                            'Transform'],
+                                                      bool]:
         """ Split the transform into "pre-batchified", "batchified" and "postprocessing" splits.
 
         *input_components* contains information about the "split" the input is in and potentially
@@ -201,16 +201,13 @@ class Transform:
             - the "batchified" part of the transform
             - the "postprocess" part of the transform
         """
-        # Need to recompute if None or if the incoming input_components doesn't matched the cached
-        # version
-        component_set = Transform._component_set(input_components)
-        assert len(component_set) == 1
-        input_components = list(component_set)[0]
+        component = Transform._pd_merge_components(input_components)
+        assert isinstance(component, int)
         return (
             # a normal transform doesn't change the components
-            input_components,
+            component,
             # for the component the transform is in, return the transform, else Identity
-            tuple(self if i == input_components else builtin_identity for i in range(3)),
+            tuple(self if i == component else builtin_identity for i in range(3)),
             False
         )
 
@@ -1148,12 +1145,12 @@ class Map(Transform):
 
         self.transform = transform
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple[Transform,
-                                                                Transform,
-                                                                Transform],
-                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform,
+                                                            Transform,
+                                                            Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The *splits* of a map are:
             - the map of the subtransform's preprocess
@@ -1165,7 +1162,7 @@ class Map(Transform):
         # if *input_components* is an integer rather than a list ...
         if isinstance(input_components, int):
             # ... get output_components and splits from the contained transform
-            output_components, splits, has_batchify = self.transform._pd_get_splits(input_components)
+            output_components, splits, has_batchify = self.transform._pd_splits(input_components)
             return (
                 # output_components is whatever the sub-transform does to it
                 output_components,
@@ -1184,7 +1181,7 @@ class Map(Transform):
         for input_component in input_components:
             # for each input, we compute the *output_components* and the *splits* ...
             sub_output_components, sub_splits, sub_has_batchify = \
-                self.transform._pd_get_splits(input_component)
+                self.transform._pd_splits(input_component)
             has_batchify = has_batchify or sub_has_batchify
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
@@ -1477,12 +1474,12 @@ class Compose(CompoundTransform):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-    def _pd_get_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
-                                                                              Tuple[Transform,
-                                                                                    Transform,
-                                                                                    Transform],
-                                                                              bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
+                                                                          Tuple[Transform,
+                                                                                Transform,
+                                                                                Transform],
+                                                                          bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The composition of `transforms` splits into
             - the composition of each sub-transform's preprocess
@@ -1500,7 +1497,8 @@ class Compose(CompoundTransform):
         # for each sub-transform ...
         for transform_ in self.transforms:
             # ... see what comes out ...
-            output_components, sub_splits, sub_has_batchify = transform_._pd_get_splits(output_components)
+            output_components, sub_splits, sub_has_batchify = \
+                transform_._pd_splits(output_components)
 
             has_batchify = has_batchify or sub_has_batchify
 
@@ -1628,7 +1626,8 @@ class Compose(CompoundTransform):
                 to_format = combine_multi_line_strings(to_combine)
             else:
                 params = t._pd_get_signature()
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
+                    list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
@@ -1671,12 +1670,12 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple[Transform,
-                                                                Transform,
-                                                                Transform],
-                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform,
+                                                            Transform,
+                                                            Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A rollout splits into:
             - the rollout of its sub-transform' first non-Identity split
@@ -1697,7 +1696,7 @@ class Rollout(CompoundTransform):
         output_components = []
         has_batchify = False
         for transform_ in self.transforms:
-            sub_output_components, sub_splits, sub_has_batchify = transform_._pd_get_splits(input_components)
+            sub_output_components, sub_splits, sub_has_batchify = transform_._pd_splits(input_components)
             has_batchify = has_batchify or sub_has_batchify
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
@@ -1774,10 +1773,10 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple[Transform, Transform, Transform],
-                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         A parallel splits into:
             - the parallel of its sub-transforms' preprocess
@@ -1799,7 +1798,7 @@ class Parallel(CompoundTransform):
         for transform_, input_component in zip(self.transforms, input_components_):
             # and compute the sub-splits
             sub_output_components, sub_splits, sub_has_batchify = \
-                transform_._pd_get_splits(input_component)
+                transform_._pd_splits(input_component)
             has_batchify = has_batchify or sub_has_batchify
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
@@ -1920,10 +1919,10 @@ class Unbatchify(ClassTransform):
         self.dim = dim
         self.cpu = cpu
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple[Transform, Transform, Transform],
-                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Unbatchify has empty preprocess and forward splits and puts the component-number
         to 2 ("un-batchified").
@@ -1972,16 +1971,16 @@ class Batchify(ClassTransform):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
 
-    def _pd_get_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                          Tuple[Transform, Transform, Transform],
-                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_get_splits` for more details.
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         Batchify has empty pre-batchified and postprocess splits and puts the component-number
         to 1 ("batchified").
         """
         # ensure that all inputs are "fresh"
-        assert self._component_set(input_components) == {0}, 'double batchify'
+        assert self._pd_merge_components(input_components) == 0, 'double batchify'
         # put the output component to 1 ("batchified")
         return 1, (self, builtin_identity, builtin_identity), True
 

@@ -50,40 +50,28 @@ class IfInMode(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
-    def _pd_get_stages(self, input_components=0):
-        transforms = [self.if_, self.else_]
-        splits = ([], [], [])
-        # we need one component info per sub-transform - if it's not a list that means
-        # all are the same - we make it a list
-        input_components_ = input_components
-        if not isinstance(input_components_, list):
-            input_components_ = [input_components for _ in range(len(transforms))]
+    def _pd_get_splits(self, input_components=0):
+        if_output_components, if_splits, if_has_batchify = \
+            self.if_._pd_get_splits(input_components)
+        else_output_components, else_splits, else_has_batchify = \
+            self.else_._pd_get_splits(input_components)
 
-        # go through the sub-transforms ...
-        output_components = []
-        has_batchify = False
-        for transform_, input_component in zip(transforms, input_components_):
-            sub_output_components, sub_splits, sub_has_batchify = \
-                transform_._pd_get_splits(input_component)
-            has_batchify = has_batchify or sub_has_batchify
-            output_components.append(sub_output_components)
-            for split, sub_split in zip(splits, sub_splits):
-                split.append(sub_split)
-
-        cleaned_splits = tuple(
-            builtin_identity if all(isinstance(s, Identity) for s in split) else split
-            for split in splits
-        )
+        if_output_components_reduced = self._pd_merge_components(if_output_components)
+        else_output_components_reduced = self._pd_merge_components(else_output_components)
+        assert if_output_components_reduced == else_output_components_reduced, \
+            'if and else transforms have incompatible output shapes'
 
         final_splits = tuple(
             IfInMode(
-                if_=s[0],
+                if_=if_split,
                 target_mode=self.target_mode,
-                else_=s[1]
-            ) if isinstance(s, list) else s for s in cleaned_splits
+                else_=else_split
+            ) if if_split != else_split
+            else if_split
+            for if_split, else_split in zip(if_splits, else_splits)
         )
 
-        return output_components, final_splits, has_batchify
+        return if_output_components_reduced, final_splits, if_has_batchify or else_has_batchify
 
 
 class IfInfer(IfInMode):
