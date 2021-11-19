@@ -334,7 +334,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
             if instr.argval != target_instr.argval and instr.argval != argval:
                 break
             same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST')
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
             both_load = instr.opname in load_ops and target_instr.opname in load_ops
             if not (same_opname or both_load):
                 break
