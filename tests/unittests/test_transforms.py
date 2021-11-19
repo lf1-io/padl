@@ -136,6 +136,11 @@ class TestNamedTupleOutput:
         request.cls.transform_2 = request.cls.transform_1 >> (times_two + times_two)
         request.cls.transform_3 = request.cls.transform_2 >> (times_two / times_two)
 
+    def test_call(self):
+        assert not pd._isinstance_of_namedtuple(self.transform_1(1))
+        assert pd._isinstance_of_namedtuple(self.transform_2(1))
+        assert pd._isinstance_of_namedtuple(self.transform_3(1))
+
     def test_infer_apply(self):
         assert not pd._isinstance_of_namedtuple(self.transform_1.infer_apply(1))
         assert pd._isinstance_of_namedtuple(self.transform_2.infer_apply(1))
@@ -143,37 +148,19 @@ class TestNamedTupleOutput:
 
     def test_eval_apply(self):
         assert not any(list(map(pd._isinstance_of_namedtuple,
-                                self.transform_1.eval_apply([1, 2, 3])
-                                )
-                            )
-                       )
+                                self.transform_1.eval_apply([1, 2, 3]))))
         assert all(list(map(pd._isinstance_of_namedtuple,
-                            self.transform_2.eval_apply([1, 2, 3])
-                            )
-                        )
-                   )
+                            self.transform_2.eval_apply([1, 2, 3]))))
         assert all(list(map(pd._isinstance_of_namedtuple,
-                            self.transform_3.eval_apply([1, 2, 3])
-                            )
-                        )
-                   )
+                            self.transform_3.eval_apply([1, 2, 3]))))
 
     def test_train_apply(self):
         assert not any(list(map(pd._isinstance_of_namedtuple,
-                                self.transform_1.train_apply([1, 2, 3])
-                                )
-                            )
-                       )
+                                self.transform_1.train_apply([1, 2, 3]))))
         assert all(list(map(pd._isinstance_of_namedtuple,
-                            self.transform_2.train_apply([1, 2, 3])
-                            )
-                        )
-                   )
+                            self.transform_2.train_apply([1, 2, 3]))))
         assert all(list(map(pd._isinstance_of_namedtuple,
-                            self.transform_3.train_apply([1, 2, 3])
-                            )
-                        )
-                   )
+                            self.transform_3.train_apply([1, 2, 3]))))
 
 
 class TestPADLCallTransform:
