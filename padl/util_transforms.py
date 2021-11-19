@@ -53,7 +53,7 @@ class IfInMode(ClassTransform):
     def _pd_get_stages(self, input_components=0):
         if self._pd_stages is None or self._pd_stages[0][0] != input_components:
             transforms = [self.if_, self.else_]
-            splits = ([], [], [])
+            stages = ([], [], [])
             # we need one component info per sub-transform - if it's not a list that means
             # all are the same - we make it a list
             input_components_ = input_components
@@ -63,26 +63,26 @@ class IfInMode(ClassTransform):
             # go through the sub-transforms ...
             output_components = []
             for transform_, input_component in zip(transforms, input_components_):
-                (_, sub_output_components), subsplits = transform_._pd_get_stages(input_component)
+                (_, sub_output_components), sub_stages = transform_._pd_get_stages(input_component)
                 output_components.append(sub_output_components)
-                for split, subsplit in zip(splits, subsplits):
-                    split.append(subsplit)
+                for stage, sub_stage in zip(stages, sub_stages):
+                    stage.append(sub_stage)
 
-            cleaned_splits = tuple(
-                builtin_identity if all(isinstance(s, Identity) for s in split) else split
-                for split in splits
+            cleaned_stages = tuple(
+                builtin_identity if all(isinstance(s, Identity) for s in stage) else stage
+                for stage in stages
             )
 
-            final_splits = tuple(
+            final_stages = tuple(
                 IfInMode(
                     if_=s[0],
                     target_mode=self.target_mode,
                     else_=s[1]
-                ) if isinstance(s, list) else s for s in cleaned_splits
+                ) if isinstance(s, list) else s for s in cleaned_stages
             )
 
-            self._pd_splits = ((input_components, output_components), final_splits)
-        return self._pd_splits
+            self._pd_stages = ((input_components, output_components), final_stages)
+        return self._pd_stages
 
 
 class IfInfer(IfInMode):
