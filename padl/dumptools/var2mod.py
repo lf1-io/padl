@@ -285,8 +285,8 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
     >>> out = increment_same_name_var({('a', 1), ('b', 2)}, ScopedName('b', somemodule, 2))
     >>> isinstance(out, set)
     True
-    >>> {(x.name, x.n) for x in out}
-    {('a', 1), ('b', 4)}
+    >>> {(x.name, x.n) for x in out} == {('a', 1), ('b', 4)}
+    True
     """
     result = set()
     for var, n in variables:
