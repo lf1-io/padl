@@ -2,3 +2,4 @@ torch
 tqdm
 numpy
 astunparse
+pytest
