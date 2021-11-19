@@ -531,8 +531,9 @@ class Transform:
 
         Example:
 
-        >>> foo = MyTransform()
-        >>> foo._pd_varname
+        >>> from padl import transform
+        >>> foo = transform(lambda x: x + 1)
+        >>> foo.pd_varname()
         "foo"
 
         :param module: Module to search
@@ -1083,7 +1084,10 @@ class TorchModuleTransform(ClassTransform):
 class Map(Transform):
     """Apply one transform to each element of a list.
 
-    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    >>> from padl import identity
+    >>> t = identity
+    >>> x1, x2, x3 = 1, 2, 3
+    >>> Map(t)([x1, x2, x3]) == (t(x1), t(x2), t(x3))
     True
 
     :param transform: Transform to be applied to a list of inputs.

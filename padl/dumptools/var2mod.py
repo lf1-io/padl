@@ -19,6 +19,7 @@ class Finder(ast.NodeVisitor):
     Example:
 
     >>> f = Finder(ast.Name).find(ast.parse('x(y)'))
+    >>> print(f)
     [<_ast.Name at ...>, <_ast.Name at ...>]
     """
 
@@ -280,7 +281,7 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
 
     Example:
 
-    >>> increment_same_name_var({('a', 1), ('b', 2)'}, ScopedName('b', somemodule, 2)
+    >>> increment_same_name_var({('a', 1), ('b', 2)}, ScopedName('b', somemodule, 2))
     {('a', 1), ('b', 4)}
     """
     result = set()
