@@ -44,6 +44,8 @@ class _Notset:
 
 _notset = _Notset()
 
+_pd_trace = []
+
 
 def _isinstance_of_namedtuple(arg):
     """Check if input *arg* is instance of namedtuple"""
@@ -338,12 +340,20 @@ class Transform:
 
         return graph, scopemap
 
-#    def _trace_error(self, position: int, arg):
-#        try:
-#            str_ = self._repr_pretty_(marker)
-#            _pd_trace.append((str_, self._process_traceback, arg, self))
-#        except Exception:
-#            warn('Error tracing failed')
+    def _process_traceback(self):
+        a_tb = None
+        for a_tb in self._pd_traceback[::-1]:
+            if 'padl/transforms' in a_tb[0]:
+                continue
+            break
+        return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
+
+    def _trace_error(self, position: int, arg):
+        try:
+            str_ = self._repr_pretty_()
+            _pd_trace.append((str_, self._process_traceback(), arg, self))
+        except Exception:
+            warn('Error tracing failed')
 
     def _pd_evaluable_repr(self, indent: int = 0) -> str:
         """Return a string that if evaluated *in the same scope where the transform was created*
