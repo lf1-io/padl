@@ -9,7 +9,8 @@ on:
       - main
       - ci/cd
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
