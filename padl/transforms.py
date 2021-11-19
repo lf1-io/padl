@@ -1176,6 +1176,12 @@ class CompoundTransform(Transform):
             return last_transform._pd_output_format
         return None
 
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
+
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
 
