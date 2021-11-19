@@ -603,8 +603,8 @@ def split_call(call_source):
 
     Example:
 
-    >>> split_call_args('f(1, 2, 3)')
-    ("f", "1, 2, 3")
+    >>> split_call('f(1, 2, 3)')
+    ('f', '1, 2, 3')
     """
     node = ast.parse(call_source).body[0].value
     call = ast.get_source_segment(call_source, node.func)

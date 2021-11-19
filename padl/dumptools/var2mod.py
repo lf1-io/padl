@@ -19,7 +19,8 @@ class Finder(ast.NodeVisitor):
     Example:
 
     >>> f = Finder(ast.Name).find(ast.parse('x(y)'))
-    [<_ast.Name at ...>, <_ast.Name at ...>]
+    >>> all([isinstance(x, ast.Name) for x in f])
+    True
     """
 
     def __init__(self, nodetype):
@@ -280,8 +281,12 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
 
     Example:
 
-    >>> increment_same_name_var({('a', 1), ('b', 2)'}, ScopedName('b', somemodule, 2)
-    {('a', 1), ('b', 4)}
+    >>> import padl as somemodule
+    >>> out = increment_same_name_var({('a', 1), ('b', 2)}, ScopedName('b', somemodule, 2))
+    >>> isinstance(out, set)
+    True
+    >>> {(x.name, x.n) for x in out} == {('a', 1), ('b', 4)}
+    True
     """
     result = set()
     for var, n in variables:
