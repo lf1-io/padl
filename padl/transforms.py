@@ -70,9 +70,9 @@ def _batch_get(args, i):
     >>> t1 = torch.Tensor([1,2,3])
     >>> t2 = torch.Tensor([4,5,6])
     >>> _batch_get(t1, 1)
-    tensor(2)
+    tensor(2.)
     >>> _batch_get((t1, t2), 1)
-    (tensor(2), tensor(5))
+    (tensor(2.), tensor(5.))
 
     :param args: arguments
     :param i: index in batch
@@ -531,9 +531,10 @@ class Transform:
 
         Example:
 
-        >>> foo = MyTransform()
-        >>> foo._pd_varname
-        "foo"
+        >>> from padl import transform
+        >>> foo = transform(lambda x: x + 1)
+        >>> foo.pd_varname()
+        'foo'
 
         :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
@@ -1083,7 +1084,10 @@ class TorchModuleTransform(ClassTransform):
 class Map(Transform):
     """Apply one transform to each element of a list.
 
-    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    >>> from padl import identity
+    >>> t = identity
+    >>> x1, x2, x3 = 1, 2, 3
+    >>> Map(t)([x1, x2, x3]) == (t(x1), t(x2), t(x3))
     True
 
     :param transform: Transform to be applied to a list of inputs.
@@ -1942,7 +1946,8 @@ class _ItemGetter:
 
     Example:
 
-    >>> ig = _ItemGetter([1, 2, 3], tranform(lambda x: x + 1))
+    >>> from padl import transform
+    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
     >>> len(ig)
     3
     >>> ig[0]
