@@ -310,18 +310,21 @@ def find_codenode(name: ScopedName):
 
 def build_codegraph(scoped_name: ScopedName):
     graph = {}
+    done = set()
 
     todo = {scoped_name}
 
     while todo and (next_name := todo.pop()):
         # we know this already - go on
-        if next_name in graph:
+        if next_name in done:
             continue
 
         # find how next_var came into being
         next_codenode = find_codenode(next_name)
         graph[next_name] = next_codenode
+
         todo.update(next_codenode.globals_)
+        done.add(next_name)
 
     return graph
 

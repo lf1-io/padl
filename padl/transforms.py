@@ -363,7 +363,6 @@ class Transform:
         return {}, {}
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            done: Optional[set] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         """Build a codegraph defining the transform.
@@ -410,15 +409,12 @@ class Transform:
         The codegraph can be used to compile a python module defining ``f``.
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
-        :param done: The set of scoped names that have already been visited.
         :param name: The name to give the transform.
         :param scope: The scope for the start-node. Default is to use the scope of the transform.
         :return: Updated graph.
         """
         if graph is None:
             graph = {}
-        if done is None:
-            done = set()
 
         # the default is to use the scope of the transform
         if scope is None:
@@ -444,7 +440,7 @@ class Transform:
         todo = {*start.globals_}
         while todo and (next_name := todo.pop()):
             # we know this already - go on
-            if next_name in done:
+            if next_name in graph:
                 continue
 
             # ignoring this (it comes from the serializer)
@@ -458,7 +454,7 @@ class Transform:
                 else:
                     next_obj = all_vars_dict[next_name.name]
                 # pylint: disable=protected-access
-                next_obj._pd_build_codegraph(graph, done, next_name.name)
+                next_obj._pd_build_codegraph(graph, next_name.name)
             except (KeyError, AttributeError):
                 pass
             else:
@@ -468,7 +464,6 @@ class Transform:
             next_codenode = var2mod.find_codenode(next_name)
             graph[next_name] = next_codenode
 
-            done.add(next_name)
             todo.update(next_codenode.globals_)
         # finding dependencies done
 
@@ -477,9 +472,6 @@ class Transform:
         if new_name is not None:
             assert scope is not None
             graph[ScopedName(new_name, scope, 0)] = start
-
-        if name is not None:
-            done.add(name)
 
         return graph
 
@@ -1213,11 +1205,9 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-    def _pd_build_codegraph(self, graph=None, done=None, name=None, scope=None):
+    def _pd_build_codegraph(self, graph=None, name=None, scope=None):
         if graph is None:
             graph = {}
-        if done is None:
-            done = set()
 
         start = self._pd_codegraph_startnode(name)
 
@@ -1226,7 +1216,7 @@ class Map(Transform):
             graph[ScopedName(name, scope, 0)] = start
 
         varname = self.transform.pd_varname(self._pd_call_info.module)
-        self.transform._pd_build_codegraph(graph, done, varname,  self._pd_call_info.scope)
+        self.transform._pd_build_codegraph(graph, varname,  self._pd_call_info.scope)
         return graph
 
 
@@ -1311,7 +1301,7 @@ class CompoundTransform(Transform):
             result = 'padl.group' + result
         return result
 
-    def _pd_build_codegraph(self, graph=None, done=None, name=None, scope=None):
+    def _pd_build_codegraph(self, graph=None, name=None, scope=None):
         """Build a codegraph defining the transform.
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
@@ -1321,8 +1311,6 @@ class CompoundTransform(Transform):
         """
         if graph is None:
             graph = {}
-        if done is None:
-            done = set()
 
         start = self._pd_codegraph_startnode(name)
 
@@ -1340,7 +1328,7 @@ class CompoundTransform(Transform):
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.module)
             # pylint: disable=protected-access
-            transform._pd_build_codegraph(graph, done, varname, self._pd_call_info.scope)
+            transform._pd_build_codegraph(graph, varname, self._pd_call_info.scope)
         return graph
 
     def _pd_longrepr(self, formatting=True):
@@ -1869,13 +1857,10 @@ class BuiltinTransform(AtomicTransform):
         super().__init__(call, call_info=call_info)
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            done: Optional[set] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
-        if done is None:
-            done = set()
 
         if scope is None:
             scope = self._pd_call_info.scope
