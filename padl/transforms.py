@@ -363,7 +363,7 @@ class Transform:
         return {}, {}
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            scopemap: Optional[dict] = None,
+                            done: Optional[set] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         """Build a codegraph defining the transform.
@@ -410,15 +410,15 @@ class Transform:
         The codegraph can be used to compile a python module defining ``f``.
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
-        :param scopemap: A dict mapping scoped names to the scopes they were created in.
+        :param done: The set of scoped names that have already been visited.
         :param name: The name to give the transform.
         :param scope: The scope for the start-node. Default is to use the scope of the transform.
-        :return: Updated graph and scopemap.
+        :return: Updated graph.
         """
         if graph is None:
             graph = {}
-        if scopemap is None:
-            scopemap = {}
+        if done is None:
+            done = set()
 
         # the default is to use the scope of the transform
         if scope is None:
@@ -444,7 +444,7 @@ class Transform:
         todo = {*start.globals_}
         while todo and (next_name := todo.pop()):
             # we know this already - go on
-            if next_name in scopemap:
+            if next_name in done:
                 continue
 
             # ignoring this (it comes from the serializer)
@@ -458,28 +458,18 @@ class Transform:
                 else:
                     next_obj = all_vars_dict[next_name.name]
                 # pylint: disable=protected-access
-                next_obj._pd_build_codegraph(graph, scopemap, next_name.name)
+                next_obj._pd_build_codegraph(graph, done, next_name.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
             # find how next_ came into being
-            (source, node), scope_of_next_var = symfinder.find_in_scope(next_name)
+            next_codenode = var2mod.find_codenode(next_name)
+            graph[next_name] = next_codenode
+            done.add(next_name)
 
-            # store a mapping from *next_name* to it's defining scope
-            scopemap[next_name] = scope_of_next_var
-
-            # find dependencies
-            dependencies = var2mod.find_globals(node)
-            # fix the scope of *next_name* (from where it was a dependency to where it was defined)
-            next_name = ScopedName(next_name.name, scope_of_next_var, next_name.n)
-            dependencies = var2mod.increment_same_name_var(dependencies, next_name)
-
-            graph[next_name] = var2mod.CodeNode(source=source,
-                                                globals_=dependencies,
-                                                ast_node=node)
-            todo.update(dependencies)
+            todo.update(next_codenode.globals_)
         # finding dependencies done
 
         # if *new_name* is not ``None``, add the start node (i.e. the node assigning the transform
@@ -489,9 +479,9 @@ class Transform:
             graph[ScopedName(new_name, scope, 0)] = start
 
         if name is not None:
-            scopemap[ScopedName(name, scope, 0)] = self._pd_call_info.scope
+            done.add(name)
 
-        return graph, scopemap
+        return graph
 
     def _pd_evaluable_repr(self, indent: int = 0) -> str:
         """Return a string that if evaluated *in the same scope where the transform was created*
@@ -537,9 +527,9 @@ class Transform:
         :param path: Optional path to save at, might be required for serializer code snippets.
         """
         scope = symfinder.Scope.toplevel(inspector.caller_module())
-        graph, scopemap = self._pd_build_codegraph(name='_pd_main', scope=scope)
-        Serializer.save_all(graph, scopemap, path)
-        unscoped = var2mod.unscope_graph(graph, scopemap)
+        graph = self._pd_build_codegraph(name='_pd_main', scope=scope)
+        Serializer.save_all(graph, path)
+        unscoped = var2mod.unscope_graph(graph)
         code = var2mod.dumps_graph(unscoped)
         if return_versions:
             versions = dump_packages_versions(node.ast_node for node in graph.values())
@@ -1223,22 +1213,21 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-    def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+    def _pd_build_codegraph(self, graph=None, done=None, name=None, scope=None):
         if graph is None:
             graph = {}
-        if scopemap is None:
-            scopemap = {}
+        if done is None:
+            done = set()
 
         start = self._pd_codegraph_startnode(name)
 
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
-            scopemap[ScopedName(name, scope, 0)] = scope
 
         varname = self.transform.pd_varname(self._pd_call_info.module)
-        self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
-        return graph, scopemap
+        self.transform._pd_build_codegraph(graph, done, varname,  self._pd_call_info.scope)
+        return graph
 
 
 class CompoundTransform(Transform):
@@ -1322,7 +1311,7 @@ class CompoundTransform(Transform):
             result = 'padl.group' + result
         return result
 
-    def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+    def _pd_build_codegraph(self, graph=None, done=None, name=None, scope=None):
         """Build a codegraph defining the transform.
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
@@ -1332,8 +1321,8 @@ class CompoundTransform(Transform):
         """
         if graph is None:
             graph = {}
-        if scopemap is None:
-            scopemap = {}
+        if done is None:
+            done = set()
 
         start = self._pd_codegraph_startnode(name)
 
@@ -1341,21 +1330,18 @@ class CompoundTransform(Transform):
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
                                                                                     emptyscope)
-            scopemap[ScopedName('padl', self._pd_call_info.scope, 0)] = emptyscope
 
         # if a name is given, add the start-node to the codegraph
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
-            scopemap[ScopedName(name, scope, 0)] = scope
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.module)
             # pylint: disable=protected-access
-            transform._pd_build_codegraph(graph, scopemap, varname,
-                                          self._pd_call_info.scope)
-        return graph, scopemap
+            transform._pd_build_codegraph(graph, done, varname, self._pd_call_info.scope)
+        return graph
 
     def _pd_longrepr(self, formatting=True):
         between = f'\n{make_green(self.display_op, not formatting)}  \n'
@@ -1883,13 +1869,13 @@ class BuiltinTransform(AtomicTransform):
         super().__init__(call, call_info=call_info)
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            scopemap: Optional[dict] = None,
+                            done: Optional[set] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
         if graph is None:
             graph = {}
-        if scopemap is None:
-            scopemap = {}
+        if done is None:
+            done = set()
 
         if scope is None:
             scope = self._pd_call_info.scope
@@ -1899,16 +1885,13 @@ class BuiltinTransform(AtomicTransform):
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
                                                                                     scope)
-            scopemap[ScopedName('padl', scope, 0)] = emptyscope
 
         if name is not None:
             start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
             graph[ScopedName(name, scope, 0)] = \
                 var2mod.CodeNode.from_source(start_source, scope)
 
-            scopemap[ScopedName(name, scope, 0)] = scope
-
-        return graph, scopemap
+        return graph
 
     def _pd_longrepr(self, formatting=True):
         return self._pd_call.split('padl.')[-1]

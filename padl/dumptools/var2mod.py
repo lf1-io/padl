@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Optional, List, Tuple
 
-from padl.dumptools.symfinder import find_in_scope, ScopedName
+from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope
 
 try:
     unparse = ast.unparse
@@ -297,31 +297,33 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
     return result
 
 
+def find_codenode(name: ScopedName):
+    (source, node), scope_of_next_var = find_in_scope(name)
+
+    # find dependencies
+    globals_ = find_globals(node)
+    next_name = ScopedName(name.name, scope_of_next_var, name.n)
+    globals_ = increment_same_name_var(globals_, next_name)
+
+    return CodeNode(source=source, globals_=globals_, ast_node=node, scope=scope_of_next_var)
+
+
 def build_codegraph(scoped_name: ScopedName):
     graph = {}
-    scopemap = {}
 
     todo = {scoped_name}
 
-    while todo and (next_ := todo.pop()):
+    while todo and (next_name := todo.pop()):
         # we know this already - go on
-        if next_ in scopemap:
+        if next_name in graph:
             continue
 
         # find how next_var came into being
-        (source, node), scope_of_next_var = find_in_scope(next_)
-        scopemap[next_] = scope_of_next_var
+        next_codenode = find_codenode(next_name)
+        graph[next_name] = next_codenode
+        todo.update(next_codenode.globals_)
 
-        # find dependencies
-        globals_ = find_globals(node)
-        next_name = ScopedName(next_.name, scope_of_next_var, next_.n)
-        globals_ = increment_same_name_var(globals_, next_name)
-        graph[next_name] = CodeNode(source=source,
-                                    globals_=globals_,
-                                    ast_node=node)
-        todo.update(globals_)
-
-    return graph, scopemap
+    return graph
 
 
 def _get_nodes_without_in_edges(graph):
@@ -380,14 +382,12 @@ def _sort(graph):
     return res
 
 
-def unscope_graph(graph, scopemap):
+def unscope_graph(graph):
     """Create a version of *graph* where all non-top level variables are renamed (by prepending
     the scope) to prevent conflicts."""
-    name_scope = {(x.name, x.scope) for x in graph}
+    name_scope = {(k.name, v.scope) for k, v in graph.items()}
     counts = Counter(x[0] for x in name_scope)
     to_rename = set(k for k, c in counts.items() if c > 1)
-    scopemap = {**scopemap}
-    scopemap.update({scoped_name: scoped_name.scope for scoped_name in scopemap})
 
     def unscope(name, scope):
         if name in to_rename:
@@ -404,7 +404,7 @@ def unscope_graph(graph, scopemap):
         rename(tree, k.name, k_unscoped, rename_locals=True)
         vars_ = set()
         for var in list(v.globals_):
-            var_unscoped = unscope(var.name, scopemap[var])
+            var_unscoped = unscope(var.name, var.scope)
             changed = changed or var_unscoped != var.name
             rename(tree, var.name, var_unscoped)
             vars_.add((var_unscoped, var.n))
@@ -418,6 +418,7 @@ def unscope_graph(graph, scopemap):
 class CodeNode:
     source: str
     globals_: set
+    scope: Scope
     ast_node: Optional[ast.AST] = None
 
     @classmethod
@@ -431,7 +432,8 @@ class CodeNode:
         return cls(
             source=source,
             ast_node=node,
-            globals_=globals_
+            globals_=globals_,
+            scope=scope
         )
 
 
