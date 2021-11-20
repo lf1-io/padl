@@ -27,12 +27,11 @@ class IfInMode(ClassTransform):
     pd_dont_dump_code = True
 
     def __init__(self, if_: Transform, target_mode: Mode, else_: Optional[Transform] = None):
+        assert target_mode in ('train', 'eval', 'infer'), "Target mode can only be train, " \
+                                                          "eval or infer"
         super().__init__(arguments=OrderedDict([('if_', if_),
                                                 ('target_mode', target_mode),
                                                 ('else_', else_)]))
-
-        assert target_mode in ('train', 'eval', 'infer'), "Target mode can only be train, " \
-                                                          "eval or infer"
 
         if else_ is None:
             else_ = Identity()

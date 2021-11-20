@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity
+from padl import transforms as pd, transform, Identity, batch
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
@@ -855,3 +855,29 @@ class TestComposeWithComments:
         )
 
         t.pd_save(tmp_path)
+
+
+class TestAssertNoDoubleBatch:
+    def test_double_1(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> batch >> batch
+            t.pd_forward
+
+    def test_double_2(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one + batch >> plus_one >> batch >> plus_one
+            t.pd_forward
+
+    def test_double_3(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one + batch >> plus_one >> batch + plus_one >> plus_one
+            t.pd_forward
+
+    def test_double_4(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one / batch >> batch + plus_one >> plus_one
+            t.pd_forward
+
+    def test_no_double(self):
+        t = plus_one >> plus_one / batch >> batch / plus_one >> plus_one
+        t.pd_forward
