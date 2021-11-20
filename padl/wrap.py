@@ -75,15 +75,15 @@ def _wrap_class(cls, ignore_scope=False):
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
     Example:
-
-    @transform
-    class MyClass:
-        def __init__(self, x):
-            ...
-
+    >>> @transform
+    ... class MyClass:
+    ...     def __init__(self, x):
+    ...         self.x = x
+    ...     def __call__(self, args):
+    ...         return self.x + args
     >>> myobj = MyClass('hello')
     >>> myobj._pd_call
-    MyClass('hello')
+    "MyClass('hello')"
 
     :param cls: class to be wrapped
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
@@ -121,11 +121,11 @@ def _wrap_class_instance(obj, ignore_scope=False):
     `transform`.
 
     Example:
-
-    class MyClass:
-        def __init__(self, x):
-            ...
-
+    >>> class MyClass:
+    ...     def __init__(self, x):
+    ...         self.x = x
+    ...     def __call__(self, args):
+    ...         return self.x + args
     >>> myobj = transform(MyClass('hello'))
 
     :param obj: object to be wrapped
@@ -231,9 +231,9 @@ class PatchedModule:
 
     Example:
 
-        >>> from padl import transform
+        >>> import padl
         >>> import numpy as np
-        >>> pd_np = transform(np)
+        >>> pd_np = padl.transform(np)
         >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
         True
     """

@@ -11,6 +11,7 @@ class IfInMode(ClassTransform):
 
     Example:
 
+        >>> from padl import transform
         >>> a = transform(lambda x: x + 10)
         >>> b = transform(lambda x: x * 10)
         >>> iis = IfInMode(a, 'infer', b)
