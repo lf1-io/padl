@@ -464,11 +464,11 @@ class Transform:
             else:
                 continue
 
-            # find how next_ came into being
+            # find how *next_name* came into being
             next_codenode = var2mod.find_codenode(next_name)
             graph[next_name] = next_codenode
-            done.add(next_name)
 
+            done.add(next_name)
             todo.update(next_codenode.globals_)
         # finding dependencies done
 
