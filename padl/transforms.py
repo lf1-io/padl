@@ -1929,50 +1929,28 @@ class Parallel(CompoundTransform):
         return out
 
 
-class BuiltinTransform(AtomicTransform):
-    def __init__(self, call):
-        caller_frameinfo = inspector.non_init_caller_frameinfo()
-        call_info = inspector.CallInfo(caller_frameinfo)
-        super().__init__(call, call_info=call_info)
+class BuiltinTransform(ClassTransform):
+    """A builtin transform will simply always be imported, never fully dumped. """
 
-    def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            name: Optional[str] = None) -> Tuple[dict, dict]:
-        if graph is None:
-            graph = CodeGraph()
-
-        scope = self._pd_call_info.scope
-
-        # if padl is not in the scope, add it
-        if ScopedName('padl', scope, 0) not in graph:
-            emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = CodeNode.from_source('import padl',
-                                                                            scope)
-
-        if name is not None:
-            start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-            graph[ScopedName(name, scope, 0)] = \
-                CodeNode.from_source(start_source, scope)
-
-        return graph
-
-    def _pd_longrepr(self, formatting=True):
-        return self._pd_call.split('padl.')[-1]
+    @property
+    def _pd_full_dump(self):
+        return False
 
 
 class Identity(BuiltinTransform):
     """Do nothing. Just pass on."""
 
     def __init__(self):
-        super().__init__('padl.Identity()')
+        super().__init__()
 
     def __call__(self, args):
         return args
 
 
-builtin_identity = Identity()
+identity = Identity()
 
 
-class Unbatchify(ClassTransform):
+class Unbatchify(BuiltinTransform):
     """Mark start of postprocessing.
 
     Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
@@ -2024,7 +2002,7 @@ class Unbatchify(ClassTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-class Batchify(ClassTransform):
+class Batchify(BuiltinTransform):
     """Mark end of preprocessing.
 
     Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
