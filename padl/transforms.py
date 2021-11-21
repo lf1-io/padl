@@ -2161,7 +2161,24 @@ class _ItemGetter:
         return len(self.samples)
 
 
-def fulldump(transform):
-    t_copy = copy(transform)
+def fulldump(transform_or_module):
+    if isinstance(transform_or_module, types.ModuleType):
+        Transform._pd_external_full_dump_modules.add(transform_or_module.__spec__.name)
+        return None
+    assert isinstance(transform_or_module, Transform)
+    t_copy = copy(transform_or_module)
     t_copy._pd_external_full_dump = True
+    return t_copy
+
+
+def importdump(transform_or_module):
+    if isinstance(transform_or_module, types.ModuleType):
+        try:
+            Transform._pd_external_full_dump_modules.remove(transform_or_module.__spec__.name)
+        except KeyError:
+            pass
+        return None
+    assert isinstance(transform_or_module, Transform)
+    t_copy = copy(transform_or_module)
+    t_copy._pd_external_full_dump = False
     return t_copy
