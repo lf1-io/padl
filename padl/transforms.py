@@ -14,7 +14,7 @@ from shutil import rmtree
 import textwrap
 from tempfile import TemporaryDirectory
 import types
-from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
+from typing import Callable, Iterable, Iterator, List, Literal, Optional, Tuple, Union
 from warnings import warn
 from zipfile import ZipFile
 
@@ -23,7 +23,8 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from padl.dumptools import var2mod, symfinder, inspector
+from padl.dumptools import symfinder, inspector
+from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
 
@@ -123,7 +124,7 @@ class Transform:
     """Transform base class.
 
     :param call_info: A `CallInfo` object containing information about the how the transform was
-    created (needed for saving).
+        created (needed for saving).
     :param pd_name: name of the transform
     """
     pd_mode = None
@@ -138,6 +139,13 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_layers = None
         self._pd_stages = None
+        self._pd_external_full_dump = False
+
+    @property
+    def _pd_full_dump(self):
+        if inspector.caller_module() == self._pd_call_info.scope.module:
+            return True
+        return self._pd_external_full_dump
 
     @staticmethod
     def _pd_merge_components(components):
@@ -176,7 +184,7 @@ class Transform:
                                                             'Transform',
                                                             'Transform'],
                                                       bool]:
-        """ Split the transform into "pre-batchified", "batchified" and "postprocessing" splits.
+        """Split the transform into "pre-batchified", "batchified" and "postprocessing" splits.
 
         *input_components* contains information about the "split" the input is in and potentially
         how many "pipes" of input there are. It is either an int or a (potentially nested)
@@ -234,7 +242,7 @@ class Transform:
         return Compose([self, other])
 
     def __add__(self, other: "Transform") -> "Rollout":
-        """ Rollout with *other*.
+        """Rollout with *other*.
 
         Example:
             t = a + b + c
@@ -242,7 +250,7 @@ class Transform:
         return Rollout([self, other])
 
     def __truediv__(self, other: "Transform") -> "Parallel":
-        """ Parallel with *other*.
+        """Parallel with *other*.
 
         Example:
             t = a / b / c
@@ -351,11 +359,24 @@ class Transform:
         with open(path / 'versions.txt', 'w') as f:
             f.write(versions)
 
-    def _pd_codegraph_startnode(self, name: str) -> var2mod.CodeNode:
+    def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> CodeNode:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
+        scope = self._pd_call_info.scope
+
+        nodes = []
+
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        return var2mod.CodeNode.from_source(start_source, self._pd_call_info.scope)
+        start = CodeNode.from_source(start_source, scope)
+        nodes.append(start)
+
+        if name is not None:
+            graph[ScopedName(name, scope, 0)] = start
+
+        dependencies = set()
+        for node in nodes:
+            dependencies.update(node.globals_)
+        return dependencies
 
     @property
     def _pd_closurevars(self) -> Tuple[dict, dict]:
@@ -363,8 +384,7 @@ class Transform:
         return {}, {}
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            name: Optional[str] = None,
-                            scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
+                            name: Optional[str] = None) -> Tuple[dict, dict]:
         """Build a codegraph defining the transform.
 
         A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
@@ -414,11 +434,7 @@ class Transform:
         :return: Updated graph.
         """
         if graph is None:
-            graph = {}
-
-        # the default is to use the scope of the transform
-        if scope is None:
-            scope = self._pd_call_info.scope
+            graph = CodeGraph()
 
         # build the start node ->
         # if the *name* is the same as the call, we don't need to assign to the name
@@ -428,16 +444,14 @@ class Transform:
         else:
             new_name = name
 
-        start = self._pd_codegraph_startnode(new_name)
-        # <-
+        todo = self._pd_codegraph_add_startnodes(graph, new_name)
 
-        # if this has closurevars, get them (if there are transforms in the closure, we want to
-        # allow them to build their codegraph themselves, see below)
+        # if this transform has closurevars, get them (if there are transforms in the closure, we
+        # want to allow them to build their codegraph themselves, see below)
         globals_dict, nonlocals_dict = self._pd_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
-        todo = {*start.globals_}
         while todo and (next_name := todo.pop()):
             # we know this already - go on
             if next_name in graph:
@@ -461,17 +475,10 @@ class Transform:
                 continue
 
             # find how *next_name* came into being
-            next_codenode = var2mod.find_codenode(next_name)
+            next_codenode = find_codenode(next_name)
             graph[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
-        # finding dependencies done
-
-        # if *new_name* is not ``None``, add the start node (i.e. the node assigning the transform
-        # to *new_name*) to the codegraph
-        if new_name is not None:
-            assert scope is not None
-            graph[ScopedName(new_name, scope, 0)] = start
 
         return graph
 
@@ -518,11 +525,9 @@ class Transform:
             dependencies and their versions.
         :param path: Optional path to save at, might be required for serializer code snippets.
         """
-        scope = symfinder.Scope.toplevel(inspector.caller_module())
-        graph = self._pd_build_codegraph(name='_pd_main', scope=scope)
+        graph = self._pd_build_codegraph(name='_pd_main')
         Serializer.save_all(graph, path)
-        unscoped = var2mod.unscope_graph(graph)
-        code = var2mod.dumps_graph(unscoped)
+        code = graph.dumps()
         if return_versions:
             versions = dump_packages_versions(node.ast_node for node in graph.values())
             return code, versions
@@ -846,8 +851,7 @@ class Transform:
         output_format = self._pd_get_output_format()
         if output_format is not None:
             return output_format(*inputs)
-        else:
-            return inputs
+        return inputs
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
@@ -956,6 +960,20 @@ class FunctionTransform(AtomicTransform):
         self._pd_number_of_inputs = None
         self._source = source
 
+    def _pd_codegraph_add_startnodes(self, graph, name):
+        if self._pd_full_dump:
+            return super()._pd_codegraph_add_startnodes(graph, name)
+        module = inspector.caller_module()
+        scope = symfinder.Scope.toplevel(module)
+        source = f'from {self.__module__} import {self.__name__}'
+        if name is not None:
+            source += f' as {name}'
+        else:
+            name = self.__name__
+        node = CodeNode.from_source(source, scope)
+        graph[ScopedName(name, scope, 0)] = node
+        return {}
+
     @property
     def source(self) -> str:
         """The source of the wrapped function. """
@@ -1044,6 +1062,75 @@ class ClassTransform(AtomicTransform):
             call_info=call_info,
             pd_name=pd_name
         )
+
+    @property
+    def _pd_full_dump(self):
+        if inspector.caller_module() == inspect.getmodule(self.__class__):
+            return True
+        return self._pd_external_full_dump
+
+    def _pd_codegraph_add_startnodes_import_var(self, graph, name):
+        own_scope = self._pd_call_info.scope
+        varname = self.pd_varname(own_scope.module)
+        import_source = f'from {self.__module__} import {varname}'
+        import_node = CodeNode.from_source(import_source, own_scope)
+        graph[ScopedName(varname, own_scope, 0)] = import_node
+
+        if name != varname:
+            start_source = f'{name or "_pd_dummy"} = {varname}'
+        start_node = CodeNode.from_source(start_source, own_scope)
+        if name is not None:
+            graph[ScopedName(name, own_scope, 0)] = start_node
+
+        return set()
+
+    def _pd_codegraph_add_startnodes_import(self, graph, name):
+        own_scope = self._pd_call_info.scope
+        module = inspector.caller_module()
+        call_scope = symfinder.Scope.toplevel(module)
+        class_scope = symfinder.Scope.toplevel(inspect.getmodule(self.__class__))
+
+        if own_scope != class_scope:
+            return super()._pd_codegraph_add_startnodes(graph, name)
+
+        if self.pd_varname(own_scope.module) is not None:
+            return self._pd_codegraph_add_startnodes_import_var(graph, name)
+        import_source = f'from {self.__module__} import {self.__class__.__name__}'
+        import_node = CodeNode.from_source(import_source, own_scope)
+        graph[ScopedName(self.__class__.__name__, own_scope, 0)] = import_node
+        nodes = [import_node]
+
+        call = self.__class__.__name__ + f'({self._split_call()[1]})'
+        start_source = f'{name or "_pd_dummy"} = {call}'
+        start_node = CodeNode.from_source(start_source, call_scope)
+        if name is not None:
+            graph[ScopedName(name, call_scope, 0)] = start_node
+        nodes.append(start_node)
+
+        dependencies = set()
+        for node in nodes:
+            dependencies.update(node.globals_)
+        return dependencies
+
+    def _pd_codegraph_add_startnodes_full(self, graph, name):
+        module = inspector.caller_module()
+        call_scope = symfinder.Scope.toplevel(module)
+        class_scope = symfinder.Scope.toplevel(inspect.getmodule(self.__class__))
+        if class_scope == call_scope:
+            return super()._pd_codegraph_add_startnodes(graph, name)
+
+        call = self.__class__.__name__ + f'({self._split_call()[1]})'
+        start_source = f'{name or "_pd_dummy"} = {call}'
+        start_node = CodeNode.from_source(start_source, class_scope)
+        if name is not None:
+            graph[ScopedName(name, call_scope, 0)] = start_node
+
+        return set(start_node.globals_)
+
+    def _pd_codegraph_add_startnodes(self, graph, name):
+        if self._pd_full_dump:
+            return self._pd_codegraph_add_startnodes_full(graph, name)
+        return self._pd_codegraph_add_startnodes_import(graph, name)
 
     @property
     def source(self) -> str:
@@ -1205,20 +1292,6 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-    def _pd_build_codegraph(self, graph=None, name=None, scope=None):
-        if graph is None:
-            graph = {}
-
-        start = self._pd_codegraph_startnode(name)
-
-        if name is not None:
-            assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
-
-        varname = self.transform.pd_varname(self._pd_call_info.module)
-        self.transform._pd_build_codegraph(graph, varname,  self._pd_call_info.scope)
-        return graph
-
 
 class CompoundTransform(Transform):
     """Abstract base class for compound-transforms (transforms combining other transforms).
@@ -1301,7 +1374,7 @@ class CompoundTransform(Transform):
             result = 'padl.group' + result
         return result
 
-    def _pd_build_codegraph(self, graph=None, name=None, scope=None):
+    def _pd_build_codegraph(self, graph=None, name=None):
         """Build a codegraph defining the transform.
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
@@ -1310,25 +1383,20 @@ class CompoundTransform(Transform):
         contained transforms plus the node defining the transform itself.
         """
         if graph is None:
-            graph = {}
+            graph = CodeGraph()
 
-        start = self._pd_codegraph_startnode(name)
+        self._pd_codegraph_add_startnodes(graph, name)
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
-                                                                                    emptyscope)
-
-        # if a name is given, add the start-node to the codegraph
-        if name is not None:
-            assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
+            graph[ScopedName('padl', emptyscope, 0)] = CodeNode.from_source('import padl',
+                                                                            emptyscope)
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.module)
             # pylint: disable=protected-access
-            transform._pd_build_codegraph(graph, varname, self._pd_call_info.scope)
+            transform._pd_build_codegraph(graph, varname)
         return graph
 
     def _pd_longrepr(self, formatting=True):
@@ -1692,7 +1760,9 @@ class Rollout(CompoundTransform):
         output_components = []
         has_batchify = False
         for transform_ in self.transforms:
-            sub_output_components, sub_splits, sub_has_batchify = transform_._pd_splits(input_components)
+            # pylint: disable=protected-access
+            sub_output_components, sub_splits, sub_has_batchify = \
+                transform_._pd_splits(input_components)
             has_batchify = has_batchify or sub_has_batchify
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
@@ -1713,14 +1783,14 @@ class Rollout(CompoundTransform):
             first_non_identity = first_non_identity[0]
 
         final_splits = []
-        for i, s in enumerate(cleaned_splits):
-            if isinstance(s, list):
+        for i, split in enumerate(cleaned_splits):
+            if isinstance(split, list):
                 if i == first_non_identity:
-                    final_splits.append(Rollout(s))
+                    final_splits.append(Rollout(split))
                 else:
-                    final_splits.append(Parallel(s))
+                    final_splits.append(Parallel(split))
             else:
-                final_splits.append(s)
+                final_splits.append(split)
         final_splits = tuple(final_splits)
 
         return output_components, final_splits, has_batchify
@@ -1857,24 +1927,22 @@ class BuiltinTransform(AtomicTransform):
         super().__init__(call, call_info=call_info)
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
-                            name: Optional[str] = None,
-                            scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
+                            name: Optional[str] = None) -> Tuple[dict, dict]:
         if graph is None:
-            graph = {}
+            graph = CodeGraph()
 
-        if scope is None:
-            scope = self._pd_call_info.scope
+        scope = self._pd_call_info.scope
 
         # if padl is not in the scope, add it
         if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
-                                                                                    scope)
+            graph[ScopedName('padl', emptyscope, 0)] = CodeNode.from_source('import padl',
+                                                                            scope)
 
         if name is not None:
             start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
             graph[ScopedName(name, scope, 0)] = \
-                var2mod.CodeNode.from_source(start_source, scope)
+                CodeNode.from_source(start_source, scope)
 
         return graph
 
