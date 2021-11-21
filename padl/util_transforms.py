@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from typing import Optional
 
-from padl.transforms import ClassTransform, Identity, Transform, Mode, builtin_identity
+from padl.transforms import ClassTransform, Identity, Transform, Mode
 
 
 class IfInMode(ClassTransform):
@@ -14,18 +14,16 @@ class IfInMode(ClassTransform):
         >>> from padl import transform
         >>> a = transform(lambda x: x + 10)
         >>> b = transform(lambda x: x * 10)
-        >>> iis = IfInMode(a, 'infer', b)
-        >>> iis.infer_apply(1)
+        >>> iim = IfInMode(a, 'infer', b)
+        >>> iim.infer_apply(1)
         11
-        >>> list(iis.eval_apply([1]))
+        >>> list(iim.eval_apply([1]))
         [100]
 
     :param if_: Transform to apply when the mode matches.
     :param target_mode: Mode (one of 'train', 'eval', 'infer').
     :param else_: Transform to apply when the mode doesn't match (defaults to identity transform).
     """
-
-    pd_dont_dump_code = True
 
     def __init__(self, if_: Transform, target_mode: Mode, else_: Optional[Transform] = None):
         assert target_mode in ('train', 'eval', 'infer'), "Target mode can only be train, " \
@@ -51,6 +49,7 @@ class IfInMode(ClassTransform):
         return self.else_.pd_call_transform(args)
 
     def _pd_get_splits(self, input_components=0):
+        # pylint: disable=protected-access
         if_output_components, if_splits, if_has_batchify = \
             self.if_._pd_get_splits(input_components)
         else_output_components, else_splits, else_has_batchify = \
