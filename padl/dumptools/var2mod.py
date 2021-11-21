@@ -308,27 +308,6 @@ def find_codenode(name: ScopedName):
     return CodeNode(source=source, globals_=globals_, ast_node=node, scope=scope_of_next_var)
 
 
-def build_codegraph(scoped_name: ScopedName):
-    graph = {}
-    done = set()
-
-    todo = {scoped_name}
-
-    while todo and (next_name := todo.pop()):
-        # we know this already - go on
-        if next_name in done:
-            continue
-
-        # find how next_var came into being
-        next_codenode = find_codenode(next_name)
-        graph[next_name] = next_codenode
-
-        todo.update(next_codenode.globals_)
-        done.add(next_name)
-
-    return graph
-
-
 def _get_nodes_without_in_edges(graph):
     """Get all nodes in directed graph *graph* that don't have incoming edges.
 
@@ -347,6 +326,17 @@ def _get_nodes_without_in_edges(graph):
     return nextlevel, filtered_graph
 
 
+# sort precedence
+_PRECEDENCE = {
+    # imports and modules on top, ordered by module name
+    ast.Import: lambda k, v: '1' + v.ast_node.names[0].name.lower() + k.lower(),
+    ast.ImportFrom: lambda k, v: '1' + v.ast_node.module.lower() + k.lower(),
+    # assignments (-> constants) after that
+    ast.Assign: lambda k, _v: '2' + k.lower()
+    # the rest goes below
+}
+
+
 def _topsort(graph):
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
     """
@@ -361,21 +351,13 @@ def _topsort(graph):
     return levels
 
 
-# sort precedence
-_PRECEDENCE = {
-    ast.Import: lambda k, v: '1' + v[2].names[0].name.lower() + k.lower(),
-    ast.ImportFrom: lambda k, v: '1' + v[2].module.lower() + k.lower(),
-    ast.Assign: lambda k, _v: '2' + k.lower()
-}
-
-
-def _sort(graph):
-    top = _topsort({k: v[1] for k, v in graph.items()})
+def _sort(unscoped_graph):
+    top = _topsort({k: v.globals_ for k, v in unscoped_graph.items()})
 
     def sortkey(x):
-        val = graph[x]
+        val = unscoped_graph[x]
         try:
-            return _PRECEDENCE[val[2].__class__](x[0], val)
+            return _PRECEDENCE[val.ast_node.__class__](x[0], val)
         except KeyError:
             return 'zz' + x[0].lower()
 
@@ -385,43 +367,11 @@ def _sort(graph):
     return res
 
 
-def unscope_graph(graph):
-    """Create a version of *graph* where all non-top level variables are renamed (by prepending
-    the scope) to prevent conflicts."""
-    name_scope = {(k.name, v.scope) for k, v in graph.items()}
-    counts = Counter(x[0] for x in name_scope)
-    to_rename = set(k for k, c in counts.items() if c > 1)
-
-    def unscope(name, scope):
-        if name in to_rename:
-            return scope.unscoped(name)
-        return name
-
-    res = {}
-    for k, v in graph.items():
-        changed = False
-        k_unscoped = unscope(k.name, k.scope)
-        changed = changed or k_unscoped != k.name
-        code = v.source
-        tree = ast.parse(code)
-        rename(tree, k.name, k_unscoped, rename_locals=True)
-        vars_ = set()
-        for var in list(v.globals_):
-            var_unscoped = unscope(var.name, var.scope)
-            changed = changed or var_unscoped != var.name
-            rename(tree, var.name, var_unscoped)
-            vars_.add((var_unscoped, var.n))
-        if changed:
-            code = unparse(tree).strip('\n')
-        res[k_unscoped, k.n] = (code, vars_, v.ast_node)
-    return res
-
-
 @dataclass
 class CodeNode:
     source: str
     globals_: set
-    scope: Scope
+    scope: Optional[Scope] = None
     ast_node: Optional[ast.AST] = None
 
     @classmethod
@@ -440,20 +390,95 @@ class CodeNode:
         )
 
 
-def dumps_graph(graph):
-    sorted_ = _sort(graph)
+def _dumps_unscoped(unscoped_graph):
+    """Dump an unscoped (see :meth:`CodeGraph.unscope`) codegraph to a python source string. """
+    sorted_ = _sort(unscoped_graph)
     res = ''
     for i, name in enumerate(sorted_):
-        here = graph[name]
-        res += here[0]
+        here = unscoped_graph[name]
+        res += here.source
         if i < len(sorted_) - 1:
-            next_ = graph[sorted_[i + 1]]
-            if isinstance(here[2], (ast.Import, ast.ImportFrom)) \
-                    and isinstance(next_[2], (ast.Import, ast.ImportFrom)):
+            next_ = unscoped_graph[sorted_[i + 1]]
+            if isinstance(here.ast_node, (ast.Import, ast.ImportFrom)) \
+                    and isinstance(next_.ast_node, (ast.Import, ast.ImportFrom)):
                 res += '\n'
-            elif isinstance(here[2], ast.Assign) \
-                    and isinstance(next_[2], ast.Assign):
+            elif isinstance(here.ast_node, ast.Assign) \
+                    and isinstance(next_.ast_node, ast.Assign):
                 res += '\n'
             else:
                 res += '\n\n\n'
     return res + '\n'
+
+
+class CodeGraph(dict):
+    def _unscoped(self):
+        """Create a version of *self* where all non-top level variables are renamed (by prepending
+        the scope) to prevent conflicts."""
+        name_scope = {(k.name, v.scope) for k, v in self.items()}
+        counts = Counter(x[0] for x in name_scope)
+        to_rename = set(k for k, c in counts.items() if c > 1)
+
+        def unscope(name, scope):
+            if name in to_rename:
+                return scope.unscoped(name)
+            return name
+
+        res = {}
+        for k, v in self.items():
+            changed = False
+            k_unscoped = unscope(k.name, k.scope)
+            changed = changed or k_unscoped != k.name
+            code = v.source
+            tree = ast.parse(code)
+            rename(tree, k.name, k_unscoped, rename_locals=True)
+            vars_ = set()
+            for var in list(v.globals_):
+                var_unscoped = unscope(var.name, var.scope)
+                changed = changed or var_unscoped != var.name
+                rename(tree, var.name, var_unscoped)
+                vars_.add((var_unscoped, var.n))
+            if changed:
+                code = unparse(tree).strip('\n')
+            res[k_unscoped, k.n] = CodeNode(code, vars_, ast_node=v.ast_node)
+        return res
+
+    def dumps(self):
+        """Create a python source string with the contents of the graph. """
+        return _dumps_unscoped(self._unscoped())
+
+    @classmethod
+    def build(cls, scoped_name: ScopedName):
+        """Build a codegraph corresponding to a name.
+
+        The name will be searched for in its scope.
+        """
+        graph = cls()
+        done = set()
+
+        todo = {scoped_name}
+
+        while todo and (next_name := todo.pop()):
+            # we know this already - go on
+            if next_name in done:
+                continue
+
+            # find how next_var came into being
+            next_codenode = find_codenode(next_name)
+            graph[next_name] = next_codenode
+
+            todo.update(next_codenode.globals_)
+            done.add(next_name)
+
+        return graph
+
+    def print(self):
+        for k, v in self.items():
+            print(f'{k.name} {k.scope} {k.n}:')
+            print()
+            print(v.source)
+            print()
+            for d in v.globals_:
+                print(f'{d.name} {d.scope} {d.n}:')
+            print()
+            print('--------')
+            print()

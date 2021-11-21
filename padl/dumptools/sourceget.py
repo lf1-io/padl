@@ -227,6 +227,7 @@ def _cut_string(string: str, from_line: int, to_line: int, from_col: int, to_col
     """Cut a string and return the resulting substring.
 
     Example:
+
         Given a *string*,
 
         "xxxxxxxxxxx
