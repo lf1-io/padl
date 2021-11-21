@@ -179,7 +179,7 @@ class Transform:
             if has_batchify:
                 preprocess, forward, postprocess = splits
             else:
-                preprocess, forward, postprocess = builtin_identity, splits[0], splits[2]
+                preprocess, forward, postprocess = identity, splits[0], splits[2]
             self._pd_stages = preprocess, forward, postprocess
 
         return self._pd_stages
@@ -220,7 +220,7 @@ class Transform:
             # a normal transform doesn't change the components
             component,
             # for the component the transform is in, return the transform, else Identity
-            tuple(self if i == component else builtin_identity for i in range(3)),
+            tuple(self if i == component else identity for i in range(3)),
             False
         )
 
@@ -1255,7 +1255,7 @@ class Map(Transform):
                 # output_components is whatever the sub-transform does to it
                 output_components,
                 # the splits are the splits of the sub-transform, but mapped
-                tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
+                tuple(Map(split) if not isinstance(split, Identity) else identity
                       for split in splits),
                 has_batchify
             )
@@ -1278,7 +1278,7 @@ class Map(Transform):
         # .. and combine them as a Parallel
         return (
             output_components,
-            tuple(Parallel(s) if s else builtin_identity for s in splits),
+            tuple(Parallel(s) if s else identity for s in splits),
             has_batchify
         )
 
@@ -1595,7 +1595,7 @@ class Compose(CompoundTransform):
             elif len(split) == 1:  # if it's just one, no need to combine
                 final_splits.append(split[0])
             else:  # if it's empty: identity
-                final_splits.append(builtin_identity)
+                final_splits.append(identity)
 
         return output_components, final_splits, has_batchify
 
@@ -1777,9 +1777,9 @@ class Rollout(CompoundTransform):
             for split, sub_split in zip(splits, sub_splits):
                 split.append(sub_split)
 
-        # only replace with builtin_identity if all Identity to preserve number of pipes
+        # only replace with identity if all Identity to preserve number of pipes
         cleaned_splits = tuple(
-            builtin_identity if all(isinstance(s, Identity) for s in split) else split
+            identity if all(isinstance(s, Identity) for s in split) else split
             for split in splits
         )
 
@@ -1879,9 +1879,9 @@ class Parallel(CompoundTransform):
             for split, sub_split in zip(splits, sub_splits):
                 split.append(sub_split)
 
-        # only replace with builtin_identity if all Identity to preserve number of pipes
+        # only replace with identity if all Identity to preserve number of pipes
         cleaned_splits = tuple(
-            builtin_identity if all(isinstance(s, Identity) for s in split) else split
+            identity if all(isinstance(s, Identity) for s in split) else split
             for split in splits
         )
 
@@ -1995,7 +1995,7 @@ class Unbatchify(ClassTransform):
         to 2 ("un-batchified").
         """
         # put the output component to 2 ("un-batchified")
-        return 2, (builtin_identity, builtin_identity, self), False
+        return 2, (identity, identity, self), False
 
     def _move_to_device(self, args):
         if isinstance(args, tuple):
@@ -2049,7 +2049,7 @@ class Batchify(ClassTransform):
         # ensure that all inputs are "fresh"
         assert self._pd_merge_components(input_components) == 0, 'double batchify'
         # put the output component to 1 ("batchified")
-        return 1, (self, builtin_identity, builtin_identity), True
+        return 1, (self, identity, identity), True
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
