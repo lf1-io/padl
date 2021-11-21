@@ -2159,3 +2159,9 @@ class _ItemGetter:
 
     def __len__(self):
         return len(self.samples)
+
+
+def fulldump(transform):
+    t_copy = copy(transform)
+    t_copy._pd_external_full_dump = True
+    return t_copy
