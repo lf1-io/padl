@@ -128,6 +128,7 @@ class Transform:
     :param pd_name: name of the transform
     """
     pd_mode = None
+    _pd_external_full_dump_modules = set()
 
     def __init__(self, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
@@ -143,7 +144,11 @@ class Transform:
 
     @property
     def _pd_full_dump(self):
-        if inspector.caller_module() == self._pd_call_info.scope.module:
+        module = self._pd_call_info.scope.module
+        if inspector.caller_module() == module:
+            return True
+        if any(module.__spec__.name.startswith(mod)
+               for mod in self._pd_external_full_dump_modules):
             return True
         return self._pd_external_full_dump
 
@@ -1065,7 +1070,11 @@ class ClassTransform(AtomicTransform):
 
     @property
     def _pd_full_dump(self):
-        if inspector.caller_module() == inspect.getmodule(self.__class__):
+        module = inspect.getmodule(self.__class__)
+        if inspector.caller_module() == module:
+            return True
+        if any(module.__spec__.name.startswith(mod)
+               for mod in self._pd_external_full_dump_modules):
             return True
         return self._pd_external_full_dump
 
