@@ -390,12 +390,12 @@ class Scope:
     def unscoped(self, varname: str) -> str:
         """Convert a variable name in an "unscoped" version by adding strings representing
         the containing scope. """
-        if not self.scopelist:
+        if not self.scopelist and self.module_name in ('', '__main__'):
             return varname
-        return f'{"_".join(x[0] for x in [self.module_name] + self.scopelist)}_{varname}'
+        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
 
     def __repr__(self):
-        return f'Scope[{self.module_name}.{".".join(x[0] for x in self.scopelist)}]'
+        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist)}]'
 
     def __len__(self):
         return len(self.scopelist)

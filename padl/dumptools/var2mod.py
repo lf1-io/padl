@@ -3,7 +3,7 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Set
 
 from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope
 
@@ -271,7 +271,8 @@ class _MethodFinder(ast.NodeVisitor):
     def visit_FunctionDef(self, node):
         self.methods[node.name] = node
 
-    def find(self, node: ast.ClassDef):
+    def find(self, node: ast.ClassDef) -> Dict['str', ast.FunctionDef]:
+        """Do find the methods. """
         self.visit(node)
         return self.methods
 
@@ -535,13 +536,14 @@ class CodeGraph(dict):
         return graph
 
     def print(self):
+        """Print the graph (for debugging). """
         for k, v in self.items():
             print(f'{k.name} {k.scope} {k.n}:')
             print()
             print(v.source)
             print()
-            for d in v.globals_:
-                print(f'{d.name} {d.scope} {d.n}:')
+            for dep in v.globals_:
+                print(f'{dep.name} {dep.scope} {dep.n}:')
             print()
             print('--------')
             print()
