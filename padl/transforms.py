@@ -341,6 +341,7 @@ class Transform:
         return graph, scopemap
 
     def _pd_process_traceback(self):
+        """ Find where the Transform was defined (file, lineno, file) given the traceback. """
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
             breakpoint()
@@ -350,6 +351,7 @@ class Transform:
         return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
 
     def _pd_trace_error(self, position: int, arg):
+        """ Add some error description to `pd_trace`. """
         try:
             breakpoint()
             str_ = self._pd_longrepr()
@@ -520,8 +522,22 @@ class Transform:
             return True
         return False
 
-    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+    def _pd_call_transform(self, arg):
         """Call the transform, with possibility to pass multiple arguments.
+
+        :param arg: argument to call the transform with.
+        :return: Whatever the transform returns.
+        """
+        try:
+            if self._pd_unpack_argument(arg):
+                return self(*arg)
+            return self(arg)
+        except Exception as err:
+            self._pd_trace_error(0, arg)
+            raise err
+
+    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+        """Call the transform setting the mode, with possibility to pass multiple arguments.
 
         :param arg: argument to call the transform with
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
@@ -534,13 +550,7 @@ class Transform:
             torch_context = contextlib.suppress()
 
         with self.pd_set_mode(mode), torch_context:
-            try:
-                if self._pd_unpack_argument(arg):
-                    return self(*arg)
-                return self(arg)
-            except Exception as err:
-                self._pd_trace_error(0, arg)
-                raise err
+            return self._pd_call_transform(arg)
 
     def _pd_get_signature(self):
         """Get the signature of the transform. """
@@ -1135,23 +1145,15 @@ class CompoundTransform(Transform):
     def __len__(self):
         return len(self.transforms)
 
-    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+    def _pd_call_transform(self, arg):
         """Call the transform, with possibility to pass multiple arguments.
 
-        :param arg: argument to call the transform with
-        :param mode: The mode ("infer", "eval", "train") to perform the call with.
+        :param arg: argument to call the transform with.
         :return: Whatever the transform returns.
         """
-
-        if mode in ('eval', 'infer'):
-            torch_context = torch.no_grad()
-        else:
-            torch_context = contextlib.suppress()
-
-        with self.pd_set_mode(mode), torch_context:
-            if self._pd_unpack_argument(arg):
-                return self(*arg)
-            return self(arg)
+        if self._pd_unpack_argument(arg):
+            return self(*arg)
+        return self(arg)
 
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [

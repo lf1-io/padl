@@ -6,6 +6,19 @@ class _Debug:
     def __init__(self):
         self.trans = None
         self.args = None
+        self.default_msg = (
+            'Defined commands are: \n'
+            '   u(p): step up\n'
+            '   d(own): step down\n'
+            '   w(here am I?): show code position\n'
+            '   i(nput): show input here\n'
+            '   r(epeat): repeat here (will produce the same exception)\n'
+            '   t(ransform): displays the current transform\n'
+            '   h(elp): print help about the commands\n'
+            '   q(uit): quit'
+            '     -> this will store the input at this level in debug.args\n'
+            '        and the transform in debug.trans\n'
+        )
 
     def __call__(self) -> None:
         """
@@ -16,30 +29,15 @@ class _Debug:
             w(here am I?): show code position\n'
             i(nput): show input here\n'
             r(epeat): repeat here (will produce the same exception)\n'
+            h(elp): print help about the commands\n
             q(uit): quit'
         """
         pos = len(_pd_trace) - 1
-        breakpoint()
-        msg = _pd_trace[pos][0]
-        default_msg = (
-                        'Command not understood.\n\n'
-                        'Options are: \n'
-                        '   u(p): step up\n'
-                        '   d(own): step down\n'
-                        '   w(here am I?): show code position\n'
-                        '   i(nput): show input here\n'
-                        '   r(epeat): repeat here (will produce the same exception)\n'
-                        '   q(uit): quit'
-                        '     -> this will store the input at this level in debug.args\n'
-                        '        and the transform in debug.trans\n'
-                    )
+        print(_pd_trace[pos][0])
+
         while True:
-            print()
-            print(msg)
-            print()
-            msg = default_msg
             try:
-                x = input('> ')[0]
+                x = input('> ')
             except IndexError:
                 continue
             if x == 'd':
@@ -58,6 +56,21 @@ class _Debug:
                 self.args = _pd_trace[pos][2]
                 self.trans = _pd_trace[pos][3]
                 self.repeat()
+            elif x == 'h':
+                msg = self.default_msg
+            elif x == 't':
+               msg = _pd_trace[pos][0]
+            else:
+                i = _pd_trace[pos][2]
+                try:
+                    code = compile(x, '', 'single')
+                    exec(code)
+                except Exception as err:
+                    print(err)
+                finally:
+                    continue
+            if x in {'d', 'u', 'w', 'i', 'h', 't'}:
+                print(f'\n{msg}\n')
 
     def repeat(self) -> None:
         self.trans(self.args)
