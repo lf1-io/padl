@@ -28,11 +28,20 @@ def get_source(filename: str, use_replace_cache: bool = True) -> str:
     If *use_replace_cache*, try getting the source from the "replace_cache", which can contain
     explicit replacements of the original source strings.
     """
+    # needed to support doctest
+    if filename.startswith('<doctest'):
+        stack = inspect.stack()
+        for frameinfo in stack:
+            if frameinfo.filename == filename:
+                return ''.join(frameinfo.code_context)
+
     if use_replace_cache and filename in replace_cache:
         return replace_cache[filename]
+        
     if filename in linecache.cache:
         # the ipython case
         return ''.join(linecache.cache[filename][2])
+
     # normal module
     with open(filename) as f:
         return f.read()

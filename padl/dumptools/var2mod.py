@@ -18,9 +18,8 @@ class Finder(ast.NodeVisitor):
 
     Example:
 
-    >>> f = Finder(ast.Name).find(ast.parse('x(y)'))
-    >>> all([isinstance(x, ast.Name) for x in f])
-    True
+    >>> Finder(ast.Name).find(ast.parse('x(y)'))  # doctest: +ELLIPSIS
+    [<_ast.Name object at 0x...>, <_ast.Name object at 0x...>]
     """
 
     def __init__(self, nodetype):
@@ -53,7 +52,19 @@ Vars = namedtuple('Vars', 'globals locals')
 
 
 class _VarFinder(ast.NodeVisitor):
-    """NodeVisitor that traverses all nodes subnodes and finds all named things. """
+    """NodeVisitor that traverses all nodes subnodes and finds all named things.
+
+    >>> source = '''
+    ... def f(x):
+    ...     y = a + 1
+    ...     z = np.array(x + b)
+    ...     return str(z)
+    ... '''
+    >>> node = ast.parse(source).body[0]
+    >>> _VarFinder().find(node) == Vars(globals={('str', 0), ('np', 0), ('a', 0), ('b', 0)},
+    ...                                 locals={('x', 0), ('z', 0), ('y', 0)})
+    True
+    """
 
     def __init__(self):
         super().__init__()
@@ -237,7 +248,22 @@ def rename(tree, from_, to, rename_locals=False):
 
 
 class _MethodFinder(ast.NodeVisitor):
-    """Find all methods in a class node. """
+    """Find all methods in a class node.
+
+    Example:
+
+    >>> source = '''
+    ... class X:
+    ...     def one(self):
+    ...         ...
+    ...
+    ...     def two(self):
+    ...         ...
+    ... '''
+    >>> node = ast.parse(source).body[0]
+    >>> _MethodFinder().find(node)  # doctest: +ELLIPSIS
+    {'one': <_ast.FunctionDef object at 0x...>, 'two': <_ast.FunctionDef object at 0x...>}
+    """
 
     def __init__(self):
         self.methods = {}
@@ -265,8 +291,24 @@ def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins=True):
     return globals_
 
 
-def find_globals(node: ast.AST, filter_builtins=True):
-    """Find all globals used below a node. """
+def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, int]]:
+    """Find all globals used below a node.
+
+    Example:
+
+    >>> source = '''
+    ... def f(x):
+    ...     y = a + 1
+    ...     z = np.array(x + b)
+    ...     return str(z)
+    ... '''
+    >>> node = ast.parse(source).body[0]
+    >>> find_globals(node) == {('a', 0), ('b', 0), ('np', 0)}
+    True
+
+    :param node: AST node to search in.
+    :param filter_builtins:
+    """
     if isinstance(node, ast.ClassDef):
         return _find_globals_in_classdef(node)
     globals_ = _VarFinder().find(node).globals
@@ -312,6 +354,15 @@ def _get_nodes_without_in_edges(graph):
     """Get all nodes in directed graph *graph* that don't have incoming edges.
 
     The graph is represented by a dict mapping nodes to incoming edges.
+
+    Example:
+
+    >>> graph = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
+    >>> _get_nodes_without_in_edges(graph)
+    ({'a'}, {'b': set(), 'c': set(), 'd': {'b'}})
+
+    :param graph: A dict mapping nodes to incoming edges.
+    :return: The set of nodes without incoming edges and the graph with these nodes removed.
     """
     nextlevel = set()
     for node, deps in graph.items():
@@ -337,15 +388,27 @@ _PRECEDENCE = {
 }
 
 
-def _topsort(graph):
+def _topsort(graph: dict) -> List[set]:
     """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
+
+    Raises a :exc:`RuntimeError` if the graph contains a cycle.
+
+    Example:
+
+    >>> graph = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
+    >>> _topsort(graph) == [{'a'}, {'b', 'c'}, {'d'}]
+    True
+
+    :param graph: Graph represented by a dict mapping nodes to incoming edges.
+    :return: List of set where each contained set represents one level, the first level
+        has no dependencies, each subsequent level depends on nodes in the previous level.
     """
     levels = []
     graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
         if graphlen == len(graph):  # graph didn't shrink
-            raise RuntimeError('Graph has a circle.')
+            raise RuntimeError('Graph has a cycle.')
         graphlen = len(graph)
         levels.append(nextlevel)
     return levels

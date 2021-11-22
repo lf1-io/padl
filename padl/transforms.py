@@ -597,7 +597,7 @@ class Transform:
 
         >>> from padl import transform
         >>> foo = transform(lambda x: x + 1)
-        >>> foo.pd_varname()
+        >>> foo.pd_varname()  # doctest: +SKIP
         'foo'
 
         :param module: Module to search

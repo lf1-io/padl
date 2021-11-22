@@ -18,7 +18,7 @@ class IfInMode(ClassTransform):
         >>> iim.infer_apply(1)
         11
         >>> list(iim.eval_apply([1]))
-        [100]
+        [10]
 
     :param if_: Transform to apply when the mode matches.
     :param target_mode: Mode (one of 'train', 'eval', 'infer').
