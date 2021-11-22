@@ -231,11 +231,11 @@ class PatchedModule:
 
     Example:
 
-        >>> import padl
-        >>> import numpy as np
-        >>> pd_np = padl.transform(np)
-        >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
-        True
+    >>> import padl
+    >>> import numpy as np
+    >>> pd_np = padl.transform(np)
+    >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
+    True
     """
 
     def __init__(self, module, parents=None):

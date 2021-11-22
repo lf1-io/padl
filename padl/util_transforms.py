@@ -13,12 +13,12 @@ class IfInMode(ClassTransform):
 
         >>> from padl import transform
         >>> a = transform(lambda x: x + 10)
-        >>> b = transform(lambda x: x * 10)
+        >>> b = transform(lambda x: x * 99)
         >>> iim = IfInMode(a, 'infer', b)
         >>> iim.infer_apply(1)
         11
         >>> list(iim.eval_apply([1]))
-        [10]
+        [99]
 
     :param if_: Transform to apply when the mode matches.
     :param target_mode: Mode (one of 'train', 'eval', 'infer').
