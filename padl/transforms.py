@@ -70,9 +70,9 @@ def _batch_get(args, i):
     >>> t1 = torch.Tensor([1,2,3])
     >>> t2 = torch.Tensor([4,5,6])
     >>> _batch_get(t1, 1)
-    tensor(2)
+    tensor(2.)
     >>> _batch_get((t1, t2), 1)
-    (tensor(2), tensor(5))
+    (tensor(2.), tensor(5.))
 
     :param args: arguments
     :param i: index in batch
@@ -531,9 +531,10 @@ class Transform:
 
         Example:
 
-        >>> foo = MyTransform()
-        >>> foo._pd_varname
-        "foo"
+        >>> from padl import transform
+        >>> foo = transform(lambda x: x + 1)
+        >>> foo.pd_varname()
+        'foo'
 
         :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
@@ -606,6 +607,9 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
+    def _pd_get_output_format(self):
+        return None
+
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
                      verbose: bool = False, flatten: bool = False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -657,13 +661,15 @@ class Transform:
                 if use_post:
                     output = [post.pd_call_transform(x, mode) for x in output]
                 for out in output:
-                    if hasattr(self, '_pd_output_format'):
-                        yield self._pd_output_format(*out)
+                    output_format = self._pd_get_output_format()
+                    if output_format is not None:
+                        yield output_format(*out)
                     else:
                         yield out
             else:
-                if hasattr(self, '_pd_output_format'):
-                    yield self._pd_output_format(*output)
+                output_format = self._pd_get_output_format()
+                if output_format is not None:
+                    yield output_format(*output)
                 else:
                     yield output
 
@@ -803,8 +809,9 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        if hasattr(self, '_pd_output_format'):
-            return self._pd_output_format(*inputs)
+        output_format = self._pd_get_output_format()
+        if output_format is not None:
+            return output_format(*inputs)
         else:
             return inputs
 
@@ -1078,7 +1085,10 @@ class TorchModuleTransform(ClassTransform):
 class Map(Transform):
     """Apply one transform to each element of a list.
 
-    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    >>> from padl import identity
+    >>> t = identity
+    >>> x1, x2, x3 = 1, 2, 3
+    >>> Map(t)([x1, x2, x3]) == (t(x1), t(x2), t(x3))
     True
 
     :param transform: Transform to be applied to a list of inputs.
@@ -1164,6 +1174,18 @@ class CompoundTransform(Transform):
             self._pd_stage = set.union(*self._pd_stage_list)
         except (AttributeError, TypeError):
             self._pd_stage = None
+
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
+
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1501,7 +1523,8 @@ class Compose(CompoundTransform):
                 to_format = combine_multi_line_strings(to_combine)
             else:
                 params = t._pd_get_signature()
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
+                    list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
@@ -1924,7 +1947,8 @@ class _ItemGetter:
 
     Example:
 
-    >>> ig = _ItemGetter([1, 2, 3], tranform(lambda x: x + 1))
+    >>> from padl import transform
+    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
     >>> len(ig)
     3
     >>> ig[0]
