@@ -1220,6 +1220,9 @@ class CompoundTransform(Transform):
             raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
+    def __len__(self):
+        return len(self.transforms)
+
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
             x.pd_varname() or x._pd_evaluable_repr(indent + 4)
