@@ -2,7 +2,6 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
-import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
@@ -24,7 +23,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from padl.data import SimpleDataset
 from padl.dumptools import var2mod, symfinder, inspector
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
@@ -42,6 +40,52 @@ class _Notset:
 
 
 _notset = _Notset()
+
+
+def _unpack_batch(args):
+    """Convert an input in batch-form into a tuple of datapoints.
+
+    E.g:
+
+        ([1, 4], ([2, 5], [3, 6])) -> [(1, (2, 3)), (4, (5, 6))]
+
+    :param args: arguments to be unbatched
+    """
+    out = []
+    itr = 0
+    while True:
+        try:
+            temp = _batch_get(args, itr)
+            out.append(temp)
+            itr += 1
+        except IndexError:
+            return out
+
+
+def _batch_get(args, i):
+    """Get the *i*th element of a tensor
+    or
+    get a tuple of the *i*th elements of a tuple (or list) of tensors
+
+    >>> t1 = torch.Tensor([1,2,3])
+    >>> t2 = torch.Tensor([4,5,6])
+    >>> _batch_get(t1, 1)
+    tensor(2.)
+    >>> _batch_get((t1, t2), 1)
+    (tensor(2.), tensor(5.))
+
+    :param args: arguments
+    :param i: index in batch
+    """
+    if isinstance(args, torch.Tensor):
+        return args[i]
+    if isinstance(args, list):
+        return [_batch_get(args[j], i) for j in range(len(args))]
+    if isinstance(args, tuple):
+        return tuple([_batch_get(args[j], i) for j in range(len(args))])
+    if isinstance(args, dict):
+        return {k: _batch_get(args[k], i) for k in args}
+    raise TypeError
 
 
 def _isinstance_of_namedtuple(arg):
@@ -65,14 +109,14 @@ def _move_to_device(args, device):
     if isinstance(args, tuple):
         return tuple([_move_to_device(x, device) for x in args])
     if isinstance(args, list):
-        return list([_move_to_device(x, device) for x in args])
+        return [_move_to_device(x, device) for x in args]
     if isinstance(args, torch.Tensor):
         return args.to(device)
     return args
 
 
 Mode = Literal['infer', 'eval', 'train']
-Component = Literal['preprocess', 'forward', 'postprocess']
+Stage = Literal['preprocess', 'forward', 'postprocess']
 
 
 class Transform:
@@ -91,7 +135,7 @@ class Transform:
         self._pd_call_info = call_info
         self._pd_varname = _notset
         self._pd_name = pd_name
-        self._pd_component = {'forward'}
+        self._pd_stage = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
 
@@ -239,16 +283,7 @@ class Transform:
         """Build the start-code-node - the node with the source needed to create *self* as "name".
         (in the scope where *self* was originally created). """
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        start_node = ast.parse(start_source).body[0]
-        start_globals = {
-            ScopedName(var, self._pd_call_info.scope, n)  # this should be the current scope ...?
-            for var, n in var2mod.find_globals(start_node)
-        }
-        return var2mod.CodeNode(
-            source=start_source,
-            ast_node=start_node,
-            globals_=start_globals
-        )
+        return var2mod.CodeNode.from_source(start_source, self._pd_call_info.scope)
 
     @property
     def _pd_closurevars(self) -> Tuple[dict, dict]:
@@ -259,80 +294,130 @@ class Transform:
                             scopemap: Optional[dict] = None,
                             name: Optional[str] = None,
                             scope: Optional[symfinder.Scope] = None) -> Tuple[dict, dict]:
+        """Build a codegraph defining the transform.
+
+        A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
+        code defining the name and a set of dependencies (other scoped names). The dependencies
+        can be understood as the edges in the graph.
+
+        A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
+        representing an assignment of the transform's evaluable representation to a variable
+        called *name*.
+
+        From there, iteratively, all :class:`CodeNode`s representing the existing dependencies are
+        searched for and added to the graph.
+
+        Example:
+
+        Given the following code ...::
+
+            from padl import transform
+
+            a = 100
+
+            @transform
+            def f(x):
+                return x + a
+
+        ... ``f._pd_build_codegraph(name='mytransform')`` would first create the start-node::
+
+            "mytransform": CodeNode(source='mytransform = f',
+                                    globals_={('f', 0)})
+
+        By iterating though the dependencies ("globals_"), the code-node of 'f' would be added::
+
+            "f": CodeNode(source='@transform\ndef f(x):\n [...]',
+                          globals_={('transform', 0), ('a', 0)})
+
+        This adds two new dependencies for which code-nodes are added::
+
+            "transform": CodeNode(source='from padl import transform', globals_={})
+            "a": CodeNode(source='a = 100', globals_={})
+
+        This leaves no more dependencies to be found. These four nodes are ``f``'s codegraph.
+        The codegraph can be used to compile a python module defining ``f``.
+
+        :param graph: A codegraph to extend. If *None* a new codegraph will be created.
+        :param scopemap: A dict mapping scoped names to the scopes they were created in.
+        :param name: The name to give the transform.
+        :param scope: The scope for the start-node. Default is to use the scope of the transform.
+        :return: Updated graph and scopemap.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:
             scopemap = {}
 
+        # the default is to use the scope of the transform
         if scope is None:
             scope = self._pd_call_info.scope
 
-        given_name = name
-
-        try:
-            if self._pd_call == name:
-                name = None
-        except AttributeError:
-            pass
-
         # build the start node ->
-        start = self._pd_codegraph_startnode(name)
+        # if the *name* is the same as the call, we don't need to assign to the name
+        # this can be the case for function transforms
+        if getattr(self, '_pd_call', None) == name:
+            new_name = None
+        else:
+            new_name = name
+
+        start = self._pd_codegraph_startnode(new_name)
         # <-
 
+        # if this has closurevars, get them (if there are transforms in the closure, we want to
+        # allow them to build their codegraph themselves, see below)
         globals_dict, nonlocals_dict = self._pd_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
         todo = {*start.globals_}
-        while todo and (next_ := todo.pop()):
+        while todo and (next_name := todo.pop()):
             # we know this already - go on
-            if next_ in scopemap:
+            if next_name in scopemap:
                 continue
 
-            if next_.name.startswith('PADL_VALUE'):
+            # ignoring this (it comes from the serializer)
+            if next_name.name.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
-                if len(next_.scope) > 0:
-                    next_obj = all_vars_dict[next_.name]
+                if next_name.scope.is_global():
+                    next_obj = globals_dict[next_name.name]
                 else:
-                    next_obj = globals_dict[next_.name]
-                next_obj._pd_build_codegraph(graph, scopemap, next_.name)
+                    next_obj = all_vars_dict[next_name.name]
+                # pylint: disable=protected-access
+                next_obj._pd_build_codegraph(graph, scopemap, next_name.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
-            # find how next_.name came into being
-            (source, node), scope_of_next_var = symfinder.find_in_scope(next_)
-            scopemap[next_] = scope_of_next_var
+            # find how next_ came into being
+            (source, node), scope_of_next_var = symfinder.find_in_scope(next_name)
+
+            # store a mapping from *next_name* to it's defining scope
+            scopemap[next_name] = scope_of_next_var
 
             # find dependencies
-            globals_ = {
-                ScopedName(var, scope_of_next_var, n)
-                for var, n in var2mod.find_globals(node)
-            }
-            globals_ = set()
-            for var, n in var2mod.find_globals(node):
-                if var == next_.name and scope_of_next_var == scopemap[next_]:
-                    globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
-                else:
-                    globals_.add(ScopedName(var, scope_of_next_var, n))
+            dependencies = var2mod.find_globals(node)
+            # fix the scope of *next_name* (from where it was a dependency to where it was defined)
+            next_name = ScopedName(next_name.name, scope_of_next_var, next_name.n)
+            dependencies = var2mod.increment_same_name_var(dependencies, next_name)
 
-            graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = \
-                var2mod.CodeNode(source=source,
-                                 globals_=globals_,
-                                 ast_node=node)
-            todo.update(globals_)
-        # find dependencies done
+            graph[next_name] = var2mod.CodeNode(source=source,
+                                                globals_=dependencies,
+                                                ast_node=node)
+            todo.update(dependencies)
+        # finding dependencies done
+
+        # if *new_name* is not ``None``, add the start node (i.e. the node assigning the transform
+        # to *new_name*) to the codegraph
+        if new_name is not None:
+            assert scope is not None
+            graph[ScopedName(new_name, scope, 0)] = start
 
         if name is not None:
-            assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
-
-        if given_name is not None:
-            scopemap[ScopedName(given_name, scope, 0)] = self._pd_call_info.scope
+            scopemap[ScopedName(name, scope, 0)] = self._pd_call_info.scope
 
         return graph, scopemap
 
@@ -446,9 +531,10 @@ class Transform:
 
         Example:
 
-        >>> foo = MyTransform()
-        >>> foo._pd_varname
-        "foo"
+        >>> from padl import transform
+        >>> foo = transform(lambda x: x + 1)
+        >>> foo.pd_varname()
+        'foo'
 
         :param module: Module to search
         :return: A string with the variable name or *None* if the transform has not been assigned
@@ -521,6 +607,9 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
+    def _pd_get_output_format(self):
+        return None
+
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
                      verbose: bool = False, flatten: bool = False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
@@ -552,7 +641,7 @@ class Transform:
 
         pbar = None
         if verbose:
-            if flatten:
+            if use_post or flatten:
                 pbar = tqdm(total=len(args))
             else:
                 loader = tqdm(loader, total=len(loader))
@@ -560,28 +649,29 @@ class Transform:
         for batch in loader:
             batch = _move_to_device(batch, self.pd_device)
 
+            output = batch
             if use_forward:
                 output = forward.pd_call_transform(batch, mode)
-            else:
-                output = batch
 
-            if use_post:
-                output = post.pd_call_transform(output, mode)
-
-            if flatten:
+            if use_post or flatten:
                 if verbose:
                     pbar.update()
-                if not use_post:
-                    output = Unbatchify(cpu=False)(batch)
-                if hasattr(self, '_pd_output_format'):
-                    yield from self._pd_output_format(*output)
-                else:
-                    yield from output
-                continue
-            if hasattr(self, '_pd_output_format'):
-                yield self._pd_output_format(*output)
+
+                output = _unpack_batch(output)
+                if use_post:
+                    output = [post.pd_call_transform(x, mode) for x in output]
+                for out in output:
+                    output_format = self._pd_get_output_format()
+                    if output_format is not None:
+                        yield output_format(*out)
+                    else:
+                        yield out
             else:
-                yield output
+                output_format = self._pd_get_output_format()
+                if output_format is not None:
+                    yield output_format(*output)
+                else:
+                    yield output
 
     @property
     def pd_device(self) -> str:
@@ -589,9 +679,9 @@ class Transform:
         return self._pd_device
 
     @property
-    def pd_component(self) -> Set[Component]:
-        """Return the component (preprocess, forward or postprocess)."""
-        return self._pd_component
+    def pd_stage(self) -> Set[Stage]:
+        """Return the stage (preprocess, forward or postprocess)."""
+        return self._pd_stage
 
     def _pd_preprocess_part(self) -> "Transform":
         return Identity()
@@ -599,7 +689,7 @@ class Transform:
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        if {'preprocess'} == self.pd_component:
+        if {'preprocess'} == self.pd_stage:
             return self
         pre = self._pd_preprocess_part()
         pre.pd_to(self.pd_device)
@@ -612,7 +702,7 @@ class Transform:
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        if {'forward'} == self.pd_component:
+        if {'forward'} == self.pd_stage:
             return self
         forward = self._pd_forward_part()
         forward.pd_to(self.pd_device)
@@ -624,7 +714,7 @@ class Transform:
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        if {'postprocess'} == self.pd_component:
+        if {'postprocess'} == self.pd_stage:
             return self
         post = self._pd_postprocess_part()
         post.pd_to(self.pd_device)
@@ -696,7 +786,7 @@ class Transform:
         :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
-        sequence = SimpleDataset(
+        sequence = _ItemGetter(
             args,
             lambda *args: preprocess.pd_call_transform(*args, mode),
         )
@@ -719,8 +809,11 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-
-        return inputs
+        output_format = self._pd_get_output_format()
+        if output_format is not None:
+            return output_format(*inputs)
+        else:
+            return inputs
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
@@ -858,6 +951,25 @@ class FunctionTransform(AtomicTransform):
 
     @property
     def _pd_closurevars(self) -> inspect.ClosureVars:
+        """Return the closurevars (globals and nonlocals) the transform depends on.
+
+        Closurevars are variables that are used inside a transform but weren't define there.
+
+        Example:
+
+        In this case...
+
+            z = 100
+            def make_transform():
+                b = 1
+                @transform
+                def f(x):
+                    a = 10
+                    return a + x + z + b
+
+        ... "f" has a global closurevar "z" (defined in the global scope) and nonlocal closurevar
+        "b" (defined in the scope surrounding "f", but not the global scope).
+        """
         try:
             closurevars = inspect.getclosurevars(self.function)
         except TypeError as exc:
@@ -865,7 +977,10 @@ class FunctionTransform(AtomicTransform):
                  'needed for user defined transforms.',
                  RuntimeWarning)
             return {}, {}
-        return closurevars.globals, closurevars.nonlocals
+        return (
+            {k: v for k, v in closurevars.globals.items() if v is not self},
+            {k: v for k, v in closurevars.nonlocals.items() if v is not self}
+        )
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
@@ -904,6 +1019,9 @@ class ClassTransform(AtomicTransform):
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
             return body_msg
+
+    def _split_call(self):
+        return symfinder.split_call(self._pd_call)
 
     def _formatted_args(self) -> str:
         """Format the object's init arguments for printing. """
@@ -944,7 +1062,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
@@ -955,7 +1073,7 @@ class TorchModuleTransform(ClassTransform):
         :param i: Unique transform index, used to construct filenames.
         """
         path = Path(path)
-        checkpoint_path = path / f'{path.stem}_{i}.pt'
+        checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
@@ -966,7 +1084,10 @@ class TorchModuleTransform(ClassTransform):
 class Map(Transform):
     """Apply one transform to each element of a list.
 
-    >>> Map(t)([x1, x2, x3]) == [t(x1), t(x2), t(x3)]
+    >>> from padl import identity
+    >>> t = identity
+    >>> x1, x2, x3 = 1, 2, 3
+    >>> Map(t)([x1, x2, x3]) == (t(x1), t(x2), t(x3))
     True
 
     :param transform: Transform to be applied to a list of inputs.
@@ -980,7 +1101,7 @@ class Map(Transform):
         super().__init__(call_info, pd_name)
 
         self.transform = transform
-        self._pd_component = transform.pd_component
+        self._pd_stage = transform.pd_stage
 
     def __call__(self, args: Iterable):
         """
@@ -988,8 +1109,8 @@ class Map(Transform):
         """
         return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
-    def _pd_longrepr(self) -> str:
-        return '~ ' + self.transform._pd_shortrepr()
+    def _pd_longrepr(self, formatting=True) -> str:
+        return '~ ' + self.transform._pd_shortrepr(formatting)
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
@@ -1000,23 +1121,6 @@ class Map(Transform):
         if varname:
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
-
-    def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
-        if graph is None:
-            graph = {}
-        if scopemap is None:
-            scopemap = {}
-
-        start = self._pd_codegraph_startnode(name)
-
-        if name is not None:
-            assert scope is not None
-            graph[ScopedName(name, scope, 0)] = start
-            scopemap[ScopedName(name, scope, 0)] = scope
-
-        varname = self.transform.pd_varname(self._pd_call_info.module)
-        self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
-        return graph, scopemap
 
     def _pd_preprocess_part(self) -> Transform:
         t_pre = self.transform.pd_preprocess
@@ -1064,11 +1168,23 @@ class CompoundTransform(Transform):
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
 
-        self._pd_component_list = [t.pd_component for t in self.transforms]
+        self._pd_stage_list = [t.pd_stage for t in self.transforms]
         try:
-            self._pd_component = set.union(*self._pd_component_list)
+            self._pd_stage = set.union(*self._pd_stage_list)
         except (AttributeError, TypeError):
-            self._pd_component = None
+            self._pd_stage = None
+
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
+
+    def _pd_get_output_format(self):
+        last_transform = self.transforms[-1]
+        if hasattr(last_transform, '_pd_output_format'):
+            return last_transform._pd_output_format
+        return None
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1122,6 +1238,13 @@ class CompoundTransform(Transform):
         return result
 
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        """Build a codegraph defining the transform.
+
+        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
+
+        The codegraph of a :class:`CompoundTransform` is the union of the codegraphs of the
+        contained transforms plus the node defining the transform itself.
+        """
         if graph is None:
             graph = {}
         if scopemap is None:
@@ -1131,16 +1254,20 @@ class CompoundTransform(Transform):
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl', emptyscope)
+            graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
+                                                                                    emptyscope)
             scopemap[ScopedName('padl', self._pd_call_info.scope, 0)] = emptyscope
 
+        # if a name is given, add the start-node to the codegraph
         if name is not None:
             assert scope is not None
             graph[ScopedName(name, scope, 0)] = start
             scopemap[ScopedName(name, scope, 0)] = scope
 
+        # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.module)
+            # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, scopemap, varname,
                                           self._pd_call_info.scope)
         return graph, scopemap
@@ -1288,15 +1415,15 @@ class Compose(CompoundTransform):
         postprocess_start = len(self.transforms)
         set_postprocess = True
         for i, transform_ in enumerate(self.transforms):
-            if 'preprocess' in transform_.pd_component:
+            if 'preprocess' in transform_.pd_stage:
                 preprocess_end = i
-            if 'postprocess' in transform_.pd_component and set_postprocess:
+            if 'postprocess' in transform_.pd_stage and set_postprocess:
                 postprocess_start = i
                 set_postprocess = False
         for i in range(preprocess_end):
-            self._pd_component_list[i] = {'preprocess'}
+            self._pd_stage_list[i] = {'preprocess'}
         for i in range(postprocess_start+1, len(self.transforms)):
-            self._pd_component_list[i] = {'postprocess'}
+            self._pd_stage_list[i] = {'postprocess'}
 
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
@@ -1397,8 +1524,9 @@ class Compose(CompoundTransform):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                params = [x for x in t._pd_get_signature()]
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + params[0]
+                params = t._pd_get_signature()
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
+                    list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
@@ -1421,9 +1549,9 @@ class Compose(CompoundTransform):
 
     def _pd_forward_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'forward' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'forward' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_forward)
@@ -1439,9 +1567,9 @@ class Compose(CompoundTransform):
 
     def _pd_preprocess_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'preprocess' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'preprocess' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_preprocess)
@@ -1456,9 +1584,9 @@ class Compose(CompoundTransform):
 
     def _pd_postprocess_part(self) -> Transform:
         t_list = []
-        for transform_, component_set in zip(self.transforms, self._pd_component_list):
-            if 'postprocess' in component_set:
-                if len(component_set) == 1:
+        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
+            if 'postprocess' in stage_set:
+                if len(stage_set) == 1:
                     t_list.append(transform_)
                 else:
                     t_list.append(transform_.pd_postprocess)
@@ -1518,7 +1646,7 @@ class Rollout(CompoundTransform):
         t_list = [x.pd_forward for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             forward = Identity()
-        elif 'preprocess' in self._pd_component and 'forward' in self._pd_component:
+        elif 'preprocess' in self._pd_stage and 'forward' in self._pd_stage:
             forward = Parallel(t_list, call_info=self._pd_call_info)
         else:
             forward = Rollout(t_list, call_info=self._pd_call_info)
@@ -1528,7 +1656,7 @@ class Rollout(CompoundTransform):
         t_list = [x.pd_postprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             post = Identity()
-        elif len(list(self._pd_component)) >= 2 and 'postprocess' in self._pd_component:
+        elif len(list(self._pd_stage)) >= 2 and 'postprocess' in self._pd_stage:
             post = Parallel(t_list, call_info=self._pd_call_info)
         else:
             post = Rollout(t_list, call_info=self._pd_call_info)
@@ -1609,10 +1737,13 @@ class Parallel(CompoundTransform):
         else:
             make_green_ = make_green
             make_bold_ = make_bold
+
         def pipes(n):
             return "│" * n
+
         def spaces(n):
             return " " * n
+
         def horizontal(n):
             return "─" * n
         len_ = len(self.transforms)
@@ -1645,6 +1776,7 @@ class BuiltinTransform(AtomicTransform):
         if scope is None:
             scope = self._pd_call_info.scope
 
+        # if padl is not in the scope, add it
         if ScopedName('padl', scope, 0) not in graph:
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('padl', emptyscope, 0)] = var2mod.CodeNode.from_source('import padl',
@@ -1686,12 +1818,14 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
-        self._pd_component = {'postprocess'}
+        self._pd_stage = {'postprocess'}
         self.cpu = cpu
 
     def _move_to_device(self, args):
-        if isinstance(args, (tuple, list)):
+        if isinstance(args, tuple):
             return tuple([self._move_to_device(x) for x in args])
+        if isinstance(args, list):
+            return [self._move_to_device(x) for x in args]
         if isinstance(args, torch.Tensor):
             return args.to('cpu')
         return args
@@ -1705,6 +1839,8 @@ class Unbatchify(ClassTransform):
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
+        if isinstance(args, list):
+            return [self(x) for x in args]
         if isinstance(args, torch.Tensor):
             args = args.squeeze(self.dim)
             return args.to('cpu') if self.cpu else args
@@ -1725,7 +1861,7 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-        self._pd_component = {'preprocess'}
+        self._pd_stage = {'preprocess'}
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
@@ -1736,9 +1872,12 @@ class Batchify(ClassTransform):
             return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
         if isinstance(args, torch.Tensor):
             return args.unsqueeze(self.dim)
         if isinstance(args, (float, int)):
+            # pylint: disable=not-callable
             return torch.tensor([args])
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
@@ -1775,6 +1914,7 @@ def load(path):
     })
     code = compile(source, path/'transform.py', 'exec')
     exec(code, module.__dict__)
+    # pylint: disable=no-member,protected-access
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
@@ -1795,9 +1935,48 @@ def group(transform: Union[Rollout, Parallel]):
     """Group transforms. This prevents them from being flattened when used
 
     Example:
+
     When writing a Rollout as `(a + (b + c))`, this is automatically flattened to `(a + b + c)`
     - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to `a`, `b`,
     `c` respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
     2-tuple whose first item will be passed to `a` and whose second item will be passed to `b + c`.
     """
     return transform.grouped()
+
+
+class _ItemGetter:
+    """A simple item getter. Takes *samples* and applies *transform* to it.
+
+    Example:
+
+    >>> from padl import transform
+    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
+    >>> len(ig)
+    3
+    >>> ig[0]
+    2
+    >>> ig[1]
+    3
+
+    :param samples: An object implementing __getitem__ and __len__.
+    :param transform: Preprocessing transform.
+    :param exception: Exception to catch for (fall back to *default*).
+    :param default: The default value to fall back to in case of exception.
+    """
+
+    def __init__(self, samples, transform, exception=None, default=None):
+        self.samples = samples
+        self.transform = transform
+        self.exception = exception
+        self.default = default
+
+    def __getitem__(self, item):
+        if self.exception:
+            try:
+                return self.transform(self.samples[item])
+            except self.exception:
+                return self.default
+        return self.transform(self.samples[item])
+
+    def __len__(self):
+        return len(self.samples)

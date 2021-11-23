@@ -11,6 +11,7 @@ class IfInMode(ClassTransform):
 
     Example:
 
+        >>> from padl import transform
         >>> a = transform(lambda x: x + 10)
         >>> b = transform(lambda x: x * 10)
         >>> iis = IfInMode(a, 'infer', b)
@@ -41,7 +42,7 @@ class IfInMode(ClassTransform):
         self.else_ = else_
         self.target_mode = target_mode
 
-        self._pd_component = set.union(*[t.pd_component for t in [self.if_, self.else_]])
+        self._pd_stage = set.union(*[t.pd_stage for t in [self.if_, self.else_]])
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '

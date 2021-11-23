@@ -86,7 +86,7 @@ The schematic represents a model which is a `Transform` instance with multiple s
 Imports:
 
 ```python
-from padl import this, transform, batch, unbatch, value
+from padl import same, transform, batch, unbatch, value
 import padl
 import torch
 ```
@@ -127,11 +127,11 @@ def to_tensor(x):
 split_string = transform(lambda x: x.split())
 ```
 
-`this` yields inline transforms which reflexively reference object methods:
+`same` yields inline transforms which reflexively reference object methods:
 
 ```python
-left_shift = this[:, :-1]
-lower_case = this.lower()
+left_shift = same[:, :-1]
+lower_case = same.lower()
 ```
 
 **PyTorch** layers are first class citizens via `padl.transforms.TorchModuleTransform`:
@@ -308,7 +308,7 @@ t = (
 	>> batch
 	>> m
 	>> unbatch
-	>> this.tolist()
+	>> same.tolist()
 )
 ```
 

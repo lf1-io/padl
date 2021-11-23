@@ -7,7 +7,7 @@ from padl.transforms import AtomicTransform
 
 def _maketrans(attr, getitem=False):
     class T(AtomicTransform):
-        """Dynamically generated transform for the "this" object.
+        """Dynamically generated transform for the "same" object.
 
         :param args: Arguments to pass to the input's method.
         :param kwargs: Keyword arguments to pass to the input's method.
@@ -49,7 +49,7 @@ def _maketrans(attr, getitem=False):
     return T
 
 
-class _This:
+class _Same:
     """Transform factory for capturing attributes/ get-items. """
 
     def __getitem__(self, item):
@@ -59,4 +59,5 @@ class _This:
         return _maketrans(attr)
 
 
-this = _This()
+same = _Same()
+

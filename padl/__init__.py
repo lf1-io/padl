@@ -3,11 +3,11 @@ from padl.wrap import transform
 from padl.transforms import Batchify, Unbatchify, Identity, group, load, save
 from padl.util_transforms import IfTrain, IfEval, IfInfer, IfInMode
 from padl.version import __version__
-from padl.utils import this
+from padl.utils import same
 identity = Identity()
 batch = Batchify()
 unbatch = Unbatchify()
 
 __all__ = ['value', 'transform', 'Batchify', 'Unbatchify', 'Identity', 'group', 'load', 'save',
-           'IfTrain', 'IfEval', 'IfInfer', 'IfInMode', 'identity', 'batch', 'unbatch', 'this',
+           'IfTrain', 'IfEval', 'IfInfer', 'IfInMode', 'identity', 'batch', 'unbatch', 'same',
            '__version__']

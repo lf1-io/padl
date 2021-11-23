@@ -3,7 +3,7 @@ import builtins
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from padl.dumptools.symfinder import find_in_scope, ScopedName
 
@@ -19,7 +19,8 @@ class Finder(ast.NodeVisitor):
     Example:
 
     >>> f = Finder(ast.Name).find(ast.parse('x(y)'))
-    [<_ast.Name at ...>, <_ast.Name at ...>]
+    >>> all([isinstance(x, ast.Name) for x in f])
+    True
     """
 
     def __init__(self, nodetype):
@@ -109,7 +110,7 @@ class _VarFinder(ast.NodeVisitor):
                 {(x.id, 0) for x in Finder(ast.Name).find(target)}
             )
         # find globals in RHS
-        sub_globals = find_globals(node.value)
+        sub_globals = find_globals(node.value) - self.locals
         sub_dependencies = set()
         # if a variable on the RHS is one of the targets, increase its counter
         for name, i in sub_globals:
@@ -274,6 +275,28 @@ def find_globals(node: ast.AST, filter_builtins=True):
     return globals_
 
 
+def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: ScopedName):
+    """Go through *variables* and increment the the counter for those with the same name as
+    *scoped_name* by *scoped_name.n*.
+
+    Example:
+
+    >>> import padl as somemodule
+    >>> out = increment_same_name_var({('a', 1), ('b', 2)}, ScopedName('b', somemodule, 2))
+    >>> isinstance(out, set)
+    True
+    >>> {(x.name, x.n) for x in out} == {('a', 1), ('b', 4)}
+    True
+    """
+    result = set()
+    for var, n in variables:
+        if var == scoped_name.name:
+            result.add(ScopedName(var, scoped_name.scope, n + scoped_name.n))
+        else:
+            result.add(ScopedName(var, scoped_name.scope, n))
+    return result
+
+
 def build_codegraph(scoped_name: ScopedName):
     graph = {}
     scopemap = {}
@@ -290,15 +313,12 @@ def build_codegraph(scoped_name: ScopedName):
         scopemap[next_] = scope_of_next_var
 
         # find dependencies
-        globals_ = set()
-        for var, n in find_globals(node):
-            if var == next_.name and scope_of_next_var == scopemap[next_]:
-                globals_.add(ScopedName(var, scope_of_next_var, n + next_.n))
-            else:
-                globals_.add(ScopedName(var, scope_of_next_var, n))
-        graph[ScopedName(next_.name, scope_of_next_var, next_.n)] = CodeNode(source=source,
-                                                                             globals_=globals_,
-                                                                             ast_node=node)
+        globals_ = find_globals(node)
+        next_name = ScopedName(next_.name, scope_of_next_var, next_.n)
+        globals_ = increment_same_name_var(globals_, next_name)
+        graph[next_name] = CodeNode(source=source,
+                                    globals_=globals_,
+                                    ast_node=node)
         todo.update(globals_)
 
     return graph, scopemap
@@ -311,7 +331,7 @@ def _get_nodes_without_in_edges(graph):
     """
     nextlevel = set()
     for node, deps in graph.items():
-        if not deps:
+        if not deps or deps == {node}:
             nextlevel.add(node)
     filtered_graph = {}
     for node, deps in graph.items():
@@ -404,8 +424,8 @@ class CodeNode:
     def from_source(cls, source, scope):
         node = ast.parse(source).body[0]
         globals_ = {
-            ScopedName(var, scope)
-            for var in find_globals(node)
+            ScopedName(var, scope, n)
+            for var, n in find_globals(node)
         }
 
         return cls(
