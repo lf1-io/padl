@@ -114,7 +114,9 @@ class IfTrain(IfInMode):
 class Try(ClassTransform):
     """ Perform *transform*. If this fails with any exception from *exceptions*, perform
     *catch_transform*. If *transform* is completed successfully, *else_transform* is performed
-    with the output of *transform*. With any
+    with the output of *transform*. Regardless of any error occurring on the other Transform
+    (or not), *finally_transform* is carried out. No change of mode can happen inside any of these
+    Transform.
 
     :param transform: Transform to try.
     :param catch_transform: Transform to fall back on.
@@ -148,13 +150,17 @@ class Try(ClassTransform):
         self.exceptions = exceptions
         self.else_transform = else_transform
         self.finally_transform = finally_transform
-        self._pd_component = set.union(self.transform._pd_component,
-                                       self.catch_transform._pd_component,
-                                       self.else_transform._pd_component,
-                                       self.finally_transform._pd_component)
+        self._pd_stage = set.union(self.transform.pd_stage,
+                                   self.catch_transform.pd_stage,
+                                   self.else_transform.pd_stage,
+                                   self.finally_transform.pd_stage)
 
-        assert len(self._pd_component) == 1, 'Try Transform cannot contain transforms that have ' \
-                                             'multiple components.'
+        assert len(self._pd_stage) == 1, 'Try Transform cannot contain transforms that have ' \
+                                            'multiple components.'
+
+    @property
+    def pd_stage(self):
+        return self._pd_stage
 
     def __call__(self, args):
         try:
