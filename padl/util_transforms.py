@@ -163,7 +163,7 @@ class Try(ClassTransform):
 
         final_splits = tuple(
             self if i == components[0]
-            else builtin_identity
+            else identity
             for i in range(3)
         )
 
