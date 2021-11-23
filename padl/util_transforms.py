@@ -160,7 +160,7 @@ class Try(ClassTransform):
                       else_output_components_reduced]
         assert all(isinstance(component, int) for component in components) \
             and len(set(components)) == 1, \
-            'All transforms in a Try Transform must end in the same stage.'
+            'Try Transform cannot contain transforms that have multiple stages.'
 
         final_splits = tuple(
             self if i == components[0]
