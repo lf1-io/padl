@@ -216,11 +216,11 @@ for the transform.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.IfEval">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">IfEval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.IfEval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “eval” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “eval” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “eval” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “eval” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>
@@ -228,13 +228,14 @@ for the transform.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="padl.IfInStage">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">IfInStage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.IfInStage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in stage <em>target_stage</em>, else perform <em>else_</em>.</p>
+<dt class="sig sig-object py" id="padl.IfInMode">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">IfInMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.IfInMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform <em>if_</em> if called in mode <em>target_mode</em>, else perform <em>else_</em>.</p>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInStage</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInMode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="go">11</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">iis</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>
@@ -244,9 +245,9 @@ for the transform.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform to apply when the stage matches.</p></li>
-<li><p><strong>target_stage</strong> – Stage (one of ‘train’, ‘eval’, ‘infer’).</p></li>
-<li><p><strong>else</strong> – Transform to apply when the stage doesn’t match (defaults to identity transform).</p></li>
+<li><p><strong>if</strong> – Transform to apply when the mode matches.</p></li>
+<li><p><strong>target_mode</strong> – Mode (one of ‘train’, ‘eval’, ‘infer’).</p></li>
+<li><p><strong>else</strong> – Transform to apply when the mode doesn’t match (defaults to identity transform).</p></li>
 </ul>
 </dd>
 </dl>
@@ -255,11 +256,11 @@ for the transform.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.IfInfer">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">IfInfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.IfInfer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “infer” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “infer” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “infer” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “infer” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>
@@ -269,11 +270,11 @@ for the transform.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.IfTrain">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">IfTrain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.IfTrain" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “train” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “train” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “train” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “train” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>
@@ -305,8 +306,8 @@ for the transform.</p>
 <dt class="sig sig-object py" id="padl.group">
 <span class="sig-prename descclassname"><span class="pre">padl.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.group" title="Permalink to this definition">¶</a></dt>
 <dd><p>Group transforms. This prevents them from being flattened when used</p>
-<p>Example:
-When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flattened to <cite>(a + b + c)</cite>
+<p>Example:</p>
+<p>When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flattened to <cite>(a + b + c)</cite>
 - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to <cite>a</cite>, <cite>b</cite>,
 <cite>c</cite> respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
 2-tuple whose first item will be passed to <cite>a</cite> and whose second item will be passed to <cite>b + c</cite>.</p>
@@ -472,6 +473,19 @@ created (needed for saving).</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_forward_device_check">
+<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check all transform in forward are in correct device</p>
+<p>All transforms in forward need to be in same device as specified for
+the whole CompoundTransform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_to">
 <span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_to" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the transform’s device to <em>device</em></p>
@@ -533,7 +547,10 @@ created (needed for saving).</p></li>
 <dt class="sig sig-object py" id="padl.transforms.Map">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">padl.dumptools.inspector.CallInfo</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply one transform to each element of a list.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Map</span><span class="p">(</span><span class="n">t</span><span class="p">)([</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x2</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x3</span><span class="p">)]</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">identity</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">identity</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Map</span><span class="p">(</span><span class="n">t</span><span class="p">)([</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">])</span> <span class="o">==</span> <span class="p">(</span><span class="n">t</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x2</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">x3</span><span class="p">))</span>
 <span class="go">True</span>
 </pre></div>
 </div>
@@ -664,10 +681,21 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="padl.transforms.Transform.pd_component">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_component</span></span><em class="property"><span class="pre">:</span> <span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'preprocess'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'forward'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'postprocess'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_component" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the component (preprocess, forward or postprocess).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.transforms.Transform.pd_call_transform">
+<span class="sig-name descname"><span class="pre">pd_call_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_call_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call the transform, with possibility to pass multiple arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arg</strong> – argument to call the transform with</p></li>
+<li><p><strong>mode</strong> – The mode (“infer”, “eval”, “train”) to perform the call with.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Whatever the transform returns.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -681,6 +709,31 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_forward" title="Permalink to this definition">¶</a></dt>
 <dd><p>The forward part of the transform (that what’s typically done on the GPU).
 The device must be propagated from self.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.transforms.Transform.pd_forward_device_check">
+<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if all transform in forward are in correct device</p>
+<p>All transforms in forward need to be in same device as specified for
+the whole CompoundTransform.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.transforms.Transform.pd_get_loader">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">pd_get_loader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.utils.data.dataloader.DataLoader</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_get_loader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a pytorch data loader.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – A sequence of datapoints.</p></li>
+<li><p><strong>preprocess</strong> – preprocessing step</p></li>
+<li><p><strong>mode</strong> – mode</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments passed to the data loader (see the pytorch
+<cite>DataLoader</cite> documentation for details).</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
@@ -758,14 +811,20 @@ will raise a FileExistsError.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padl.transforms.Transform.pd_set_stage">
-<span class="sig-name descname"><span class="pre">pd_set_stage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_set_stage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set of stage of Transform</p>
+<dt class="sig sig-object py" id="padl.transforms.Transform.pd_set_mode">
+<span class="sig-name descname"><span class="pre">pd_set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_set_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set of mode of Transform</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>stage</strong> – stage (‘train’, ‘eval’, ‘infer’)</p>
+<dd class="field-odd"><p><strong>mode</strong> – mode (‘train’, ‘eval’, ‘infer’)</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padl.transforms.Transform.pd_stage">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_stage</span></span><em class="property"><span class="pre">:</span> <span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'preprocess'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'forward'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'postprocess'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the stage (preprocess, forward or postprocess).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -781,17 +840,21 @@ will raise a FileExistsError.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_varname">
-<span class="sig-name descname"><span class="pre">pd_varname</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_varname" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_varname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_varname" title="Permalink to this definition">¶</a></dt>
 <dd><p>The name of the variable name the transform was last assigned to.</p>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span><span class="o">.</span><span class="n">_pd_varname</span>
-<span class="go">&quot;foo&quot;</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foo</span><span class="o">.</span><span class="n">pd_varname</span><span class="p">()</span>
+<span class="go">&#39;foo&#39;</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A string with the variable name or <em>None</em> if the transform has not been assigned
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>module</strong> – Module to search</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A string with the variable name or <em>None</em> if the transform has not been assigned
 to any variable.</p>
 </dd>
 </dl>
@@ -848,8 +911,8 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 <dt class="sig sig-object py" id="padl.transforms.group">
 <span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.group" title="Permalink to this definition">¶</a></dt>
 <dd><p>Group transforms. This prevents them from being flattened when used</p>
-<p>Example:
-When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flattened to <cite>(a + b + c)</cite>
+<p>Example:</p>
+<p>When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flattened to <cite>(a + b + c)</cite>
 - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to <cite>a</cite>, <cite>b</cite>,
 <cite>c</cite> respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
 2-tuple whose first item will be passed to <cite>a</cite> and whose second item will be passed to <cite>b + c</cite>.</p>
@@ -879,11 +942,11 @@ will raise a FileExistsError.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.util_transforms.IfEval">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfEval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfEval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “eval” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “eval” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “eval” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “eval” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>
@@ -891,13 +954,14 @@ will raise a FileExistsError.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="padl.util_transforms.IfInStage">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInStage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_stage</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInStage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in stage <em>target_stage</em>, else perform <em>else_</em>.</p>
+<dt class="sig sig-object py" id="padl.util_transforms.IfInMode">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform <em>if_</em> if called in mode <em>target_mode</em>, else perform <em>else_</em>.</p>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInStage</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInMode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="go">11</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">iis</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>
@@ -907,9 +971,9 @@ will raise a FileExistsError.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform to apply when the stage matches.</p></li>
-<li><p><strong>target_stage</strong> – Stage (one of ‘train’, ‘eval’, ‘infer’).</p></li>
-<li><p><strong>else</strong> – Transform to apply when the stage doesn’t match (defaults to identity transform).</p></li>
+<li><p><strong>if</strong> – Transform to apply when the mode matches.</p></li>
+<li><p><strong>target_mode</strong> – Mode (one of ‘train’, ‘eval’, ‘infer’).</p></li>
+<li><p><strong>else</strong> – Transform to apply when the mode doesn’t match (defaults to identity transform).</p></li>
 </ul>
 </dd>
 </dl>
@@ -918,11 +982,11 @@ will raise a FileExistsError.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.util_transforms.IfInfer">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInfer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “infer” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “infer” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “infer” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “infer” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>
@@ -932,11 +996,11 @@ will raise a FileExistsError.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.util_transforms.IfTrain">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfTrain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfTrain" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform <em>if_</em> if called in “train” stage, else perform <em>else_</em>.</p>
+<dd><p>Perform <em>if_</em> if called in “train” mode, else perform <em>else_</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>if</strong> – Transform for the “train” stage.</p></li>
+<li><p><strong>if</strong> – Transform for the “train” mode.</p></li>
 <li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
 </ul>
 </dd>

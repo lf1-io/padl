@@ -1,8 +1,5 @@
 # Welcome to PADL's documentation!
 
-```{image} img/logo.png
-```
-
 **PyTorch** abstractions for deep learning.
 
 ```{toctree}
@@ -11,7 +8,7 @@
 
 README
 gettingstarted
+minimal-complete
 saving
 modules
-minimal-complete
 ```
