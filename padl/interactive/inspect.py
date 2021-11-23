@@ -2,7 +2,8 @@ from padl.transforms import _pd_trace
 
 
 class _Debug:
-    """Debugger for padl Transforms. """
+    """Debugger for padl Transforms.
+    """
     def __init__(self):
         self.trans = None
         self.args = None
@@ -59,7 +60,7 @@ class _Debug:
             elif x == 'h':
                 msg = self.default_msg
             elif x == 't':
-               msg = _pd_trace[pos][0]
+                msg = _pd_trace[pos][0]
             else:
                 i = _pd_trace[pos][2]
                 try:

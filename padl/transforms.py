@@ -345,7 +345,7 @@ class Transform:
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
             breakpoint()
-            if 'padl/transforms' in a_tb[0]:
+            if 'padl/transforms' or 'padl/util_transforms' in a_tb[0]:
                 continue
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
