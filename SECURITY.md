@@ -1,7 +1,7 @@
 # Reporting vulnerabilities
 
 Please email reports about any security related issues you find to
-`EMAIL`. For critical problems, you may encrypt your report (see
+`padl@lf1.io`. For critical problems, you may encrypt your report (see
 below).
 
 Please use a descriptive subject line for your report email. After the initial
@@ -20,7 +20,7 @@ In addition, please include the following information along with your report:
   provide details.
 
 If you believe that an existing (public) issue is security-related, please send
-an email to `EMAIL`. The email should include the issue ID and
+an email to `padl@lf1.io`. The email should include the issue ID and
 a short description of why it should be handled according to this security
 policy.
 
@@ -36,7 +36,7 @@ Once an issue is reported, PADL uses the following disclosure process:
   all releases of PADL at most one year old. We will attempt to commit
   these fixes as soon as possible, and as close together as possible.
 
-## Encryption key for `EMAIL`
+## Encryption key for `padl@lf1.io`
 
 If your disclosure is extremely sensitive, you may choose to encrypt your
 report using the key below. Please only use this for critical security
