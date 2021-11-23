@@ -50,11 +50,11 @@ class IfInMode(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
-    def _pd_get_splits(self, input_components=0):
+    def _pd_splits(self, input_components=0):
         if_output_components, if_splits, if_has_batchify = \
-            self.if_._pd_get_splits(input_components)
+            self.if_._pd_splits(input_components)
         else_output_components, else_splits, else_has_batchify = \
-            self.else_._pd_get_splits(input_components)
+            self.else_._pd_splits(input_components)
 
         if_output_components_reduced = self._pd_merge_components(if_output_components)
         else_output_components_reduced = self._pd_merge_components(else_output_components)
@@ -126,8 +126,8 @@ class Try(ClassTransform):
                  transform: Transform,
                  catch_transform: Transform,
                  exceptions: Union[List, Tuple, Exception],
-                 else_transform: Transform = Identity(),
-                 finally_transform: Transform = Identity(),
+                 else_transform: Transform = builtin_identity,
+                 finally_transform: Transform = builtin_identity,
                  pd_name: str = None):
 
         if not isinstance(exceptions, (tuple, list)):
@@ -146,17 +146,29 @@ class Try(ClassTransform):
         self.exceptions = exceptions
         self.else_transform = else_transform
         self.finally_transform = finally_transform
-        self._pd_stage = set.union(self.transform.pd_stage,
-                                   self.catch_transform.pd_stage,
-                                   self.else_transform.pd_stage,
-                                   self.finally_transform.pd_stage)
 
-        assert len(self._pd_stage) == 1, 'Try Transform cannot contain transforms that have ' \
-                                            'multiple components.'
+    def _pd_splits(self, input_components=0):
+        try_output_components, _, _ = self.transform._pd_splits(input_components)
+        catch_output_components, _, _ = self.catch_transform._pd_splits(input_components)
+        else_output_components, _, _ = self.else_transform._pd_splits(input_components)
 
-    @property
-    def pd_stage(self):
-        return self._pd_stage
+        input_components_reduced = self._pd_merge_components(input_components)
+        try_output_components_reduced = self._pd_merge_components(try_output_components)
+        catch_output_components_reduced = self._pd_merge_components(catch_output_components)
+        else_output_components_reduced = self._pd_merge_components(else_output_components)
+        components = [try_output_components_reduced, catch_output_components_reduced,
+                      else_output_components_reduced]
+        assert all(isinstance(component, int) for component in components) \
+            and len(set(components)) == 1, \
+            'All transforms in a Try Transform must end in the same stage.'
+
+        final_splits = tuple(
+            self if i == components[0]
+            else builtin_identity
+            for i in range(3)
+        )
+
+        return input_components_reduced, final_splits, False
 
     def __call__(self, args):
         try:
