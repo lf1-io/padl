@@ -112,7 +112,8 @@ class IfTrain(IfInMode):
 
 class Try(ClassTransform):
     """ Perform *transform*. If this fails with any exception from *exceptions*, perform
-    *catch_transform*.
+    *catch_transform*. If *transform* is completed successfully, *else_transform* is performed
+    with the output of *transform*. With any
 
     :param transform: Transform to try.
     :param catch_transform: Transform to fall back on.
@@ -156,10 +157,11 @@ class Try(ClassTransform):
 
     def __call__(self, args):
         try:
-            args = self.transform.pd_call_transform(args)
+            output = self.transform.pd_call_transform(args)
         except self.exceptions:
-            args = self.catch_transform.pd_call_transform(args)
+            output = self.catch_transform.pd_call_transform(args)
         else:
-            args = self.else_transform.pd_call_transform(args)
+            output = self.else_transform.pd_call_transform(output)
         finally:
-            return self.finally_transform.pd_call_transform(args)
+            self.finally_transform.pd_call_transform(args)
+        return output
