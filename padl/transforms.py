@@ -344,8 +344,7 @@ class Transform:
         """ Find where the Transform was defined (file, lineno, file) given the traceback. """
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
-            breakpoint()
-            if 'padl/transforms' or 'padl/util_transforms' in a_tb[0]:
+            if 'padl/transforms' in a_tb[0] or 'padl/util_transforms' in a_tb[0]:
                 continue
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
@@ -523,11 +522,6 @@ class Transform:
         return False
 
     def _pd_call_transform(self, arg):
-        """Call the transform, with possibility to pass multiple arguments.
-
-        :param arg: argument to call the transform with.
-        :return: Whatever the transform returns.
-        """
         try:
             if self._pd_unpack_argument(arg):
                 return self(*arg)
@@ -537,7 +531,7 @@ class Transform:
             raise err
 
     def pd_call_transform(self, arg, mode: Optional[Mode] = None):
-        """Call the transform setting the mode, with possibility to pass multiple arguments.
+        """Call the transform, with possibility to pass multiple arguments.
 
         :param arg: argument to call the transform with
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
@@ -1146,11 +1140,6 @@ class CompoundTransform(Transform):
         return len(self.transforms)
 
     def _pd_call_transform(self, arg):
-        """Call the transform, with possibility to pass multiple arguments.
-
-        :param arg: argument to call the transform with.
-        :return: Whatever the transform returns.
-        """
         if self._pd_unpack_argument(arg):
             return self(*arg)
         return self(arg)
