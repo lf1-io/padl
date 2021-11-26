@@ -18,3 +18,10 @@
 .. automodule:: padl.util_transforms
     :members:
 ```
+
+## Utils
+
+```{eval-rst}
+.. automodule:: padl.utils
+    :members:
+```

@@ -55,11 +55,17 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_book_theme'
-html_logo = 'logo.png'
+#html_theme = 'sphinx_book_theme'
+#html_theme = 'renku'
+html_theme = 'sphinx_rtd_theme'
+html_logo = 'padl-logo.png'
 
 html_theme_options = {
-#    'logo_only': False,
+    'logo_only': True,
+    'github_repo': 'https:github.com/lf1-io/padl',
+    'description': '',
+    'use_download_button': False,
+    'use_fullscreen_button': False,
 #    'display_version': True,
 #    'prev_next_buttons_location': 'bottom',
 #    'style_external_links': False,
@@ -77,3 +83,4 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = ["custom.css"]

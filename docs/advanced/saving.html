@@ -1,0 +1,658 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Saving &mdash; PADL 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API Documentation" href="../modules.html" />
+    <link rel="prev" title="Advanced Topics" href="../advanced.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#why-padl">Why PADL?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#problem-statement">Problem Statement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#standard-approach">Standard Approach</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#padl-solutions">PADL Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#project-structure">Project Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#resources">Resources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-models">Decomposing models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#model-training">Model training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#saving-loading">Saving/ Loading</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/transform.html">The <em>Transform</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/creating_transforms.html">Creating Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/creating_transforms.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/combining_transforms.html">Combining Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#grouping-compound-transforms">Grouping Compound Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id2">Compose</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#building-pre-processing-pipelines">Building Pre-processing Pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining Pre-processing, Model Forward Pass and Post-processing</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id3">Rollout</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting Items from a Dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#generating-different-versions-of-an-image">Generating Different Versions of an Image</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id4">Parallel</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#pass-training-samples">Pass Training Samples</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id5">Map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#convert-multiple-images-to-tensors">Convert Multiple Images to Tensors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/apply.html">Applying Transforms to Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/saving.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/print_slice.html">Printing and Slicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/pytorch.html">Using PyTorch Modules with Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#padl-automatically-saves-pytorch-state-dicts">PADL Automatically Saves PyTorch State-Dicts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/extras.html">Extras</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#exception-handling">Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../advanced.html">Advanced Topics</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Saving</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.sourceget.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.version.html"><code class="docutils literal notranslate"><span class="pre">padl.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.wrap.html"><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADL</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../advanced.html">Advanced Topics</a> &raquo;</li>
+        
+      <li>Saving</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/advanced/saving.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="tex2jax_ignore mathjax_ignore section" id="saving">
+<h1>Saving<a class="headerlink" href="#saving" title="Permalink to this headline">¶</a></h1>
+<p>All PADL transforms can be saved via <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a>. For that, simply do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">save</span><span class="p">(</span><span class="n">my_transform</span><span class="p">,</span> <span class="s1">&#39;some/path.padl&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To load a saved transform use <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
+
+<span class="n">my_transform</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;some/path.padl&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="how-it-works">
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">¶</a></h2>
+<p>When saving a transform, PADL tracks down the statements that were used to create it
+and writes them into a python file.</p>
+<p>This works both with python modules and in interactive IPython sessions.</p>
+<p>PADL will only store statements that are absolutely needed to create the transform.
+This means you can save a transform from a messy ipython notebook and will get a clean python file.</p>
+<p>Consider code defining the transform <code class="code docutils literal notranslate"><span class="pre">mytransform</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">plusone</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">toarray</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="n">CONST</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">addconst</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">CONST</span>
+
+<span class="n">plustwo</span> <span class="o">=</span> <span class="n">plusone</span> <span class="o">&gt;&gt;</span> <span class="n">plusone</span>
+<span class="n">mytransform</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">toarray</span>
+    <span class="o">&gt;&gt;</span> <span class="n">plustwo</span>
+    <span class="o">&gt;&gt;</span> <span class="n">addconst</span>
+<span class="p">)</span>
+
+<span class="n">save</span><span class="p">(</span><span class="n">mytransform</span><span class="p">,</span> <span class="s1">&#39;mytransform.padl&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The last statement - <code class="code docutils literal notranslate"><span class="pre">save(..)</span></code> - creates a directory <code class="file docutils literal notranslate"><span class="pre">mytransform.padl</span></code> containing two files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mytransform.padl/
+├── transform.py
+└── versions.txt
+</pre></div>
+</div>
+<p><code class="file docutils literal notranslate"><span class="pre">transform.py</span></code> contains the code needed to recreate the transform:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+
+
+<span class="n">CONST</span> <span class="o">=</span> <span class="mi">100</span>
+
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">addconst</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">CONST</span>
+
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">plusone</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">toarray</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="n">_pd_main</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">toarray</span>
+    <span class="o">&gt;&gt;</span> <span class="n">plusone</span>
+    <span class="o">&gt;&gt;</span> <span class="n">plusone</span>
+    <span class="o">&gt;&gt;</span> <span class="n">addconst</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see <a class="reference internal" href="#what-does-not-save"><span class="std std-ref">What does not save</span></a>).</p>
+<p><code class="file docutils literal notranslate"><span class="pre">versions.txt</span></code> contains all the packages that were used in creating the transforms and their versions. This is very similar to a <code class="file docutils literal notranslate"><span class="pre">requirements.txt</span></code> - however, it contains the package names rather that their names in the <code class="docutils literal notranslate"><span class="pre">PyPI</span></code>.</p>
+</div>
+<div class="section" id="saving-by-value">
+<span id="id1"></span><h2>Saving by value<a class="headerlink" href="#saving-by-value" title="Permalink to this headline">¶</a></h2>
+<p>Sometimes you might want to save the <em>value</em> of a variable instead of the python statements
+that created it.</p>
+<p>Consider the following example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">save</span>
+
+<span class="nd">@transform</span>
+<span class="k">class</span> <span class="nc">WordIndex</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">not_found</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">load_data</span><span class="p">():</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;my/big/textcorpus.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)))</span>
+
+<span class="n">words</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">()</span>
+
+<span class="n">word_index</span> <span class="o">=</span> <span class="n">WordIndex</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+<span class="n">save</span><span class="p">(</span><span class="n">word_index</span><span class="p">,</span> <span class="s1">&#39;word_index&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, we load a (potentially very large) dataset and process it, before using the result
+to initialize a transform.</p>
+<p>Normally, saving <code class="code docutils literal notranslate"><span class="pre">word_index</span></code>, would store the python statements needed for creating the transform, <em>including
+the data processing</em> in <code class="code docutils literal notranslate"><span class="pre">load_data</span></code>. As loading consists in executing those statements, this would mean that the data processing would be repeated each time the transform is loaded.</p>
+<p>To prevent that, use <a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">value</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">word_index</span> <span class="o">=</span> <span class="n">WordIndex</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+<span class="n">save</span><span class="p">(</span><span class="n">word_index</span><span class="p">,</span> <span class="s1">&#39;word_index&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When saving <code class="code docutils literal notranslate"><span class="pre">word_index</span></code>, PADL creates a json file containing the <em>value</em> of <code class="code docutils literal notranslate"><span class="pre">words</span></code> in the save folder which now looks like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>word_index.padl/
+├── 1.json
+├── transform.py
+└── versions.txt
+</pre></div>
+</div>
+<p>The resulting <code class="code docutils literal notranslate"><span class="pre">transform.py</span></code> includes statements to load the json file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;1.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">PADL_VALUE_0</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+
+<span class="nd">@transform</span>
+<span class="k">class</span> <span class="nc">WordIndex</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">not_found</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">_pd_main</span> <span class="o">=</span> <span class="n">WordIndex</span><span class="p">(</span><span class="n">PADL_VALUE_0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Currently, this only works with values that can be serialized as JSON. Future versions of PADL will add support for other things.
+You can also add your own serializer:</p>
+<div class="section" id="custom-serializers">
+<h3>Custom serializers<a class="headerlink" href="#custom-serializers" title="Permalink to this headline">¶</a></h3>
+<p>You can save by value using your own serializer by defining two functions, one for saving, one for loading, and passing them to
+<a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a>.</p>
+<p>The <em>save</em> function expects two arguments, one for the value (<em>val</em>), one for the path (<em>path</em>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>It is responsible for saving <em>val</em> at <em>path</em>.</p>
+<p>The <em>load</em> function expects one argument (<em>path</em>). It must load the value from there and return it.</p>
+<p>These functions are then passed to <a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a> in a tuple as the second argument. The tuple
+has a third entry which defines a file suffix:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">suffix</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>For example, to save a value using <code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.save()</span></code>, you could do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">myloader</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">mysaver</span><span class="p">,</span> <span class="n">myloader</span><span class="p">,</span> <span class="s1">&#39;.npy&#39;</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <em>save</em>-function can also return one filename or multiple filenames (in a list). If it does, that return
+value will be used as the path argument in the <em>load</em>-function. You can use this for more complex cases,
+for instance if the value needs to be serialized in more than one file. You will not need to provide a
+file suffix in this case.</p>
+<p>For example, to save a list of numpy arrays in multiple files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="n">filenames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">subval</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;_</span><span class="si">{i}</span><span class="s1">.npy&#39;</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">filenames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filenames</span>
+
+<span class="k">def</span> <span class="nf">myloader</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">mysaver</span><span class="p">,</span> <span class="n">myloader</span><span class="p">))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="saving-pytorch-modules">
+<h2>Saving pytorch modules<a class="headerlink" href="#saving-pytorch-modules" title="Permalink to this headline">¶</a></h2>
+<p>When saving, PADL automatically serializes pytorch model parameters and stores them in the <code class="docutils literal notranslate"><span class="pre">.padl</span></code>
+folder as <code class="docutils literal notranslate"><span class="pre">.pt</span></code> files. When loading, the parameters of the models are set to the previously saved values.</p>
+</div>
+<div class="section" id="defining-transform-within-nested-scopes">
+<h2>Defining transform within nested scopes<a class="headerlink" href="#defining-transform-within-nested-scopes" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to create transforms within nested scopes (for instance in a function body):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">save</span>
+
+<span class="k">def</span> <span class="nf">build_my_transform</span><span class="p">(</span><span class="n">n_to_add</span><span class="p">):</span>
+    <span class="nd">@transform</span>
+    <span class="k">def</span> <span class="nf">add_n</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">n_to_add</span>
+
+    <span class="k">return</span> <span class="n">add_n</span>
+
+<span class="n">mytransform</span> <span class="o">=</span> <span class="n">build_my_transform</span><span class="p">(</span><span class="n">n_to_add</span><span class="p">)</span>
+<span class="n">save</span><span class="p">(</span><span class="n">mytransform</span><span class="p">,</span> <span class="s1">&#39;mytransform&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For the saved file, PADL will undo the nesting, renaming variables in case of name conflicts.</p>
+<p>Note that this only works one level deep, don’t do something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">build_my_transform</span><span class="p">(</span><span class="n">n_to_add</span><span class="p">):</span>
+        <span class="nd">@transform</span>
+        <span class="k">def</span> <span class="nf">add_n</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">n_to_add</span>
+
+    <span class="k">return</span> <span class="n">build_my_transform</span><span class="p">(</span><span class="n">arg</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="what-does-not-save">
+<span id="id2"></span><h2>What does not save<a class="headerlink" href="#what-does-not-save" title="Permalink to this headline">¶</a></h2>
+<p>Saving PADL transforms has a few caveats you should be aware of:</p>
+<div class="section" id="variables-defined-as-the-targets-of-with-blocks">
+<h3>Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks<a class="headerlink" href="#variables-defined-as-the-targets-of-with-blocks" title="Permalink to this headline">¶</a></h3>
+<p>PADL currently cannot symbolically save anything that depends on the target of a with block. If you want to
+use a with block in your code, either wrap it in a function or save by value (<a class="reference internal" href="#saving-by-value"><span class="std std-ref">Saving by value</span></a>). Instead of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;myfile.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">mytransform</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">value</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">load</span><span class="p">():</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;myfile.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">mytransform</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">(</span><span class="n">load</span><span class="p">())</span>
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">value</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;myfile.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">mytransform</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variables-defined-as-targets-of-loops">
+<h3>Variables defined as targets of loops<a class="headerlink" href="#variables-defined-as-targets-of-loops" title="Permalink to this headline">¶</a></h3>
+<p>PADL currently cannot symbolically save anything that depends on the target of a loop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">mytransform</span> <span class="o">=</span> <span class="n">MyTransform</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Again, save by value instead (<a class="reference internal" href="#saving-by-value"><span class="std std-ref">Saving by value</span></a>) or wrap in a function.</p>
+</div>
+<div class="section" id="mutated-objects">
+<h3>Mutated objects<a class="headerlink" href="#mutated-objects" title="Permalink to this headline">¶</a></h3>
+<p>PADL currently does not pick up if you mutate an object after creating it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
+
+<span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">SomeObject</span><span class="p">()</span>
+<span class="n">a</span><span class="o">.</span><span class="n">change</span><span class="p">()</span>
+<span class="n">save</span><span class="p">(</span><span class="n">MyTransform</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>will not work (<code class="code docutils literal notranslate"><span class="pre">a.change()</span></code> will not be included in the saved <code class="file docutils literal notranslate"><span class="pre">transform.py</span></code>).</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../modules.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../advanced.html" class="btn btn-neutral float-left" title="Advanced Topics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, LF1.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

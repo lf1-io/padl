@@ -1,0 +1,76 @@
+## Combining Tranforms
+
+[... intro]
+
+Transforms can be *composed* using `>>`:
+
+Composed transforms process their input in a sequence, the output of the first transform becomes the input of the second.
+
+<img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
+
+Thus:
+
+```python
+>>> (t1 >> t2 >> t3)(x) == t3(t2(t1(x)))
+True
+```
+
+[example]
+
+An input can be *rolled out* to multiple Transforms using `+`. This means applying different transforms to the same input. The result is a tuple.
+
+<img src="img/rollout.png" style='display: block; margin: auto; width: 300px'>
+
+Thus:
+
+```python
+>>> (t1 + t2 + t3)(x) == (t1(x), t2(x), t3(x))
+True
+```
+
+[example]
+
+Multiple transform can be *applied in parallel* to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
+
+<img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
+
+Thus:
+
+```python
+>>> (t1 / t2 / t3)((x, y, z)) == (t1(x), t2(y), t3(z))
+True
+```
+
+[example]
+
+Transforms can be *mapped* using `~`. Mapping applies the same transforms to multiple inputs. The output has the same length as the input.
+
+<img src="img/map.png" style='display: block; margin: auto; width: 300px'>
+
+Thus:
+
+```python
+>>> (~t)([x, y, z]) == [t(x), t(y), t(z)]
+True
+```
+
+[example]
+
+### Grouping Compound Transforms
+
+By default, compound transforms, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
+
+```python
+>>> (t1 + (t2 + t3))(x) == ((t1 + t2) + t3)(x) == (t1 + t2 + t3)(x)  == (t1(x), t2(x), t2(x))
+True
+```
+
+To group them, use {meth}`padl.group`:
+
+```python
+>>> from padl import group
+>>> (t1 + group(t2 + t3))(x) == (t1(x), (t2(x), t3(x)))
+True
+```
+
+[example]
