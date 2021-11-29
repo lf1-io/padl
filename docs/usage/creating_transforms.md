@@ -1,7 +1,7 @@
 (creating-transforms)=
 ## Creating Transforms
 
-Everything that can be *called* in python can be converted into a `padl.transforms.Transform.
+Everything that can be *called* in python can be converted into a `padl.transforms.Transform`.
 For that, use the {func}`~padl.transform` wrapper.
 
 ```python
