@@ -1,35 +1,77 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Extras &mdash; PADL 0.1.0 documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-    <script src="../_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Advanced Topics" href="../advanced.html" />
     <link rel="prev" title="Using PyTorch Modules with Transforms" href="pytorch.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../index.html">
+          
+
+          
+            
             <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -37,7 +79,18 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
@@ -157,35 +210,77 @@
 </li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
+    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
           <li><a href="../usage.html">Usage</a> &raquo;</li>
+        
       <li>Extras</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="../_sources/usage/extras.md.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <div class="section" id="extras">
-<h1>Extras<a class="headerlink" href="#extras" title="Permalink to this headline"></a></h1>
+<h1>Extras<a class="headerlink" href="#extras" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="the-same-utility">
-<span id="same"></span><h2>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility<a class="headerlink" href="#the-same-utility" title="Permalink to this headline"></a></h2>
+<span id="same"></span><h2>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility<a class="headerlink" href="#the-same-utility" title="Permalink to this headline">¶</a></h2>
 <p>The special object <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> can be used to get items from the input -
 <code class="docutils literal notranslate"><span class="pre">same[0]</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">transform(lambda</span> <span class="pre">x:</span> <span class="pre">x[0])</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">same</span>
@@ -203,7 +298,7 @@
 </div>
 </div>
 <div class="section" id="applying-transforms-depending-on-the-mode">
-<span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline"></a></h2>
+<span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline">¶</a></h2>
 <p>Often it can be useful to apply transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation transforms only during training.</p>
 <p>Use an <a class="reference internal" href="../apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> Transform to apply a transform only in the <em>infer</em> mode:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">IfInfer</span>
@@ -217,7 +312,7 @@
 <p>Analogously, use <a class="reference internal" href="../apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> or <a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to apply a transform only in the “eval”- or “train” mode, respectively.</p>
 </div>
 <div class="section" id="exception-handling">
-<h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline"></a></h2>
+<h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline">¶</a></h2>
 <p>Use <code class="xref py py-class docutils literal notranslate"><span class="pre">Try</span></code> to handle exceptions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
 <span class="k">def</span> <span class="nf">open_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
@@ -242,33 +337,50 @@
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pytorch.html" class="btn btn-neutral float-left" title="Using PyTorch Modules with Transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="../advanced.html" class="btn btn-neutral float-right" title="Advanced Topics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pytorch.html" class="btn btn-neutral float-left" title="Using PyTorch Modules with Transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, LF1 GmbH.</p>
-  </div>
+    <p>
+        &#169; Copyright 2021, LF1 GmbH.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
