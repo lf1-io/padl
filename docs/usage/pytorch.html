@@ -1,35 +1,77 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Using PyTorch Modules with Transforms &mdash; PADL 0.1.0 documentation</title>
-      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="../static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../static/custom.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
+    <script src="../static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/doctools.js"></script>
-    <script src="../_static/js/theme.js"></script>
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../static/documentation_options.js"></script>
+        <script src="../static/jquery.js"></script>
+        <script src="../static/underscore.js"></script>
+        <script src="../static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Extras" href="extras.html" />
     <link rel="prev" title="Printing and Slicing" href="print_slice.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="../index.html">
-            <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
+          
+
+          
+            
+            <img src="../static/padl-logo.png" class="logo" alt="Logo"/>
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -37,30 +79,24 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#project-structure">Project Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#resources">Resources</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-transforms">Defining transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-pipelines">Defining pipelines</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transforms">Passing inputs between transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-pipelines">Decomposing pipelines</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#training">Training</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#saving-loading">Saving/ Loading</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="../usage.html">Usage</a><ul class="current">
@@ -157,40 +193,82 @@
 </li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
+    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
           <li><a href="../usage.html">Usage</a> &raquo;</li>
+        
       <li>Using PyTorch Modules with Transforms</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="../_sources/usage/pytorch.md.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <div class="tex2jax_ignore mathjax_ignore section" id="using-pytorch-modules-with-transforms">
-<h1>Using PyTorch Modules with Transforms<a class="headerlink" href="#using-pytorch-modules-with-transforms" title="Permalink to this headline"></a></h1>
+<h1>Using PyTorch Modules with Transforms<a class="headerlink" href="#using-pytorch-modules-with-transforms" title="Permalink to this headline">¶</a></h1>
 <p>Remember from <a class="reference internal" href="creating_transforms.html#creating-transforms"><span class="std std-ref">the section on creating Pipelines and Transforms</span></a> that PyTorch Modules can be converted into Transforms. PADL has built-in capabilities that make it convenient to work with them.</p>
 <div class="section" id="padl-automatically-saves-pytorch-state-dicts">
-<h2>PADL Automatically Saves PyTorch State-Dicts<a class="headerlink" href="#padl-automatically-saves-pytorch-state-dicts" title="Permalink to this headline"></a></h2>
+<h2>PADL Automatically Saves PyTorch State-Dicts<a class="headerlink" href="#padl-automatically-saves-pytorch-state-dicts" title="Permalink to this headline">¶</a></h2>
 <p>When using <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a> to <a class="reference internal" href="saving.html#saving"><span class="std std-ref">save a Pipeline</span></a>, PADL automatically stores <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>s of the contained PyTorch layers along with the code. When loading with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>, these are used to initialize the layers’ parameters.</p>
 </div>
 <div class="section" id="devices">
-<h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline"></a></h2>
+<h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline">¶</a></h2>
 <p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.CompoundTransform.pd_to" title="padl.transforms.CompoundTransform.pd_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code></a> to send all PyTorch layers in a transform to a device:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_pipeline</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">preprocess</span>
@@ -204,7 +282,7 @@
 </div>
 </div>
 <div class="section" id="accessing-layers-and-parameters">
-<h2>Accessing Layers and Parameters<a class="headerlink" href="#accessing-layers-and-parameters" title="Permalink to this headline"></a></h2>
+<h2>Accessing Layers and Parameters<a class="headerlink" href="#accessing-layers-and-parameters" title="Permalink to this headline">¶</a></h2>
 <p>All PyTorch layers in a pipeline are accessible via <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_parameters" title="padl.transforms.Transform.pd_parameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_parameters()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_pipeline</span><span class="o">.</span><span class="n">pd_layers</span><span class="p">())</span>
 </pre></div>
@@ -229,7 +307,7 @@ This can be used to initialize a PyTorch optimizer and create a training loop:</
 </div>
 </div>
 <div class="section" id="weight-sharing">
-<h2>Weight Sharing<a class="headerlink" href="#weight-sharing" title="Permalink to this headline"></a></h2>
+<h2>Weight Sharing<a class="headerlink" href="#weight-sharing" title="Permalink to this headline">¶</a></h2>
 <p>It is possible to use the same PyTorch layer transforms in multiple pipelines. Those transforms then share weights. This can be used, for instance, to create a train pipeline and an inference pipeline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layer</span> <span class="o">=</span> <span class="n">MyPyTorchLayer</span><span class="p">()</span>
 
@@ -257,33 +335,50 @@ This can be used to initialize a PyTorch optimizer and create a training loop:</
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="print_slice.html" class="btn btn-neutral float-left" title="Printing and Slicing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="extras.html" class="btn btn-neutral float-right" title="Extras" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="print_slice.html" class="btn btn-neutral float-left" title="Printing and Slicing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, LF1 GmbH.</p>
-  </div>
+    <p>
+        &#169; Copyright 2021, LF1 GmbH.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
