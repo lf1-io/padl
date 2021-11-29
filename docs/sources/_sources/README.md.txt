@@ -1,11 +1,11 @@
-<img src="img/logo.png" width="400">
+```{eval-rst}
+.. role:: raw-html-m2r(raw)
+   :format: html
+```
 
-[![PyPI version](https://badge.fury.io/py/padl.svg)](https://badge.fury.io/py/padl) 
-![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/) 
-[![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues)
+# Introduction
 
-**Pipeline abstractions for deep learning**.
+**PyTorch** *abstractions for deep learning*.
 
 ---
 

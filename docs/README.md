@@ -5,7 +5,7 @@
 
 # Introduction
 
-**PyTorch** *abstractions for deep learning*.
+**Pipeline abstractions for deep learning**
 
 ---
 
