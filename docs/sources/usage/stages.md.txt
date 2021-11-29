@@ -1,3 +1,5 @@
+(stages)=
+
 ## Stages: Preprocess, Forward and Postprocess
 
 Each Transform has a *preprocess*, *forward* and *postprocess* part. We call those parts **stages**.
@@ -9,9 +11,11 @@ As the names suggest, the different stages are responsible for processing data i
 - *postprocess* stands for post-processing - for example converting the output of a model to a readable format
 
 To define stages, use the special Transforms {obj}`padl.batch` and
-{obj}`padl.unbatch`:
+{obj}`padl.unbatch` in a {ref}`composed <compose>` Transform:
 
-```python
+```{code-block} python
+:emphasize-lines: 19, 21
+
 from padl import transform, batch, unbatch
 from torchvision import transforms, models
 
@@ -49,3 +53,5 @@ unbatch >> classify
 ```
 
 The Transforms in the preprocess and postprocess stages process single *items* whereas the transforms in the forward stage process *batches*.
+
+Continue in the {ref}`next section <apply>` to learn how to apply transforms to data for inference, evaluation and training.

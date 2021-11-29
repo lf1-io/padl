@@ -1,3 +1,7 @@
 .wy-nav-side,.wy-side-nav-search {
-    background: #01192d !important;
+    background: #000 !important;
+}
+
+.wy-menu-vertical header, .wy-menu-vertical p.caption {
+    color: orange !important;
 }

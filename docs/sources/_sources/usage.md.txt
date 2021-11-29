@@ -1,36 +1,24 @@
 # Usage
 
-The following collection of pages are a concise reference of everything you need to know about PADL.
-Read them all to know everything you need to get started.
-
-## The magical *Transform*
-
-The central abstraction in PADL is the *Transform*. Essentially, a Transform
-is a function with added functionality for the deep learning workflow.
-
-With transforms you can:
-
-- build complex workflows with an elegant formalism and with minimal boilerplate code
-- preprocess data using multi-processing without creating custom DataLoaders
-- stop worrying about adding batch dimensions, dis- or enabling gradients or sending data to the GPU
-- work interactively in a notebook, easily inspect, slice and debug your transforms
-- save your whole workflow in a transparent, flexible format that enables reproducibility
-
-and much more.
+The following collection of pages are a concise reference of everything you need to know to use PADL.
+Read them all to know everything you need to get started!
 
 
 ```{toctree}
 :caption: 'Contents:'
 :maxdepth: 1
 
+usage/transform.md
 usage/creating_transforms.md
 usage/combining_transforms.md
 usage/stages.md
 usage/apply.md
 usage/saving.md
 usage/print_slice.md
-usage/Extras.md
+usage/pytorch.md
+usage/extras.md
 ```
+
 
 ## Import anything you need `from padl`
 

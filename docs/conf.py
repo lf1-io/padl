@@ -20,8 +20,8 @@ import sphinx_book_theme
 # -- Project information -----------------------------------------------------
 
 project = 'PADL'
-copyright = '2021, LF1'
-author = 'LF1'
+copyright = '2021, LF1 GmbH'
+author = 'LF1 GmbH'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.0'
