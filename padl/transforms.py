@@ -1728,10 +1728,20 @@ class Rollout(CompoundTransform):
                 split.append(sub_split)
 
         # only replace with builtin_identity if all Identity to preserve number of pipes
-        cleaned_splits = tuple(
-            builtin_identity if all(isinstance(s, Identity) for s in split) else split
-            for split in splits
-        )
+
+        merged_components = self._pd_merge_components(input_components)
+        if not isinstance(merged_components, int):
+            merged_components = 0
+
+        cleaned_splits = []
+        for i, split in enumerate(splits):
+            if all(isinstance(s, Identity) for s in split):
+                if i != merged_components:
+                    cleaned_splits.append(builtin_identity)
+                else:
+                    cleaned_splits.append(split)
+            else:
+                cleaned_splits.append(split)
 
         first_non_identity = \
             [i for i, s in enumerate(cleaned_splits) if not isinstance(s, Identity)]

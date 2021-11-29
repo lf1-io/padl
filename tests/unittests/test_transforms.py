@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity, batch
+from padl import transforms as pd, transform, Identity, batch, unbatch
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
@@ -378,6 +378,19 @@ class TestRollout:
         self.transform_4._repr_pretty_(PrettyMock, False)
         self.transform_5._repr_pretty_(PrettyMock, False)
         self.transform_6._repr_pretty_(PrettyMock, False)
+
+    def test_identity_split(self):
+        new_iden = Identity() - 'new_name'
+        test = (
+            plus_one
+            >> batch
+            >> new_iden + new_iden
+            >> plus
+            >> unbatch
+            >> new_iden + new_iden
+            >> plus
+        )
+        assert str(test.pd_forward) == str(new_iden + new_iden >> plus)
 
     def test_output(self):
         in_ = 123
