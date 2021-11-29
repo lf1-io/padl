@@ -1,3 +1,4 @@
+(saving)=
 ## Saving and Loading
 
 All PADL transforms can be saved via {meth}`~padl.save`:

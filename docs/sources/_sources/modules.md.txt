@@ -1,27 +1,8 @@
 # API Documentation
 
-```{eval-rst}
-.. automodule:: padl
-    :members:
-```
+```{toctree}
+:glob:
+:caption: 'Contents:'
 
-## Transforms
-
-```{eval-rst}
-.. automodule:: padl.transforms
-    :members:
-```
-
-## Util Transforms
-
-```{eval-rst}
-.. automodule:: padl.util_transforms
-    :members:
-```
-
-## Utils
-
-```{eval-rst}
-.. automodule:: padl.utils
-    :members:
+apidocs/*
 ```

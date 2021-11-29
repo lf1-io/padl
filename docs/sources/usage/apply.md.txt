@@ -1,6 +1,8 @@
+(apply)=
+
 ## Applying Transforms to Data
 
-Each Transform can be applied in three different **modes**: *infer*, *eval* and *train*.
+Each Transform can be applied to data in three different **modes**: *infer*, *eval* and *train*.
 
 To process single items in inference mode, use {meth}`Transform.infer_apply() <padl.transforms.Transform.infer_apply>`.
 
@@ -9,7 +11,7 @@ To process single items in inference mode, use {meth}`Transform.infer_apply() <p
 "cat"
 ```
 
-Under the hood, a batch dimension is automatically added before the *forward* stage and removed before the *postprocess* stage.
+Under the hood, a batch dimension is automatically added before the *forward* {ref}`stage <stages>` and removed before the *postprocess* stage.
 
 {meth}`Transform.infer_apply() <padl.transforms.Transform.infer_apply>` automatically disables gradients and sends tensors to a gpu if available.
 
@@ -32,3 +34,6 @@ for batch in my_classifier_transform.pd_forward.train_apply():
 ```
 
 {meth}`Transform.train_apply() <padl.transforms.Transform.train_apply>` also uses a **PyTorch** {class}`~torch.utils.data.DataLoader` and, naturally, does not disable gradients.
+
+
+Read the {ref}`next section <Saving and Loading>` to learn how to save and load transforms.

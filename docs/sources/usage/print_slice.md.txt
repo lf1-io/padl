@@ -1,4 +1,4 @@
-### Printing and Slicing
+## Printing and Slicing
 
 Transforms pretty-print in IPython:
 
