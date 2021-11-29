@@ -42,7 +42,7 @@ build:
 	make html
 	cp -r _build/html/* ./
 	mv _sources sources
-	mv _images images
+	-mv _images images
 	mv _static static
 	sed -i'.bak' -e 's/_sources/sources/g' *.html
 	sed -i'.bak' -e 's/_images/images/g' *.html
@@ -53,9 +53,9 @@ build:
 clean:
 	-rm searchindex.js
 	-rm *.html
-	-rm -rf _sources
-	-rm -rf _images
-	-rm -rf _static
-	-rm -rf _build
+	-rm -rf sources
+	-rm -rf images
+	-rm -rf static
+	-rm -rf build
 	-rm *.bak
 

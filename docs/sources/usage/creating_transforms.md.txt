@@ -1,7 +1,7 @@
 (creating-transforms)=
 ## Creating Transforms
 
-Everything that can be *called* in python can be converted into a Transform.
+Everything that can be *called* in python can be converted into a `padl.transforms.Transform.
 For that, use the {func}`~padl.transform` wrapper.
 
 ```python
@@ -49,7 +49,7 @@ from padl import transform
 
 - In particular, *instances of decorated **PyTorch** {class}`Module`s* are Transforms
 
-    ```
+    ```python
     @transform
     class MLP(torch.nn.Module):
         def __init__(self, n_in, hidden, n_out):
