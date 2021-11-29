@@ -9,8 +9,6 @@
 
 ---
 
-Full documentation here: https://lf1-io.github.io/padl/
-
 **PADL**:
 
 - is a pipeline builder for **PyTorch**. 
