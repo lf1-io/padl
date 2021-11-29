@@ -2,20 +2,20 @@
 
 All PADL transforms can be saved via {py:meth}`padl.save`. For that, simply do:
 
-```
+```python
 from padl import save
 
 [...]
 
-save(my_transform, 'some/path.padl')
+save(my_pipeline, 'some/path.padl')
 ```
 
 To load a saved transform use {py:meth}`padl.load`:
 
-```
+```python
 from padl import load
 
-my_transform = load('some/path.padl')
+my_pipeline = load('some/path.padl')
 ```
 
 ## How it works
@@ -30,7 +30,7 @@ This means you can save a transform from a messy ipython notebook and will get a
 
 Consider code defining the transform {code}`mytransform`:
 
-```
+```python
 from padl import *
 import numpy as np
 
@@ -68,7 +68,7 @@ mytransform.padl/
 
 {file}`transform.py` contains the code needed to recreate the transform:
 
-```
+```python
 import numpy as np
 from padl import transform
 
@@ -112,7 +112,7 @@ that created it.
 
 Consider the following example:
 
-```
+```python
 from padl import transform, save
 
 @transform
@@ -143,7 +143,7 @@ the data processing* in {code}`load_data`. As loading consists in executing thos
 
 To prevent that, use {py:meth}`padl.value`:
 
-```
+```python
 from padl import transform, save, value
 
 [...]
@@ -163,7 +163,7 @@ word_index.padl/
 
 The resulting {code}`transform.py` includes statements to load the json file:
 
-```
+```python
 import json
 from padl import transform
 import pathlib
@@ -196,7 +196,7 @@ You can save by value using your own serializer by defining two functions, one f
 
 The *save* function expects two arguments, one for the value (*val*), one for the path (*path*):
 
-```
+```python
 def mysaver(val, path):
     ...
 ```
@@ -208,13 +208,13 @@ The *load* function expects one argument (*path*). It must load the value from t
 These functions are then passed to {py:meth}`padl.value` in a tuple as the second argument. The tuple
 has a third entry which defines a file suffix:
 
-```
+```python
 x = value(val, (save, load, suffix))
 ```
 
 For example, to save a value using {py:meth}`numpy.save`, you could do:
 
-```
+```python
 def mysaver(val, path):
     np.save(path, val)
 
@@ -235,7 +235,7 @@ file suffix in this case.
 
 For example, to save a list of numpy arrays in multiple files:
 
-```
+```python
 def mysaver(val, path):
     filenames = []
     for i, subval in enumerate(val):
@@ -265,7 +265,7 @@ folder as `.pt` files. When loading, the parameters of the models are set to the
 
 It is possible to create transforms within nested scopes (for instance in a function body):
 
-```
+```python
 from padl import transform, save
 
 def build_my_transform(n_to_add):
@@ -283,7 +283,7 @@ For the saved file, PADL will undo the nesting, renaming variables in case of na
 
 Note that this only works one level deep, don't do something like this:
 
-```
+```python
 def build(arg):
 
     def build_my_transform(n_to_add):
@@ -305,7 +305,7 @@ Saving PADL transforms has a few caveats you should be aware of:
 PADL currently cannot symbolically save anything that depends on the target of a with block. If you want to
 use a with block in your code, either wrap it in a function or save by value ({ref}`saving-by-value`). Instead of:
 
-```
+```python
 [...]
 
 with open('myfile.txt') as f:
@@ -316,7 +316,7 @@ with open('myfile.txt') as f:
 
 do:
 
-```
+```python
 from padl import value
 
 [...]
@@ -331,7 +331,7 @@ mytransform = MyTransform(load())
 
 or:
 
-```
+```python
 from padl import value
 
 [...]
@@ -346,7 +346,7 @@ with open('myfile.txt') as f:
 
 PADL currently cannot symbolically save anything that depends on the target of a loop:
 
-```
+```python
 [...]
 
 for i in range(100):
@@ -363,7 +363,7 @@ Again, save by value instead ({ref}`saving-by-value`) or wrap in a function.
 
 PADL currently does not pick up if you mutate an object after creating it:
 
-```
+```python
 from padl import save
 
 [...]
