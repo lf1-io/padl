@@ -451,7 +451,7 @@ class TestCompose:
 
     def test_getitem(self):
         assert isinstance(self.transform_5[0], pd.Transform)
-        assert isinstance(self.transform_5[0:2], pd.CompoundTransform)
+        assert isinstance(self.transform_5[0:2], pd.Pipeline)
         assert isinstance(self.transform_5[0:2], pd.Compose)
         assert isinstance(self.transform_5['named_times_two'], pd.Transform)
         with pytest.raises(ValueError):
