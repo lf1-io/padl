@@ -7,7 +7,6 @@
 :maxdepth: 2
 
 README
-gettingstarted
 usage
 advanced
 modules
