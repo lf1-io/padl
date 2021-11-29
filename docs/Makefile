@@ -34,6 +34,11 @@ readme:
 
 build:
 	cp -r ../img/* ./img/
+	-rm -rf _build
+	-mkdir _static
+	-rm -rf autodocs
+	python gen_doc_files.py
+	cp custom.css _static/custom.css
 	make html
 	cp -r _build/html/* ./
 	mv _sources sources
@@ -47,11 +52,10 @@ build:
 	
 clean:
 	-rm searchindex.js
-	-rm *.rst.txt
 	-rm *.html
-	-rm -rf sources
-	-rm -rf images
-	-rm -rf static
+	-rm -rf _sources
+	-rm -rf _images
+	-rm -rf _static
 	-rm -rf _build
 	-rm *.bak
 

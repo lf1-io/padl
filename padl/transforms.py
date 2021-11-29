@@ -854,13 +854,14 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms - in contrast to `CompoundTransform`s).
+    other transforms - in contrast to :class:`CompoundTransform`).
 
-    Examples of `AtomicTransform`s are `ClassTransform`s and `FunctionTransform`s.
+    Examples of :class:`AtomicTransform` s are :class:`ClassTransform` and
+    :class:`FunctionTransform`.
 
     :param call: The transform's call string.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
+    :param call_info: A :class:`CallInfo` object containing information about the how the
+        transform was created (needed for saving).
     :param pd_name: The transform's name.
     """
 
