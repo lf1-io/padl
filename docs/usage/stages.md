@@ -2,7 +2,7 @@
 
 ## Stages: Preprocess, Forward and Postprocess
 
-Each Transform has a *preprocess*, *forward* and *postprocess* part. We call those parts **stages**.
+Each pipeline has a *preprocess*, *forward* and *postprocess* part. We call those parts **stages**.
 
 As the names suggest, the different stages are responsible for processing data in the different parts of the deep learning workflow:
 
@@ -10,8 +10,8 @@ As the names suggest, the different stages are responsible for processing data i
 - *forward* corresponds to the model's forward part - what happens in a PyTorch module, usually on the gpu
 - *postprocess* stands for post-processing - for example converting the output of a model to a readable format
 
-To define stages, use the special Transforms {obj}`padl.batch` and
-{obj}`padl.unbatch` in a {ref}`composed <compose>` Transform:
+To define stages, use the special transforms {obj}`padl.batch` and
+{obj}`padl.unbatch` in a {ref}`composed <compose>` pipeline:
 
 ```{code-block} python
 :emphasize-lines: 19, 21
@@ -41,14 +41,14 @@ my_classifier_transform = (
 )
 ```
 
-The different stages of a transform can be accessed via {meth}`Tranfroms.pd_preprocess <padl.transforms.Transform.pd_preprocess>`, {meth}`Transform.pd_forward <padl.transforms.Transform.pd_forward>` and {meth}`Transform.pd_postprocess <padl.transforms.Transform.pd_postprocess>`:
+The different stages of a pipeline can be accessed via {meth}`.pd_preprocess <padl.transforms.Base.pd_preprocess>`, {meth}`.pd_forward <padl.transforms.Base.pd_forward>` and {meth}`.pd_postprocess <padl.transforms.Base.pd_postprocess>`:
 
 ```python
->>> my_classifier_transform.pd_preprocess
+>>> my_classifier.pd_preprocess
 load_image >> transforms.ToTensor() >> batch
->>> my_classifier_transform.pd_forwad
+>>> my_classifier.pd_forwad
 models.resnet18()
->>> my_classifier_transform.pd_postprocess
+>>> my_classifier.pd_postprocess
 unbatch >> classify
 ```
 

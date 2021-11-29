@@ -8,7 +8,7 @@
 The special object {obj}`~padl.same` can be used to get items from the input - 
 `same[0]` is equivalent to `transform(lambda x: x[0])`:
 
-```
+```python
 >>> from padl import same
 >>> addfirst = add >> same[0]
 >>> addfirst(np.array([1, 2, 3], [2, 3, 4]))
@@ -18,7 +18,7 @@ The special object {obj}`~padl.same` can be used to get items from the input -
 {obj}`~padl.same` also allows to apply arbitrary methods to the input - 
 `same.something()` is the same as `transform(lambda x: x.something())`:
 
-```
+```python
 >>> concat_lower = add >> same.lower()
 >>> concat_lower("HELLO", "you")
 "hello you"
@@ -32,7 +32,7 @@ Often it can be useful to apply transforms depending on what mode (infer, eval o
 
 Use an {class}`~padl.IfInfer` Transform to apply a transform only in the *infer* mode:
 
-```
+```python
 >>> from padl import IfInfer
 >>> t = MinusX(100) >> IfInfer(MinusX(100))
 >>> t.infer_apply(300)
@@ -47,7 +47,7 @@ Analogously, use {class}`~padl.IfEval` or {class}`~padl.IfTrain` to apply a tran
 
 Use {class}`~padl.Try` to handle exceptions:
 
-```
+```python
 @transform
 def open_file(filename):
     return open(filename)

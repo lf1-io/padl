@@ -1,6 +1,6 @@
-## Combining Transforms
+## Combining Transforms into Pipelines
 
-PADL provides functional operators, which allow to combine transforms to create powerful *compound Transforms*.
+PADL provides functional operators, which allow to combine transforms to create powerful pipelines (`padl.transforms.Pipeline`) instances.
 
 This is most useful for building deep learning pipelines on a *macro-level* - for instance combining different preprocessing steps and augmentation with a model forward pass. You can keep building the individual sub-components as you're used to - with python and PyTorch.
 
@@ -10,7 +10,7 @@ This is most useful for building deep learning pipelines on a *macro-level* - fo
 
 Transforms can be **composed** using `>>`:
 
-Composed transforms process their input in a sequence, the output of the first transform becomes the input of the second.
+Pipelines arising from a compose process their input in a sequence, the output of the first transform becomes the input of the second.
 
 <img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
 
@@ -37,7 +37,7 @@ True
 
 ### Parallel `/`
 
-Multiple transform can be **applied in parallel** to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
+Multiple transforms can be **applied in parallel** to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
 
 <img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
 
@@ -61,9 +61,9 @@ Thus:
 True
 ```
 
-### Grouping Compound Transforms
+### Grouping sub-pipelines/ transforms
 
-By default, compound transforms, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
+By default, pipelines, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
 
 ```python
 >>> (t1 + (t2 + t3))(x) == ((t1 + t2) + t3)(x) == (t1 + t2 + t3)(x)  == (t1(x), t2(x), t2(x))
@@ -86,9 +86,9 @@ Continue in the {ref}`next section <stages>` to learn how to combine pre-process
 
 #### Compose
 
-##### Building Pre-processing Pipelines
+##### Building pre-processing pipelines
 
-Use *composition* to build pre-processing pipelines - similar to as you would using `torchvision.transforms.Compose`:
+Use *composition* to build pre-processing pipelines - exactly as you would using `torchvision.transforms.Compose`:
 
 ```python
 from padl import transform, IfTrain
@@ -110,7 +110,7 @@ This uses
 - {func}`~padl.transform` to {ref}`convert a lambda function <convert-functions>` and {ref}`everything from the torchvision.transforms module <convert-module>` into a Transform
 - {class}`~padl.IfTrain` to {ref}`conditionally execute a step <if-in-mode>` only during training
 
-##### Combining Pre-processing, Model Forward Pass and Post-processing
+##### Combining pre-processing, model forward pass and post-processing
 
 You can use composition to combine pre-processing, model forward pass and post-processing in one transform using the special Transforms {obj}`~padl.batch` and {obj}`~padl.unbatch`:
 
@@ -129,7 +129,7 @@ For more details, head over to {ref}`the next section <stages>`.
 
 #### Rollout
 
-##### Extracting Items from a Dictionary
+##### Extracting items from a dictionary
 
 One common use case for the *rollout* is to extract different elements from a dictionary.
 
@@ -145,9 +145,9 @@ This uses
 - {ref}`the "same" utility <same>` for getting items
 
 (generate-image-versions)=
-##### Generating Different Versions of an Image
+##### Generating different versions of an image
 
-You could also use it in a preprocessing pipeline to generate multiple views of the same image:
+In a preprocessing pipeline one could repeat a transform instance to generate multiple views of the same image:
 
 ```python
 from padl import transform, IfTrain
@@ -167,7 +167,7 @@ This generates three different crops of the same image.
 
 #### Parallel
 
-##### Pass Training Samples
+##### Pass training samples
 
 Use *parallel* to pass training datapoints `(input, target)` through the same pipeline:
 
@@ -191,7 +191,7 @@ This uses
 
 #### Map
 
-##### Convert Multiple Images to Tensors
+##### Example: convert multiple images to tensors
 
 To continue the {ref}`above example <generate-image-versions>`, one could use *map* to convert
 all resulting `PIL Images` to tensors.

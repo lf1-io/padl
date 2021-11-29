@@ -14,7 +14,7 @@ Find the source at <https://github.com/lf1-io/padl>.
 
 ## Project Structure
 
-PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction which includes all elements of a typical deep learning workflow in **PyTorch**:
+PADL's chief abstractions are `padl.transforms.Transform` and `padl.transforms.Pipeline`. These are abstractions which include all elements of a typical deep learning workflow in **PyTorch**:
 
 - pre-processing
 - data-loading
@@ -23,13 +23,13 @@ PADL's chief abstraction is `padl.transforms.Transform`. This is an abstraction 
 - postprocessing
 - **PyTorch** loss functions
 
-Loosely it can be thought of as a computational block with full support for **PyTorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks.
+Loosely `Transform` can be thought of as a computational block with full support for **PyTorch** dynamical graphs and with the possibility to recursively combine blocks into larger blocks. A `Pipeline` can be thought of as several stages of `Transform` linked together, potentially with branching.
 
 Here's an example of what this might like:
 
 {raw-html-m2r}`<img src="img/schematic.png" width="300">`
 
-The schematic represents a model which is a `Transform` instance with multiple steps and component parts; each of these are also `Transform` instances. The model may be applied in one pass to single data points, or to batches of data.
+The schematic represents a model which is a `Pipeline` instance with multiple steps and component parts; each of these are `Transform` instances. The model may be applied in one pass to single data points, or to batches of data.
 
 
 ## Resources
@@ -40,7 +40,7 @@ The schematic represents a model which is a `Transform` instance with multiple s
 
 ## Basic Usage
 
-### Defining atomic transforms
+### Defining transforms
 
 Imports:
 
@@ -109,7 +109,7 @@ class LM(torch.nn.Module):
         output = self.rnn(self.embed(x))[0]
         return self.project(output)
 
-model = LM(N_WORDS)
+layer = LM(N_WORDS)
 
 print(isinstance(layer, torch.nn.Module))                 # prints "True"
 print(isinstance(layer, padl.transforms.Transform))         # prints "True"
@@ -125,9 +125,9 @@ print(isinstance(normalize, padl.transforms.Transform))         # prints "True"
 print(isinstance(cosine, padl.transforms.Transform))            # prints "True"
 ```
 
-### Defining compound transforms
+### Defining pipelines
 
-Atomic transforms may be combined using 3 functional primitives:
+Transforms may be combined using 3 functional primitives:
 
 Transform composition: **compose**
 
@@ -176,38 +176,40 @@ preprocess = (
 forward_pass = (
     left_shift
     >> IfTrain(word_dropout)
-    >> model
+    >> layer
 )
 
-train_model = (
-    (preprocess >> model >> left_shift)
+pipeline = preprocess >> layer >> left_shift
+
+train_pipeline = (
+    (preprocess >> layer >> left_shift)
     + (preprocess >> right_shift)
 ) >> loss
 ```
 
-### Passing inputs between transform stages
+### Passing inputs between transforms
 
-In a compose model, if `transform_1` has 2 outputs and `transform_2` has 2 outputs, then in applying the composition: `transform_1 >> transform_2` to data, the outputs of `transform_1` are passed to `transform_2` **positionally**. So output-1 of `transform_1` is passed to input-1 of `transform_2`. If `transform_2` has only one input, then the outputs of `transform_1` are passed as a tuple to `transform_2`.
+In a compose pipeline, if `transform_1` has 2 outputs and `transform_2` has 2 outputs, then in applying the composition: `transform_1 >> transform_2` to data, the outputs of `transform_1` are passed to `transform_2` **positionally**. So output-1 of `transform_1` is passed to input-1 of `transform_2`. If `transform_2` has only one input, then the outputs of `transform_1` are passed as a tuple to `transform_2`.
 
 In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.
 
-### Decomposing models
+### Decomposing pipelines
 
-Often it is instructive to look at slices of a model -- this helps with e.g. checking intermediate computations:
+Often it is instructive to look at slices of a pipeline -- this helps with e.g. checking intermediate computations:
 
 ```python
 preprocess[:3]
 ```
 
-Individual components may be obtained using indexing:
+Individual transforms may be obtained using indexing:
 
 ```python
-step_1 = model[1]
+step_1 = pipeline[1]
 ```
 
 ### Naming transforms inside models
 
-Component `Transform` instances may be named inline:
+`Transform` instances may be named inline, inside pipelines:
 
 ```python
 s = (transform_1 - 'a') / (transform_2 - 'b')
@@ -221,7 +223,7 @@ print(s['a'] == s[0])    # prints "True"
 
 ### Applying transforms to data
 
-To pass single data points may be passed through the transform:
+To pass single data points may be passed through the pipeline:
 
 ```python
 prediction = t.infer_apply('the cat sat on the mat .')
@@ -249,18 +251,18 @@ for x in t.train_apply(
     ...
 ```
 
-### Model training
+### Training
 
-Important methods such as all model parameters are accessible via `Transform.pd_*`.:
+Important methods such as all model parameters are accessible via `.pd_*`.:
 
 ```python
-o = torch.optim.Adam(model.pd_parameters(), lr=LR)
+o = torch.optim.Adam(pipeline.pd_parameters(), lr=LR)
 ```
 
 For a model which emits a tensor scalar, training is super straightforward using standard torch functionality:
 
 ```python
-for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
+for loss in train_pipeline.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
     o.zero_grad()
     loss.backward()
     o.step()
@@ -271,14 +273,14 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
 Saving:
 
 ```python
-model.pd_save('test.padl')
+pipeline.pd_save('test.padl')
 ```
 
 Loading:
 
 ```python
 from padl import load
-model = load('test.padl')
+pipeline = load('test.padl')
 ```
 
 See {ref}`saving` for details.

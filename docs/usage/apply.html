@@ -1,77 +1,35 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Applying Transforms to Data &mdash; PADL 0.1.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Saving and Loading" href="saving.html" />
     <link rel="prev" title="Stages: Preprocess, Forward and Postprocess" href="stages.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html">
-          
-
-          
-            
             <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -79,28 +37,13 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../README.html#why-padl">Why PADL?</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#problem-statement">Problem Statement</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#standard-approach">Standard Approach</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#padl-solutions">PADL Solutions</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../README.html#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a><ul>
@@ -108,47 +51,47 @@
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#project-structure">Project Structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#resources">Resources</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-models">Decomposing models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-transforms">Defining transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-pipelines">Defining pipelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transforms">Passing inputs between transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-pipelines">Decomposing pipelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#model-training">Model training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#training">Training</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#saving-loading">Saving/ Loading</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="../usage.html">Usage</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="transform.html">The <em>Transform</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
 <li class="toctree-l2"><a class="reference internal" href="creating_transforms.html">Creating Transforms</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="creating_transforms.html#examples">Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="combining_transforms.html">Combining Transforms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="combining_transforms.html">Combining Transforms into Pipelines</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#grouping-compound-transforms">Grouping Compound Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#grouping-sub-pipelines-transforms">Grouping sub-pipelines/ transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#examples">Examples</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id2">Compose</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#building-pre-processing-pipelines">Building Pre-processing Pipelines</a></li>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining Pre-processing, Model Forward Pass and Post-processing</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id3">Rollout</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#extracting-items-from-a-dictionary">Extracting Items from a Dictionary</a></li>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#generating-different-versions-of-an-image">Generating Different Versions of an Image</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id4">Parallel</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#pass-training-samples">Pass Training Samples</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#pass-training-samples">Pass training samples</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id5">Map</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#convert-multiple-images-to-tensors">Convert Multiple Images to Tensors</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
 </ul>
 </li>
 </ul>
@@ -214,145 +157,86 @@
 </li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../usage.html">Usage</a> &raquo;</li>
-        
       <li>Applying Transforms to Data</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../_sources/usage/apply.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="section" id="applying-transforms-to-data">
-<h1>Applying Transforms to Data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline">¶</a></h1>
+<h1>Applying Transforms to Data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h1>
 <p>Each Transform can be applied to data in three different <strong>modes</strong>: <em>infer</em>, <em>eval</em> and <em>train</em>.</p>
-<p>To process single items in inference mode, use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.infer_apply" title="padl.transforms.Transform.infer_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.infer_apply()</span></code></a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier_transform</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;cat.jpg&#39;</span><span class="p">)</span>
+<p>To process single items in inference mode, use <code class="xref py py-meth docutils literal notranslate"><span class="pre">.infer_apply()</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;cat.jpg&#39;</span><span class="p">)</span>
 <span class="go">&quot;cat&quot;</span>
 </pre></div>
 </div>
 <p>Under the hood, a batch dimension is automatically added before the <em>forward</em> <a class="reference internal" href="stages.html#stages"><span class="std std-ref">stage</span></a> and removed before the <em>postprocess</em> stage.</p>
-<p><a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.infer_apply" title="padl.transforms.Transform.infer_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.infer_apply()</span></code></a> automatically disables gradients and sends tensors to a gpu if available.</p>
-<p>To process multiple items in eval mode, use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.eval_apply" title="padl.transforms.Transform.eval_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.eval_apply()</span></code></a>. <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.eval_apply" title="padl.transforms.Transform.eval_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.eval_apply()</span></code></a> expects an iterable input and returns an output generator:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">my_classifier_transform</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="s1">&#39;cat.jpg&#39;</span><span class="p">,</span> <span class="s1">&#39;dog.jpg&#39;</span><span class="p">,</span> <span class="s1">&#39;airplane.jpg&#39;</span><span class="p">]))</span>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">.infer_apply()</span></code> automatically disables gradients and sends tensors to a gpu if available.</p>
+<p>To process multiple items in eval mode, use <code class="xref py py-meth docutils literal notranslate"><span class="pre">.eval_apply()</span></code>. <code class="xref py py-meth docutils literal notranslate"><span class="pre">.eval_apply()</span></code> expects an iterable input and returns an output generator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">my_classifier</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="s1">&#39;cat.jpg&#39;</span><span class="p">,</span> <span class="s1">&#39;dog.jpg&#39;</span><span class="p">,</span> <span class="s1">&#39;airplane.jpg&#39;</span><span class="p">]))</span>
 <span class="go">[&quot;cat&quot;, &quot;dog&quot;, &quot;airplane&quot;]</span>
 </pre></div>
 </div>
-<p>Internally, <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.eval_apply" title="padl.transforms.Transform.eval_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.eval_apply()</span></code></a> creates a <strong>PyTorch</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> for the preprocessing part. This means preprocessing can be done on multiple workers.</p>
-<p><a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.eval_apply" title="padl.transforms.Transform.eval_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.eval_apply()</span></code></a> like <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.infer_apply" title="padl.transforms.Transform.infer_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.infer_apply()</span></code></a>,  automatically disables gradients and sends tensors to a gpu.</p>
-<p>To process multiple items in train mode, use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.train_apply" title="padl.transforms.Transform.train_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.train_apply()</span></code></a>. It expects an iterable input and returns an output generator:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">my_classifier_transform</span><span class="o">.</span><span class="n">pd_forward</span><span class="o">.</span><span class="n">train_apply</span><span class="p">():</span>
+<p>Internally, <code class="xref py py-meth docutils literal notranslate"><span class="pre">.eval_apply()</span></code> creates a <strong>PyTorch</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> for the preprocessing part. This means preprocessing can be done on multiple workers.</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">.eval_apply()</span></code> like <code class="xref py py-meth docutils literal notranslate"><span class="pre">.infer_apply()</span></code>,  automatically disables gradients and sends tensors to a gpu.</p>
+<p>To process multiple items in train mode, use <code class="xref py py-meth docutils literal notranslate"><span class="pre">.train_apply()</span></code>. It expects an iterable input and returns an output generator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_forward</span><span class="o">.</span><span class="n">train_apply</span><span class="p">():</span>
     <span class="o">...</span>  <span class="c1"># do a training update</span>
 </pre></div>
 </div>
-<p><a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.train_apply" title="padl.transforms.Transform.train_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Transform.train_apply()</span></code></a> also uses a <strong>PyTorch</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> and, naturally, does not disable gradients.</p>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">.train_apply()</span></code> also uses a <strong>PyTorch</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> and, naturally, does not disable gradients.</p>
 <p>Read the <a class="reference internal" href="saving.html#saving-and-loading"><span class="std std-ref">next section</span></a> to learn how to save and load transforms.</p>
 </div>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="saving.html" class="btn btn-neutral float-right" title="Saving and Loading" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="stages.html" class="btn btn-neutral float-left" title="Stages: Preprocess, Forward and Postprocess" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="saving.html" class="btn btn-neutral float-right" title="Saving and Loading" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021, LF1 GmbH.
-
-    </p>
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

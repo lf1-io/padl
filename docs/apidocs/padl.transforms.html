@@ -1,77 +1,35 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>padl.transforms &mdash; PADL 0.1.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="padl.util_transforms" href="padl.util_transforms.html" />
     <link rel="prev" title="padl.print_utils" href="padl.print_utils.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html">
-          
-
-          
-            
             <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -79,28 +37,13 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../README.html#why-padl">Why PADL?</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#problem-statement">Problem Statement</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#standard-approach">Standard Approach</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../README.html#padl-solutions">PADL Solutions</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../README.html#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a><ul>
@@ -108,47 +51,47 @@
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#project-structure">Project Structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#resources">Resources</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../gettingstarted.html#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-models">Decomposing models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-transforms">Defining transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#defining-pipelines">Defining pipelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#passing-inputs-between-transforms">Passing inputs between transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#decomposing-pipelines">Decomposing pipelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#model-training">Model training</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#training">Training</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gettingstarted.html#saving-loading">Saving/ Loading</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../usage/transform.html">The <em>Transform</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../usage/creating_transforms.html">Creating Transforms</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../usage/creating_transforms.html#examples">Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../usage/combining_transforms.html">Combining Transforms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#grouping-compound-transforms">Grouping Compound Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#grouping-sub-pipelines-transforms">Grouping sub-pipelines/ transforms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#examples">Examples</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id2">Compose</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#building-pre-processing-pipelines">Building Pre-processing Pipelines</a></li>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining Pre-processing, Model Forward Pass and Post-processing</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id3">Rollout</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting Items from a Dictionary</a></li>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#generating-different-versions-of-an-image">Generating Different Versions of an Image</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id4">Parallel</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#pass-training-samples">Pass Training Samples</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#pass-training-samples">Pass training samples</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id5">Map</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#convert-multiple-images-to-tensors">Convert Multiple Images to Tensors</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
 </ul>
 </li>
 </ul>
@@ -214,80 +157,38 @@
 </li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../modules.html">API Documentation</a> &raquo;</li>
-        
       <li><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../_sources/apidocs/padl.transforms.md.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="section" id="module-padl.transforms">
-<span id="padl-transforms"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code><a class="headerlink" href="#module-padl.transforms" title="Permalink to this headline">¶</a></h1>
+<span id="padl-transforms"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code><a class="headerlink" href="#module-padl.transforms" title="Permalink to this headline"></a></h1>
 <p>The Transform class and its fundamental children.</p>
 <p>Transforms should be created using the <cite>padl.transform</cite> wrap-function.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.AtomicTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">AtomicTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.AtomicTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">AtomicTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.AtomicTransform" title="Permalink to this definition"></a></dt>
 <dd><p>Base class for “atomic” transforms (transforms that are not made by combining
 other transforms - in contrast to <a class="reference internal" href="#padl.transforms.CompoundTransform" title="padl.transforms.CompoundTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompoundTransform</span></code></a>).</p>
 <p>Examples of <a class="reference internal" href="#padl.transforms.AtomicTransform" title="padl.transforms.AtomicTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">AtomicTransform</span></code></a> s are <a class="reference internal" href="#padl.transforms.ClassTransform" title="padl.transforms.ClassTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassTransform</span></code></a> and
@@ -306,7 +207,7 @@ transform was created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Batchify">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Batchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Batchify" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Batchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Batchify" title="Permalink to this definition"></a></dt>
 <dd><p>Mark end of preprocessing.</p>
 <p>Batchify adds batch dimension at <em>dim</em>. During inference, this unsqueezes tensors and,
 recursively, tuples thereof. Batchify also moves the input tensors to device specified
@@ -320,12 +221,12 @@ for the transform.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.BuiltinTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">BuiltinTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.BuiltinTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">BuiltinTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.BuiltinTransform" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.ClassTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">ClassTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">collections.OrderedDict</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.ClassTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">ClassTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">collections.OrderedDict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.ClassTransform" title="Permalink to this definition"></a></dt>
 <dd><p>Class Transform.</p>
 <p>Do not use this directly, instead, use the <cite>transform</cite> decorator to wrap a class.</p>
 <dl class="field-list simple">
@@ -339,7 +240,7 @@ for the transform.</p>
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.ClassTransform.source">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.ClassTransform.source" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.ClassTransform.source" title="Permalink to this definition"></a></dt>
 <dd><p>The class source code.</p>
 </dd></dl>
 
@@ -347,7 +248,7 @@ for the transform.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Compose">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Compose" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Compose" title="Permalink to this definition"></a></dt>
 <dd><p>Apply series of transforms on input.</p>
 <p>Compose([t1, t2, t3])(x) = t3(t1(t2(x)))</p>
 <dl class="field-list simple">
@@ -369,7 +270,7 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.CompoundTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">CompoundTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">CompoundTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform" title="Permalink to this definition"></a></dt>
 <dd><p>Abstract base class for compound-transforms (transforms combining other transforms).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -387,13 +288,13 @@ created (needed for saving).</p></li>
 </div></blockquote>
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.CompoundTransform.grouped">
-<span class="sig-name descname"><span class="pre">grouped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.grouped" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">grouped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.grouped" title="Permalink to this definition"></a></dt>
 <dd><p>Return a grouped version of <em>self</em>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_forward_device_check">
-<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_forward_device_check" title="Permalink to this definition"></a></dt>
 <dd><p>Check all transform in forward are in correct device</p>
 <p>All transforms in forward need to be in same device as specified for
 the whole CompoundTransform.</p>
@@ -406,7 +307,7 @@ the whole CompoundTransform.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_to">
-<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_to" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_to" title="Permalink to this definition"></a></dt>
 <dd><p>Set the transform’s device to <em>device</em></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -419,7 +320,7 @@ the whole CompoundTransform.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.FunctionTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">FunctionTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.FunctionTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">FunctionTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.FunctionTransform" title="Permalink to this definition"></a></dt>
 <dd><p>A transform that wraps a <em>function</em>.</p>
 <p>Do not use this directly - rather, wrap a function using <cite>padl.transform</cite>,</p>
 <p>as a decorator:</p>
@@ -450,7 +351,7 @@ created (needed for saving).</p></li>
 </dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.FunctionTransform.source">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.FunctionTransform.source" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.FunctionTransform.source" title="Permalink to this definition"></a></dt>
 <dd><p>The source of the wrapped function.</p>
 </dd></dl>
 
@@ -458,13 +359,13 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Identity">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Identity</span></span><a class="headerlink" href="#padl.transforms.Identity" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Identity</span></span><a class="headerlink" href="#padl.transforms.Identity" title="Permalink to this definition"></a></dt>
 <dd><p>Do nothing. Just pass on.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Map">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Map" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Map" title="Permalink to this definition"></a></dt>
 <dd><p>Apply one transform to each element of a list.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">identity</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">identity</span>
@@ -487,7 +388,7 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Parallel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Parallel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Parallel" title="Permalink to this definition"></a></dt>
 <dd><p>Apply transforms in parallel to a tuple of inputs and get tuple output</p>
 <p>Parallel([f1, f2, …])((x1, x2, ..)) := (f1(x1), f2(x2), …)</p>
 <dl class="field-list simple">
@@ -506,7 +407,7 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Rollout">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Rollout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Rollout" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Rollout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Rollout" title="Permalink to this definition"></a></dt>
 <dd><p>Apply a list of transform to same input and get tuple output</p>
 <p>Rollout([t1, t2, …])(x) := (t1(x), t2(x), …)</p>
 <dl class="field-list simple">
@@ -525,11 +426,11 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.TorchModuleTransform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">TorchModuleTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">collections.OrderedDict</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">TorchModuleTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">collections.OrderedDict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform" title="Permalink to this definition"></a></dt>
 <dd><p>Transform class for use with <cite>torch.nn.Module</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.TorchModuleTransform.post_load">
-<span class="sig-name descname"><span class="pre">post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.post_load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.post_load" title="Permalink to this definition"></a></dt>
 <dd><p>Load the model’s parameters form a save-folder.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -543,7 +444,7 @@ created (needed for saving).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.TorchModuleTransform.pre_save">
-<span class="sig-name descname"><span class="pre">pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.pre_save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.pre_save" title="Permalink to this definition"></a></dt>
 <dd><p>Dump the model’s parameters to a save-folder.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -559,7 +460,7 @@ created (needed for saving).</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Transform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform" title="Permalink to this definition"></a></dt>
 <dd><p>Transform base class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -570,7 +471,7 @@ created (needed for saving).</p></li>
 :param pd_name: name of the transform</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.eval_apply">
-<span class="sig-name descname"><span class="pre">eval_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.eval_apply" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">eval_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.eval_apply" title="Permalink to this definition"></a></dt>
 <dd><p>Call transform within the eval context.</p>
 <p>This will use multiprocessing for the preprocessing part via <cite>DataLoader</cite> and turn
 of gradients for the forward part.</p>
@@ -590,7 +491,7 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.infer_apply">
-<span class="sig-name descname"><span class="pre">infer_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.infer_apply" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">infer_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.infer_apply" title="Permalink to this definition"></a></dt>
 <dd><p>Call transform within the infer context.</p>
 <p>This expects a single argument and returns a single output.</p>
 <dl class="field-list simple">
@@ -602,7 +503,7 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_call_transform">
-<span class="sig-name descname"><span class="pre">pd_call_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'infer'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'eval'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'train'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_call_transform" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_call_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'infer'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'eval'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'train'</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_call_transform" title="Permalink to this definition"></a></dt>
 <dd><p>Call the transform, with possibility to pass multiple arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -619,20 +520,20 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_device">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_device</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.Transform.pd_device" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#padl.transforms.Transform.pd_device" title="Permalink to this definition"></a></dt>
 <dd><p>Return the device (“cpu” / “cuda”) the transform is on.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_forward">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_forward" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_forward</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_forward" title="Permalink to this definition"></a></dt>
 <dd><p>The forward part of the transform (that what’s typically done on the GPU).
 The device must be propagated from self.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_forward_device_check">
-<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_forward_device_check" title="Permalink to this definition"></a></dt>
 <dd><p>Check if all transform in forward are in correct device</p>
 <p>All transforms in forward need to be in same device as specified for
 the whole CompoundTransform.</p>
@@ -640,7 +541,7 @@ the whole CompoundTransform.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_get_loader">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">pd_get_loader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.utils.data.dataloader.DataLoader</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_get_loader" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_get_loader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.utils.data.dataloader.DataLoader</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_get_loader" title="Permalink to this definition"></a></dt>
 <dd><p>Get a pytorch data loader.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -657,13 +558,13 @@ the whole CompoundTransform.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_layers">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_layers</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_layers" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_layers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_layers" title="Permalink to this definition"></a></dt>
 <dd><p>Get a list with all pytorch layers in the transform (including layers in sub-transforms).</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_name">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_name</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_name" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_name" title="Permalink to this definition"></a></dt>
 <dd><p>The “name” of the transform.</p>
 <p>A transform can have a name. This is optional, but helps when inspecting complex transforms.
 Good transform names indicate what the transform does.</p>
@@ -673,13 +574,13 @@ the <em>last variable the transforms was assigned to</em>.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_parameters">
-<span class="sig-name descname"><span class="pre">pd_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_parameters" title="Permalink to this definition"></a></dt>
 <dd><p>Iterate over all (pytorch-) parameters in all layers contained in the transform.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_post_load">
-<span class="sig-name descname"><span class="pre">pd_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_post_load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_post_load" title="Permalink to this definition"></a></dt>
 <dd><p>Method that is called on each transform after loading.</p>
 <p>This normally does nothing. Override to implement custom serialization.</p>
 <dl class="field-list simple">
@@ -694,13 +595,13 @@ the <em>last variable the transforms was assigned to</em>.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_postprocess">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_postprocess</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_postprocess" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_postprocess</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_postprocess" title="Permalink to this definition"></a></dt>
 <dd><p>The postprocessing part of the transform. The device must be propagated from self.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_pre_save">
-<span class="sig-name descname"><span class="pre">pd_pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_pre_save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_pre_save" title="Permalink to this definition"></a></dt>
 <dd><p>Method that is called on each transform before saving.</p>
 <p>This normally does nothing. Override to implement custom serialization.</p>
 <dl class="field-list simple">
@@ -715,13 +616,13 @@ the <em>last variable the transforms was assigned to</em>.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_preprocess">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_preprocess</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_preprocess" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_preprocess</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></em><a class="headerlink" href="#padl.transforms.Transform.pd_preprocess" title="Permalink to this definition"></a></dt>
 <dd><p>The preprocessing part of the transform. The device must be propagated from self.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_save">
-<span class="sig-name descname"><span class="pre">pd_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_save" title="Permalink to this definition"></a></dt>
 <dd><p>Save the transform to a folder at <em>path</em>.</p>
 <p>The folder’s name should end with ‘.padl’. If no extension is given, it will be added
 automatically.</p>
@@ -731,7 +632,7 @@ will raise a FileExistsError.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_set_mode">
-<span class="sig-name descname"><span class="pre">pd_set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_set_mode" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_set_mode" title="Permalink to this definition"></a></dt>
 <dd><p>Set of mode of Transform</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -742,13 +643,13 @@ will raise a FileExistsError.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_stage">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pd_stage</span></span><em class="property"><span class="pre">:</span> <span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="pre">'preprocess'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'forward'</span><span class="p"><span class="pre">,</span> </span><span class="pre">'postprocess'</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_stage" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'preprocess'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'forward'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'postprocess'</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#padl.transforms.Transform.pd_stage" title="Permalink to this definition"></a></dt>
 <dd><p>Return the stage (preprocess, forward or postprocess).</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_to">
-<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_to" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_to" title="Permalink to this definition"></a></dt>
 <dd><p>Set the transform’s device to <em>device</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -759,7 +660,7 @@ will raise a FileExistsError.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_varname">
-<span class="sig-name descname"><span class="pre">pd_varname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_varname" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_varname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_varname" title="Permalink to this definition"></a></dt>
 <dd><p>The name of the variable name the transform was last assigned to.</p>
 <p>Example:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
@@ -781,7 +682,7 @@ to any variable.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_zip_save">
-<span class="sig-name descname"><span class="pre">pd_zip_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_zip_save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">pd_zip_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_zip_save" title="Permalink to this definition"></a></dt>
 <dd><p>Save the transform to a zip-file at <em>path</em>.</p>
 <p>The file’s name should end with ‘.padl’. If no extension is given, it will be added
 automatically.</p>
@@ -791,7 +692,7 @@ will raise a FileExistsError.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.train_apply">
-<span class="sig-name descname"><span class="pre">train_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.train_apply" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">train_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.train_apply" title="Permalink to this definition"></a></dt>
 <dd><p>Call transform within the train context.</p>
 <p>This will use multiprocessing for the preprocessing part via <cite>DataLoader</cite> and turn
 on gradients for the forward part.</p>
@@ -813,7 +714,7 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.transforms.Unbatchify">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Unbatchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Unbatchify" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Unbatchify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Unbatchify" title="Permalink to this definition"></a></dt>
 <dd><p>Mark start of postprocessing.</p>
 <p>Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to ‘cpu’.</p>
 <dl class="field-list simple">
@@ -828,7 +729,7 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.transforms.group">
-<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.group" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.group" title="Permalink to this definition"></a></dt>
 <dd><p>Group transforms. This prevents them from being flattened when used</p>
 <p>Example:</p>
 <p>When writing a Rollout as <cite>(a + (b + c))</cite>, this is automatically flattened to <cite>(a + b + c)</cite>
@@ -839,13 +740,13 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.transforms.load">
-<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.load" title="Permalink to this definition"></a></dt>
 <dd><p>Load a transform (as saved with padl.save) from <em>path</em>.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.transforms.save">
-<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.save" title="Permalink to this definition"></a></dt>
 <dd><p>Save the transform to a folder at <em>path</em> or a compressed (zip-)file of the same name if
 <em>compress</em> == True.</p>
 <p>The folder’s name should end with ‘.padl’. If no extension is given, it will be added
@@ -858,50 +759,33 @@ will raise a FileExistsError.</p>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="padl.util_transforms.html" class="btn btn-neutral float-right" title="padl.util_transforms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="padl.print_utils.html" class="btn btn-neutral float-left" title="padl.print_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.util_transforms.html" class="btn btn-neutral float-right" title="padl.util_transforms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021, LF1 GmbH.
-
-    </p>
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

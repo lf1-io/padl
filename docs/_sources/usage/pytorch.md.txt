@@ -1,35 +1,35 @@
 # Using PyTorch Modules with Transforms
 
-Remember from {ref}`the section on creating Transforms <creating-transforms>` that PyTorch Modules can be converted into Transforms. PADL has built-in capabilities that make it convenient to work with them.
+Remember from {ref}`the section on creating Pipelines and Transforms <creating-transforms>` that PyTorch Modules can be converted into Transforms. PADL has built-in capabilities that make it convenient to work with them.
 
 ## PADL Automatically Saves PyTorch State-Dicts
 
-When using {meth}`padl.save` to {ref}`save a Transform <saving>`, PADL automatically stores `state_dict`s of the contained PyTorch layers along with the code. When loading with {meth}`padl.load`, these are used to initialize the layers' parameters.
+When using {meth}`padl.save` to {ref}`save a Pipeline <saving>`, PADL automatically stores `state_dict`s of the contained PyTorch layers along with the code. When loading with {meth}`padl.load`, these are used to initialize the layers' parameters.
 
 ## Devices
 
-Use {meth}`~padl.transforms.Transform.pd_to` to send all PyTorch layers in a transform to a device:
+Use {meth}`.pd_to` to send all PyTorch layers in a transform to a device:
 
-```
-my_transform = (
+```python
+my_pipeline = (
     preprocess
     >> batch
     >> layer1
     >> layer2
 )
 
-my_transform.pd_to('cuda:1')
+my_pipeline.pd_to('cuda:1')
 ```
 
 ## Accessing Layers and Parameters
 
-All PyTorch layers in a transform are accessible via {meth}`~padl.transforms.Transform.pd_parameters`:
+All PyTorch layers in a pipeline are accessible via {meth}`.pd_parameters`:
 
 ```python
-layers = list(my_transform.pd_layers())
+layers = list(my_pipeline.pd_layers())
 ```
 
-Use {meth}`~padl.transforms.Transform.pd_parameters` to iterate over all parameters in the transform.
+Use {meth}`.pd_parameters` to iterate over all parameters in the transform.
 This can be used to initialize a PyTorch optimizer and create a training loop:
 
 ```python
@@ -51,12 +51,12 @@ for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM
 
 ## Weight Sharing
 
-It is possible to use the same PyTorch layer Transforms in different compound transforms. Those Transforms then share weights. This can be used, for instance, to create a train transform and an inference transform:
+It is possible to use the same PyTorch layer transforms in multiple pipelines. Those transforms then share weights. This can be used, for instance, to create a train pipeline and an inference pipeline:
 
-```
+```python
 layer = MyPyTorchLayer()
 
-train_transform = (
+train_pipeline = (
     load
     >> preprocess
     >> augment
@@ -65,7 +65,7 @@ train_transform = (
     >> loss
 )
 
-infer_transform = (
+infer_pipeline = (
     load
     >> preprocess
     >> batch
@@ -74,4 +74,4 @@ infer_transform = (
 )
 ```
 
-After some training, both `train_transform` and `infer_transform` will have adapted parameters.
+After some training, both `train_pipeline` and `infer_pipeline` will have adapted parameters.
