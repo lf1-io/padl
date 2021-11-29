@@ -2,11 +2,11 @@
 
 from padl.dumptools import inspector
 from padl.print_utils import format_argument
-from padl.transforms import AtomicTransform
+from padl.transforms import Transform
 
 
 def _maketrans(attr, getitem=False):
-    class T(AtomicTransform):
+    class T(Transform):
         """Dynamically generated transform for the "same" object.
 
         :param args: Arguments to pass to the input's method.
@@ -22,7 +22,7 @@ def _maketrans(attr, getitem=False):
                 call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'getitem')
             else:
                 call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
-            AtomicTransform.__init__(
+            Transform.__init__(
                 self,
                 call=call,
                 call_info=call_info,
@@ -50,7 +50,7 @@ def _maketrans(attr, getitem=False):
 
 
 class _Same:
-    """Transform factory for capturing attributes/ get-items. """
+    """Base factory for capturing attributes/ get-items. """
 
     def __getitem__(self, item):
         return _maketrans('__getitem__', True)(item)

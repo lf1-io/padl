@@ -5,7 +5,7 @@ class WrongDeviceError(Exception):
     """Devices do not match for all transforms.
 
     :param mother_transform: Main transform that contains child transform.
-    :param child_transform: Transform that is contained in mother transform.
+    :param child_transform: Base that is contained in mother transform.
     """
 
     def __init__(self, mother_transform, child_transform):

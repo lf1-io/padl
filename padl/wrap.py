@@ -14,7 +14,7 @@ import torch
 from padl.dumptools import var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+    Transform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
 )
 
 import re
@@ -31,7 +31,7 @@ def _set_local_varname(frame, event, _args):
 
 
 def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None):
-    """Wrap *fun* in a Transform. Don't use directly, use `transform` instead.
+    """Wrap *fun* in a Base. Don't use directly, use `transform` instead.
 
     :param fun: function to be wrapped
     :param call_info: A `CallInfo` object containing information about the how the transform was
@@ -70,7 +70,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
 
 def _wrap_class(cls, ignore_scope=False):
     """Patch __init__ of class such that the initialization statement is stored
-    as an attribute `_pd_call`. In addition make class inherit from Transform.
+    as an attribute `_pd_call`. In addition make class inherit from Base.
 
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
@@ -95,7 +95,7 @@ def _wrap_class(cls, ignore_scope=False):
         trans_class = ClassTransform
 
     module = cls.__module__
-    # make cls inherit from AtomicTransform
+    # make cls inherit from Transform
     cls = type(cls.__name__, (trans_class, cls), {})
 
     signature = inspect.signature(old__init__)
@@ -115,7 +115,7 @@ def _wrap_class(cls, ignore_scope=False):
 
 
 def _wrap_class_instance(obj, ignore_scope=False):
-    """Patch __class__ of a class instance such that inherits from Transform.
+    """Patch __class__ of a class instance such that inherits from Base.
 
     This is called by `transform`, don't call `_wrap_class_instance` directly, always use
     `transform`.
@@ -145,7 +145,7 @@ def _wrap_class_instance(obj, ignore_scope=False):
     call = re.sub(r'\n\s*', ' ', call)
     obj_copy._pd_arguments = None
 
-    AtomicTransform.__init__(obj_copy, call=call, call_info=call_info)
+    Transform.__init__(obj_copy, call=call, call_info=call_info)
 
     return obj_copy
 
@@ -234,7 +234,7 @@ class PatchedModule:
         >>> import padl
         >>> import numpy as np
         >>> pd_np = padl.transform(np)
-        >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
+        >>> isinstance(pd_np.random.rand, padl.transforms.Base)
         True
     """
 
@@ -260,7 +260,7 @@ class PatchedModule:
         return x
 
     def __repr__(self):
-        return f'Transform patched: {self._module}'
+        return f'Base patched: {self._module}'
 
     def __dir__(self):
         return dir(self._module)
@@ -272,7 +272,7 @@ def _wrap_module(module):
 
 
 def transform(wrappee, ignore_scope=False):
-    """Transform wrapper / decorator. Use to wrap a class, module or callable.
+    """Base wrapper / decorator. Use to wrap a class, module or callable.
 
     :param wrappee: class, module or callable to be wrapped
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).

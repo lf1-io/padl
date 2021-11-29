@@ -1,4 +1,4 @@
-"""The Transform class and its fundamental children.
+"""The Base class and its fundamental children.
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
@@ -119,8 +119,8 @@ Mode = Literal['infer', 'eval', 'train']
 Stage = Literal['preprocess', 'forward', 'postprocess']
 
 
-class Transform:
-    """Transform base class.
+class Base:
+    """Base base class.
 
     :param call_info: A `CallInfo` object containing information about the how the transform was
     created (needed for saving).
@@ -153,7 +153,7 @@ class Transform:
             return self.pd_varname()
         return self._pd_name
 
-    def __rshift__(self, other: "Transform") -> "Compose":
+    def __rshift__(self, other: "Base") -> "Compose":
         """Compose with *other*.
 
         Example:
@@ -161,7 +161,7 @@ class Transform:
         """
         return Compose([self, other])
 
-    def __add__(self, other: "Transform") -> "Rollout":
+    def __add__(self, other: "Base") -> "Rollout":
         """ Rollout with *other*.
 
         Example:
@@ -169,7 +169,7 @@ class Transform:
         """
         return Rollout([self, other])
 
-    def __truediv__(self, other: "Transform") -> "Parallel":
+    def __truediv__(self, other: "Base") -> "Parallel":
         """ Parallel with *other*.
 
         Example:
@@ -177,7 +177,7 @@ class Transform:
         """
         return Parallel([self, other])
 
-    def __sub__(self, name: str) -> "Transform":
+    def __sub__(self, name: str) -> "Base":
         """Create a named clone of the transform.
 
         Example:
@@ -451,7 +451,7 @@ class Transform:
         return result
 
     @property
-    def _pd_direct_subtransforms(self) -> Iterator['Transform']:
+    def _pd_direct_subtransforms(self) -> Iterator['Base']:
         """Iterator over the direct subtransforms. """
         # pylint: disable=no-self-use
         raise NotImplementedError
@@ -683,11 +683,11 @@ class Transform:
         """Return the stage (preprocess, forward or postprocess)."""
         return self._pd_stage
 
-    def _pd_preprocess_part(self) -> "Transform":
+    def _pd_preprocess_part(self) -> "Base":
         return Identity()
 
     @property
-    def pd_preprocess(self) -> "Transform":
+    def pd_preprocess(self) -> "Base":
         """The preprocessing part of the transform. The device must be propagated from self."""
         if {'preprocess'} == self.pd_stage:
             return self
@@ -695,11 +695,11 @@ class Transform:
         pre.pd_to(self.pd_device)
         return pre
 
-    def _pd_forward_part(self) -> "Transform":
+    def _pd_forward_part(self) -> "Base":
         return Identity()
 
     @property
-    def pd_forward(self) -> "Transform":
+    def pd_forward(self) -> "Base":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
         if {'forward'} == self.pd_stage:
@@ -708,11 +708,11 @@ class Transform:
         forward.pd_to(self.pd_device)
         return forward
 
-    def _pd_postprocess_part(self) -> "Transform":
+    def _pd_postprocess_part(self) -> "Base":
         return Identity()
 
     @property
-    def pd_postprocess(self) -> "Transform":
+    def pd_postprocess(self) -> "Base":
         """The postprocessing part of the transform. The device must be propagated from self."""
         if {'postprocess'} == self.pd_stage:
             return self
@@ -720,7 +720,7 @@ class Transform:
         post.pd_to(self.pd_device)
         return post
 
-    def pd_to(self, device: str) -> "Transform":
+    def pd_to(self, device: str) -> "Base":
         """Set the transform's device to *device*.
 
         :param device: Device to set the transform to {'cpu', 'cuda', 'cuda:N'}.
@@ -747,7 +747,7 @@ class Transform:
 
     @contextlib.contextmanager
     def pd_set_mode(self, mode: Optional[str] = None):
-        """Set of mode of Transform
+        """Set of mode of Base
 
         :param mode: mode ('train', 'eval', 'infer')
         """
@@ -765,7 +765,7 @@ class Transform:
                     layer.train()
                 else:
                     layer.eval()
-            Transform.pd_mode = mode
+            Base.pd_mode = mode
             yield
         finally:
             for i, training in enumerate(training_before):
@@ -774,7 +774,7 @@ class Transform:
                     layer.train()
                 else:
                     layer.eval()
-            Transform.pd_mode = None
+            Base.pd_mode = None
 
     @staticmethod
     def pd_get_loader(args, preprocess, mode, **kwargs) -> DataLoader:
@@ -852,12 +852,11 @@ class Transform:
                                  verbose=verbose, flatten=flatten)
 
 
-class AtomicTransform(Transform):
+class Transform(Base):
     """Base class for "atomic" transforms (transforms that are not made by combining
     other transforms - in contrast to `Pipeline`s).
 
-    Examples of :class:`AtomicTransform` s are :class:`ClassTransform` and
-    :class:`FunctionTransform`.
+    Examples of `Transform`s are `ClassTransform`s and `FunctionTransform`s.
 
     :param call: The transform's call string.
     :param call_info: A :class:`CallInfo` object containing information about the how the
@@ -877,15 +876,15 @@ class AtomicTransform(Transform):
         return self._pd_call
 
     @property
-    def _pd_direct_subtransforms(self) -> Iterator[Transform]:
+    def _pd_direct_subtransforms(self) -> Iterator[Base]:
         # pylint: disable=no-self-use
         globals_dict, nonlocals_dict = self._pd_closurevars
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
-            if isinstance(v, Transform):
+            if isinstance(v, Base):
                 yield v
 
 
-class FunctionTransform(AtomicTransform):
+class FunctionTransform(Transform):
     """A transform that wraps a *function*.
 
     Do not use this directly - rather, wrap a function using `padl.transform`,
@@ -987,8 +986,8 @@ class FunctionTransform(AtomicTransform):
         return self.function(*args, **kwargs)
 
 
-class ClassTransform(AtomicTransform):
-    """Class Transform.
+class ClassTransform(Transform):
+    """Class Base.
 
     Do not use this directly, instead, use the `transform` decorator to wrap a class.
 
@@ -1004,7 +1003,7 @@ class ClassTransform(AtomicTransform):
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
         call = re.sub(r'\n\s*', ' ', call)
         self._pd_arguments = arguments
-        AtomicTransform.__init__(
+        Transform.__init__(
             self,
             call=call,
             call_info=call_info,
@@ -1051,7 +1050,7 @@ class ClassTransform(AtomicTransform):
 
 
 class TorchModuleTransform(ClassTransform):
-    """Transform class for use with `torch.nn.Module`."""
+    """Base class for use with `torch.nn.Module`."""
 
     def _pd_get_signature(self):
         return inspect.signature(self.forward).parameters
@@ -1082,7 +1081,7 @@ class TorchModuleTransform(ClassTransform):
         return torch.nn.Module.__repr__(self)
 
 
-class Map(Transform):
+class Map(Base):
     """Apply one transform to each element of a list.
 
     >>> from padl import identity
@@ -1091,13 +1090,13 @@ class Map(Transform):
     >>> Map(t)([x1, x2, x3]) == (t(x1), t(x2), t(x3))
     True
 
-    :param transform: Transform to be applied to a list of inputs.
+    :param transform: Base to be applied to a list of inputs.
     :param call_info: A `CallInfo` object containing information about the how the transform was
     created (needed for saving).
     :param pd_name: name of the transform
     """
 
-    def __init__(self, transform: Transform, call_info: Optional[inspector.CallInfo] = None,
+    def __init__(self, transform: Base, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
         super().__init__(call_info, pd_name)
 
@@ -1114,7 +1113,7 @@ class Map(Transform):
         return '~ ' + self.transform._pd_shortrepr(formatting)
 
     @property
-    def _pd_direct_subtransforms(self) -> Iterator[Transform]:
+    def _pd_direct_subtransforms(self) -> Iterator[Base]:
         yield self.transform
 
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
@@ -1123,7 +1122,7 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-    def _pd_preprocess_part(self) -> Transform:
+    def _pd_preprocess_part(self) -> Base:
         t_pre = self.transform.pd_preprocess
         if isinstance(t_pre, Identity):
             pre = Identity()
@@ -1131,7 +1130,7 @@ class Map(Transform):
             pre = Map(transform=t_pre, call_info=self._pd_call_info)
         return pre
 
-    def _pd_postprocess_part(self) -> Transform:
+    def _pd_postprocess_part(self) -> Base:
         t_post = self.transform.pd_postprocess
         if isinstance(t_post, Identity):
             post = Identity()
@@ -1139,7 +1138,7 @@ class Map(Transform):
             post = Map(transform=t_post, call_info=self._pd_call_info)
         return post
 
-    def _pd_forward_part(self) -> Transform:
+    def _pd_forward_part(self) -> Base:
         t_for = self.transform.pd_forward
         if isinstance(t_for, Identity):
             forward = Identity()
@@ -1148,7 +1147,7 @@ class Map(Transform):
         return forward
 
 
-class Pipeline(Transform):
+class Pipeline(Base):
     """Abstract base class for Pipeline (transforms combining other transforms).
 
     :param transforms: list of transforms
@@ -1167,7 +1166,7 @@ class Pipeline(Transform):
         self._pd_group = True if pd_name is not None else pd_group
 
         transforms = self._flatten_list(transforms)
-        self.transforms: List[Transform] = transforms
+        self.transforms: List[Base] = transforms
 
         self._pd_stage_list = [t.pd_stage for t in self.transforms]
         try:
@@ -1187,7 +1186,7 @@ class Pipeline(Transform):
             return last_transform._pd_output_format
         return None
 
-    def __sub__(self, name: str) -> "Transform":
+    def __sub__(self, name: str) -> "Base":
         """Create a named clone of the transform.
 
         Example:
@@ -1199,7 +1198,7 @@ class Pipeline(Transform):
         named_copy._pd_varname = _notset
         return named_copy
 
-    def __getitem__(self, item: Union[int, slice, str]) -> Transform:
+    def __getitem__(self, item: Union[int, slice, str]) -> Base:
         """Get item
 
         If int, gets item'th transform in this Pipeline.
@@ -1218,7 +1217,7 @@ class Pipeline(Transform):
             for transform_ in self.transforms:
                 if transform_.pd_name == item:
                     return transform_
-            raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
+            raise ValueError(f"{item}: Base with pd_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
     def __len__(self):
@@ -1241,7 +1240,7 @@ class Pipeline(Transform):
     def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
         """Build a codegraph defining the transform.
 
-        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
+        See :meth:`Base._pd_build_codegraph` for an explanation of what a code-graph is.
 
         The codegraph of a :class:`Pipeline` is the union of the codegraphs of the
         contained transforms plus the node defining the transform itself.
@@ -1334,7 +1333,7 @@ class Pipeline(Transform):
         return self.pd_forward.pd_forward_device_check()
 
     @classmethod
-    def _flatten_list(cls, transform_list: List[Transform]):
+    def _flatten_list(cls, transform_list: List[Base]):
         """Flatten *list_* such that members of *cls* are not nested.
 
         :param transform_list: List of transforms.
@@ -1408,7 +1407,7 @@ class Compose(Pipeline):
     op = '>>'
     display_op = '>>'
 
-    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+    def __init__(self, transforms: Iterable[Base], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
@@ -1548,7 +1547,7 @@ class Compose(Pipeline):
             args = transform_.pd_call_transform(args)
         return args
 
-    def _pd_forward_part(self) -> Transform:
+    def _pd_forward_part(self) -> Base:
         t_list = []
         for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
             if 'forward' in stage_set:
@@ -1566,7 +1565,7 @@ class Compose(Pipeline):
 
         return forward
 
-    def _pd_preprocess_part(self) -> Transform:
+    def _pd_preprocess_part(self) -> Base:
         t_list = []
         for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
             if 'preprocess' in stage_set:
@@ -1583,7 +1582,7 @@ class Compose(Pipeline):
             pre = Identity()
         return pre
 
-    def _pd_postprocess_part(self) -> Transform:
+    def _pd_postprocess_part(self) -> Base:
         t_list = []
         for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
             if 'postprocess' in stage_set:
@@ -1616,7 +1615,7 @@ class Rollout(Pipeline):
     op = '+'
     display_op = '+'
 
-    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+    def __init__(self, transforms: Iterable[Base], call_info: inspector.CallInfo = None,
                  pd_name: str = None, pd_group=False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
@@ -1631,11 +1630,11 @@ class Rollout(Pipeline):
         out = []
         for transform_ in self.transforms:
             out.append(transform_.pd_call_transform(args))
-        if Transform.pd_mode is not None:
+        if Base.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
-    def _pd_preprocess_part(self) -> Transform:
+    def _pd_preprocess_part(self) -> Base:
         t_list = [x.pd_preprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             pre = Identity()
@@ -1643,7 +1642,7 @@ class Rollout(Pipeline):
             pre = Rollout(t_list, call_info=self._pd_call_info)
         return pre
 
-    def _pd_forward_part(self) -> Transform:
+    def _pd_forward_part(self) -> Base:
         t_list = [x.pd_forward for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             forward = Identity()
@@ -1653,7 +1652,7 @@ class Rollout(Pipeline):
             forward = Rollout(t_list, call_info=self._pd_call_info)
         return forward
 
-    def _pd_postprocess_part(self) -> Transform:
+    def _pd_postprocess_part(self) -> Base:
         t_list = [x.pd_postprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             post = Identity()
@@ -1703,11 +1702,11 @@ class Parallel(Pipeline):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             out.append(transform_.pd_call_transform(args[ind]))
-        if Transform.pd_mode is not None:
+        if Base.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
 
-    def _pd_preprocess_part(self) -> Transform:
+    def _pd_preprocess_part(self) -> Base:
         t_list = [x.pd_preprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             pre = Identity()
@@ -1715,7 +1714,7 @@ class Parallel(Pipeline):
             pre = Parallel(t_list, call_info=self._pd_call_info)
         return pre
 
-    def _pd_forward_part(self) -> Transform:
+    def _pd_forward_part(self) -> Base:
         t_list = [x.pd_forward for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             forward = Identity()
@@ -1723,7 +1722,7 @@ class Parallel(Pipeline):
             forward = Parallel(t_list, call_info=self._pd_call_info)
         return forward
 
-    def _pd_postprocess_part(self) -> Transform:
+    def _pd_postprocess_part(self) -> Base:
         t_list = [x.pd_postprocess for x in self.transforms]
         if all([isinstance(t, Identity) for t in t_list]):
             post = Identity()
@@ -1759,7 +1758,7 @@ class Parallel(Pipeline):
         return out
 
 
-class BuiltinTransform(AtomicTransform):
+class BuiltinTransform(Transform):
     def __init__(self, call):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo)
@@ -1832,11 +1831,11 @@ class Unbatchify(ClassTransform):
         return args
 
     def __call__(self, args):
-        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+        assert Base.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
                                                'or train_apply instead of calling the transform '
                                                'directly.')
 
-        if Transform.pd_mode != 'infer':
+        if Base.pd_mode != 'infer':
             return self._move_to_device(args) if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
@@ -1865,11 +1864,11 @@ class Batchify(ClassTransform):
         self._pd_stage = {'preprocess'}
 
     def __call__(self, args):
-        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+        assert Base.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
                                                'or train_apply instead of calling the transform '
                                                'directly.')
 
-        if Transform.pd_mode != 'infer':
+        if Base.pd_mode != 'infer':
             return args
         if isinstance(args, (tuple, list)):
             return tuple([self(x) for x in args])
@@ -1883,7 +1882,7 @@ class Batchify(ClassTransform):
         raise TypeError('only tensors and tuples of tensors recursively supported...')
 
 
-def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
+def save(transform: Base, path: Union[Path, str], force_overwrite: bool = False,
          compress: bool = False):
     """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
     *compress* == True.

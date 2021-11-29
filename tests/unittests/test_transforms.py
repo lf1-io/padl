@@ -450,10 +450,10 @@ class TestCompose:
         assert t5.infer_apply(1) == torch.tensor(8)
 
     def test_getitem(self):
-        assert isinstance(self.transform_5[0], pd.Transform)
+        assert isinstance(self.transform_5[0], pd.Base)
         assert isinstance(self.transform_5[0:2], pd.Pipeline)
         assert isinstance(self.transform_5[0:2], pd.Compose)
-        assert isinstance(self.transform_5['named_times_two'], pd.Transform)
+        assert isinstance(self.transform_5['named_times_two'], pd.Base)
         with pytest.raises(ValueError):
             self.transform_5['other_name']
         with pytest.raises(TypeError):
@@ -698,9 +698,9 @@ class TestClassInstance:
 
     def test_wrap(self):
         assert isinstance(self.transform_1, SimpleClass)
-        assert isinstance(self.transform_1, pd.Transform)
+        assert isinstance(self.transform_1, pd.Base)
         assert isinstance(self.transform_2, PolynomialClass)
-        assert isinstance(self.transform_2, pd.Transform)
+        assert isinstance(self.transform_2, pd.Base)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(1) == 2
