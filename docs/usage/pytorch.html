@@ -270,13 +270,8 @@
 <p>When using <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a> to <a class="reference internal" href="saving.html#saving"><span class="std std-ref">save a Pipeline</span></a>, PADL automatically stores <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>s of the contained <strong>PyTorch</strong> layers along with the code. When loading with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>, these are used to initialize the layers’ parameters.</p>
 </div>
 <div class="section" id="devices">
-<<<<<<< HEAD
 <h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline">¶</a></h2>
 <p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_to" title="padl.transforms.Transform.pd_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code></a> to send all <strong>PyTorch</strong> layers in a Transform to a device:</p>
-=======
-<h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline"></a></h2>
-<p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Pipeline.pd_to" title="padl.transforms.Pipeline.pd_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code></a> to send all PyTorch layers in a transform to a device:</p>
->>>>>>> 47500f2 (compoundtransform to pipeline)
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_pipeline</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">preprocess</span>
     <span class="o">&gt;&gt;</span> <span class="n">batch</span>

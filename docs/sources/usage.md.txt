@@ -26,7 +26,7 @@ usage/extras.md
 - {func}`~padl.save` for saving Transforms.
 - {func}`~padl.load` for loading Transforms.
 - {func}`~padl.value` for saving by value.
-- {func}`~padl.group` for grouping Pipeline.
+- {func}`~padl.group` for grouping Compound Transforms.
 - {obj}`~padl.identity` for doing nothing.
 - {obj}`~padl.batch` for defining the batchified part of a pipeline.
 - {obj}`~padl.unbatch` for defining the postprocessing part of a pipeline.

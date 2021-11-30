@@ -270,7 +270,7 @@
 <dt class="sig sig-object py" id="padl.transforms.AtomicTransform">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">AtomicTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.dumptools.inspector.html#padl.dumptools.inspector.CallInfo" title="padl.dumptools.inspector.CallInfo"><span class="pre">padl.dumptools.inspector.CallInfo</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.AtomicTransform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for “atomic” transforms (transforms that are not made by combining
-other transforms - in contrast to <a class="reference internal" href="#padl.transforms.Pipeline" title="padl.transforms.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>).</p>
+other transforms - in contrast to <a class="reference internal" href="#padl.transforms.CompoundTransform" title="padl.transforms.CompoundTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompoundTransform</span></code></a>).</p>
 <p>Examples of <a class="reference internal" href="#padl.transforms.AtomicTransform" title="padl.transforms.AtomicTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">AtomicTransform</span></code></a> s are <a class="reference internal" href="#padl.transforms.ClassTransform" title="padl.transforms.ClassTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassTransform</span></code></a> and
 <a class="reference internal" href="#padl.transforms.FunctionTransform" title="padl.transforms.FunctionTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">FunctionTransform</span></code></a>.</p>
 <dl class="field-list simple">
@@ -339,7 +339,7 @@ for the transform.</p>
 created (needed for saving).</p></li>
 <li><p><strong>pd_name</strong> – name of the Compose transform</p></li>
 <li><p><strong>pd_group</strong> – If <em>True</em>, do not flatten this when used as child transform in a
-<cite>Pipeline</cite>.</p></li>
+<cite>CompoundTransform</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -349,8 +349,8 @@ created (needed for saving).</p></li>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="padl.transforms.Pipeline">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Pipeline" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padl.transforms.CompoundTransform">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">CompoundTransform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Abstract base class for compound-transforms (transforms combining other transforms).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -361,23 +361,23 @@ created (needed for saving).</p></li>
 </dd>
 </dl>
 <p>created (needed for saving).
-:param pd_name: name of Pipeline
+:param pd_name: name of CompoundTransform
 :param pd_group: If <em>True</em>, do not flatten this when used as child transform in a</p>
 <blockquote>
-<div><p><cite>Pipeline</cite>.</p>
+<div><p><cite>CompoundTransform</cite>.</p>
 </div></blockquote>
 <dl class="py method">
-<dt class="sig sig-object py" id="padl.transforms.Pipeline.grouped">
-<span class="sig-name descname"><span class="pre">grouped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Pipeline.grouped" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padl.transforms.CompoundTransform.grouped">
+<span class="sig-name descname"><span class="pre">grouped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.grouped" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a grouped version of <em>self</em>.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padl.transforms.Pipeline.pd_forward_device_check">
-<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Pipeline.pd_forward_device_check" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_forward_device_check">
+<span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check all transform in forward are in correct device</p>
 <p>All transforms in forward need to be in same device as specified for
-the whole Pipeline.</p>
+the whole CompoundTransform.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Bool</p>
@@ -386,8 +386,8 @@ the whole Pipeline.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="padl.transforms.Pipeline.pd_to">
-<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Pipeline.pd_to" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padl.transforms.CompoundTransform.pd_to">
+<span class="sig-name descname"><span class="pre">pd_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.CompoundTransform.pd_to" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the transform’s device to <em>device</em></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -479,7 +479,7 @@ created (needed for saving).</p></li>
 created (needed for saving).</p></li>
 <li><p><strong>pd_name</strong> – Name of the transform.</p></li>
 <li><p><strong>pd_group</strong> – If <em>True</em>, do not flatten this when used as child transform in a
-<cite>Pipeline</cite>.</p></li>
+<cite>CompoundTransform</cite>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -498,7 +498,7 @@ created (needed for saving).</p></li>
 created (needed for saving).</p></li>
 <li><p><strong>pd_name</strong> – Name of the transform.</p></li>
 <li><p><strong>pd_group</strong> – If <em>True</em>, do not flatten this when used as child transform in a
-<cite>Pipeline</cite>.</p></li>
+<cite>CompoundTransform</cite>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -616,7 +616,7 @@ The device must be propagated from self.</p>
 <span class="sig-name descname"><span class="pre">pd_forward_device_check</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#padl.transforms.Transform.pd_forward_device_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if all transform in forward are in correct device</p>
 <p>All transforms in forward need to be in same device as specified for
-the whole Pipeline.</p>
+the whole CompoundTransform.</p>
 </dd></dl>
 
 <dl class="py method">
