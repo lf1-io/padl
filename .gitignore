@@ -7,7 +7,7 @@ data/mnist/img
 build/
 dist/
 checkpoints
-/.ipynb_checkpoints
+*/.ipynb_checkpoints
 *.pyc
 *.swp
 *.lf

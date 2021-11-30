@@ -161,7 +161,7 @@ def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*.
 
     :returns: A tuple of statement and offset. The offset is a tuple of row offset and col offset.
-        It can be used to determine the location of the satement within the source.
+        It can be used to determine the location of the statement within the source.
     """
     for row_offset in range(lineno):
         try:
@@ -275,7 +275,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     available as then it will be possible to get column information from frames
     (see inline comments).
 
-    *segement_type* can be 'call', 'attribute', 'getitem'.
+    *segment_type* can be 'call', 'attribute', 'getitem'.
     """
     if segment_type == 'call':
         node_type = ast.Call
