@@ -19,7 +19,7 @@ To define stages, use the special Transforms {obj}`padl.batch` and
 from padl import transform, batch, unbatch
 from torchvision import transforms, models
 
-transforms = transform(tansforms)
+transforms = transform(transforms)
 models = transform(models)
 
 @transform
@@ -46,12 +46,12 @@ The different stages of a Pipeline can be accessed via {meth}`.pd_preprocess <pa
 ```python
 >>> my_classifier.pd_preprocess
 load_image >> transforms.ToTensor() >> batch
->>> my_classifier.pd_forwad
+>>> my_classifier.pd_forward
 models.resnet18()
 >>> my_classifier.pd_postprocess
 unbatch >> classify
 ```
 
-The Transforms in the preprocess and postprocess stages process single *items* whereas the Transforms in the forward stage process *batches*.
+The Transforms in the preprocess and postprocess stages process the elements *one-by-one* whereas the Transforms in the forward stage process *batches*.
 
 Continue in the {ref}`next section <apply>` to learn how to apply transforms to data for inference, evaluation and training.

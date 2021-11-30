@@ -11,7 +11,7 @@ This is most useful for building deep learning pipelines on a *macro-level* - fo
 
 Transforms can be **composed** using `>>`:
 
-Pipelines arising from a compose process their input in a sequence, the output of the first Transform becomes the input of the second.
+Pipelines arising from a compose process their input in a sequence: The output of the first Transform in a composition becomes the input of the second and so on.
 
 <img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
 
@@ -51,7 +51,7 @@ True
 
 ### Map `~`
 
-Transforms can be **mapped** using `~`. Mapping applies the same Transforms to multiple inputs. The output has the same length as the input.
+Transforms can be **mapped** using `~`. Mapping applies the same Transform to multiple inputs. The output has the same length as the input.
 
 <img src="img/map.png" style='display: block; margin: auto; width: 300px'>
 
@@ -64,7 +64,7 @@ True
 
 ### Grouping Transforms
 
-By default, Pipelines, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
+By default, Pipelines, such as rollouts and parallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
 
 ```python
 >>> (t1 + (t2 + t3))(x) == ((t1 + t2) + t3)(x) == (t1 + t2 + t3)(x)  == (t1(x), t2(x), t2(x))
@@ -137,7 +137,7 @@ One common use case for the *rollout* is to extract different elements from a di
 ```
 >>> from padl import same
 >>> extract = (same['foo'] + same['bar'])
->>> extract({'foo': 1, 'baz': 2, 'bar': 3
+>>> extract({'foo': 1, 'baz': 2, 'bar': 3})
 (1, 3)
 ```
 

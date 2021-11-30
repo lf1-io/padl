@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resources">Resources</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a></li>
@@ -105,10 +106,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage/creating_transforms.html">Creating Transforms</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="usage/creating_transforms.html#examples">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="usage/creating_transforms.html">Creating Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
@@ -267,12 +265,12 @@
 <p><strong>PADL</strong>:</p>
 <ul class="simple">
 <li><p>is a pipeline builder for <strong>PyTorch</strong>.</p></li>
-<li><p>may be used with all of the great <strong>PyTorch</strong> functionality you’re used to for writing layers.</p></li>
+<li><p>can be used with all of the great <strong>PyTorch</strong> functionality you’re used to for writing layers.</p></li>
 <li><p>allows users to build pre-processing, forward passes, loss functions <strong>and</strong> post-processing into the pipeline.</p></li>
 <li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.</p></li>
 <li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
 </ul>
-<p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a> an AI innovation lab based in Berlin, Germany.</p>
+<p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a>, an AI innovation lab based in Berlin, Germany.</p>
 <div class="section" id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="installation">
@@ -300,6 +298,14 @@
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">prepare</span> <span class="o">&gt;&gt;</span> <span class="n">batch</span> <span class="o">&gt;&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">post</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="resources">
+<h3>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Go to <a class="reference internal" href="usage.html#usage"><span class="std std-ref">Usage</span></a> for a concise but comprehensive manual.</p></li>
+<li><p>Find examples at <a class="reference external" href="https://github.com/lf1-io/padl/tree/main/notebooks">https://github.com/lf1-io/padl/tree/main/notebooks</a>.</p></li>
+<li><p>Post issues at <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p></li>
+</ul>
 </div>
 </div>
 <div class="section" id="contributing">
