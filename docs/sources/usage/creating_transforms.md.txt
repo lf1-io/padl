@@ -90,5 +90,3 @@ It's also possible to wrap **entire python modules**. When doing this, everythin
     ```
 
 Learn in the {ref}`next Section <pipelines>` how to combine multiple Transforms to form a Pipeline.
-
-### Examples
