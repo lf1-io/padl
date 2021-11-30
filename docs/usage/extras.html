@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extras &mdash; PADL 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../static/documentation_options.js"></script>
+        <script src="../static/jquery.js"></script>
+        <script src="../static/underscore.js"></script>
+        <script src="../static/doctools.js"></script>
+    <script src="../static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Advanced Topics" href="../advanced.html" />
+    <link rel="prev" title="Using PyTorch Modules with Transforms" href="pytorch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html">
+            <img src="../static/padl-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../usage.html">Usage</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="creating_transforms.html">Creating Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="creating_transforms.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="combining_transforms.html">Combining Transforms into Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#grouping-sub-pipelines-transforms">Grouping sub-pipelines/ transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="combining_transforms.html#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id2">Compose</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id3">Rollout</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id4">Parallel</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#pass-training-samples">Pass training samples</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="combining_transforms.html#id5">Map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply.html">Applying Transforms to Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="saving.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="print_slice.html">Printing and Slicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pytorch.html">Using PyTorch Modules with Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pytorch.html#padl-automatically-saves-pytorch-state-dicts">PADL Automatically Saves PyTorch State-Dicts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytorch.html#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Extras</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#exception-handling">Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/saving.html">Saving</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.sourceget.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.version.html"><code class="docutils literal notranslate"><span class="pre">padl.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.wrap.html"><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../usage.html">Usage</a> &raquo;</li>
+      <li>Extras</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/usage/extras.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="extras">
+<h1>Extras<a class="headerlink" href="#extras" title="Permalink to this headline"></a></h1>
+<div class="section" id="the-same-utility">
+<span id="same"></span><h2>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility<a class="headerlink" href="#the-same-utility" title="Permalink to this headline"></a></h2>
+<p>The special object <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> can be used to get items from the input -
+<code class="docutils literal notranslate"><span class="pre">same[0]</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">transform(lambda</span> <span class="pre">x:</span> <span class="pre">x[0])</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">same</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">addfirst</span> <span class="o">=</span> <span class="n">add</span> <span class="o">&gt;&gt;</span> <span class="n">same</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">addfirst</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]))</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> also allows to apply arbitrary methods to the input -
+<code class="docutils literal notranslate"><span class="pre">same.something()</span></code> is the same as <code class="docutils literal notranslate"><span class="pre">transform(lambda</span> <span class="pre">x:</span> <span class="pre">x.something())</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">concat_lower</span> <span class="o">=</span> <span class="n">add</span> <span class="o">&gt;&gt;</span> <span class="n">same</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">concat_lower</span><span class="p">(</span><span class="s2">&quot;HELLO&quot;</span><span class="p">,</span> <span class="s2">&quot;you&quot;</span><span class="p">)</span>
+<span class="go">&quot;hello you&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="applying-transforms-depending-on-the-mode">
+<span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline"></a></h2>
+<p>Often it can be useful to apply transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation transforms only during training.</p>
+<p>Use an <a class="reference internal" href="../apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> Transform to apply a transform only in the <em>infer</em> mode:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">IfInfer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">IfInfer</span><span class="p">(</span><span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>
+<span class="go">100</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="mi">300</span><span class="p">]))[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">200</span>
+</pre></div>
+</div>
+<p>Analogously, use <a class="reference internal" href="../apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> or <a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to apply a transform only in the “eval”- or “train” mode, respectively.</p>
+</div>
+<div class="section" id="exception-handling">
+<h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline"></a></h2>
+<p>Use <code class="xref py py-class docutils literal notranslate"><span class="pre">Try</span></code> to handle exceptions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">open_file</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+    <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+ 
+<span class="n">read_from_path</span> <span class="o">=</span> <span class="p">(</span>
+     <span class="nb">open</span>
+     <span class="o">&gt;&gt;</span> <span class="n">Try</span><span class="p">(</span><span class="n">read</span><span class="p">,</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="k">finally</span><span class="o">=</span><span class="n">close</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pytorch.html" class="btn btn-neutral float-left" title="Using PyTorch Modules with Transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../advanced.html" class="btn btn-neutral float-right" title="Advanced Topics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

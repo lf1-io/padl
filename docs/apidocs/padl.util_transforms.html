@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>padl.util_transforms &mdash; PADL 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../static/documentation_options.js"></script>
+        <script src="../static/jquery.js"></script>
+        <script src="../static/underscore.js"></script>
+        <script src="../static/doctools.js"></script>
+    <script src="../static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="padl.utils" href="padl.utils.html" />
+    <link rel="prev" title="padl.transforms" href="padl.transforms.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html">
+            <img src="../static/padl-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/creating_transforms.html">Creating Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/creating_transforms.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#grouping-sub-pipelines-transforms">Grouping sub-pipelines/ transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id2">Compose</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id3">Rollout</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id4">Parallel</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#pass-training-samples">Pass training samples</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id5">Map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/apply.html">Applying Transforms to Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/saving.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/print_slice.html">Printing and Slicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/pytorch.html">Using PyTorch Modules with Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#padl-automatically-saves-pytorch-state-dicts">PADL Automatically Saves PyTorch State-Dicts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/extras.html">Extras</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#exception-handling">Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/saving.html">Saving</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.sourceget.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.version.html"><code class="docutils literal notranslate"><span class="pre">padl.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.wrap.html"><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../modules.html">API Documentation</a> &raquo;</li>
+      <li><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/apidocs/padl.util_transforms.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="module-padl.util_transforms">
+<span id="padl-util-transforms"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code><a class="headerlink" href="#module-padl.util_transforms" title="Permalink to this headline"></a></h1>
+<p>Extra useful Transforms.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfEval">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfEval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfEval" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “eval” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “eval” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfInMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'infer'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'eval'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'train'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInMode" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in mode <em>target_mode</em>, else perform <em>else_</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInMode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">11</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">iis</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>
+<span class="go">[100]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform to apply when the mode matches.</p></li>
+<li><p><strong>target_mode</strong> – Mode (one of ‘train’, ‘eval’, ‘infer’).</p></li>
+<li><p><strong>else</strong> – Transform to apply when the mode doesn’t match (defaults to identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfInfer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInfer" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “infer” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “infer” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfTrain">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfTrain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfTrain" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “train” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “train” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.Try">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">Try</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">catch_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exceptions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Exception</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">padl.Identity()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finally_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">padl.Identity()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.Try" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>transform</em>. If this fails with any exception from <em>exceptions</em>, perform
+<em>catch_transform</em>. If <em>transform</em> is completed successfully, <em>else_transform</em> is performed
+with the output of <em>transform</em>. Regardless of any error occurring on the other Transform
+(or not), <em>finally_transform</em> is carried out. No change of mode can happen inside any of these
+Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transform</strong> – Transform to try.</p></li>
+<li><p><strong>catch_transform</strong> – Transform to fall back on.</p></li>
+<li><p><strong>exceptions</strong> – Catch conditions.</p></li>
+<li><p><strong>else_transform</strong> – Transform to carry on the <cite>else</cite> clause of the <cite>try</cite> statement.</p></li>
+<li><p><strong>finally_transform</strong> – Transform to carry on on the <cite>finally</cite> clause of the <cite>try</cite> statement.</p></li>
+<li><p><strong>pd_name</strong> – The Transform’s name.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="padl.util_transforms.Try.pd_stage">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pd_stage</span></span><a class="headerlink" href="#padl.util_transforms.Try.pd_stage" title="Permalink to this definition"></a></dt>
+<dd><p>Return the stage (preprocess, forward or postprocess).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="padl.transforms.html" class="btn btn-neutral float-left" title="padl.transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.utils.html" class="btn btn-neutral float-right" title="padl.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
