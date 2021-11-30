@@ -623,7 +623,7 @@ class Transform:
         """Check if all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
-        the whole CompoundTransform.
+        the whole Pipeline.
         """
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
@@ -907,7 +907,7 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms - in contrast to :class:`CompoundTransform`).
+    other transforms - in contrast to :class:`Pipeline`).
 
     Examples of :class:`AtomicTransform` s are :class:`ClassTransform` and
     :class:`FunctionTransform`.
@@ -1242,15 +1242,15 @@ class Map(Transform):
         return graph, scopemap
 
 
-class CompoundTransform(Transform):
-    """Abstract base class for compound-transforms (transforms combining other transforms).
+class Pipeline(Transform):
+    """Abstract base class for Pipeline
 
     :param transforms: list of transforms
     :param call_info: A `CallInfo` object containing information about the how the transform was
     created (needed for saving).
-    :param pd_name: name of CompoundTransform
+    :param pd_name: name of Pipeline
     :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `CompoundTransform`.
+        `Pipeline`.
     """
     op = NotImplemented
     display_op = NotImplemented
@@ -1290,7 +1290,7 @@ class CompoundTransform(Transform):
     def __getitem__(self, item: Union[int, slice, str]) -> Transform:
         """Get item
 
-        If int, gets item'th transform in this CompoundTransform.
+        If int, gets item'th transform in this Pipeline.
         If slice, gets sliced transform of same type
         If str, gets first transform with name item
 
@@ -1331,7 +1331,7 @@ class CompoundTransform(Transform):
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
 
-        The codegraph of a :class:`CompoundTransform` is the union of the codegraphs of the
+        The codegraph of a :class:`Pipeline` is the union of the codegraphs of the
         contained transforms plus the node defining the transform itself.
         """
         if graph is None:
@@ -1403,7 +1403,7 @@ class CompoundTransform(Transform):
         """Check all transform in forward are in correct device
 
         All transforms in forward need to be in same device as specified for
-        the whole CompoundTransform.
+        the whole Pipeline.
 
         :return: Bool
         """
@@ -1480,7 +1480,7 @@ class CompoundTransform(Transform):
         return deduped_keys
 
 
-class Compose(CompoundTransform):
+class Compose(Pipeline):
     """Apply series of transforms on input.
 
     Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
@@ -1490,7 +1490,7 @@ class Compose(CompoundTransform):
         created (needed for saving).
     :param pd_name: name of the Compose transform
     :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `CompoundTransform`.
+        `Pipeline`.
     :return: output from series of transforms
     """
     op = '>>'
@@ -1675,7 +1675,7 @@ class Compose(CompoundTransform):
         return args
 
 
-class Rollout(CompoundTransform):
+class Rollout(Pipeline):
     """Apply a list of transform to same input and get tuple output
 
     Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
@@ -1685,7 +1685,7 @@ class Rollout(CompoundTransform):
         created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `CompoundTransform`.
+        `Pipeline`.
     """
     op = '+'
     display_op = '+'
@@ -1789,7 +1789,7 @@ class Rollout(CompoundTransform):
         return between.join(rows) + '\n'
 
 
-class Parallel(CompoundTransform):
+class Parallel(Pipeline):
     """Apply transforms in parallel to a tuple of inputs and get tuple output
 
     Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
@@ -1799,7 +1799,7 @@ class Parallel(CompoundTransform):
         created (needed for saving).
     :param pd_name: Name of the transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `CompoundTransform`.
+        `Pipeline`.
     """
     op = '/'
     display_op = '/'
