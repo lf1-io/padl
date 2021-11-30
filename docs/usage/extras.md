@@ -6,7 +6,16 @@
 
 ### The {obj}`~padl.same` Utility
 
-The special object {obj}`~padl.same` can be used to get items from the input - 
+The special object {obj}`~padl.same` allows to apply arbitrary methods to the input - 
+`same.something()` is the same as `transform(lambda x: x.something())`:
+
+```python
+>>> concat_lower = add >> same.lower()
+>>> concat_lower("HELLO", "you")
+"hello you"
+```
+
+{obj}`~padl.same` can also be used to get items from the input - 
 `same[0]` is equivalent to `transform(lambda x: x[0])`:
 
 ```python
@@ -16,22 +25,13 @@ The special object {obj}`~padl.same` can be used to get items from the input -
 3
 ```
 
-{obj}`~padl.same` also allows to apply arbitrary methods to the input - 
-`same.something()` is the same as `transform(lambda x: x.something())`:
-
-```python
->>> concat_lower = add >> same.lower()
->>> concat_lower("HELLO", "you")
-"hello you"
-```
-
 (if-in-mode)=
 
 ### Applying Transforms Depending on the Mode
 
 Often it can be useful to apply Transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation Transforms only during training.
 
-Use an {class}`~padl.IfInfer` Transform to apply a Transform only in the *infer* mode:
+Use an {class}`~padl.IfInfer` Transform to apply a Transform only in the "infer" mode:
 
 ```python
 >>> from padl import IfInfer

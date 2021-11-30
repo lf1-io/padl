@@ -5,8 +5,9 @@ Remember from {ref}`the section on creating Transforms <creating-transforms>` th
 
 ## PADL Automatically Saves PyTorch State-Dicts
 
-When using {meth}`padl.save` to {ref}`save a Pipeline <saving>`, PADL automatically stores `state_dict`s of the contained **PyTorch** layers along with the code. When loading with {meth}`padl.load`, these are used to initialize the layers' parameters.
+When using {meth}`padl.save` to {ref}`save a Transform <saving>`, PADL automatically stores `state_dict`s of the contained **PyTorch** layers along with the code. When loading with {meth}`padl.load`, these are used to initialize the layers' parameters.
 
+(devices)=
 ## Devices
 
 Use {meth}`~padl.transforms.Transform.pd_to` to send all **PyTorch** layers in a Transform to a device:
@@ -45,14 +46,14 @@ train_model = predict / batch >> loss
 optimizer = torch.optim.Adam(train_model.pd_parameters(), lr=LR)
 
 for loss in model.train_apply(TRAIN_DATA, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS):
-    o.zero_grad()
+    optimizer.zero_grad()
     loss.backward()
-    o.step()
+    optimizer.step()
 ```
 
 ## Weight Sharing
 
-It is possible to use the same **PyTorch** layer Transforms in multiple Pipelines. Those Transforms then share weights. This can be used, for instance, to create a train Pipeline and an inference {ipeline:
+It is possible to use the same **PyTorch** layer Transforms in multiple Pipelines. Those Transforms then share weights. This can be used, for instance, to create a train Pipeline and an inference Pipeline:
 
 ```python
 layer = MyPyTorchLayer()

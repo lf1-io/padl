@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../README.html#installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../README.html#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#resources">Resources</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
@@ -273,7 +274,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span>
 <span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">models</span>
 
-<span class="n">transforms</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tansforms</span><span class="p">)</span>
+<span class="n">transforms</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">transforms</span><span class="p">)</span>
 <span class="n">models</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
 
 <span class="nd">@transform</span>
@@ -298,13 +299,13 @@
 <p>The different stages of a Pipeline can be accessed via <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_preprocess" title="padl.transforms.Transform.pd_preprocess"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_preprocess</span></code></a>, <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_forward" title="padl.transforms.Transform.pd_forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_forward</span></code></a> and <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_postprocess" title="padl.transforms.Transform.pd_postprocess"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_postprocess</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_preprocess</span>
 <span class="go">load_image &gt;&gt; transforms.ToTensor() &gt;&gt; batch</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_forwad</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_forward</span>
 <span class="go">models.resnet18()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_postprocess</span>
 <span class="go">unbatch &gt;&gt; classify</span>
 </pre></div>
 </div>
-<p>The Transforms in the preprocess and postprocess stages process single <em>items</em> whereas the Transforms in the forward stage process <em>batches</em>.</p>
+<p>The Transforms in the preprocess and postprocess stages process the elements <em>one-by-one</em> whereas the Transforms in the forward stage process <em>batches</em>.</p>
 <p>Continue in the <a class="reference internal" href="apply.html#apply"><span class="std std-ref">next section</span></a> to learn how to apply transforms to data for inference, evaluation and training.</p>
 </div>
 

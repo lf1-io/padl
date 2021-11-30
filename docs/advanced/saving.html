@@ -97,6 +97,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../README.html#installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../README.html#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#resources">Resources</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
@@ -298,7 +299,7 @@ This means you can save a Transform from a messy ipython notebook and will get a
 
 <span class="nd">@transform</span>
 <span class="k">def</span> <span class="nf">addconst</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">CONST</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">CONST</span>
 
 <span class="n">plustwo</span> <span class="o">=</span> <span class="n">plusone</span> <span class="o">&gt;&gt;</span> <span class="n">plusone</span>
 <span class="n">mytransform</span> <span class="o">=</span> <span class="p">(</span>
@@ -326,7 +327,7 @@ This means you can save a Transform from a messy ipython notebook and will get a
 
 <span class="nd">@transform</span>
 <span class="k">def</span> <span class="nf">addconst</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">CONST</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">CONST</span>
 
 
 <span class="nd">@transform</span>
@@ -361,7 +362,6 @@ that created it.</p>
 <span class="k">class</span> <span class="nc">WordIndex</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">)}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">not_found</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dictionary</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>

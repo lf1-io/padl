@@ -46,7 +46,7 @@ CONST = 100
 
 @transform
 def addconst(x):
-    return x * CONST
+    return x + CONST
 
 plustwo = plusone >> plusone
 mytransform = (
@@ -78,7 +78,7 @@ CONST = 100
 
 @transform
 def addconst(x):
-    return x * CONST
+    return x + CONST
 
 
 @transform
@@ -119,7 +119,6 @@ from padl import transform, save
 class WordIndex:
     def __init__(self, words):
         self.dictionary = {word: i for i, word in enumerate(words)}
-        self.not_found = len(self.dictionary)
 
     def __call__(self, word):
         return self.dictionary.get(word, -1)
