@@ -59,5 +59,5 @@ class _Same:
         return _maketrans(attr)
 
 
+#: Transform factory for capturing attributes/ get-items.
 same = _Same()
-

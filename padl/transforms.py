@@ -135,9 +135,82 @@ class Transform:
         self._pd_call_info = call_info
         self._pd_varname = _notset
         self._pd_name = pd_name
-        self._pd_stage = {'forward'}
         self._pd_device = 'cpu'
         self._pd_layers = None
+        self._pd_stages = None
+
+    @staticmethod
+    def _pd_merge_components(components):
+        """Merge components recusively such that lists consisting of all the same integers are
+        merged to that integer.
+
+        >>> Transform._pd_merge_components(0)
+        0
+        >>> Transform._pd_merge_components([1, 1, 1])
+        1
+        >>> Transform._pd_merge_components([1, 2, [1, 1]])
+        [1, 2, 1]
+        """
+        if isinstance(components, int):
+            return components
+        if all(isinstance(x, int) for x in components) and len(set(components)) == 1:
+            return components[0]
+        res = [Transform._pd_merge_components(x) for x in components]
+        if res != components:
+            return Transform._pd_merge_components(res)
+        return res
+
+    def _pd_get_stages(self):
+        if self._pd_stages is None:
+            _, splits, has_batchify = self._pd_splits()
+            if has_batchify:
+                preprocess, forward, postprocess = splits
+            else:
+                preprocess, forward, postprocess = builtin_identity, splits[0], splits[2]
+            self._pd_stages = preprocess, forward, postprocess
+
+        return self._pd_stages
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple['Transform',
+                                                            'Transform',
+                                                            'Transform'],
+                                                      bool]:
+        """ Split the transform into "pre-batchified", "batchified" and "postprocessing" splits.
+
+        *input_components* contains information about the "split" the input is in and potentially
+        how many "pipes" of input there are. It is either an int or a (potentially nested)
+        list of ints. A list of ints indicates there are multiple "pipes".
+        The ints have the following meaning:
+            - 0 means "not batchified"
+            - 1 means "batchified"
+            - 2 means "unbatchified" a.k.a. post-process
+        If it's a (nested) list, the structure represents the input structure for the transform,
+        whereas the entries represent the "split" of parts of the input.
+
+        For example, if a transform expects a tuple of inputs, *input_components* could be
+        (0, 1), meaning that the first input item is not batchified whereas the second is.
+
+        The method returns a tuple (*output_components*, *splits*).
+
+        - *output_components* is the "splits" information of the output, it has the same format as
+        the *input_components*.
+
+        - *splits* is a 3-tuple of splits, the entries are:
+            - the "pre-batchified" part of the transform
+            - the "batchified" part of the transform
+            - the "postprocess" part of the transform
+        """
+        component = Transform._pd_merge_components(input_components)
+        assert isinstance(component, int), ('A normal Tranform cannot process input from multiple '
+                                            'stages.')
+        return (
+            # a normal transform doesn't change the components
+            component,
+            # for the component the transform is in, return the transform, else Identity
+            tuple(self if i == component else builtin_identity for i in range(3)),
+            False
+        )
 
     @property
     def pd_name(self) -> Optional[str]:
@@ -679,44 +752,24 @@ class Transform:
         return self._pd_device
 
     @property
-    def pd_stage(self) -> Set[Stage]:
-        """Return the stage (preprocess, forward or postprocess)."""
-        return self._pd_stage
-
-    def _pd_preprocess_part(self) -> "Transform":
-        return Identity()
-
-    @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        if {'preprocess'} == self.pd_stage:
-            return self
-        pre = self._pd_preprocess_part()
+        pre = self._pd_get_stages()[0]
         pre.pd_to(self.pd_device)
         return pre
-
-    def _pd_forward_part(self) -> "Transform":
-        return Identity()
 
     @property
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        if {'forward'} == self.pd_stage:
-            return self
-        forward = self._pd_forward_part()
+        forward = self._pd_get_stages()[1]
         forward.pd_to(self.pd_device)
         return forward
-
-    def _pd_postprocess_part(self) -> "Transform":
-        return Identity()
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        if {'postprocess'} == self.pd_stage:
-            return self
-        post = self._pd_postprocess_part()
+        post = self._pd_get_stages()[2]
         post.pd_to(self.pd_device)
         return post
 
@@ -854,13 +907,14 @@ class Transform:
 
 class AtomicTransform(Transform):
     """Base class for "atomic" transforms (transforms that are not made by combining
-    other transforms - in contrast to `CompoundTransform`s).
+    other transforms - in contrast to :class:`CompoundTransform`).
 
-    Examples of `AtomicTransform`s are `ClassTransform`s and `FunctionTransform`s.
+    Examples of :class:`AtomicTransform` s are :class:`ClassTransform` and
+    :class:`FunctionTransform`.
 
     :param call: The transform's call string.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
+    :param call_info: A :class:`CallInfo` object containing information about the how the
+        transform was created (needed for saving).
     :param pd_name: The transform's name.
     """
 
@@ -1101,7 +1155,55 @@ class Map(Transform):
         super().__init__(call_info, pd_name)
 
         self.transform = transform
-        self._pd_stage = transform.pd_stage
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform,
+                                                            Transform,
+                                                            Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        The *splits* of a map are:
+            - the map of the subtransform's preprocess
+            - the map of the subtransform's forward
+            - the map of the subtransform's postprocess
+
+        The *output_components* of a map are the mapped input components.
+        """
+        # if *input_components* is an integer rather than a list ...
+        if isinstance(input_components, int):
+            # ... get output_components and splits from the contained transform
+            output_components, splits, has_batchify = self.transform._pd_splits(input_components)
+            return (
+                # output_components is whatever the sub-transform does to it
+                output_components,
+                # the splits are the splits of the sub-transform, but mapped
+                tuple(Map(split) if not isinstance(split, Identity) else builtin_identity
+                      for split in splits),
+                has_batchify
+            )
+        assert isinstance(input_components, list)
+
+        # if it's a list, this means the input is structured and can potentially be in
+        # different states (fresh, batchified, unbatchified)
+        splits = ([], [], [])
+        output_components = []
+        has_batchify = False
+        for input_component in input_components:
+            # for each input, we compute the *output_components* and the *splits* ...
+            sub_output_components, sub_splits, sub_has_batchify = \
+                self.transform._pd_splits(input_component)
+            has_batchify = has_batchify or sub_has_batchify
+            output_components.append(sub_output_components)
+            for split, sub_split in zip(splits, sub_splits):
+                split.append(sub_split)
+
+        # .. and combine them as a Parallel
+        return (
+            output_components,
+            tuple(Parallel(s) if s else builtin_identity for s in splits),
+            has_batchify
+        )
 
     def __call__(self, args: Iterable):
         """
@@ -1122,29 +1224,22 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-    def _pd_preprocess_part(self) -> Transform:
-        t_pre = self.transform.pd_preprocess
-        if isinstance(t_pre, Identity):
-            pre = Identity()
-        else:
-            pre = Map(transform=t_pre, call_info=self._pd_call_info)
-        return pre
+    def _pd_build_codegraph(self, graph=None, scopemap=None, name=None, scope=None):
+        if graph is None:
+            graph = {}
+        if scopemap is None:
+            scopemap = {}
 
-    def _pd_postprocess_part(self) -> Transform:
-        t_post = self.transform.pd_postprocess
-        if isinstance(t_post, Identity):
-            post = Identity()
-        else:
-            post = Map(transform=t_post, call_info=self._pd_call_info)
-        return post
+        start = self._pd_codegraph_startnode(name)
 
-    def _pd_forward_part(self) -> Transform:
-        t_for = self.transform.pd_forward
-        if isinstance(t_for, Identity):
-            forward = Identity()
-        else:
-            forward = Map(transform=t_for, call_info=self._pd_call_info)
-        return forward
+        if name is not None:
+            assert scope is not None
+            graph[ScopedName(name, scope, 0)] = start
+            scopemap[ScopedName(name, scope, 0)] = scope
+
+        varname = self.transform.pd_varname(self._pd_call_info.module)
+        self.transform._pd_build_codegraph(graph, scopemap, varname,  self._pd_call_info.scope)
+        return graph, scopemap
 
 
 class CompoundTransform(Transform):
@@ -1167,12 +1262,6 @@ class CompoundTransform(Transform):
 
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
-
-        self._pd_stage_list = [t.pd_stage for t in self.transforms]
-        try:
-            self._pd_stage = set.union(*self._pd_stage_list)
-        except (AttributeError, TypeError):
-            self._pd_stage = None
 
     def _pd_get_output_format(self):
         last_transform = self.transforms[-1]
@@ -1219,6 +1308,9 @@ class CompoundTransform(Transform):
                     return transform_
             raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
         raise TypeError('Unknown type for get item: expected type {int, slice, str}')
+
+    def __len__(self):
+        return len(self.transforms)
 
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
@@ -1408,19 +1500,57 @@ class Compose(CompoundTransform):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        preprocess_end = 0
-        postprocess_start = len(self.transforms)
-        set_postprocess = True
-        for i, transform_ in enumerate(self.transforms):
-            if 'preprocess' in transform_.pd_stage:
-                preprocess_end = i
-            if 'postprocess' in transform_.pd_stage and set_postprocess:
-                postprocess_start = i
-                set_postprocess = False
-        for i in range(preprocess_end):
-            self._pd_stage_list[i] = {'preprocess'}
-        for i in range(postprocess_start+1, len(self.transforms)):
-            self._pd_stage_list[i] = {'postprocess'}
+    def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
+                                                                          Tuple[Transform,
+                                                                                Transform,
+                                                                                Transform],
+                                                                          bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        The composition of `transforms` splits into
+            - the composition of each sub-transform's preprocess
+            - the composition of each sub-transform's forward
+            - the composition of each sub-transform's postprocess
+
+        The *output_components* are computed by passing the *input_component* through all
+        sub-transforms.
+        """
+
+        splits = ([], [], [])
+
+        output_components = input_components
+        has_batchify = False
+        # for each sub-transform ...
+        for transform_ in self.transforms:
+            # ... see what comes out ...
+            output_components, sub_splits, sub_has_batchify = \
+                transform_._pd_splits(output_components)
+
+            has_batchify = has_batchify or sub_has_batchify
+
+            # ... and combine
+            # the preprocess split is the composition of the
+            # preprocess splits of all subtransforms
+            # (same for forward and postprocess)
+            for split, sub_split in zip(splits, sub_splits):
+                split.append(sub_split)
+
+        # .. some cleanup - remove identities ..
+        cleaned_splits = tuple(
+            [s for s in split if not isinstance(s, Identity)]
+            for split in splits
+        )
+
+        final_splits = []
+        for split in cleaned_splits:
+            if len(split) > 1:  # combine sub_splits
+                final_splits.append(Compose(split))
+            elif len(split) == 1:  # if it's just one, no need to combine
+                final_splits.append(split[0])
+            else:  # if it's empty: identity
+                final_splits.append(builtin_identity)
+
+        return output_components, final_splits, has_batchify
 
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
@@ -1544,58 +1674,6 @@ class Compose(CompoundTransform):
             args = transform_.pd_call_transform(args)
         return args
 
-    def _pd_forward_part(self) -> Transform:
-        t_list = []
-        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
-            if 'forward' in stage_set:
-                if len(stage_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_forward)
-
-        if len(t_list) == 1:
-            forward = t_list[0]
-        elif t_list:
-            forward = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            forward = Identity()
-
-        return forward
-
-    def _pd_preprocess_part(self) -> Transform:
-        t_list = []
-        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
-            if 'preprocess' in stage_set:
-                if len(stage_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_preprocess)
-
-        if len(t_list) == 1:
-            pre = t_list[0]
-        elif t_list:
-            pre = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            pre = Identity()
-        return pre
-
-    def _pd_postprocess_part(self) -> Transform:
-        t_list = []
-        for transform_, stage_set in zip(self.transforms, self._pd_stage_list):
-            if 'postprocess' in stage_set:
-                if len(stage_set) == 1:
-                    t_list.append(transform_)
-                else:
-                    t_list.append(transform_.pd_postprocess)
-
-        if len(t_list) == 1:
-            post = t_list[0]
-        elif t_list:
-            post = Compose(t_list, call_info=self._pd_call_info)
-        else:
-            post = Identity()
-        return post
-
 
 class Rollout(CompoundTransform):
     """Apply a list of transform to same input and get tuple output
@@ -1618,6 +1696,75 @@ class Rollout(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform,
+                                                            Transform,
+                                                            Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        A rollout splits into:
+            - the rollout of its sub-transform' first non-Identity split
+            - the parallel of its sub-transform' remaining splits
+
+        To see why the first non-Identity split is a rollout whereas the remaining splits are
+        parallel, note that the first non-Identity split splits the pipeline and it remains
+        split for the rest:
+
+            Case 1:     Case 2:     Case 3:
+            pre + pre   Identity    Identity
+            for / for   for + for   Identity
+            pos / pos   pos / pos   pos + pos
+
+        The *output_components* are the list of output components of the sub-transforms.
+        """
+        splits = ([], [], [])
+        output_components = []
+        has_batchify = False
+        for transform_ in self.transforms:
+            sub_output_components, sub_splits, sub_has_batchify = transform_._pd_splits(input_components)
+            has_batchify = has_batchify or sub_has_batchify
+            output_components.append(sub_output_components)
+            for split, sub_split in zip(splits, sub_splits):
+                split.append(sub_split)
+
+        # only replace with builtin_identity if all Identity to preserve number of pipes
+
+        merged_components = self._pd_merge_components(input_components)
+        if not isinstance(merged_components, int):
+            merged_components = 0
+
+        cleaned_splits = []
+        for i, split in enumerate(splits):
+            if all(isinstance(s, Identity) for s in split):
+                if i != merged_components:
+                    cleaned_splits.append(builtin_identity)
+                else:
+                    cleaned_splits.append(split)
+            else:
+                cleaned_splits.append(split)
+
+        first_non_identity = \
+            [i for i, s in enumerate(cleaned_splits) if not isinstance(s, Identity)]
+        if len(first_non_identity) == 0:
+            # Catches scenario where all splits are Identities
+            first_non_identity = 0
+        else:
+            first_non_identity = first_non_identity[0]
+
+        final_splits = []
+        for i, s in enumerate(cleaned_splits):
+            if isinstance(s, list):
+                if i == first_non_identity:
+                    final_splits.append(Rollout(s))
+                else:
+                    final_splits.append(Parallel(s))
+            else:
+                final_splits.append(s)
+        final_splits = tuple(final_splits)
+
+        return output_components, final_splits, has_batchify
+
     def __call__(self, args):
         """Call method for Rollout
 
@@ -1630,34 +1777,6 @@ class Rollout(CompoundTransform):
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
-
-    def _pd_preprocess_part(self) -> Transform:
-        t_list = [x.pd_preprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            pre = Identity()
-        else:
-            pre = Rollout(t_list, call_info=self._pd_call_info)
-        return pre
-
-    def _pd_forward_part(self) -> Transform:
-        t_list = [x.pd_forward for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            forward = Identity()
-        elif 'preprocess' in self._pd_stage and 'forward' in self._pd_stage:
-            forward = Parallel(t_list, call_info=self._pd_call_info)
-        else:
-            forward = Rollout(t_list, call_info=self._pd_call_info)
-        return forward
-
-    def _pd_postprocess_part(self) -> Transform:
-        t_list = [x.pd_postprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            post = Identity()
-        elif len(list(self._pd_stage)) >= 2 and 'postprocess' in self._pd_stage:
-            post = Parallel(t_list, call_info=self._pd_call_info)
-        else:
-            post = Rollout(t_list, call_info=self._pd_call_info)
-        return post
 
     def _pd_longrepr(self, formatting=True) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
@@ -1690,6 +1809,46 @@ class Parallel(CompoundTransform):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        A parallel splits into:
+            - the parallel of its sub-transforms' preprocess
+            - the parallel of its sub-transforms' forward
+            - the parallel of its sub-transforms' postprocess
+
+        The *output_components* are the list of output components of the sub-transforms.
+        """
+        splits = ([], [], [])
+        # we need one component info per sub-transform - if it's not a list that means
+        # all are the same - we make it a list
+        input_components_ = input_components
+        if not isinstance(input_components_, list):
+            input_components_ = [input_components for _ in range(len(self.transforms))]
+
+        # go through the sub-transforms ...
+        output_components = []
+        has_batchify = False
+        for transform_, input_component in zip(self.transforms, input_components_):
+            # and compute the sub-splits
+            sub_output_components, sub_splits, sub_has_batchify = \
+                transform_._pd_splits(input_component)
+            has_batchify = has_batchify or sub_has_batchify
+            output_components.append(sub_output_components)
+            for split, sub_split in zip(splits, sub_splits):
+                split.append(sub_split)
+
+        # only replace with builtin_identity if all Identity to preserve number of pipes
+        cleaned_splits = tuple(
+            builtin_identity if all(isinstance(s, Identity) for s in split) else split
+            for split in splits
+        )
+
+        final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
+        return output_components, final_splits, has_batchify
+
     def __call__(self, args):
         """Call method for Parallel
 
@@ -1702,30 +1861,6 @@ class Parallel(CompoundTransform):
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
-
-    def _pd_preprocess_part(self) -> Transform:
-        t_list = [x.pd_preprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            pre = Identity()
-        else:
-            pre = Parallel(t_list, call_info=self._pd_call_info)
-        return pre
-
-    def _pd_forward_part(self) -> Transform:
-        t_list = [x.pd_forward for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            forward = Identity()
-        else:
-            forward = Parallel(t_list, call_info=self._pd_call_info)
-        return forward
-
-    def _pd_postprocess_part(self) -> Transform:
-        t_list = [x.pd_postprocess for x in self.transforms]
-        if all([isinstance(t, Identity) for t in t_list]):
-            post = Identity()
-        else:
-            post = Parallel(t_list, call_info=self._pd_call_info)
-        return post
 
     def _pd_longrepr(self, formatting=True) -> str:
         if not formatting:
@@ -1803,6 +1938,9 @@ class Identity(BuiltinTransform):
         return args
 
 
+builtin_identity = Identity()
+
+
 class Unbatchify(ClassTransform):
     """Mark start of postprocessing.
 
@@ -1815,8 +1953,18 @@ class Unbatchify(ClassTransform):
     def __init__(self, dim=0, cpu=True):
         super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
         self.dim = dim
-        self._pd_stage = {'postprocess'}
         self.cpu = cpu
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        Unbatchify has empty preprocess and forward splits and puts the component-number
+        to 2 ("un-batchified").
+        """
+        # put the output component to 2 ("un-batchified")
+        return 2, (builtin_identity, builtin_identity, self), False
 
     def _move_to_device(self, args):
         if isinstance(args, tuple):
@@ -1858,7 +2006,19 @@ class Batchify(ClassTransform):
     def __init__(self, dim=0):
         super().__init__(arguments=OrderedDict([('dim', dim)]))
         self.dim = dim
-        self._pd_stage = {'preprocess'}
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        Batchify has empty pre-batchified and postprocess splits and puts the component-number
+        to 1 ("batchified").
+        """
+        # ensure that all inputs are "fresh"
+        assert self._pd_merge_components(input_components) == 0, 'double batchify'
+        # put the output component to 1 ("batchified")
+        return 1, (self, builtin_identity, builtin_identity), True
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '

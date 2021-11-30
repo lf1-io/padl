@@ -1,9 +1,9 @@
 """Extra useful Transforms. """
 
 from collections import OrderedDict
-from typing import Optional
+from typing import Optional, Union, List, Tuple
 
-from padl.transforms import ClassTransform, Identity, Transform, Mode
+from padl.transforms import ClassTransform, Identity, Transform, Mode, builtin_identity
 
 
 class IfInMode(ClassTransform):
@@ -28,12 +28,11 @@ class IfInMode(ClassTransform):
     pd_dont_dump_code = True
 
     def __init__(self, if_: Transform, target_mode: Mode, else_: Optional[Transform] = None):
+        assert target_mode in ('train', 'eval', 'infer'), "Target mode can only be train, " \
+                                                          "eval or infer"
         super().__init__(arguments=OrderedDict([('if_', if_),
                                                 ('target_mode', target_mode),
                                                 ('else_', else_)]))
-
-        assert target_mode in ('train', 'eval', 'infer'), "Target mode can only be train, " \
-                                                          "eval or infer"
 
         if else_ is None:
             else_ = Identity()
@@ -41,8 +40,6 @@ class IfInMode(ClassTransform):
         self.if_ = if_
         self.else_ = else_
         self.target_mode = target_mode
-
-        self._pd_stage = set.union(*[t.pd_stage for t in [self.if_, self.else_]])
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
@@ -53,29 +50,28 @@ class IfInMode(ClassTransform):
             return self.if_.pd_call_transform(args)
         return self.else_.pd_call_transform(args)
 
-    def _pd_preprocess_part(self):
-        pre = IfInMode(
-            if_=self.if_.pd_preprocess,
-            target_mode=self.target_mode,
-            else_=self.else_.pd_preprocess,
-        )
-        return pre
+    def _pd_splits(self, input_components=0):
+        if_output_components, if_splits, if_has_batchify = \
+            self.if_._pd_splits(input_components)
+        else_output_components, else_splits, else_has_batchify = \
+            self.else_._pd_splits(input_components)
 
-    def _pd_forward_part(self):
-        forward = IfInMode(
-            if_=self.if_.pd_forward,
-            target_mode=self.target_mode,
-            else_=self.else_.pd_forward,
-        )
-        return forward
+        if_output_components_reduced = self._pd_merge_components(if_output_components)
+        else_output_components_reduced = self._pd_merge_components(else_output_components)
+        assert if_output_components_reduced == else_output_components_reduced, \
+            'if and else transforms have incompatible output shapes'
 
-    def _pd_postprocess_part(self):
-        post = IfInMode(
-            if_=self.if_.pd_postprocess,
-            target_mode=self.target_mode,
-            else_=self.else_.pd_postprocess,
+        final_splits = tuple(
+            IfInMode(
+                if_=if_split,
+                target_mode=self.target_mode,
+                else_=else_split
+            ) if if_split != else_split
+            else if_split
+            for if_split, else_split in zip(if_splits, else_splits)
         )
-        return post
+
+        return if_output_components_reduced, final_splits, if_has_batchify or else_has_batchify
 
 
 class IfInfer(IfInMode):
@@ -109,3 +105,78 @@ class IfTrain(IfInMode):
 
     def __init__(self, if_: Transform, else_: Optional[Transform] = None):
         super().__init__(if_, 'train', else_)
+
+
+class Try(ClassTransform):
+    """ Perform *transform*. If this fails with any exception from *exceptions*, perform
+    *catch_transform*. If *transform* is completed successfully, *else_transform* is performed
+    with the output of *transform*. Regardless of any error occurring on the other Transform
+    (or not), *finally_transform* is carried out. No change of mode can happen inside any of these
+    Transform.
+
+    :param transform: Transform to try.
+    :param catch_transform: Transform to fall back on.
+    :param exceptions: Catch conditions.
+    :param else_transform: Transform to carry on the `else` clause of the `try` statement.
+    :param finally_transform: Transform to carry on on the `finally` clause of the `try` statement.
+    :param pd_name: The Transform's name.
+    """
+
+    def __init__(self,
+                 transform: Transform,
+                 catch_transform: Transform,
+                 exceptions: Union[List, Tuple, Exception],
+                 else_transform: Transform = builtin_identity,
+                 finally_transform: Transform = builtin_identity,
+                 pd_name: str = None):
+
+        if not isinstance(exceptions, (tuple, list)):
+            exceptions = (exceptions, )
+        exceptions = tuple(exceptions)
+        for exception in exceptions:
+            assert issubclass(exception, Exception)
+        super().__init__(pd_name=pd_name,
+                         arguments=OrderedDict([('transform', transform),
+                                                ('catch_transform', catch_transform),
+                                                ('exceptions', exceptions),
+                                                ('else_transform', else_transform),
+                                                ('finally_transform', finally_transform)]))
+        self.transform = transform
+        self.catch_transform = catch_transform
+        self.exceptions = exceptions
+        self.else_transform = else_transform
+        self.finally_transform = finally_transform
+
+    def _pd_splits(self, input_components=0):
+        try_output_components, _, _ = self.transform._pd_splits(input_components)
+        catch_output_components, _, _ = self.catch_transform._pd_splits(input_components)
+        else_output_components, _, _ = self.else_transform._pd_splits(input_components)
+
+        input_components_reduced = self._pd_merge_components(input_components)
+        try_output_components_reduced = self._pd_merge_components(try_output_components)
+        catch_output_components_reduced = self._pd_merge_components(catch_output_components)
+        else_output_components_reduced = self._pd_merge_components(else_output_components)
+        components = [try_output_components_reduced, catch_output_components_reduced,
+                      else_output_components_reduced]
+        assert all(isinstance(component, int) for component in components) \
+            and len(set(components)) == 1, \
+            'Try Transform cannot contain transforms that have multiple stages.'
+
+        final_splits = tuple(
+            self if i == components[0]
+            else builtin_identity
+            for i in range(3)
+        )
+
+        return input_components_reduced, final_splits, False
+
+    def __call__(self, args):
+        try:
+            output = self.transform.pd_call_transform(args)
+        except self.exceptions:
+            output = self.catch_transform.pd_call_transform(args)
+        else:
+            output = self.else_transform.pd_call_transform(output)
+        finally:
+            self.finally_transform.pd_call_transform(args)
+        return output
