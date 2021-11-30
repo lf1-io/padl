@@ -1,6 +1,6 @@
 # Saving
 
-All PADL transforms can be saved via {py:meth}`padl.save`. For that, simply do:
+All PADL Transforms can be saved via {py:meth}`padl.save`. For that, simply do:
 
 ```python
 from padl import save
@@ -10,7 +10,7 @@ from padl import save
 save(my_pipeline, 'some/path.padl')
 ```
 
-To load a saved transform use {py:meth}`padl.load`:
+To load a saved Transform use {py:meth}`padl.load`:
 
 ```python
 from padl import load
@@ -20,15 +20,15 @@ my_pipeline = load('some/path.padl')
 
 ## How it works
 
-When saving a transform, PADL tracks down the statements that were used to create it
+When saving a Transform, PADL tracks down the statements that were used to create it
 and writes them into a python file.
 
 This works both with python modules and in interactive IPython sessions.
 
-PADL will only store statements that are absolutely needed to create the transform.
-This means you can save a transform from a messy ipython notebook and will get a clean python file.
+PADL will only store statements that are absolutely needed to create the Transform.
+This means you can save a Transform from a messy ipython notebook and will get a clean python file.
 
-Consider code defining the transform {code}`mytransform`:
+Consider code defining the Transform {code}`mytransform`:
 
 ```python
 from padl import *
@@ -66,7 +66,7 @@ mytransform.padl/
 └── versions.txt
 ```
 
-{file}`transform.py` contains the code needed to recreate the transform:
+{file}`transform.py` contains the code needed to recreate the Transform:
 
 ```python
 import numpy as np
@@ -101,7 +101,7 @@ _pd_main = (
 
 As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see {ref}`what-does-not-save`).
 
-{file}`versions.txt` contains all the packages that were used in creating the transforms and their versions. This is very similar to a {file}`requirements.txt` - however, it contains the package names rather that their names in the `PyPI`.
+{file}`versions.txt` contains all the packages that were used in creating the Transforms and their versions. This is very similar to a {file}`requirements.txt` - however, it contains the package names rather that their names in the `PyPI`.
 
 (saving-by-value)=
 
@@ -136,10 +136,10 @@ save(word_index, 'word_index')
 ```
 
 Here, we load a (potentially very large) dataset and process it, before using the result
-to initialize a transform.
+to initialize a Transform.
 
-Normally, saving {code}`word_index`, would store the python statements needed for creating the transform, *including
-the data processing* in {code}`load_data`. As loading consists in executing those statements, this would mean that the data processing would be repeated each time the transform is loaded.
+Normally, saving {code}`word_index`, would store the python statements needed for creating the Transform, *including
+the data processing* in {code}`load_data`. As loading consists in executing those statements, this would mean that the data processing would be repeated each time the Transform is loaded.
 
 To prevent that, use {py:meth}`padl.value`:
 
@@ -261,9 +261,9 @@ x = value(x, (mysaver, myloader))
 When saving, PADL automatically serializes pytorch model parameters and stores them in the `.padl`
 folder as `.pt` files. When loading, the parameters of the models are set to the previously saved values.
 
-## Defining transform within nested scopes
+## Defining Transform within nested scopes
 
-It is possible to create transforms within nested scopes (for instance in a function body):
+It is possible to create Transforms within nested scopes (for instance in a function body):
 
 ```python
 from padl import transform, save

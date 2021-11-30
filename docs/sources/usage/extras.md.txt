@@ -1,3 +1,4 @@
+(extras)=
 
 ## Extras
 
@@ -28,9 +29,9 @@ The special object {obj}`~padl.same` can be used to get items from the input -
 
 ### Applying Transforms Depending on the Mode
 
-Often it can be useful to apply transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation transforms only during training.
+Often it can be useful to apply Transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation Transforms only during training.
 
-Use an {class}`~padl.IfInfer` Transform to apply a transform only in the *infer* mode:
+Use an {class}`~padl.IfInfer` Transform to apply a Transform only in the *infer* mode:
 
 ```python
 >>> from padl import IfInfer
@@ -41,7 +42,7 @@ Use an {class}`~padl.IfInfer` Transform to apply a transform only in the *infer*
 200
 ```
 
-Analogously, use {class}`~padl.IfEval` or {class}`~padl.IfTrain` to apply a transform only in the "eval"- or "train" mode, respectively.
+Analogously, use {class}`~padl.IfEval` or {class}`~padl.IfTrain` to apply a Transform only in the "eval"- or "train" mode, respectively.
 
 ### Exception Handling
 

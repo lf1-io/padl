@@ -1,6 +1,7 @@
+(print-slice)=
 ## Printing and Slicing
 
-Pipeline pretty-print in IPython:
+Transforms pretty-print in IPython:
 
 ```python
 >>> add
@@ -26,7 +27,7 @@ Compose:
    2: MinusX(x=100)
 ```
 
-Sub-pipelines of pipelines can be accessed via getitem:
+Sub-transforms of Pipelines can be accessed via getitem:
 
 ```python
 >>> (t1 >> t2 >> t3)[0] == t1
@@ -40,9 +41,11 @@ Slices work, too:
 True
 ```
 
-This can be used with complex, nested pipelines:
+This can be used with complex, nested Pipelines:
 
 ```python
 >>> (t1 >> t2 + t3 + t4 >> t5)[1][:2] == t2 + t3
 True
 ```
+
+Read in the {ref}`next section <pytorch>` how **PyTorch** Modules and Transforms work together.

@@ -1,6 +1,6 @@
 # Welcome to PADL's documentation!
 
-**PyTorch** abstractions for deep learning.
+**Pipeline** abstractions for deep learning.
 
 ```{toctree}
 :caption: 'Contents:'
