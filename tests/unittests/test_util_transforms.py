@@ -1,6 +1,7 @@
 import pytest
 import torch
-from padl import transform, Batchify
+
+from padl import transform, Batchify, Unbatchify, batch, Identity
 import padl.transforms as padl
 from padl.util_transforms import IfTrain, IfEval, IfInfer, Try
 
@@ -60,45 +61,29 @@ class TestIfInMode:
             >> times_three
         )
 
-    def test_infer_apply_1(self):
+    def test_infer_apply(self):
         assert self.transform_1.infer_apply(1) == 9
-
-    def test_infer_apply_2(self):
         assert self.transform_2.infer_apply(1) == 6
-
-    def test_infer_apply_3(self):
         assert self.transform_3.infer_apply(1) == 12
 
-    def test_eval_apply_1(self):
+    def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([1, 2])) == [9, 12]
-
-    def test_eval_apply_2(self):
         assert list(self.transform_2.eval_apply([1, 2])) == [12, 18]
-
-    def test_eval_apply_3(self):
         assert list(self.transform_3.eval_apply([1, 2])) == [6, 9]
 
-    def test_train_apply_1(self):
+    def test_train_apply(self):
         assert list(self.transform_1.train_apply([1, 2])) == [12, 18]
-
-    def test_train_apply_2(self):
         assert list(self.transform_2.train_apply([1, 2])) == [6, 9]
-
-    def test_train_apply_3(self):
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
 
-    def test_save_and_load_1(self, tmp_path):
-        self.transform_1.pd_save(tmp_path / 'test.padl')
+    def test_save_and_load(self, tmp_path):
+        self.transform_1.pd_save(tmp_path / 'test.padl', True)
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 9
-
-    def test_save_and_load_2(self, tmp_path):
-        self.transform_2.pd_save(tmp_path / 'test.padl')
+        self.transform_2.pd_save(tmp_path / 'test.padl', True)
         t2 = padl.load(tmp_path / 'test.padl')
         assert t2.infer_apply(1) == 6
-
-    def test_save_and_load_3(self, tmp_path):
-        self.transform_3.pd_save(tmp_path / 'test.padl')
+        self.transform_3.pd_save(tmp_path / 'test.padl', True)
         t3 = padl.load(tmp_path / 'test.padl')
         assert t3.infer_apply(1) == 12
 
@@ -134,6 +119,29 @@ class TestTry:
     def test_eval_apply(self):
         assert list(self.try_transform_1.eval_apply([4, 9])) == [9, 19]
         assert list(self.try_transform_2.eval_apply([3, 7])) == [8, 16]
+
+    def test_stages_1(self):
+        tt = self.try_transform_1[0]
+        assert isinstance(tt.pd_preprocess, Identity)
+        assert tt.pd_forward is tt
+        assert isinstance(tt.pd_postprocess, Identity)
+
+    def test_no_multistage_try(self):
+        with pytest.raises(AssertionError):
+            t = Try(plus_one >> batch >> plus_one, Identity(), exceptions=Exception)
+            t.pd_forward
+
+    def test_no_multistage_catch(self):
+        with pytest.raises(AssertionError):
+            t = Try(Identity(), plus_one >> batch >> plus_one,
+                    exceptions=Exception)
+            t.pd_forward
+
+    def test_no_multistage_else(self):
+        with pytest.raises(AssertionError):
+            t = Try(Identity(), Identity(), else_transform=plus_one >> batch >> plus_one,
+                    exceptions=Exception)
+            t.pd_forward
 
     def test_save_and_load(self, tmp_path):
         self.try_transform_1.pd_save(tmp_path / 'test.padl', force_overwrite=True)
