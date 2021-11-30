@@ -84,3 +84,5 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['static']
 html_css_files = ["custom.css"]
+html_show_sourcelink = False
+

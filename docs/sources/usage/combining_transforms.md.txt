@@ -1,6 +1,7 @@
+(pipelines)=
 ## Combining Transforms into Pipelines
 
-PADL provides functional operators, which allow to combine transforms to create powerful pipelines (`padl.transforms.Pipeline`) instances.
+PADL provides functional operators, which allow to combine Transforms to create powerful {class}`~padl.transforms.Pipeline` instances.
 
 This is most useful for building deep learning pipelines on a *macro-level* - for instance combining different preprocessing steps and augmentation with a model forward pass. You can keep building the individual sub-components as you're used to - with python and PyTorch.
 
@@ -10,7 +11,7 @@ This is most useful for building deep learning pipelines on a *macro-level* - fo
 
 Transforms can be **composed** using `>>`:
 
-Pipelines arising from a compose process their input in a sequence, the output of the first transform becomes the input of the second.
+Pipelines arising from a compose process their input in a sequence, the output of the first Transform becomes the input of the second.
 
 <img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
 
@@ -23,7 +24,7 @@ True
 
 ### Rollout `+`
 
-An input can be **rolled out** to multiple Transforms using `+`. This means applying different transforms to the same input. The result is a tuple.
+An input can be **rolled out** to multiple Transforms using `+`. This means applying different Transforms to the same input. The result is a tuple.
 
 <img src="img/rollout.png" style='display: block; margin: auto; width: 300px'>
 
@@ -37,7 +38,7 @@ True
 
 ### Parallel `/`
 
-Multiple transforms can be **applied in parallel** to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
+Multiple Transforms can be **applied in parallel** to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
 
 <img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
 
@@ -50,7 +51,7 @@ True
 
 ### Map `~`
 
-Transforms can be **mapped** using `~`. Mapping applies the same transforms to multiple inputs. The output has the same length as the input.
+Transforms can be **mapped** using `~`. Mapping applies the same Transforms to multiple inputs. The output has the same length as the input.
 
 <img src="img/map.png" style='display: block; margin: auto; width: 300px'>
 
@@ -61,9 +62,9 @@ Thus:
 True
 ```
 
-### Grouping sub-pipelines/ transforms
+### Grouping Transforms
 
-By default, pipelines, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
+By default, Pipelines, such as rollouts and parrallels, are *flattened*. This means that even if you use parentheses to group them, the output will be a flat tuple:
 
 ```python
 >>> (t1 + (t2 + t3))(x) == ((t1 + t2) + t3)(x) == (t1 + t2 + t3)(x)  == (t1(x), t2(x), t2(x))
@@ -211,4 +212,4 @@ preprocess_image = (
 )
 ```
 
-This transform takes an image path and returns a tuple of tensors.
+This Transform takes an image path and returns a tuple of tensors.

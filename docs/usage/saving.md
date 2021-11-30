@@ -1,7 +1,7 @@
 (saving)=
 ## Saving and Loading
 
-All PADL transforms can be saved via {meth}`~padl.save`:
+All PADL Transforms can be saved via {meth}`~padl.save`:
 
 ```python
 from padl import save
@@ -17,14 +17,16 @@ mypipeline.padl/
 └── versions.txt
 ```
 
-containing a python file defining the pipeline and a file containing a list of all package dependencies and their versions.
+containing a python file defining the Transform and a file containing a list of all package dependencies and their versions.
 
-When saving pipelines which include PyTorch {class}`Module`s as transforms, checkpoint files with all parameters are stored, too.
+When saving Pipelines which include PyTorch {class}`Module`s as Transforms, checkpoint files with all parameters are stored, too.
 
-Saved pipelines can be loaded with {meth}`~padl.load`:
+Saved Transforms can be loaded with {meth}`~padl.load`:
 
 ```python
 from padl import load
 
-my_pipeline = load('mytransform.padl')
+my_pipeline = load('mypipeline.padl')
 ```
+
+Learn in the {ref}`next section <print-slice>` how to print and slice Transforms in interactive sessions.

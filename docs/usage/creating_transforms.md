@@ -1,7 +1,7 @@
 (creating-transforms)=
 ## Creating Transforms
 
-Everything that can be *called* in python can be converted into a `padl.transforms.Transform`.
+Everything that can be *called* in python can be converted into a {class}`~padl.transforms.Transform`.
 For that, use the {func}`~padl.transform` wrapper.
 
 ```python
@@ -88,5 +88,7 @@ It's also possible to wrap **entire python modules**. When doing this, everythin
 
     lin = nn.Linear(10, 10)  # this is a Transform
     ```
+
+Learn in the {ref}`next Section <pipelines>` how to combine multiple Transforms to form a Pipeline.
 
 ### Examples
