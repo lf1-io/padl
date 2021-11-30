@@ -202,7 +202,8 @@ class Transform:
             - the "postprocess" part of the transform
         """
         component = Transform._pd_merge_components(input_components)
-        assert isinstance(component, int)
+        assert isinstance(component, int), ('A normal Tranform cannot process input from multiple '
+                                            'stages.')
         return (
             # a normal transform doesn't change the components
             component,
