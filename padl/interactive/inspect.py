@@ -34,7 +34,7 @@ class _Debug:
             q(uit): quit'
         """
         pos = len(_pd_trace) - 1
-        print(_pd_trace[pos][0])
+        print(self.default_msg + '\n' + _pd_trace[pos][0])
 
         while True:
             try:
@@ -57,7 +57,7 @@ class _Debug:
                 self.args = _pd_trace[pos][2]
                 self.trans = _pd_trace[pos][3]
                 self.repeat()
-            elif x == 'h':
+            elif x == 'h' or x == 'help':
                 msg = self.default_msg
             elif x == 't':
                 msg = _pd_trace[pos][0]
@@ -70,7 +70,7 @@ class _Debug:
                     print(err)
                 finally:
                     continue
-            if x in {'d', 'u', 'w', 'i', 'h', 't'}:
+            if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:
                 print(f'\n{msg}\n')
 
     def repeat(self) -> None:

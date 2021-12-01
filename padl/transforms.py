@@ -510,7 +510,6 @@ class Transform:
     def _pd_trace_error(self, position: int, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            breakpoint()
             str_ = self._pd_longrepr()
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
         except Exception:
@@ -890,15 +889,20 @@ class Transform:
         :param inputs: The input.
         """
         self.pd_forward_device_check()
-        inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
-        inputs = _move_to_device(inputs, self.pd_device)
-        inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
-        inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        output_format = self._pd_get_output_format()
-        if output_format is not None:
-            return output_format(*inputs)
-        else:
-            return inputs
+        in_args = inputs
+        try:
+            inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
+            inputs = _move_to_device(inputs, self.pd_device)
+            inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
+            inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
+            output_format = self._pd_get_output_format()
+            if output_format is not None:
+                return output_format(*inputs)
+            else:
+                return inputs
+        except Exception as err:
+            self._pd_trace_error(0, in_args)
+            raise err
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
