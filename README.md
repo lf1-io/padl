@@ -19,7 +19,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 - models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.
 - allows for converting standard functions to **PADL** components using a single keyword `transform`.
 
-**PADL** was developed at [LF1](https://lf1.io/) an AI innovation lab based in Berlin, Germany.
+**PADL** was developed at [LF1](https://lf1.io/), an AI innovation lab based in Berlin, Germany.
 
 ## Getting Started
 
