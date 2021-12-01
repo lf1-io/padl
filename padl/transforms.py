@@ -896,13 +896,13 @@ class Transform:
             inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
             inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
             output_format = self._pd_get_output_format()
-            if output_format is not None:
-                return output_format(*inputs)
-            else:
-                return inputs
         except Exception as err:
             self._pd_trace_error(0, in_args)
             raise err
+        if output_format is not None:
+            return output_format(*inputs)
+        else:
+            return inputs
 
     def eval_apply(self, inputs: Iterable,
                    verbose: bool = False, flatten: bool = False, **kwargs):
