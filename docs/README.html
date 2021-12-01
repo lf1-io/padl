@@ -1,33 +1,77 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>Introduction &mdash; PADL 0.1.0 documentation</title>
-      <link rel="stylesheet" href="static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  
+
+  
+  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="static/custom.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
         <script src="static/jquery.js"></script>
         <script src="static/underscore.js"></script>
         <script src="static/doctools.js"></script>
-    <script src="static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting Started" href="gettingstarted.html" />
+    <link rel="next" title="Usage" href="usage.html" />
     <link rel="prev" title="Welcome to PADL’s documentation!" href="index.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> PADL
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="static/padl-logo.png" class="logo" alt="Logo"/>
+          
           </a>
+
+          
+            
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -35,165 +79,292 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#why-padl">Why PADL?</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#problem-statement">Problem Statement</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#standard-approach">Standard Approach</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#padl-solutions">PADL Solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resources">Resources</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#licensing">Licensing</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="gettingstarted.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#project-structure">Project Structure</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gettingstarted.html#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-atomic-transforms">Defining atomic transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#defining-compound-transforms">Defining compound transforms</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#passing-inputs-between-transform-stages">Passing inputs between transform stages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#decomposing-models">Decomposing models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#naming-transforms-inside-models">Naming transforms inside models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#applying-transforms-to-data">Applying transforms to data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#model-training">Model training</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gettingstarted.html#saving-loading">Saving/ Loading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/creating_transforms.html">Creating Transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#grouping-transforms">Grouping Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/combining_transforms.html#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="usage/combining_transforms.html#id2">Compose</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="usage/combining_transforms.html#id3">Rollout</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="usage/combining_transforms.html#id4">Parallel</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#pass-training-samples">Pass training samples</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="usage/combining_transforms.html#id5">Map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="usage/combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="saving.html">Saving</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-by-value">Saving by value</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#custom-serializers">Custom serializers</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#defining-transform-within-nested-scopes">Defining transform within nested scopes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="saving.html#what-does-not-save">What does not save</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
-<li class="toctree-l3"><a class="reference internal" href="saving.html#mutated-objects">Mutated objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/apply.html">Applying Transforms to Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/saving.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/print_slice.html">Printing and Slicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage/pytorch.html">Using PyTorch Modules with Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage/pytorch.html#padl-automatically-saves-pytorch-state-dicts">PADL Automatically Saves PyTorch State-Dicts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/pytorch.html#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage/extras.html">Extras</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage/extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage/extras.html#exception-handling">Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="advanced/saving.html">Saving</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.transforms">Transforms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html#module-padl.util_transforms">Util Transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.sourceget.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.version.html"><code class="docutils literal notranslate"><span class="pre">padl.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs/padl.wrap.html"><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code></a></li>
 </ul>
 </li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">PADL</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
+    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
       <li>Introduction</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
-            <a href="sources/README.rst.txt" rel="nofollow"> View page source</a>
+        
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
-  <div class="section" id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
-<p><strong>PyTorch</strong> <em>abstractions for deep learning</em>.</p>
+            
+  <div class="tex2jax_ignore mathjax_ignore section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p><strong>Pipeline abstractions for deep learning</strong></p>
 <hr class="docutils" />
-<p>Full documentation here: <a class="reference external" href="https://lf1-io.github.io/padl/">https://lf1-io.github.io/padl/</a></p>
 <p><strong>PADL</strong>:</p>
 <ul class="simple">
-<li><p>is a model builder for <strong>PyTorch</strong>. Build models with a functional API featuring operator overloading. Super fun and easy to use. Use <strong>PADL</strong> together with all of the great functionality you’re used to with <strong>Pytorch</strong> for saving, and writing layers.</p></li>
-<li><p>allows users to build pre-processing, forward passes, loss functions <strong>and</strong> post-processing into the model</p></li>
-<li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem</p></li>
+<li><p>is a pipeline builder for <strong>PyTorch</strong>.</p></li>
+<li><p>can be used with all of the great <strong>PyTorch</strong> functionality you’re used to for writing layers.</p></li>
+<li><p>allows users to build pre-processing, forward passes, loss functions <strong>and</strong> post-processing into the pipeline.</p></li>
+<li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.</p></li>
 <li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
 </ul>
-<p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a> an AI innovation lab based in Berlin, Germany.</p>
-<div class="section" id="why-padl">
-<h2>Why PADL?<a class="headerlink" href="#why-padl" title="Permalink to this headline"></a></h2>
-<p>For data scientists, developing neural network models is often hard to coordinate and manage, due to the need to juggle diverse tasks such as pre-processing, <strong>PyTorch</strong> layers, loss functions and post-processing, as well as maintenance of config files, code bases and communicating results between teams. PADL is a tool to alleviate several aspects of this work.</p>
-<div class="section" id="problem-statement">
-<h3>Problem Statement<a class="headerlink" href="#problem-statement" title="Permalink to this headline"></a></h3>
-<p>While developing and deploying our deep learning models in <strong>PyTorch</strong>, we found that important design decisions and even data-dependent hyper-parameters took place not just in the forward passes/ modules but also in the pre-processing and post-processing. For example:</p>
+<p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a>, an AI innovation lab based in Berlin, Germany.</p>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">padl</span>
+</pre></div>
+</div>
+<p>PADL currently supports python <strong>3.8</strong> and <strong>3.9</strong>.</p>
+</div>
+<div class="section" id="your-first-padl-program">
+<h3>Your first PADL program<a class="headerlink" href="#your-first-padl-program" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="n">nn</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">nn</span><span class="p">)</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+  	<span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+<span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">prepare</span> <span class="o">&gt;&gt;</span> <span class="n">batch</span> <span class="o">&gt;&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">post</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="resources">
+<h3>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>in <em>NLP</em> the exact steps and objects necessary to convert a sentence to a tensor</p></li>
-<li><p>in <em>neural translation</em> the details of beam search post-processing and filtering based on business logic</p></li>
-<li><p>in <em>vision</em> applications, the normalization constants applied to image tensors</p></li>
-<li><p>in <em>classification</em> the label lookup dictionaries, formatting the tensor to human readable output</p></li>
-</ul>
-<p>In terms of the functional mental model for deep learning we typically enjoy working with, these steps constitute key initial and end nodes on the computation graph which is executed for each model forward or backward pass.</p>
-</div>
-<div class="section" id="standard-approach">
-<h3>Standard Approach<a class="headerlink" href="#standard-approach" title="Permalink to this headline"></a></h3>
-<p>The standard approach to deal with these steps is to maintain a library of routines for these software components and log with the model or in code which functions are necessary to deploy and use the model. This approach has several drawbacks.</p>
-<ul class="simple">
-<li><p>A complex versioning problem is created in which each model may require a different version of this library. This means that models using different versions cannot be served side-by-side.</p></li>
-<li><p>To import and use the correct pre- and post-processing is a laborious process when working interactively (as data scientists are accustomed to doing)</p></li>
-<li><p>It is difficult to create exciting variants of a model based on slightly different pre- and post-processing without first going through the steps to modify the library in a git branch or similar</p></li>
-<li><p>There is no easy way to robustly save and inspect the results of “quick and dirty” experimentation in, for example, jupyter notebooks. This way of operating is a major workhorse of a data-scientists’ daily routine.</p></li>
+<li><p>Go to <a class="reference internal" href="usage.html#usage"><span class="std std-ref">Usage</span></a> for a concise but comprehensive manual.</p></li>
+<li><p>Find examples at <a class="reference external" href="https://github.com/lf1-io/padl/tree/main/notebooks">https://github.com/lf1-io/padl/tree/main/notebooks</a>.</p></li>
+<li><p>Post issues at <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p></li>
 </ul>
 </div>
-<div class="section" id="padl-solutions">
-<h3>PADL Solutions<a class="headerlink" href="#padl-solutions" title="Permalink to this headline"></a></h3>
-<p>In creating <strong>PADL</strong> we aimed to create:</p>
-<ul class="simple">
-<li><p>A beautiful functional API including all mission critical computational steps in a single formalism – pre-processing, post-processing, forward pass, batching and inference modes.</p></li>
-<li><p>An intuitive serialization/ saving routine, yielding nicely formatted output, saved weights and necessary data blobs which allows for easily comprehensible and reproducible results even after creating a model in a highly experimental, “notebook” fashion.</p></li>
-<li><p>An “interactive” or “notebook-friendly” philosophy, with print statements and model inspection designed with a view to applying and viewing the models, and inspecting model outputs.</p></li>
-</ul>
-<p>With <strong>PADL</strong> it’s easy to maintain a single pipeline object for each experiment which includes pre-processing, forward pass and post-processing, based on the central <code class="docutils literal notranslate"><span class="pre">Transform</span></code> abstraction. When the time comes to inspect previous results, simply load that object and inspect the model topology and outputs interactively in a <strong>Jupyter</strong> or <strong>IPython</strong> session. When moving to production, simply load the entire pipeline into the serving environment or app, without needing to maintain disparate libraries for the various model components. If the experiment needs to be reproduced down the line, then simply re-execute the experiment by pointing the training function to the saved model output.</p>
 </div>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>Code of conduct: <a class="reference external" href="https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md">https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md</a>.</p>
+<p>If your interested in contributing to PADL please look at the current issues: <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p>
 </div>
-<div class="section" id="license">
-<h2>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h2>
+<div class="section" id="licensing">
+<h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline">¶</a></h2>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
 </div>
 </div>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="usage.html" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="index.html" class="btn btn-neutral float-left" title="Welcome to PADL’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="gettingstarted.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, LF1.</p>
-  </div>
+    <p>
+        &#169; Copyright 2021, LF1 GmbH.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

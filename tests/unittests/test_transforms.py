@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity
+from padl import transforms as pd, transform, Identity, batch, unbatch
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
@@ -9,6 +9,12 @@ from padl.exceptions import WrongDeviceError
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
+
+
+class PrettyMock:
+    @staticmethod
+    def text(x):
+        return x
 
 
 @transform
@@ -129,6 +135,40 @@ def test_isinstance_of_namedtuple():
     assert not pd._isinstance_of_namedtuple('something')
 
 
+class TestNamedTupleOutput:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        request.cls.transform_1 = plus_one
+        request.cls.transform_2 = request.cls.transform_1 >> (times_two + times_two)
+        request.cls.transform_3 = request.cls.transform_2 >> (times_two / times_two)
+
+    def test_call(self):
+        assert not pd._isinstance_of_namedtuple(self.transform_1(1))
+        assert pd._isinstance_of_namedtuple(self.transform_2(1))
+        assert pd._isinstance_of_namedtuple(self.transform_3(1))
+
+    def test_infer_apply(self):
+        assert not pd._isinstance_of_namedtuple(self.transform_1.infer_apply(1))
+        assert pd._isinstance_of_namedtuple(self.transform_2.infer_apply(1))
+        assert pd._isinstance_of_namedtuple(self.transform_3.infer_apply(1))
+
+    def test_eval_apply(self):
+        assert not any(list(map(pd._isinstance_of_namedtuple,
+                                self.transform_1.eval_apply([1, 2, 3]))))
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_2.eval_apply([1, 2, 3]))))
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_3.eval_apply([1, 2, 3]))))
+
+    def test_train_apply(self):
+        assert not any(list(map(pd._isinstance_of_namedtuple,
+                                self.transform_1.train_apply([1, 2, 3]))))
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_2.train_apply([1, 2, 3]))))
+        assert all(list(map(pd._isinstance_of_namedtuple,
+                            self.transform_3.train_apply([1, 2, 3]))))
+
+
 class TestPADLCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -147,6 +187,14 @@ class TestPADLCallTransform:
         assert self.transform_4.infer_apply(201)
         assert self.transform_5.infer_apply(11.1)
         assert self.transform_6.infer_apply(19)
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
 
     def test_save_load(self, tmp_path):
         for transform_ in [self.transform_1,
@@ -167,24 +215,45 @@ class TestMap:
         request.cls.transform_2 = transform(simple_func) / ~plus_one
         request.cls.transform_3 = ~times_two + ~plus_one
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
+        request.cls.transform_5 = Batchify() >> ~plus_one
+        request.cls.transform_6 = (
+            Batchify() / Identity()
+            >> ~plus_one
+        )
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
         assert isinstance(self.transform_2.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_5.pd_preprocess, pd.Batchify)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Map)
         assert isinstance(self.transform_2.pd_forward, pd.Parallel)
+        assert isinstance(self.transform_5.pd_forward, pd.Map)
+        assert isinstance(self.transform_6.pd_forward, pd.Parallel)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_2.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_5.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Parallel)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == (3, 4, 5)
         assert self.transform_2.infer_apply((1, [2, 3, 4])) == (1, (3, 4, 5))
         assert self.transform_3.infer_apply([2, 3, 4]) == ((4, 6, 8), (3, 4, 5))
         assert self.transform_4.infer_apply(1) == (2, 2, 2)
+        assert self.transform_5.infer_apply([1, 1, 1]) == (2, 2, 2)
+        assert self.transform_6.infer_apply([1, 2]) == (2, 3)
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
@@ -198,7 +267,7 @@ class TestMap:
         assert list(self.transform_1.train_apply([[2, 3], [3, 4]])) == [(3, 4), (4, 5)]
         assert list(self.transform_2.train_apply(([1, [2, 3]], (2, [3, 4])))) == [(1, (3, 4)),
                                                                                   (2, (4, 5))]
-        assert list(self.transform_3.train_apply([[2, 3], [2, 3]])) == \
+        assert list(self.transform_3.eval_apply([[2, 3], [2, 3]])) == \
                [((4, 6), (3, 4)), ((4, 6), (3, 4))]
         assert list(self.transform_4.train_apply([1])) == [(2, 2, 2)]
 
@@ -223,6 +292,16 @@ class TestParallel:
         request.cls.transform_1 = plus_one / times_two / times_two
         request.cls.transform_2 = transform(simple_func) / transform(simple_func) / transform(simple_func)
         request.cls.transform_3 = plus_one / plus_one / transform(simple_func)
+        request.cls.transform_4 = (
+            plus_one / plus_one
+            >> transform(lambda x: x[0] * x[1])
+        )
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
 
     def test_output(self):
         in_ = (2, 2, 2)
@@ -240,15 +319,19 @@ class TestParallel:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_4.pd_preprocess, pd.Identity)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Parallel)
+        assert isinstance(self.transform_4.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_4.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
+        assert self.transform_4.infer_apply((2, 4)) == 15
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
@@ -277,6 +360,37 @@ class TestRollout:
         request.cls.transform_1 = plus_one + times_two + times_two
         request.cls.transform_2 = transform(simple_func) + transform(simple_func) + transform(simple_func)
         request.cls.transform_3 = plus_one + plus_one + transform(simple_func)
+        request.cls.transform_4 = (
+            (Batchify() >> plus_one) + (times_two >> Batchify())
+        )
+        request.cls.transform_5 = (
+            (times_two >> Batchify()) + (Batchify() >> plus_one)
+        )
+        request.cls.transform_6 = (
+            plus_one / times_two
+            >> times_two + times_two
+        )
+
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+        self.transform_6._repr_pretty_(PrettyMock, False)
+
+    def test_identity_split(self):
+        new_iden = Identity() - 'new_name'
+        test = (
+            plus_one
+            >> batch
+            >> new_iden + new_iden
+            >> plus
+            >> unbatch
+            >> new_iden + new_iden
+            >> plus
+        )
+        assert str(test.pd_forward) == str(new_iden + new_iden >> plus)
 
     def test_output(self):
         in_ = 123
@@ -294,15 +408,21 @@ class TestRollout:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Identity)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Rollout)
+        assert isinstance(self.transform_6.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
+        assert self.transform_4.infer_apply(2) == (3, 4)
+        assert self.transform_5.infer_apply(2) == (4, 3)
+        assert self.transform_6.infer_apply((2, 2)) == ((3, 4, 3, 4), (3, 4, 3, 4))
 
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
@@ -340,6 +460,13 @@ class TestCompose:
             >> Unbatchify()
         )
 
+    def test_pprintt(self):
+        self.transform_1._repr_pretty_(PrettyMock, False)
+        self.transform_2._repr_pretty_(PrettyMock, False)
+        self.transform_3._repr_pretty_(PrettyMock, False)
+        self.transform_4._repr_pretty_(PrettyMock, False)
+        self.transform_5._repr_pretty_(PrettyMock, False)
+
     def test_associative(self):
         in_ = 123
         assert self.transform_1(in_) == self.transform_2(in_) == self.transform_3(in_)
@@ -364,25 +491,24 @@ class TestCompose:
         assert self.transform_5.infer_apply(1) == torch.tensor(8)
 
     def test_eval_apply(self):
-        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.eval_apply([1, 1])) == [torch.tensor(8), torch.tensor(8)]
 
     def test_train_apply(self):
         # default
-        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor([8]), torch.tensor([8])]
+        assert list(self.transform_5.train_apply([1, 1])) == [torch.tensor(8), torch.tensor(8)]
         # loader kwargs
-        for batch in list(self.transform_5.train_apply(
-            [1, 2, 1, 2],
+        for out in list(self.transform_5.train_apply(
+            [1, 1, 1, 1],
             verbose=True,
             batch_size=2)
         ):
-            assert torch.all(batch == torch.tensor([8, 12]))
-        # flatten = True
+            assert out == torch.tensor(8)
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             flatten=True,
             verbose=True,
             batch_size=2)
-        ) == [torch.tensor([8]), torch.tensor([12]), torch.tensor([8]), torch.tensor([12])]
+        ) == [torch.tensor(8), torch.tensor(12), torch.tensor(8), torch.tensor(12)]
 
     def test_context(self):
         assert self.transform_1.pd_mode is None
@@ -418,7 +544,7 @@ class TestCompose:
 
     def test_getitem(self):
         assert isinstance(self.transform_5[0], pd.Transform)
-        assert isinstance(self.transform_5[0:2], pd.CompoundTransform)
+        assert isinstance(self.transform_5[0:2], pd.Pipeline)
         assert isinstance(self.transform_5[0:2], pd.Compose)
         assert isinstance(self.transform_5['named_times_two'], pd.Transform)
         with pytest.raises(ValueError):
@@ -459,23 +585,50 @@ class TestModel:
             >> plus_one / times_two
         ) - 'model_4'
         request.cls.model_5 = ~transform_1
+        request.cls.model_6 = (
+            Batchify()
+            >> plus_one
+            >> plus_one + times_two
+        )
+        request.cls.model_7 = (
+            plus_one + times_two
+            >> plus_one / Batchify()
+            >> plus_one / plus_one
+            >> Batchify() / times_two
+            >> Unbatchify()
+            >> plus_one / plus_one
+        )
+
+    def test_pprintt(self):
+        self.model_1._repr_pretty_(PrettyMock, False)
+        self.model_2._repr_pretty_(PrettyMock, False)
+        self.model_3._repr_pretty_(PrettyMock, False)
+        self.model_4._repr_pretty_(PrettyMock, False)
+        self.model_5._repr_pretty_(PrettyMock, False)
+        self.model_6._repr_pretty_(PrettyMock, False)
 
     def test_pd_preprocess(self):
         assert isinstance(self.model_1.pd_preprocess, pd.Parallel)
         assert isinstance(self.model_2.pd_preprocess, pd.Rollout)
         assert isinstance(self.model_4.pd_preprocess, pd.Compose)
         assert isinstance(self.model_5.pd_preprocess, pd.Map)
+        assert isinstance(self.model_6.pd_preprocess, pd.Batchify)
+        assert isinstance(self.model_7.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
         assert isinstance(self.model_1.pd_forward, pd.Parallel)
         assert isinstance(self.model_2.pd_forward, pd.Parallel)
         assert isinstance(self.model_5.pd_forward, pd.Map)
+        assert isinstance(self.model_6.pd_forward, pd.Compose)
+        assert isinstance(self.model_7.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
         assert isinstance(self.model_1.pd_postprocess, pd.Parallel)
         assert isinstance(self.model_2.pd_postprocess, pd.Parallel)
         assert isinstance(self.model_4.pd_postprocess, pd.Compose)
         assert isinstance(self.model_5.pd_postprocess, pd.Map)
+        assert isinstance(self.model_6.pd_postprocess, pd.Identity)
+        assert isinstance(self.model_7.pd_postprocess, pd.Compose)
 
     def test_infer_apply(self):
         assert self.model_1.infer_apply((5, 5)) == (13, 13)
@@ -483,6 +636,8 @@ class TestModel:
         assert self.model_3.infer_apply(5) == (7, 20)
         assert self.model_4.infer_apply(5) == (8, 20)
         assert self.model_5.infer_apply((5, 5)) == (13, 13)
+        assert self.model_6.infer_apply(5) == (7, 12)
+        assert self.model_7.infer_apply(5) == (9, 23)
 
     def test_eval_apply(self):
         assert list(self.model_1.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
@@ -490,6 +645,8 @@ class TestModel:
         assert list(self.model_3.eval_apply([5, 6])) == [(7, 20), (8, 24)]
         assert list(self.model_4.eval_apply([5, 6])) == [(8, 20), (9, 24)]
         assert list(self.model_5.eval_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
+        assert list(self.model_6.eval_apply([5, 6])) == [(7, 12), (8, 14)]
+        assert list(self.model_7.eval_apply([5, 6])) == [(9, 23), (10, 27)]
 
     def test_train_apply(self):
         assert list(self.model_1.train_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
@@ -582,15 +739,14 @@ def test_name():
 class TestTransformDeviceCheck:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
-        request.cls.transform_1 = (plus_one >> times_two) >> times_two
-        request.cls.transform_2 = plus_one >> (times_two >> times_two)
+        request.cls.transform_1 = Batchify() >> (plus_one >> times_two) >> times_two
+        request.cls.transform_2 = Batchify() >> plus_one >> (times_two >> times_two)
 
     def test_device_check(self):
         self.transform_1.pd_to('gpu')
         self.transform_1.transforms[1].pd_to('cpu')
 
-        with pytest.raises(WrongDeviceError):
-            self.transform_1.pd_forward_device_check()
+        assert self.transform_1.pd_forward_device_check()
 
         self.transform_2.pd_to('gpu')
         assert self.transform_2.pd_forward_device_check()
@@ -702,3 +858,73 @@ class TestClassInstance:
 
     def test_long_list(self):
         import tests.material.long_list
+
+
+class TestComposeWithComments:
+    def test_lambda_1(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_lambda_2(self):
+        # should not fail
+        t = (
+            transform(lambda x: x)
+            #
+            >> transform(lambda x: x)
+        )
+
+    def test_identity(self):
+        # should not fail
+        t = (
+            Identity()
+        #
+            >> transform(lambda x: x)
+        )
+
+    def test_function_1(self, tmp_path):
+        t = (
+            Identity()
+            #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
+
+    def test_function_2(self, tmp_path):
+        t = (
+            Identity()
+        #
+            >> transform(simple_func)
+        )
+
+        t.pd_save(tmp_path)
+
+
+class TestAssertNoDoubleBatch:
+    def test_double_1(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> batch >> batch
+            t.pd_forward
+
+    def test_double_2(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one + batch >> plus_one >> batch >> plus_one
+            t.pd_forward
+
+    def test_double_3(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one + batch >> plus_one >> batch + plus_one >> plus_one
+            t.pd_forward
+
+    def test_double_4(self):
+        with pytest.raises(AssertionError):
+            t = plus_one >> plus_one / batch >> batch + plus_one >> plus_one
+            t.pd_forward
+
+    def test_no_double(self):
+        t = plus_one >> plus_one / batch >> batch / plus_one >> plus_one
+        t.pd_forward

@@ -161,7 +161,7 @@ def get_statement(source: str, lineno: int):
     """Get complete (potentially multi-line) statement at line *lineno* out of *source*.
 
     :returns: A tuple of statement and offset. The offset is a tuple of row offset and col offset.
-        It can be used to determine the location of the satement within the source.
+        It can be used to determine the location of the statement within the source.
     """
     for row_offset in range(lineno):
         try:
@@ -170,11 +170,11 @@ def get_statement(source: str, lineno: int):
             continue
         try:
             try:
-                statement = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - row_offset - 1, -col_offset)
+                statement, offset = _get_statement_from_block(block, lineno_in_block + row_offset)
+                return statement, (lineno - offset - 1, -col_offset)
             except SyntaxError:
-                statement = _get_statement_from_block('(\n' + block + '\n)',
-                                                      lineno_in_block + row_offset + 1)
+                statement, offset = _get_statement_from_block('(\n' + block + '\n)',
+                                                              lineno_in_block + row_offset + 1)
                 return statement, (lineno - lineno_in_block - 1, -col_offset)
         except SyntaxError:
             continue
@@ -182,13 +182,16 @@ def get_statement(source: str, lineno: int):
 
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
-    """Get a statement from ."""
+    """Get a statement from a block."""
     module = ast.parse(block)
     stmts = []
+    offset = 0
     for stmt in module.body:
         if stmt.lineno <= lineno_in_block <= stmt.end_lineno:
             stmts.append(ast.get_source_segment(block, stmt))
-    return '\n'.join(stmts)
+            offset = lineno_in_block - stmt.lineno
+    assert len(stmts) == 1
+    return '\n'.join(stmts), offset
 
 
 def get_surrounding_block(source: str, lineno: int):
@@ -216,7 +219,8 @@ def get_surrounding_block(source: str, lineno: int):
     while before:
         next_ = before.pop(-1)
         next_white = _count_leading_whitespace(next_)
-        if next_white is None or next_white >= white:
+        starts_with_comment = next_.lstrip().startswith('#')
+        if next_white is None or next_white >= white or starts_with_comment:
             block = [next_[white:]] + block
         else:
             break
@@ -271,7 +275,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     available as then it will be possible to get column information from frames
     (see inline comments).
 
-    *segement_type* can be 'call', 'attribute', 'getitem'.
+    *segment_type* can be 'call', 'attribute', 'getitem'.
     """
     if segment_type == 'call':
         node_type = ast.Call
@@ -330,7 +334,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
             if instr.argval != target_instr.argval and instr.argval != argval:
                 break
             same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST')
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
             both_load = instr.opname in load_ops and target_instr.opname in load_ops
             if not (same_opname or both_load):
                 break
