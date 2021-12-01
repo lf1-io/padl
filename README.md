@@ -45,7 +45,7 @@ def prepare(x):
 
 @transform
 def post(x):
-  	return x.topk(1)[1].item()
+    return x.topk(1)[1].item()
 
 my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 ```
