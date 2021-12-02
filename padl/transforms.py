@@ -726,7 +726,7 @@ class Transform:
         assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
 
         global _pd_trace
-        _pd_trace = []
+        _pd_trace.clear()
 
         self.pd_forward_device_check()
 
@@ -750,12 +750,17 @@ class Transform:
             else:
                 loader = tqdm(loader, total=len(loader))
 
-        for batch in loader:
+        for batch, ix in loader:
             batch = _move_to_device(batch, self.pd_device)
 
             output = batch
             if use_forward:
-                output = forward.pd_call_transform(batch, mode)
+                try:
+                    output = forward.pd_call_transform(batch, mode)
+                except Exception as err:
+                    _pd_trace.pop(-1)
+                    self._pd_trace_error(None, [args[i] for i in ix])
+                    raise err
 
             if use_post or flatten:
                 if verbose:
@@ -763,7 +768,11 @@ class Transform:
 
                 output = _unpack_batch(output)
                 if use_post:
-                    output = [post.pd_call_transform(x, mode) for x in output]
+                    try:
+                        output = [post.pd_call_transform(x, mode) for x in output]
+                    except Exception as err:
+                        self._pd_trace_error(None, [args[i] for i in ix])
+                        raise err
                 for out in output:
                     output_format = self._pd_get_output_format()
                     if output_format is not None:
@@ -776,6 +785,7 @@ class Transform:
                     yield output_format(*output)
                 else:
                     yield output
+
 
     @property
     def pd_device(self) -> str:
@@ -860,8 +870,7 @@ class Transform:
                     layer.eval()
             Transform.pd_mode = None
 
-    @staticmethod
-    def pd_get_loader(args, preprocess, mode, **kwargs) -> DataLoader:
+    def pd_get_loader(self, args, preprocess, mode, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
         :param args: A sequence of datapoints.
@@ -873,6 +882,7 @@ class Transform:
         sequence = _ItemGetter(
             args,
             lambda *args: preprocess.pd_call_transform(*args, mode),
+            self
         )
 
         return DataLoader(
@@ -890,6 +900,7 @@ class Transform:
         """
         self.pd_forward_device_check()
         in_args = inputs
+        _pd_trace.clear()
         try:
             inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
             inputs = _move_to_device(inputs, self.pd_device)
@@ -2175,19 +2186,25 @@ class _ItemGetter:
     :param default: The default value to fall back to in case of exception.
     """
 
-    def __init__(self, samples, transform, exception=None, default=None):
+    def __init__(self, samples, transform, entire_transform, exception=None, default=None):
         self.samples = samples
         self.transform = transform
+        self.entire_transform = entire_transform
         self.exception = exception
         self.default = default
 
     def __getitem__(self, item):
         if self.exception:
             try:
-                return self.transform(self.samples[item])
+                return self.transform(self.samples[item]), item
             except self.exception:
-                return self.default
-        return self.transform(self.samples[item])
+                return self.default, item
+        try:
+            return self.transform(self.samples[item]), item
+        except Exception as err:
+            _pd_trace.pop(-1)
+            self.entire_transform._pd_trace_error(None, self.samples[item])
+            raise err
 
     def __len__(self):
         return len(self.samples)
