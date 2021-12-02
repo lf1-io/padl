@@ -510,7 +510,7 @@ class Transform:
     def _pd_trace_error(self, position: int, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            str_ = self._pd_longrepr()
+            str_ = self._pd_fullrepr(marker=True)
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
         except Exception:
             warn('Error tracing failed')
@@ -584,7 +584,7 @@ class Transform:
         bottom_message = textwrap.indent(self._pd_longrepr(marker=marker), '   ')
         return top_message + bottom_message
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         """A lone string representation of the transform."""
         raise NotImplementedError
 
@@ -1038,7 +1038,7 @@ class FunctionTransform(AtomicTransform):
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         try:
             return '\n'.join(self.source.split('\n')[:30])
         except TypeError:
@@ -1141,7 +1141,7 @@ class ClassTransform(AtomicTransform):
                 args_list.append(f'{key}={format_argument(value)}')
         return ', '.join(args_list)
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, marker=None) -> str:
         try:
             return '\n'.join(self.source.split('\n')[:30])
         except symfinder.NameNotFound:
@@ -1180,7 +1180,7 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, marker=None) -> str:
         return torch.nn.Module.__repr__(self)
 
 
@@ -1260,7 +1260,7 @@ class Map(Transform):
         """
         return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         return '~ ' + self.transform._pd_shortrepr(formatting)
 
     @property
@@ -1415,7 +1415,7 @@ class Pipeline(Transform):
                                           self._pd_call_info.scope)
         return graph, scopemap
 
-    def _pd_longrepr(self, formatting=True):
+    def _pd_longrepr(self, formatting=True, marker=None):
         between = f'\n{make_green(self.display_op, not formatting)}  \n'
         rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting)
                 for i, t in enumerate(self.transforms)]
@@ -1622,7 +1622,7 @@ class Compose(Pipeline):
 
         return type_
 
-    def _pd_longrepr(self, formatting=True) -> str:  # TODO: make it respect the formatting
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:  # TODO: make it respect the formatting
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
@@ -1841,7 +1841,7 @@ class Rollout(Pipeline):
             return tuple(out)
         return self._pd_output_format(*out)
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
         make_bold_ = lambda x: make_bold(x, not formatting)
         between = f'\n{make_green_("│ " + self.display_op)}  \n'
@@ -1929,7 +1929,7 @@ class Parallel(Pipeline):
             return tuple(out)
         return self._pd_output_format(*out)
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
             make_green_ = lambda x: x
             make_bold_ = lambda x: x
@@ -1991,7 +1991,7 @@ class BuiltinTransform(AtomicTransform):
 
         return graph, scopemap
 
-    def _pd_longrepr(self, formatting=True):
+    def _pd_longrepr(self, formatting=True, marker=None):
         return self._pd_call.split('padl.')[-1]
 
 
