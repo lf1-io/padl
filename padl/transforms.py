@@ -571,16 +571,18 @@ class Transform:
     def __repr__(self):
         return self._pd_shortrepr(formatting=False)
 
-    def _repr_pretty_(self, p, cycle) -> str:
-        # pylint: disable=invalid-name
+    def _repr_pretty_(self, p, cycle):
+        p.text(self._pd_fullrepr() if not cycle else '...')
+
+    def _pd_fullrepr(self, marker=None):
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
         else:
             title = make_bold(title)
         top_message = title + ':' + '\n\n'
-        bottom_message = textwrap.indent(self._pd_longrepr(), '   ')
-        p.text(top_message + bottom_message if not cycle else '...')
+        bottom_message = textwrap.indent(self._pd_longrepr(marker=marker), '   ')
+        return top_message + bottom_message
 
     def _pd_longrepr(self, formatting=True) -> str:
         """A lone string representation of the transform."""

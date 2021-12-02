@@ -74,6 +74,7 @@ class _Debug:
                 print(f'\n{msg}\n')
 
     def repeat(self) -> None:
+        #infer apply eval apply or train apply
         self.trans(self.args)
 
     @staticmethod
