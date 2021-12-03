@@ -127,7 +127,7 @@ class Transform:
 
     :param call_info: A `CallInfo` object containing information about the how the transform was
     created (needed for saving).
-    :param pd_name: name of the transform
+    :param pd_name: name of the transform.
     """
     pd_mode = None
 
@@ -510,7 +510,7 @@ class Transform:
     def _pd_trace_error(self, position: int, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            str_ = self._pd_fullrepr(marker=(position, 'error here'))
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
         except Exception:
             warn('Error tracing failed')
@@ -1042,10 +1042,10 @@ class FunctionTransform(AtomicTransform):
         try:
             str_ = self.source.split('\n')[:30]
             if marker:
-                return str_[0] + '\033[31m  <---- error here \033[0m\n' + '\n'.join(str_[1:])
+                return str_[0] + marker[1] + '\n'.join(str_[1:])
             return '\n'.join(str_)
         except TypeError:
-            return self._pd_call + '\033[31m  <---- error here \033[0m' if marker \
+            return self._pd_call + marker[1] + '\n' if marker \
                 else self._pd_call
 
     def _pd_shortrepr(self, formatting=True) -> str:
@@ -1149,10 +1149,10 @@ class ClassTransform(AtomicTransform):
         try:
             str_ = self.source.split('\n')[:30]
             if marker:
-                return str_[0] + '\033[31m  <---- error here \033[0m\n' + '\n'.join(str_[1:])
+                return str_[0] + marker[1] + '\n' + '\n'.join(str_[1:])
             return '\n'.join(str_)
         except symfinder.NameNotFound:
-            return self._pd_call
+            return self._pd_call + marker[1] if marker else self._pd_call
 
     def _pd_title(self) -> str:
         title = type(self).__name__
@@ -1188,9 +1188,10 @@ class TorchModuleTransform(ClassTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
     def _pd_longrepr(self, marker=None) -> str:
+        out = torch.nn.Module.__repr__(self)
         if marker:
-            return torch.nn.Module.__repr__(self) + '\033[31m  <---- error here \033[0m'
-        return torch.nn.Module.__repr__(self)
+            return out + marker[1]
+        return out
 
 
 class Map(Transform):
@@ -1271,7 +1272,7 @@ class Map(Transform):
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         str_ = '~ ' + self.transform._pd_shortrepr(formatting)
-        return str_ + '\033[31m  <---- error here \033[0m\n' if marker else str_
+        return str_ + marker[1] if marker else str_
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
@@ -1547,12 +1548,12 @@ class Pipeline(Transform):
 class Compose(Pipeline):
     """Apply series of transforms on input.
 
-    Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
+    Compose([t1, t2, t3])(x) = t3(t2(t1(x)))
 
     :param transforms: List of transforms to compose.
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the Compose transform
+    :param pd_name: name of the Compose transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `Pipeline`.
     :return: output from series of transforms
@@ -1637,12 +1638,13 @@ class Compose(Pipeline):
         the lines are connected with arrows indicating data flow.
         """
         # pad the components of rows which are shorter than other parts in same column
-        rows = [
-            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
-            else [t._pd_shortrepr()]
-            for t in self.transforms
-        ]
-
+        rows = []
+        for i, t in enumerate(self.transforms):
+            if hasattr(t, 'transforms'):
+                rows.append([s._pd_parensrepr() for s in t.transforms])
+            else:
+                rows.append([t._pd_shortrepr()])
+        import pdb; pdb.set_trace()
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
@@ -1856,9 +1858,11 @@ class Rollout(Pipeline):
         make_bold_ = lambda x: make_bold(x, not formatting)
         between = f'\n{make_green_("│ " + self.display_op)}  \n'
         rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
+                + (marker[1] if marker and marker[0] == i else '')
                 for i, t in enumerate(self.transforms[:-1])]
         rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
-                    + self.transforms[-1]._pd_shortrepr())
+                    + self.transforms[-1]._pd_shortrepr() +
+                    (marker[1] if marker and marker[0] == len(self.transforms) - 1 else ''))
         return between.join(rows) + '\n'
 
 
@@ -1960,10 +1964,12 @@ class Parallel(Pipeline):
         for i, t in enumerate(self.transforms):
             out += (
                 make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold_(f'{i}: ') + t._pd_shortrepr() + '\n'
+                make_bold_(f'{i}: ') + t._pd_shortrepr()
             )
+            out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
                 out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+
         return out
 
 
@@ -2002,7 +2008,10 @@ class BuiltinTransform(AtomicTransform):
         return graph, scopemap
 
     def _pd_longrepr(self, formatting=True, marker=None):
-        return self._pd_call.split('padl.')[-1]
+        out = self._pd_call.split('padl.')[-1]
+        if marker:
+            out += marker[1]
+        return out
 
 
 class Identity(BuiltinTransform):
