@@ -511,7 +511,7 @@ class Transform:
         """ Add some error description to `pd_trace`. """
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
         except Exception:
             warn('Error tracing failed')
 
@@ -760,8 +760,9 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
+                    idx_fail = _pd_trace[-1][-1]
                     _pd_trace.pop(-1)
-                    self._pd_trace_error(None, [args[i] for i in ix])
+                    self._pd_trace_error(len(preprocess) + idx_fail, [args[i] for i in ix])
                     raise err
 
             if use_post or flatten:
@@ -773,7 +774,10 @@ class Transform:
                     try:
                         output = [post.pd_call_transform(x, mode) for x in output]
                     except Exception as err:
-                        self._pd_trace_error(None, [args[i] for i in ix])
+                        idx_fail = _pd_trace[-1][-1]
+                        _pd_trace.pop(-1)
+                        self._pd_trace_error(len(preprocess) + len(forward) + idx_fail,
+                                             [args[i] for i in ix])
                         raise err
                 for out in output:
                     output_format = self._pd_get_output_format()
@@ -1638,12 +1642,11 @@ class Compose(Pipeline):
         the lines are connected with arrows indicating data flow.
         """
         # pad the components of rows which are shorter than other parts in same column
-        rows = []
-        for i, t in enumerate(self.transforms):
-            if hasattr(t, 'transforms'):
-                rows.append([s._pd_parensrepr() for s in t.transforms])
-            else:
-                rows.append([t._pd_shortrepr()])
+        rows = [
+            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
+            else [t._pd_shortrepr()]
+            for i, t in enumerate(self.transforms)
+        ]
         import pdb; pdb.set_trace()
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
@@ -1727,7 +1730,9 @@ class Compose(Pipeline):
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
-            output.append(make_bold(f'{i}: ') + r)
+            output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
+                                                                  marker[0] == i else ''))
+        import pdb; pdb.set_trace()
         return '\n'.join(output)
 
     def __call__(self, args):
