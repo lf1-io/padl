@@ -792,7 +792,6 @@ class Transform:
                 else:
                     yield output
 
-
     @property
     def pd_device(self) -> str:
         """Return the device ("cpu" / "cuda") the transform is on."""
@@ -1647,7 +1646,6 @@ class Compose(Pipeline):
             else [t._pd_shortrepr()]
             for i, t in enumerate(self.transforms)
         ]
-        import pdb; pdb.set_trace()
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
@@ -1732,7 +1730,6 @@ class Compose(Pipeline):
             output.append(make_green(mark))
             output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
                                                                   marker[0] == i else ''))
-        import pdb; pdb.set_trace()
         return '\n'.join(output)
 
     def __call__(self, args):
@@ -2228,8 +2225,9 @@ class _ItemGetter:
         try:
             return self.transform(self.samples[item]), item
         except Exception as err:
+            idx_fail = _pd_trace[-1][-1]
             _pd_trace.pop(-1)
-            self.entire_transform._pd_trace_error(None, self.samples[item])
+            self.entire_transform._pd_trace_error(idx_fail, self.samples[item])
             raise err
 
     def __len__(self):
