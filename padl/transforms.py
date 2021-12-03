@@ -510,7 +510,7 @@ class Transform:
     def _pd_trace_error(self, position: int, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            str_ = self._pd_fullrepr(marker=True)
+            str_ = self._pd_fullrepr(marker=(position, 'error here'))
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self))
         except Exception:
             warn('Error tracing failed')
@@ -1040,9 +1040,13 @@ class FunctionTransform(AtomicTransform):
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         try:
-            return '\n'.join(self.source.split('\n')[:30])
+            str_ = self.source.split('\n')[:30]
+            if marker:
+                return str_[0] + '\033[31m  <---- error here \033[0m\n' + '\n'.join(str_[1:])
+            return '\n'.join(str_)
         except TypeError:
-            return self._pd_call
+            return self._pd_call + '\033[31m  <---- error here \033[0m' if marker \
+                else self._pd_call
 
     def _pd_shortrepr(self, formatting=True) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
@@ -1143,7 +1147,10 @@ class ClassTransform(AtomicTransform):
 
     def _pd_longrepr(self, marker=None) -> str:
         try:
-            return '\n'.join(self.source.split('\n')[:30])
+            str_ = self.source.split('\n')[:30]
+            if marker:
+                return str_[0] + '\033[31m  <---- error here \033[0m\n' + '\n'.join(str_[1:])
+            return '\n'.join(str_)
         except symfinder.NameNotFound:
             return self._pd_call
 
@@ -1181,6 +1188,8 @@ class TorchModuleTransform(ClassTransform):
         self.load_state_dict(torch.load(checkpoint_path))
 
     def _pd_longrepr(self, marker=None) -> str:
+        if marker:
+            return torch.nn.Module.__repr__(self) + '\033[31m  <---- error here \033[0m'
         return torch.nn.Module.__repr__(self)
 
 
@@ -1261,7 +1270,8 @@ class Map(Transform):
         return tuple([self.transform.pd_call_transform(arg) for arg in args])
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        return '~ ' + self.transform._pd_shortrepr(formatting)
+        str_ = '~ ' + self.transform._pd_shortrepr(formatting)
+        return str_ + '\033[31m  <---- error here \033[0m\n' if marker else str_
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
