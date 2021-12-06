@@ -1603,7 +1603,10 @@ class Compose(Pipeline):
         self.pd_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
         prev = self.pd_node
         for transform_ in self.transforms[1:]:
-            transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
+            if isinstance(transform_, Pipeline):
+                transform_node = transform_.pd_graph
+            else:
+                transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
             prev.insert_output_node(transform_node)
             prev = transform_node
 
@@ -1803,11 +1806,9 @@ class Rollout(Pipeline):
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
 
-        prev = self.pd_graph
         for transform_ in self.transforms:
             transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
-            prev(transform_node)
-            prev = transform_node
+            self.pd_graph.connect_to_input_node(transform_node)
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple[Transform,

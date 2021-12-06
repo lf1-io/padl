@@ -32,6 +32,10 @@ class Graph:
         self._node_id += 1
         return self._node_id-1
 
+    def connect_to_input_node(self, node):
+        self.input_node.insert_output_node(node)
+        self._input_connected = True
+
     def add_node(self, node, connect_input=False):
         if node in self.nodes:
             return
@@ -117,6 +121,7 @@ class Node:
     def insert_output_node(self, node):
         if isinstance(node, Graph):
             self._insert_graph_at_end(node)
+            return
         self.update_graph(node.graph)
         if node not in self.out_nodes:
             self.out_nodes.append(node)
