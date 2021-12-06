@@ -760,8 +760,8 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    idx_fail = _pd_trace[-1][-1]
-                    self._pd_trace_error(len(preprocess) + idx_fail, [args[i] for i in ix])
+                    self._pd_trace_error(len(preprocess) + _pd_trace[-1][-1],
+                                         [args[i] for i in ix])
                     _pd_trace.pop(-2)
                     raise err
 
@@ -774,10 +774,9 @@ class Transform:
                     try:
                         output = [post.pd_call_transform(x, mode) for x in output]
                     except Exception as err:
-                        idx_fail = _pd_trace[-1][-1]
-                        _pd_trace.pop(-1)
-                        self._pd_trace_error(len(preprocess) + len(forward) + idx_fail,
+                        self._pd_trace_error(len(preprocess) + len(forward) + _pd_trace[-1][-1],
                                              [args[i] for i in ix])
+                        _pd_trace.pop(-2)
                         raise err
                 for out in output:
                     output_format = self._pd_get_output_format()
@@ -990,7 +989,7 @@ class AtomicTransform(Transform):
                 yield v
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, fail_here=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
         return 0
 
 
@@ -1736,12 +1735,12 @@ class Compose(Pipeline):
                                                                   marker[0] == i else ''))
         return '\n'.join(output)
 
-    def _pd_get_error_idx(self, is_child=False, fail_here=False):
-        if is_child and fail_here:
-            return _pd_trace[-1][-1]
-        elif is_child:
+    def _pd_get_error_idx(self, is_child=False, is_preprocess=False):
+        if is_child and is_preprocess:
             return len(self)
-        return self._pd_preprocess._get_error_idx(True) + self._pd_forward._get_error_idx(True, True)
+        elif is_child:
+            return _pd_trace[-1][-1]
+        return self._pd_preprocess._pd_get_error_idx(True, True) + self._pd_forward._pd_get_error_idx(True, False)
 
     def __call__(self, args):
         """Call method for Compose
@@ -1849,8 +1848,12 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, fail_here=None):
-        return 1 if is_child else _pd_trace[-1][-1]
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+        if is_child and is_preprocess:
+            return 1
+        elif is_child:
+            return 0
+        return _pd_trace[-1][-1]
 
     def __call__(self, args):
         """Call method for Rollout
@@ -1960,8 +1963,12 @@ class Parallel(Pipeline):
         return self._pd_output_format(*out)
 
     @staticmethod
-    def _pd_get_idx_error(is_child=False, error_here=None):
-        return 1 if is_child else _pd_trace[-1][-1]
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+        if is_child and is_preprocess:
+            return 1
+        elif is_child:
+            return 0
+        return _pd_trace[-1][-1]
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
