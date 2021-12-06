@@ -1059,11 +1059,7 @@ class FunctionTransform(AtomicTransform):
     def __call__(self, *args, **kwargs):
         if len(args) == 1 and isinstance(args, Transform):
             transform_ = args[0]
-            node = padl_graph.Node(transform_,
-                                   name=transform_.pd_name,
-                                   graph=self.graph)
-            self.pd_node(node)
-            return
+            return transform_ >> self
         return self.function(*args, **kwargs)
 
 
