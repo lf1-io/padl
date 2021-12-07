@@ -760,9 +760,8 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    self._pd_trace_error(len(preprocess) + _pd_trace[-1][-1],
+                    self._pd_trace_error(self._pd_get_error_idx(),
                                          [args[i] for i in ix])
-                    _pd_trace.pop(-2)
                     raise err
 
             if use_post or flatten:
@@ -776,7 +775,6 @@ class Transform:
                     except Exception as err:
                         self._pd_trace_error(len(preprocess) + len(forward) + _pd_trace[-1][-1],
                                              [args[i] for i in ix])
-                        _pd_trace.pop(-2)
                         raise err
                 for out in output:
                     output_format = self._pd_get_output_format()
@@ -910,10 +908,10 @@ class Transform:
             inputs = _move_to_device(inputs, self.pd_device)
             inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
             inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-            output_format = self._pd_get_output_format()
         except Exception as err:
-            self._pd_trace_error(0, in_args)
+            self._pd_trace_error(self._pd_get_error_idx(), in_args)
             raise err
+        output_format = self._pd_get_output_format()
         if output_format is not None:
             return output_format(*inputs)
         else:
@@ -1341,6 +1339,15 @@ class Pipeline(Transform):
             return last_transform._pd_output_format
         return None
 
+    def _pd_trace_error(self, position: int, arg):
+        """ Add some error description to `pd_trace`. """
+        try:
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
+            self._pd_trace_error()
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+        except Exception:
+            warn('Error tracing failed')
+
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
 
@@ -1735,7 +1742,7 @@ class Compose(Pipeline):
                                                                   marker[0] == i else ''))
         return '\n'.join(output)
 
-    def _pd_get_error_idx(self, is_child=False, is_preprocess=False):
+    def pd_stage(self, is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return len(self)
         elif is_child:
@@ -1956,6 +1963,7 @@ class Parallel(Pipeline):
             try:
                 out.append(transform_.pd_call_transform(args[ind]))
             except Exception as err:
+                breakpoint()
                 self._pd_trace_error(ind, args)
                 raise err
         if Transform.pd_mode is not None:
@@ -2251,7 +2259,6 @@ class _ItemGetter:
             return self.transform(self.samples[item]), item
         except Exception as err:
             self.entire_transform._pd_trace_error(_pd_trace[-1][-1], self.samples[item])
-            _pd_trace.pop(-2)
             raise err
 
     def __len__(self):
