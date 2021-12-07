@@ -172,7 +172,6 @@ class Transform:
             else:
                 preprocess, forward, postprocess = builtin_identity, splits[0], splits[2]
             self._pd_stages = preprocess, forward, postprocess
-
         return self._pd_stages
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
@@ -754,13 +753,12 @@ class Transform:
 
         for batch, ix in loader:
             batch = _move_to_device(batch, self.pd_device)
-
             output = batch
             if use_forward:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    self._pd_trace_error(self._pd_get_error_idx(),
+                    self._pd_trace_error(self._pd_get_error_idx(-1),
                                          [args[i] for i in ix])
                     raise err
 
@@ -987,7 +985,7 @@ class AtomicTransform(Transform):
                 yield v
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         return 0
 
 
@@ -1343,7 +1341,10 @@ class Pipeline(Transform):
         """ Add some error description to `pd_trace`. """
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            self._pd_trace_error()
+            if isinstance(self[position], Pipeline):
+                breakpoint()
+                self._pd_trace_error(self._pd_get_error_idx(position - 1),
+                                     [subarg[position] for subarg in arg])
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
         except Exception:
             warn('Error tracing failed')
@@ -1855,12 +1856,12 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[-1][-1]
+        return _pd_trace[pos][-1]
 
     def __call__(self, args):
         """Call method for Rollout
@@ -1963,7 +1964,6 @@ class Parallel(Pipeline):
             try:
                 out.append(transform_.pd_call_transform(args[ind]))
             except Exception as err:
-                breakpoint()
                 self._pd_trace_error(ind, args)
                 raise err
         if Transform.pd_mode is not None:
@@ -1971,12 +1971,12 @@ class Parallel(Pipeline):
         return self._pd_output_format(*out)
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[-1][-1]
+        return _pd_trace[pos][-1]
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
