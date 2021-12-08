@@ -35,9 +35,14 @@ jobs:
         cd ../
     - name: Check for modified files
       id: git-check
-      run: echo ::set-output name=modified::$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)
+      run: |
+        if git diff-index --quiet HEAD --; then
+          echo "CHECK=false" >> "$GITHUB_ENV"
+        else
+          echo "CHECK=true" >> "$GITHUB_ENV"
+        fi
     - name: Commit and Push changes
-      if: steps.git-check.outputs.modified == 'true'
+      if: env.CHECK == 'true'
       run: |
         git config --global user.name 'LF1 Bot'
         git config --global user.email 'lf1_bot@users.noreply.github.com'
