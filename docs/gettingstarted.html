@@ -1,75 +1,33 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Getting Started &mdash; PADL 0.1.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="static/custom.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="static/documentation_options.js"></script>
         <script src="static/jquery.js"></script>
         <script src="static/underscore.js"></script>
         <script src="static/doctools.js"></script>
-    
-    <script type="text/javascript" src="static/js/theme.js"></script>
-
-    
+    <script src="static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="index.html">
-          
-
-          
-            
             <img src="static/padl-logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -77,18 +35,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a><ul>
@@ -193,73 +140,33 @@
 </li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">PADL</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-        
       <li>Getting Started</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="tex2jax_ignore mathjax_ignore section" id="getting-started">
-<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h1>
 <div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
 <p>Simply,</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install padl
 </pre></div>
@@ -268,7 +175,7 @@
 <p>Find the source at <a class="reference external" href="https://github.com/lf1-io/padl">https://github.com/lf1-io/padl</a>.</p>
 </div>
 <div class="section" id="project-structure">
-<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline">¶</a></h2>
+<h2>Project Structure<a class="headerlink" href="#project-structure" title="Permalink to this headline"></a></h2>
 <p>PADL’s chief abstractions are <code class="docutils literal notranslate"><span class="pre">padl.transforms.Transform</span></code> and <code class="docutils literal notranslate"><span class="pre">padl.transforms.Pipeline</span></code>. These are abstractions which include all elements of a typical deep learning workflow in <strong>PyTorch</strong>:</p>
 <ul class="simple">
 <li><p>pre-processing</p></li>
@@ -284,7 +191,7 @@
 <p>The schematic represents a model which is a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> instance with multiple steps and component parts; each of these are <code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances. The model may be applied in one pass to single data points, or to batches of data.</p>
 </div>
 <div class="section" id="resources">
-<h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>Go to <a class="reference internal" href="usage.html#usage"><span class="std std-ref">Usage</span></a> for a concise but comprehensive manual.</p></li>
 <li><p>Find examples at <a class="reference external" href="https://github.com/lf1-io/padl/tree/main/notebooks">https://github.com/lf1-io/padl/tree/main/notebooks</a>.</p></li>
@@ -292,9 +199,9 @@
 </ul>
 </div>
 <div class="section" id="basic-usage">
-<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h2>
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline"></a></h2>
 <div class="section" id="defining-transforms">
-<h3>Defining transforms<a class="headerlink" href="#defining-transforms" title="Permalink to this headline">¶</a></h3>
+<h3>Defining transforms<a class="headerlink" href="#defining-transforms" title="Permalink to this headline"></a></h3>
 <p>Imports:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">this</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span><span class="p">,</span> <span class="n">value</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -366,7 +273,7 @@
 </div>
 </div>
 <div class="section" id="defining-pipelines">
-<h3>Defining pipelines<a class="headerlink" href="#defining-pipelines" title="Permalink to this headline">¶</a></h3>
+<h3>Defining pipelines<a class="headerlink" href="#defining-pipelines" title="Permalink to this headline"></a></h3>
 <p>Transforms may be combined using 3 functional primitives:</p>
 <p>Transform composition: <strong>compose</strong></p>
 <p><span class="raw-html-m2r"><img src="img/compose.png" width="100"></span></p>
@@ -414,12 +321,12 @@
 </div>
 </div>
 <div class="section" id="passing-inputs-between-transforms">
-<h3>Passing inputs between transforms<a class="headerlink" href="#passing-inputs-between-transforms" title="Permalink to this headline">¶</a></h3>
+<h3>Passing inputs between transforms<a class="headerlink" href="#passing-inputs-between-transforms" title="Permalink to this headline"></a></h3>
 <p>In a compose pipeline, if <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> has 2 outputs and <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has 2 outputs, then in applying the composition: <code class="docutils literal notranslate"><span class="pre">transform_1</span> <span class="pre">&gt;&gt;</span> <span class="pre">transform_2</span></code> to data, the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> <strong>positionally</strong>. So output-1 of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> is passed to input-1 of <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>. If <code class="docutils literal notranslate"><span class="pre">transform_2</span></code> has only one input, then the outputs of <code class="docutils literal notranslate"><span class="pre">transform_1</span></code> are passed as a tuple to <code class="docutils literal notranslate"><span class="pre">transform_2</span></code>.</p>
 <p>In an upcoming release, we plan to allow for passing inputs from one stage to the next using input/ output names.</p>
 </div>
 <div class="section" id="decomposing-pipelines">
-<h3>Decomposing pipelines<a class="headerlink" href="#decomposing-pipelines" title="Permalink to this headline">¶</a></h3>
+<h3>Decomposing pipelines<a class="headerlink" href="#decomposing-pipelines" title="Permalink to this headline"></a></h3>
 <p>Often it is instructive to look at slices of a pipeline – this helps with e.g. checking intermediate computations:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">preprocess</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
 </pre></div>
@@ -430,7 +337,7 @@
 </div>
 </div>
 <div class="section" id="naming-transforms-inside-models">
-<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline">¶</a></h3>
+<h3>Naming transforms inside models<a class="headerlink" href="#naming-transforms-inside-models" title="Permalink to this headline"></a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">Transform</span></code> instances may be named inline, inside pipelines:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">transform_1</span> <span class="o">-</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">transform_2</span> <span class="o">-</span> <span class="s1">&#39;b&#39;</span><span class="p">)</span>
 </pre></div>
@@ -441,7 +348,7 @@
 </div>
 </div>
 <div class="section" id="applying-transforms-to-data">
-<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline">¶</a></h3>
+<h3>Applying transforms to data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h3>
 <p>To pass single data points may be passed through the pipeline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prediction</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="s1">&#39;the cat sat on the mat .&#39;</span><span class="p">)</span>
 </pre></div>
@@ -466,7 +373,7 @@
 </div>
 </div>
 <div class="section" id="training">
-<h3>Training<a class="headerlink" href="#training" title="Permalink to this headline">¶</a></h3>
+<h3>Training<a class="headerlink" href="#training" title="Permalink to this headline"></a></h3>
 <p>Important methods such as all model parameters are accessible via <code class="docutils literal notranslate"><span class="pre">.pd_*</span></code>.:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">pd_parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
 </pre></div>
@@ -480,7 +387,7 @@
 </div>
 </div>
 <div class="section" id="saving-loading">
-<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline">¶</a></h3>
+<h3>Saving/ Loading<a class="headerlink" href="#saving-loading" title="Permalink to this headline"></a></h3>
 <p>Saving:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span><span class="o">.</span><span class="n">pd_save</span><span class="p">(</span><span class="s1">&#39;test.padl&#39;</span><span class="p">)</span>
 </pre></div>
@@ -498,46 +405,30 @@
 
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021, LF1 GmbH.
-
-    </p>
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
