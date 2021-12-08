@@ -34,9 +34,8 @@ jobs:
         make github
         cd ../
     - name: Check for modified files
-      id: git-check
       run: |
-        if git diff-index --quiet HEAD --; then
+        if [[ `git status --porcelain` ]]; then
           echo "CHECK=false" >> "$GITHUB_ENV"
         else
           echo "CHECK=true" >> "$GITHUB_ENV"
