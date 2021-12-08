@@ -35,7 +35,7 @@ jobs:
         cd ../
     - name: Commit docs
       run: |
-        git config --global user.name 'Your Name'
-        git config --global user.email 'your-username@users.noreply.github.com'
-        git commit -am "Automated docs builder"
+        git config --global user.name 'LF1 Bot'
+        git config --global user.email 'lf1_bot@users.noreply.github.com'
+        git commit -am "Automated docs builder" --allow-empty
         git push
