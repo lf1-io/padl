@@ -166,8 +166,83 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="padl-dumptools-var2mod">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code><a class="headerlink" href="#padl-dumptools-var2mod" title="Permalink to this headline"></a></h1>
+  <div class="section" id="module-padl.dumptools.var2mod">
+<span id="padl-dumptools-var2mod"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code><a class="headerlink" href="#module-padl.dumptools.var2mod" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.CodeNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">CodeNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globals_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ast_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.CodeNode" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">Finder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodetype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder" title="Permalink to this definition"></a></dt>
+<dd><p>Class for finding ast nodes of a given type in an ast tree.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">Finder</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;x(y)&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">f</span><span class="p">])</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder.find">
+<span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder.find" title="Permalink to this definition"></a></dt>
+<dd><p>Find subnodes of node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder.generic_visit">
+<span class="sig-name descname"><span class="pre">generic_visit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder.generic_visit" title="Permalink to this definition"></a></dt>
+<dd><p>Called if no explicit visitor function exists for a node.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Vars">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">Vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">globals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Vars" title="Permalink to this definition"></a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Vars.globals">
+<span class="sig-name descname"><span class="pre">globals</span></span><a class="headerlink" href="#padl.dumptools.var2mod.Vars.globals" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Vars.locals">
+<span class="sig-name descname"><span class="pre">locals</span></span><a class="headerlink" href="#padl.dumptools.var2mod.Vars.locals" title="Permalink to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.find_globals">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">find_globals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_ast.AST</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_builtins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.find_globals" title="Permalink to this definition"></a></dt>
+<dd><p>Find all globals used below a node.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.increment_same_name_var">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">increment_same_name_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.dumptools.symfinder.html#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.increment_same_name_var" title="Permalink to this definition"></a></dt>
+<dd><p>Go through <em>variables</em> and increment the the counter for those with the same name as
+<em>scoped_name</em> by <em>scoped_name.n</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">padl</span> <span class="k">as</span> <span class="nn">somemodule</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">increment_same_name_var</span><span class="p">({(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)},</span> <span class="n">ScopedName</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">somemodule</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">set</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">{(</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">out</span><span class="p">}</span> <span class="o">==</span> <span class="p">{(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">)}</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.unscope_graph">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">unscope_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopemap</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.unscope_graph" title="Permalink to this definition"></a></dt>
+<dd><p>Create a version of <em>graph</em> where all non-top level variables are renamed (by prepending
+the scope) to prevent conflicts.</p>
+</dd></dl>
+
 </div>
 
 

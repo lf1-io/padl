@@ -166,8 +166,69 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="padl-dumptools-serialize">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code><a class="headerlink" href="#padl-dumptools-serialize" title="Permalink to this headline"></a></h1>
+  <div class="section" id="module-padl.dumptools.serialize">
+<span id="padl-dumptools-serialize"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code><a class="headerlink" href="#module-padl.dumptools.serialize" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">Serializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_suffix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">module</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer" title="Permalink to this definition"></a></dt>
+<dd><p>Serializer base class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>val</strong> – The value to serialize.</p></li>
+<li><p><strong>save_function</strong> – The function to use for saving <em>val</em>.</p></li>
+<li><p><strong>load_function</strong> – The function to use for loading <em>val</em>.</p></li>
+<li><p><strong>file_suffix</strong> – If set, a string that will be appended to the path.</p></li>
+<li><p><strong>module</strong> – The module the serializer functions are defined in. Optional, default is to
+use the calling module.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.save" title="Permalink to this definition"></a></dt>
+<dd><p>Save the serializer’s value to <em>path</em>.</p>
+<p>Returns a codegraph and a scopemap containing code needed to load the value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer.save_all">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codegraph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopemap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.save_all" title="Permalink to this definition"></a></dt>
+<dd><p>Save all values.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer.varname">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">varname</span></span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.varname" title="Permalink to this definition"></a></dt>
+<dd><p>The varname to store in the dumped code.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.json_serializer">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">json_serializer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.json_serializer" title="Permalink to this definition"></a></dt>
+<dd><p>Create a json serializer for <em>val</em>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.load_json">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">load_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.load_json" title="Permalink to this definition"></a></dt>
+<dd><p>Loader for json.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.save_json">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">save_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.save_json" title="Permalink to this definition"></a></dt>
+<dd><p>Saver for json.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.serialize.value">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serializer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.value" title="Permalink to this definition"></a></dt>
+<dd><p>Helper function that marks things in the code that should be stored by value.</p>
+</dd></dl>
+
 </div>
 
 

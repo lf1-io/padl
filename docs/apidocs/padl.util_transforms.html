@@ -166,8 +166,99 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="padl-util-transforms">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code><a class="headerlink" href="#padl-util-transforms" title="Permalink to this headline"></a></h1>
+  <div class="section" id="module-padl.util_transforms">
+<span id="padl-util-transforms"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code><a class="headerlink" href="#module-padl.util_transforms" title="Permalink to this headline"></a></h1>
+<p>Extra useful Transforms.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfEval">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfEval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfEval" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “eval” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “eval” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfInMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'infer'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'eval'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'train'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInMode" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in mode <em>target_mode</em>, else perform <em>else_</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span> <span class="o">=</span> <span class="n">IfInMode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;infer&#39;</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iis</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">11</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">iis</span><span class="o">.</span><span class="n">eval_apply</span><span class="p">([</span><span class="mi">1</span><span class="p">]))</span>
+<span class="go">[100]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform to apply when the mode matches.</p></li>
+<li><p><strong>target_mode</strong> – Mode (one of ‘train’, ‘eval’, ‘infer’).</p></li>
+<li><p><strong>else</strong> – Transform to apply when the mode doesn’t match (defaults to identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfInfer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfInfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfInfer" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “infer” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “infer” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.IfTrain">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">IfTrain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">if_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.IfTrain" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>if_</em> if called in “train” mode, else perform <em>else_</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>if</strong> – Transform for the “train” mode.</p></li>
+<li><p><strong>else</strong> – Transform otherwise (defaults to the identity transform).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.util_transforms.Try">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.util_transforms.</span></span><span class="sig-name descname"><span class="pre">Try</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">catch_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exceptions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Exception</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">else_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">padl.Identity()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finally_transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><span class="pre">padl.transforms.Transform</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">padl.Identity()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pd_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.util_transforms.Try" title="Permalink to this definition"></a></dt>
+<dd><p>Perform <em>transform</em>. If this fails with any exception from <em>exceptions</em>, perform
+<em>catch_transform</em>. If <em>transform</em> is completed successfully, <em>else_transform</em> is performed
+with the output of <em>transform</em>. Regardless of any error occurring on the other Transform
+(or not), <em>finally_transform</em> is carried out. No change of mode can happen inside any of these
+Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transform</strong> – Transform to try.</p></li>
+<li><p><strong>catch_transform</strong> – Transform to fall back on.</p></li>
+<li><p><strong>exceptions</strong> – Catch conditions.</p></li>
+<li><p><strong>else_transform</strong> – Transform to carry on the <cite>else</cite> clause of the <cite>try</cite> statement.</p></li>
+<li><p><strong>finally_transform</strong> – Transform to carry on on the <cite>finally</cite> clause of the <cite>try</cite> statement.</p></li>
+<li><p><strong>pd_name</strong> – The Transform’s name.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 
 
