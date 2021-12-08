@@ -3,4 +3,4 @@ sphinx-rtd-theme==1.0.0
 m2r==0.2.1
 sphinx_book_theme==0.1.7
 myst-parser==0.15.2
-pyparsing==2.4.7
+mistune==0.8.4
