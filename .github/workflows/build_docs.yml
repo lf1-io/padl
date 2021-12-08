@@ -36,12 +36,12 @@ jobs:
     - name: Check for modified files
       run: |
         if [[ `git status --porcelain` ]]; then
-          echo "CHECK=false" >> "$GITHUB_ENV"
+          echo "CHANGES=true" >> "$GITHUB_ENV"
         else
-          echo "CHECK=true" >> "$GITHUB_ENV"
+          echo "CHANGES=false" >> "$GITHUB_ENV"
         fi
     - name: Commit and Push changes
-      if: env.CHECK == 'true'
+      if: env.CHANGES == 'true'
       run: |
         git config --global user.name 'LF1 Bot'
         git config --global user.email 'lf1_bot@users.noreply.github.com'
