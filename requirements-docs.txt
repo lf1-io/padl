@@ -2,3 +2,4 @@ sphinx
 sphinx-rtd-theme
 m2r
 sphinx_book_theme
+myst-parser
