@@ -1761,7 +1761,16 @@ class Rollout(Pipeline):
                     final_splits.append(Parallel(s))
             else:
                 final_splits.append(s)
+
         final_splits = tuple(final_splits)
+
+        res = []
+        for split in final_splits:
+            try:
+                res.append(group(split))
+            except AttributeError:
+                res.append(split)
+        final_splits = res
 
         return output_components, final_splits, has_batchify
 
@@ -1847,6 +1856,15 @@ class Parallel(Pipeline):
         )
 
         final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
+
+        res = []
+        for split in final_splits:
+            try:
+                res.append(group(split))
+            except AttributeError:
+                res.append(split)
+        final_splits = res
+
         return output_components, final_splits, has_batchify
 
     def __call__(self, args):
