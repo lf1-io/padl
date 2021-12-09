@@ -256,7 +256,7 @@
 </div>
 <div class="section" id="combining-pre-processing-model-forward-pass-and-post-processing">
 <h4>Combining pre-processing, model forward pass and post-processing<a class="headerlink" href="#combining-pre-processing-model-forward-pass-and-post-processing" title="Permalink to this headline"></a></h4>
-<p>You can use composition to combine pre-processing, model forward pass and post-processing in one transform using the special Transforms <a class="reference internal" href="../apidocs/padl.html#padl.batch" title="padl.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a> and <a class="reference internal" href="../apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code></a>:</p>
+<p>You can use composition to combine pre-processing, model forward pass and post-processing in one transform using the special Transforms <code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code> and <a class="reference internal" href="../apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_classifier_transform</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">load_image</span>                 <span class="c1"># preprocessing ...</span>
     <span class="o">&gt;&gt;</span> <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()</span>   <span class="c1"># </span>
@@ -325,7 +325,7 @@
 </div>
 <p>This uses</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="../apidocs/padl.html#padl.batch" title="padl.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a> to move between <a class="reference internal" href="stages.html#stages"><span class="std std-ref">stages</span></a>.</p></li>
+<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code> to move between <a class="reference internal" href="stages.html#stages"><span class="std std-ref">stages</span></a>.</p></li>
 </ul>
 </div>
 </div>
