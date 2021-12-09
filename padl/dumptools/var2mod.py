@@ -14,7 +14,7 @@ except AttributeError:  # python < 3.9
 
 
 class Finder(ast.NodeVisitor):
-    """Class for finding ast nodes of a given type in an ast tree.
+    """:class:`ast.NodeVisitor` for finding AST-nodes of a given type in an AST-tree.
 
     Example:
 
@@ -34,15 +34,26 @@ class Finder(ast.NodeVisitor):
         super().generic_visit(node)
 
     def find(self, node):
-        """Find subnodes of node. """
+        """Find sub-nodes of *node*. """
         self.visit(node)
         return self.result
 
     def get_source_segments(self, source):
+        """Get a list of source segments of found nodes in source and their respective positions.
+
+        :return: A list of tuples (<source segment>, <position>) where position is a tuple
+            (<lineno>, <end lineno>, <col offset>, <end col offset>).
+
+        Example:
+
+        >>> Finder(ast.Name).get_source_segments('x(y)')
+        [('x', (1, 1, 0, 1)), ('y', (1, 1, 2, 3))]
+        """
         nodes = self.find(ast.parse(source))
         return [
-            (ast.get_source_segment(source, node),
-             (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+            (
+                ast.get_source_segment(source, node),
+                (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
             )
             for node in nodes
         ]
@@ -52,7 +63,12 @@ Vars = namedtuple('Vars', 'globals locals')
 
 
 class _VarFinder(ast.NodeVisitor):
-    """NodeVisitor that traverses all nodes subnodes and finds all named things.
+    # pylint: disable=invalid-name
+    """An :class:`ast.NodeVisitor` that traverses all subnodes of an AST-node and finds all named
+    things (variables, functions, classes, modules etc) used in it.
+
+    The results are grouped as "globals" and "locals". "locals" are those things whose definition
+    is found under the node itself whereas "globals" are all others.
 
     >>> source = '''
     ... def f(x):
@@ -60,9 +76,9 @@ class _VarFinder(ast.NodeVisitor):
     ...     z = np.array(x + b)
     ...     return str(z)
     ... '''
-    >>> node = ast.parse(source).body[0]
-    >>> _VarFinder().find(node) == Vars(globals={('str', 0), ('np', 0), ('a', 0), ('b', 0)},
-    ...                                 locals={('x', 0), ('z', 0), ('y', 0)})
+    >>> _VarFinder().find_in_source(source) == Vars(globals={('str', 0), ('np', 0), ('a', 0),
+    ...                                                      ('b', 0)},
+    ...                                             locals={('x', 0), ('z', 0), ('y', 0)})
     True
     """
 
@@ -72,7 +88,7 @@ class _VarFinder(ast.NodeVisitor):
         self.locals = set()
 
     def find(self, node):
-        """Find all globals and locals.
+        """Find all globals and locals in an AST-node.
 
         :param node: An ast node to search.
         :returns: Tuple of sets with names of globals and locals.
@@ -86,8 +102,26 @@ class _VarFinder(ast.NodeVisitor):
         self.visit(node)
         return Vars(self.globals, self.locals)
 
+    def find_in_source(self, source):
+        """Find all globals and locals in a piece of source code."""
+        return self.find(ast.parse(source).body[0])
+
     def _find_in_function_def(self, node):
-        """Special case: exclude args from globals. """
+        """This is a special case: Functions args are "locals" rather than "globals".
+
+        Example:
+
+        >>> source = '''
+        ... def f(x):
+        ...     y = a + 1
+        ...     z = np.array(x + b)
+        ...     return str(z)
+        ... '''
+        >>> _VarFinder().find_in_source(source) == Vars(globals={('str', 0), ('np', 0), ('a', 0),
+        ...                                                      ('b', 0)},
+        ...                                             locals={('x', 0), ('z', 0), ('y', 0)})
+        True
+        """
         for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
             self.locals.add((arg.arg, 0))
         if node.args.vararg is not None:
@@ -99,15 +133,40 @@ class _VarFinder(ast.NodeVisitor):
         return Vars(self.globals, self.locals)
 
     def visit_Name(self, node):
+        """Names - Every `Name`'s id is a global unless it's a local.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('x')
+        Vars(globals={('x', 0)}, locals=set())
+        """
         if (node.id, 0) not in self.locals:
             self.globals.add((node.id, 0))
 
     def visit_withitem(self, node):
+        """With statements - The "as ..." of a with statement is a local.
+
+        Example:
+
+        >>> source = '''
+        ... with open('file') as f:
+        ...     ...
+        ... '''
+        >>> _VarFinder().find_in_source(source)
+        Vars(globals={('open', 0)}, locals={('f', 0)})
+        """
         self.visit(node.context_expr)
         if node.optional_vars is not None:
             self.locals.add((node.optional_vars.id, 0))
 
     def visit_Assign(self, node):
+        """Assignments - Their targets are locals, their values are globals.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('x = y')
+        Vars(globals={('y', 0)}, locals={('x', 0)})
+        """
         # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
         targets = set()
         for target in node.targets:
@@ -133,15 +192,39 @@ class _VarFinder(ast.NodeVisitor):
         self.globals.update(sub_dependencies - self.locals)
 
     def visit_For(self, node):
+        """For loops - Looped over items are locals.
+
+        Example:
+
+        >>> source = '''
+        ... for x in range(10):
+        ...     ...
+        ... '''
+        >>> _VarFinder().find_in_source(source)
+        Vars(globals={('range', 0)}, locals={('x', 0)})
+        """
         self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
         for child in node.body:
             self.visit(child)
+        self.visit(node.iter)
 
     def visit_NamedExpr(self, node):
+        """The walrus operator - it's targets become locals.
+
+        Example:
+
+        >>> source = '''
+        ... while a := l.pop():
+        ...     ...
+        ... '''
+        >>> _VarFinder().find_in_source(source)
+        Vars(globals={('l', 0)}, locals={('a', 0)})
+        """
         self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
+        self.visit(node.value)
 
     def visit_comprehension(self, node):
-        """Special case for comprehension - comprehension targets should be ignored. """
+        """Comprehensions are a special case: Their targets should be ignored. """
         targets = set()
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
@@ -150,33 +233,80 @@ class _VarFinder(ast.NodeVisitor):
         self.globals.update(all_ - targets - self.locals)
 
     def visit_DictComp(self, node):
+        """Dict comprehensions.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('{k: v for k, v in foo}')
+        Vars(globals={('foo', 0)}, locals=set())
+        """
         self.visit_comprehension(node)
 
     def visit_ListComp(self, node):
+        """List comprehensions.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('[x for x in foo]')
+        Vars(globals={('foo', 0)}, locals=set())
+        """
         self.visit_comprehension(node)
 
     def visit_SetComp(self, node):
+        """Set comprehensions.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('{x for x in foo}')
+        Vars(globals={('foo', 0)}, locals=set())
+        """
         self.visit_comprehension(node)
 
     def visit_GeneratorExp(self, node):
-        pass
+        """Generator expressions.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('(x for x in foo)')
+        Vars(globals={('foo', 0)}, locals=set())
+        """
+        self.visit_comprehension(node)
 
     def visit_Lambda(self, node):
+        """Lambda expressions - Their arguments are locals.
+
+        Example:
+
+        >>> vars = _VarFinder().find_in_source('lambda x, y: x + y + foo')
+        >>> vars == Vars(globals={('foo', 0)}, locals={('x', 0), ('y', 0)})
+        True
+        """
         for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
             self.locals.add((arg.arg, 0))
         self.visit(node.body)
 
     def visit_FunctionDef(self, node):
+        """Function definitions. """
         self.locals.add((node.name, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_ClassDef(self, node):
+        """Class definitions. """
         self.locals.add((node.name, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_Import(self, node):
+        """Import statements.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('import foo')
+        Vars(globals=set(), locals={('foo', 0)})
+        >>> _VarFinder().find_in_source('import foo as bar')
+        Vars(globals=set(), locals={('bar', 0)})
+        """
         for name in node.names:
             if name.asname is None:
                 self.locals.add((name.name, 0))
@@ -184,6 +314,15 @@ class _VarFinder(ast.NodeVisitor):
                 self.locals.add((name.asname, 0))
 
     def visit_ImportFrom(self, node):
+        """Import-from statements.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('from foo import bar')
+        Vars(globals=set(), locals={('bar', 0)})
+        >>> _VarFinder().find_in_source('from foo import bar as baz')
+        Vars(globals=set(), locals={('baz', 0)})
+        """
         for name in node.names:
             if name.asname is None:
                 self.locals.add((name.name, 0))
@@ -192,55 +331,109 @@ class _VarFinder(ast.NodeVisitor):
 
 
 class _Renamer(ast.NodeTransformer):
+    # pylint: disable=invalid-name
+    """An :class:`ast.NodeTransformer` for renaming things. Used in :func:`rename`.
+
+    :param from_: Rename everything called this ...
+    :param to: ... to this.
+    :param rename_locals: If *True*, rename local things, else, only rename globals.
+    """
+
     def __init__(self, from_, to, rename_locals):
         self.from_ = from_
         self.to = to
         self.rename_locals = rename_locals
 
     def visit_arg(self, node):
+        """Arguments.
+
+        Example:
+
+        >>> node = ast.parse('''
+        ... def f(a, b):
+        ...    ...
+        ... ''').body[0]
+        >>> unparse(rename(node, 'a', 'c', rename_locals=True))
+        '\\n\\ndef f(c, b):\\n    ...\\n'
+        """
         if node.arg == self.from_:
             return ast.arg(**{**node.__dict__, 'arg': self.to})
         return node
 
     def visit_Name(self, node):
+        """Names.
+
+        Example:
+
+        >>> node = ast.parse('x')
+        >>> unparse(rename(node, 'x', 'y', True)).strip()
+        'y'
+        """
         if node.id == self.from_:
             return ast.Name(**{**node.__dict__, 'id': self.to})
         return node
 
     def visit_FunctionDef(self, node):
+        """Function definitions.
+
+        Example:
+
+        >>> node = ast.parse('''
+        ... def f(a, b):
+        ...    y = p(z)
+        ... ''').body[0]
+        >>> unparse(rename(node, 'z', 'u', rename_locals=True))
+        '\\n\\ndef f(a, b):\\n    y = p(u)\\n'
+        """
         if self.rename_locals and node.name == self.from_:
             name = self.to
         else:
             name = node.name
         if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in globals_:
+            if self.from_ not in {x[0] for x in globals_}:
                 return node
         return ast.FunctionDef(**{**node.__dict__,
-                                  'body': rename(node.body, self.from_, self.to),
+                                  'args': rename(node.args, self.from_, self.to,
+                                                 self.rename_locals),
+                                  'body': rename(node.body, self.from_, self.to,
+                                                 self.rename_locals),
                                   'name': name})
 
     def visit_ClassDef(self, node):
+        """Class definitions.
+
+        Example:
+
+        >>> node = ast.parse('''
+        ... class Foo:
+        ...     def __init__(self, a, b):
+        ...         y = p(z)
+        ... ''').body[0]
+        >>> unparse(rename(node, 'z', 'u', rename_locals=True))
+        '\\n\\nclass Foo():\\n\\n    def __init__(self, a, b):\\n        y = p(u)\\n'
+        """
         if self.rename_locals and node.name == self.from_:
             name = self.to
         else:
             name = node.name
         if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in globals_:
+            if self.from_ not in {x[0] for x in globals_}:
                 return node
         return ast.ClassDef(**{**node.__dict__,
-                               'body': rename(node.body, self.from_, self.to),
+                               'body': rename(node.body, self.from_, self.to,
+                                              self.rename_locals),
                                'name': name})
 
 
 def rename(tree, from_, to, rename_locals=False):
     if not rename_locals:
         globals_ = find_globals(tree)
-        if from_ not in globals_:
+        if from_ not in {x[0] for x in globals_}:
             return tree
     if isinstance(tree, Iterable) and not isinstance(tree, str):
-        return [rename(x, from_, to) for x in tree]
+        return [rename(x, from_, to, rename_locals) for x in tree]
     elif not isinstance(tree, ast.AST):
         return tree
     renamer = _Renamer(from_, to, rename_locals)
@@ -455,7 +648,8 @@ class CodeNode:
 
 
 def _dumps_unscoped(unscoped_graph):
-    """Dump an unscoped (see :meth:`CodeGraph.unscope`) codegraph to a python source string. """
+    """Dump an unscoped (see :meth:`CodeGraph.unscope`) :class:`CodeGraph` to a python source
+    string. """
     sorted_ = _sort(unscoped_graph)
     res = ''
     for i, name in enumerate(sorted_):
