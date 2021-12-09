@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity, batch
+from padl import transforms as pd, transform, Identity, batch, unbatch, group
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
@@ -379,6 +379,19 @@ class TestRollout:
         self.transform_5._repr_pretty_(PrettyMock, False)
         self.transform_6._repr_pretty_(PrettyMock, False)
 
+    def test_identity_split(self):
+        new_iden = Identity() - 'new_name'
+        test = (
+            plus_one
+            >> batch
+            >> new_iden + new_iden
+            >> plus
+            >> unbatch
+            >> new_iden + new_iden
+            >> plus
+        )
+        assert str(test.pd_forward) == str(new_iden + new_iden >> plus)
+
     def test_output(self):
         in_ = 123
         out = self.transform_1(in_)
@@ -531,7 +544,7 @@ class TestCompose:
 
     def test_getitem(self):
         assert isinstance(self.transform_5[0], pd.Transform)
-        assert isinstance(self.transform_5[0:2], pd.CompoundTransform)
+        assert isinstance(self.transform_5[0:2], pd.Pipeline)
         assert isinstance(self.transform_5[0:2], pd.Compose)
         assert isinstance(self.transform_5['named_times_two'], pd.Transform)
         with pytest.raises(ValueError):
@@ -585,6 +598,18 @@ class TestModel:
             >> Unbatchify()
             >> plus_one / plus_one
         )
+
+    @pytest.fixture(scope='class')
+    def to_tensor(self):
+        return transform(lambda x: torch.tensor(x))
+
+    @pytest.fixture(scope='class')
+    def lin(self):
+        return transform(torch.nn.Linear(2, 2))
+
+    @pytest.fixture(scope='class')
+    def post(self):
+        return transform(lambda x: x.sum(-1).topk(1, -1).indices.item())
 
     def test_pprintt(self):
         self.model_1._repr_pretty_(PrettyMock, False)
@@ -659,6 +684,59 @@ class TestModel:
         m5 = pd.load(tmp_path / 'test1.padl')
         assert m5.infer_apply((5, 5)) == (13, 13)
 
+    def test_pd_splits_compose(self, to_tensor, lin, post):
+        t = (to_tensor >> batch
+             >> (lin >> lin) + (lin >> lin) + (lin >> lin)
+             >> (unbatch >> post) / (unbatch >> post) / (unbatch >> post)
+        )
+        t_preprocess = to_tensor >> batch
+        t_forward = group((lin >> lin) + (lin >> lin) + (lin >> lin))
+        t_postprocess = group((unbatch >> post) / (unbatch >> post) / (unbatch >> post))
+        assert str(t.pd_preprocess) == str(t_preprocess)
+        assert str(t.pd_forward) == str(t_forward)
+        assert str(t.pd_postprocess) == str(t_postprocess)
+
+    def test_pd_splits_compose_with_group(self, to_tensor, lin, post):
+        t = (to_tensor >> batch
+             >> group((lin >> lin) + (lin >> lin)) + (lin >> lin)
+             >> group((unbatch >> post) / (unbatch >> post)) / (unbatch >> post)
+        )
+        t_preprocess = to_tensor >> batch
+        t_forward = group(group((lin >> lin) + (lin >> lin)) + (lin >> lin))
+        t_postprocess = group(group((unbatch >> post) / (unbatch >> post)) / (unbatch >> post))
+        assert str(t.pd_preprocess) == str(t_preprocess)
+        assert str(t.pd_forward) == str(t_forward)
+        assert str(t.pd_postprocess) == str(t_postprocess)
+
+    def test_pd_splits_parallel(self, to_tensor, lin):
+        t = (((to_tensor >> batch >> lin) + (to_tensor >> batch >> lin))
+             / ((to_tensor >> batch) + (to_tensor >> batch))
+        ) - 'name'
+        g = t / Identity()
+        t_preprocess = group(group((to_tensor >> batch) + (to_tensor >> batch)) /
+                             group((to_tensor >> batch) + (to_tensor >> batch)))
+        g_preprocess = group(t_preprocess / Identity())
+        t_forward = group(group(lin / lin) / Identity())
+        g_forward = group(t_forward / Identity())
+        assert str(t.pd_preprocess) == str(t_preprocess)
+        assert str(g.pd_preprocess) == str(g_preprocess)
+        assert str(t.pd_forward) == str(t_forward)
+        assert str(g.pd_forward) == str(g_forward)
+
+    def test_pd_splits_rollout(self, to_tensor, lin):
+        t = ((to_tensor >> batch >> lin) / (to_tensor >> batch >> lin)
+             + (to_tensor >> batch) / (to_tensor >> batch)
+        ) - 'name'
+        g = t + Identity()
+        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor))
+        g_preprocess = group(t_preprocess + Identity())
+        t_forward = group(group(lin / lin) / Identity())
+        g_forward = group(t_forward / Identity())
+        assert str(t.pd_preprocess) == str(t_preprocess)
+        assert str(g.pd_preprocess) == str(g_preprocess)
+        assert str(t.pd_forward) == str(t_forward)
+        assert str(g.pd_forward) == str(g_forward)
+
 
 class TestFunctionTransform:
     @pytest.fixture(autouse=True, scope='class')
@@ -685,7 +763,6 @@ class TestFunctionTransform:
         assert len(out) == 2
         assert out[0] == 6
         assert out[1] == 7
-
         out = list(self.transform_2.eval_apply([{'info': 'hello'}, {'info': 'dog'}]))
         assert len(out) == 2
         assert out[0] == 'hello'
