@@ -35,12 +35,12 @@ build:
 	mv _sources sources
 	-mv _images images
 	-mv _static static
-	-sed -i 's/_sources/sources/g' *.html
-	-sed -i 's/_images/images/g' *.html
-	-sed -i 's/_static/static/g' *.html
-	-sed -i 's/_static/static/g' apidocs/*.html
-	-sed -i 's/_static/static/g' advanced/*.html
-	-sed -i 's/_static/static/g' usage/*.html
+	-sed -i'.bak' -e 's/_sources/sources/g' *.html
+	-sed -i'.bak' -e 's/_images/images/g' *.html
+	-sed -i'.bak' -e 's/_static/static/g' *.html
+	-sed -i'.bak' -e 's/_static/static/g' apidocs/*.html
+	-sed -i'.bak' -e 's/_static/static/g' advanced/*.html
+	-sed -i'.bak' -e 's/_static/static/g' usage/*.html
 	-rm -rf _static
 	-rm -rf _build
 	-rm *.bak
