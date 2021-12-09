@@ -1088,9 +1088,9 @@ class ClassTransform(AtomicTransform):
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
-        start_node = CodeNode.from_source(start_source, own_scope)
-        if name is not None:
-            graph[ScopedName(name, own_scope, 0)] = start_node
+            start_node = CodeNode.from_source(start_source, own_scope)
+            if name is not None:
+                graph[ScopedName(name, own_scope, 0)] = start_node
 
         return set()
 
@@ -1307,12 +1307,12 @@ class Map(Transform):
 class Pipeline(Transform):
     """Abstract base class for Pipeline
 
-    :param transforms: list of transforms
+    :param transforms: List of sub-transforms.
     :param call_info: A `CallInfo` object containing information about the how the transform was
-    created (needed for saving).
-    :param pd_name: name of Pipeline
+        created (needed for saving).
+    :param pd_name: Name of the Pipeline.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `Pipeline`.
+        :meth:`Pipeline`.
     """
     op = NotImplemented
     display_op = NotImplemented
@@ -1388,6 +1388,25 @@ class Pipeline(Transform):
             result = 'padl.group' + result
         return result
 
+    def _defined_somewhere_else(self):
+        defined_as = self.pd_varname(self._pd_call_info.scope.module)
+        return (
+            self._pd_call_info.scope.module_name != inspector.caller_module().__name__
+            and defined_as is not None
+        )
+
+    def _codegraph_add_import_startnode(self, graph, name):
+        module = inspector.caller_module()
+        scope = symfinder.Scope.toplevel(module)
+        defined_as = self.pd_varname(self._pd_call_info.scope.module)
+        source = f'from {self._pd_call_info.scope.module_name} import {defined_as}'
+        if name is not None and name != defined_as:
+            source += f' as {name}'
+        else:
+            name = defined_as
+        node = CodeNode.from_source(source, scope)
+        graph[ScopedName(name, scope, 0)] = node
+
     def _pd_build_codegraph(self, graph=None, name=None):
         """Build a codegraph defining the transform.
 
@@ -1398,6 +1417,10 @@ class Pipeline(Transform):
         """
         if graph is None:
             graph = CodeGraph()
+
+        if not self._pd_full_dump and self._defined_somewhere_else():
+            self._codegraph_add_import_startnode(graph, name)
+            return graph
 
         self._pd_codegraph_add_startnodes(graph, name)
 
