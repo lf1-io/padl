@@ -200,7 +200,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.var2mod.</span></span><span class="sig-name descname"><span class="pre">Finder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodetype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder" title="Permalink to this definition"></a></dt>
-<dd><p>Class for finding ast nodes of a given type in an ast tree.</p>
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ast.NodeVisitor</span></code> for finding AST-nodes of a given type in an AST-tree.</p>
 <p>Example:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Finder</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;x(y)&#39;</span><span class="p">))</span>  
 <span class="go">[&lt;_ast.Name object at 0x...&gt;, &lt;_ast.Name object at 0x...&gt;]</span>
@@ -209,13 +209,30 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder.find">
 <span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder.find" title="Permalink to this definition"></a></dt>
-<dd><p>Find subnodes of node.</p>
+<dd><p>Find sub-nodes of <em>node</em>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder.generic_visit">
 <span class="sig-name descname"><span class="pre">generic_visit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder.generic_visit" title="Permalink to this definition"></a></dt>
 <dd><p>Called if no explicit visitor function exists for a node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.var2mod.Finder.get_source_segments">
+<span class="sig-name descname"><span class="pre">get_source_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.var2mod.Finder.get_source_segments" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of source segments of found nodes in source and their respective positions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A list of tuples (&lt;source segment&gt;, &lt;position&gt;) where position is a tuple
+(&lt;lineno&gt;, &lt;end lineno&gt;, &lt;col offset&gt;, &lt;end col offset&gt;).</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Finder</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span><span class="o">.</span><span class="n">get_source_segments</span><span class="p">(</span><span class="s1">&#39;x(y)&#39;</span><span class="p">)</span>
+<span class="go">[(&#39;x&#39;, (1, 1, 0, 1)), (&#39;y&#39;, (1, 1, 2, 3))]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </dd></dl>
