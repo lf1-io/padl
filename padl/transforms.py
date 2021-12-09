@@ -158,7 +158,7 @@ class Transform:
             return True
         return self._pd_external_full_dump
         self.pd_node = padl_graph.Node(transform=self,
-                                       name=self.pd_name,
+                                       name=self._pd_shortrepr(),
                                        graph=None,
                                        )
 
@@ -1596,7 +1596,7 @@ class Compose(Pipeline):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         transform_ = self.transforms[0]
-        self.pd_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
+        self.pd_node = padl_graph.Node(transform_, name=transform_._pd_shortrepr(), graph=self.pd_graph)
         prev = self.pd_node
         for transform_ in self.transforms[1:]:
             if isinstance(transform_, Pipeline):

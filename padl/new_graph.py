@@ -12,6 +12,7 @@ class Graph:
 
         self.input_node = _InputNode()
         self.input_node.update_graph(self)
+
         #self.output_node = _OutputNode()
         #self.output_node.update_graph(self)
 
@@ -76,7 +77,17 @@ class Graph:
         return
 
     def draw(self, with_labels=True, **kwargs):
-        return nx.draw(self.networkx_graph, with_labels=with_labels, **kwargs)
+        inbuilt_kwargs = dict(
+            with_labels=with_labels,
+            node_size=3500,
+            node_shape="s",
+            width=1,
+            alpha=0.9,
+            linewidths=3,
+            node_color='lightblue'
+        )
+        inbuilt_kwargs.update(kwargs)
+        return nx.draw(self.networkx_graph, with_labels=with_labels, **inbuilt_kwargs)
 
 
 class Node:
