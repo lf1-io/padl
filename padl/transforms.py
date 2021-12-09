@@ -985,7 +985,7 @@ class AtomicTransform(Transform):
                 yield v
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
         return 0
 
 
@@ -1341,10 +1341,10 @@ class Pipeline(Transform):
         """ Add some error description to `pd_trace`. """
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            if isinstance(self[position], Pipeline):
-                breakpoint()
-                self._pd_trace_error(self._pd_get_error_idx(position - 1),
-                                     [subarg[position] for subarg in arg])
+#            if isinstance(self[position], Pipeline):
+#                breakpoint()
+#                self._pd_trace_error(self._pd_get_error_idx(),
+#                                     [subarg[position] for subarg in arg])
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
         except Exception:
             warn('Error tracing failed')
@@ -1865,12 +1865,12 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[pos][-1]
+        return _pd_trace[-1][-1]
 
     def __call__(self, args):
         """Call method for Rollout
@@ -1989,12 +1989,12 @@ class Parallel(Pipeline):
         return self._pd_output_format(*out)
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[pos][-1]
+        return _pd_trace[-1][-1]
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
