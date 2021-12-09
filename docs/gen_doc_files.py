@@ -1,5 +1,6 @@
 import os
 
+
 def make_docfile(name):
     modname = name.replace('/', '.')
     level = modname.count('.')
@@ -11,6 +12,7 @@ def make_docfile(name):
                 f'.. automodule:: {modname}\n'
                 '    :members:\n'
                 '```\n')
+
 
 def main():
     for x in os.walk('../padl'):

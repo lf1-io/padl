@@ -21,16 +21,7 @@ help:
 
 github:
 	make clean
-	-mkdir _static
 	make build
-
-readme:
-	-rm ../README.rst
-	-rm ../.README.md
-	-rm ../.README.rst
-	-rm README.rst
-	cd .. && tail +9 README.md > .README.md && m2r --overwrite .README.md && rm .README.md && mv .README.rst docs/README.rst
-	(echo "====" && echo "Introduction" && echo "====" && echo ".. toctree::" && echo "   :maxdepth: 3" && echo "   :caption: Contents:" && cat README.rst) > .README.rst && mv .README.rst README.rst
 
 build:
 	cp -r ../img/* ./img/
@@ -50,9 +41,13 @@ build:
 	-sed -i 's/_static/static/g' apidocs/*.html
 	-sed -i 's/_static/static/g' advanced/*.html
 	-sed -i 's/_static/static/g' usage/*.html
+	-rm -rf _static
 	-rm -rf _build
 	-rm *.bak
-	
+	-rm apidocs/*.bak
+	-rm advanced/*.bak
+	-rm usage/*.bak
+
 clean:
 	-rm searchindex.js
 	-rm *.html
