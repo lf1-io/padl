@@ -758,7 +758,7 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    self._pd_trace_add_pipeline(self._pd_get_error_idx(), [args[i] for i in ix])
+                    self._pd_trace_add_pipeline(-1, [args[i] for i in ix])
                     raise err
 
             if use_post or flatten:
@@ -984,7 +984,7 @@ class AtomicTransform(Transform):
                 yield v
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         return 0
 
 
@@ -1752,18 +1752,19 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_error_idx(self, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(self, pos, is_child=False, is_preprocess=False):
         if is_preprocess and is_child:
             return len(self)
         elif is_child:
-            return _pd_trace[-1][-1]
+            return _pd_trace[pos][-1]
         return self.pd_preprocess(True, True) + self.pd_forward(True)
 
-    def _pd_trace_add_pipeline(self, position: int, arg):
+    def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
+            position = self._pd_get_error_idx(depth)
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+            _pd_trace.append((str_, self._pd_process_traceback(position), arg, self, position))
         except Exception:
             warn('Error tracing failed')
 
@@ -1867,20 +1868,21 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[-1][-1]
+        return _pd_trace[pos][-1]
 
-    def _pd_trace_add_pipeline(self, position: int, arg):
+    def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
             breakpoint()
+            position = self._pd_get_error_idx(depth)
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             try:
-                self.__getitem__(position)._pd_trace_add_pipeline(self._pd_get_error_idx(), arg)
+                self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
             except AttributeError:
                 pass
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
@@ -2004,19 +2006,20 @@ class Parallel(Pipeline):
         return self._pd_output_format(*out)
 
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
         if is_child and is_preprocess:
             return 1
         elif is_child:
             return 0
-        return _pd_trace[-1][-1]
+        return _pd_trace[pos][-1]
 
-    def _pd_trace_add_pipeline(self, position: int, arg):
+    def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
+            position = self._pd_get_error_idx(depth)
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             try:
-                self.__getitem__(position)._pd_trace_add_pipeline(self._get_error_idx(), arg)
+                self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
             except AttributeError:
                 pass
             _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
