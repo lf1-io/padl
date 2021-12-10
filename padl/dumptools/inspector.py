@@ -84,16 +84,14 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
 
     Example:
 
-    ```
-    def tracefunc(frame, event, arg)
-        if 'event' == 'return':
-            print('returning', arg)
+    >>> def tracefunc(frame, event, arg)
+    ...     if 'event' == 'return':
+    ...         print('returning', arg)
 
-    def myfunction():
-        [...]
-        _trace_this(tracefunc)
-        return 123
-    ```
+    >>> def myfunction():
+    ...     [...]
+    ...     _trace_this(tracefunc)
+    ...     return 123
 
     :param tracefunc: Trace function (see documentation of `sys.settrace` for details).
     :param frame: The frame to trace (defaults to the caller's frame).
