@@ -758,7 +758,8 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    self._pd_trace_error(self._pd_get_error_idx(-1),
+                    breakpoint()
+                    self._pd_trace_error(self._pd_get_error_idx(),
                                          [args[i] for i in ix])
                     raise err
 
@@ -1337,18 +1338,6 @@ class Pipeline(Transform):
             return last_transform._pd_output_format
         return None
 
-    def _pd_trace_error(self, position: int, arg):
-        """ Add some error description to `pd_trace`. """
-        try:
-            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-#            if isinstance(self[position], Pipeline):
-#                breakpoint()
-#                self._pd_trace_error(self._pd_get_error_idx(),
-#                                     [subarg[position] for subarg in arg])
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
-        except Exception:
-            warn('Error tracing failed')
-
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
 
@@ -1764,6 +1753,13 @@ class Compose(Pipeline):
                 self._pd_trace_error(i, _in_args)
                 raise err
         return args
+
+    def _pd_get_error_idx(self, is_child=False, is_preprocess=False):
+        if is_preprocess and is_child:
+            return len(self)
+        elif is_child:
+            return _pd_trace[-1][-1]
+        return self.pd_preprocess(True, True) + self.pd_forward(True)
 
 
 class Rollout(Pipeline):
