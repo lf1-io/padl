@@ -1,6 +1,6 @@
 import pytest
 
-from padl import transform, group, IfTrain, Batchify, Unbatchify
+from padl import transform, group, IfTrain, Batchify, Unbatchify, importdump, fulldump
 from tests.material import transforms_in_module as tim
 
 
@@ -163,6 +163,11 @@ def test_nested_dump_c():
     assert t._pd_dumps() == read_dump('nested_c')
 
 
+def test_nested_dump_d():
+    t = maketransformclass()(1, 2, x)
+    assert t._pd_dumps() == read_dump('nested_d')
+
+
 c_a = x >> y >> x
 c_b = x >> y >> x / x + c_a
 c_c = (x
@@ -235,7 +240,58 @@ def test_dumping_selfassign():
     assert SelfAssign(1)._pd_dumps() == read_dump('selfassign')
 
 
-def test_othermodule_function():
-    x = tim.function._pd_dumps()
-    # TODO: wip
-    #  assert 'todo' == 'done'
+class TestOtherModule:
+    def test_import_function(self):
+        importdump(tim)
+        dump = tim.function._pd_dumps()
+        assert dump == read_dump('othermodule_import_function')
+
+    def test_full_function(self):
+        fulldump(tim)
+        dump = tim.function._pd_dumps()
+        assert dump == read_dump('othermodule_full_function')
+
+    def test_import_class(self):
+        importdump(tim)
+        dump = tim.Class(1)._pd_dumps()
+        assert dump == read_dump('othermodule_import_class')
+
+    def test_full_class(self):
+        fulldump(tim)
+        dump = tim.Class(1)._pd_dumps()
+        assert dump == read_dump('othermodule_full_class')
+
+    def test_import_object(self):
+        importdump(tim)
+        dump = tim.obj._pd_dumps()
+        assert dump == read_dump('othermodule_import_object')
+
+    def test_full_object(self):
+        fulldump(tim)
+        dump = tim.obj._pd_dumps()
+        assert dump == read_dump('othermodule_full_object')
+
+    def test_import_pipeline(self):
+        importdump(tim)
+        dump = tim.pipeline._pd_dumps()
+        assert dump == read_dump('othermodule_import_pipeline')
+
+    def test_full_pipeline(self):
+        fulldump(tim)
+        dump = tim.pipeline._pd_dumps()
+        assert dump == read_dump('othermodule_full_pipeline')
+
+    def test_full_makefunction(self):
+        fulldump(tim)
+        dump = tim.makefunction()._pd_dumps()
+        assert dump == read_dump('othermodule_full_makefunction')
+
+    def test_full_makeclass(self):
+        fulldump(tim)
+        dump = tim.makeclass()(1, 2, 3)._pd_dumps()
+        assert dump == read_dump('othermodule_full_makeclass')
+
+    def test_full_makeclasstransform(self):
+        fulldump(tim)
+        dump = tim.makeclasstransform(1, 2, 3)._pd_dumps()
+        assert dump == read_dump('othermodule_full_makeclasstransform')
