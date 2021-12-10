@@ -6,10 +6,11 @@
 
 ### The {obj}`~padl.same` Utility
 
-The special object {obj}`~padl.same` allows to apply arbitrary methods to the input - 
+The special object {obj}`~padl.same` allows the application of arbitrary methods to the input -
 `same.something()` is the same as `transform(lambda x: x.something())`:
 
 ```python
+>>> from padl import same
 >>> concat_lower = add >> same.lower()
 >>> concat_lower("HELLO", "you")
 "hello you"

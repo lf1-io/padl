@@ -170,9 +170,10 @@
 <h1>Extras<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
 <div class="section" id="the-same-utility">
 <span id="same"></span><h2>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility<a class="headerlink" href="#the-same-utility" title="Permalink to this headline"></a></h2>
-<p>The special object <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> allows to apply arbitrary methods to the input -
+<p>The special object <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> allows the application of arbitrary methods to the input -
 <code class="docutils literal notranslate"><span class="pre">same.something()</span></code> is the same as <code class="docutils literal notranslate"><span class="pre">transform(lambda</span> <span class="pre">x:</span> <span class="pre">x.something())</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">concat_lower</span> <span class="o">=</span> <span class="n">add</span> <span class="o">&gt;&gt;</span> <span class="n">same</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">same</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">concat_lower</span> <span class="o">=</span> <span class="n">add</span> <span class="o">&gt;&gt;</span> <span class="n">same</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">concat_lower</span><span class="p">(</span><span class="s2">&quot;HELLO&quot;</span><span class="p">,</span> <span class="s2">&quot;you&quot;</span><span class="p">)</span>
 <span class="go">&quot;hello you&quot;</span>
 </pre></div>

@@ -100,7 +100,7 @@ tvt = transform(tvt)
 
 preprocess_image = (
     transform(lambda path: Image.open(path))  # load an image from a path
-    >> tvt.Resize(244, 244)  # resize the image
+    >> tvt.Resize((244, 244))  # resize the image
     >> IfTrain(tvt.RandomRotation(100))  # some augmentation
     >> tvt.PILToTensor()
 )
