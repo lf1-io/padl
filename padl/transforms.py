@@ -758,9 +758,7 @@ class Transform:
                 try:
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    breakpoint()
-                    self._pd_trace_error(self._pd_get_error_idx(),
-                                         [args[i] for i in ix])
+                    self._pd_trace_add_pipeline(self._pd_get_error_idx(), [args[i] for i in ix])
                     raise err
 
             if use_post or flatten:
@@ -1761,6 +1759,14 @@ class Compose(Pipeline):
             return _pd_trace[-1][-1]
         return self.pd_preprocess(True, True) + self.pd_forward(True)
 
+    def _pd_trace_add_pipeline(self, position: int, arg):
+        """ Add some error description to `pd_trace`. """
+        try:
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+        except Exception:
+            warn('Error tracing failed')
+
 
 class Rollout(Pipeline):
     """Apply a list of transform to same input and get tuple output
@@ -1867,6 +1873,19 @@ class Rollout(Pipeline):
         elif is_child:
             return 0
         return _pd_trace[-1][-1]
+
+    def _pd_trace_add_pipeline(self, position: int, arg):
+        """ Add some error description to `pd_trace`. """
+        try:
+            breakpoint()
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
+            try:
+                self.__getitem__(position)._pd_trace_add_pipeline(self._pd_get_error_idx(), arg)
+            except AttributeError:
+                pass
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+        except Exception:
+            warn('Error tracing failed')
 
     def __call__(self, args):
         """Call method for Rollout
@@ -1991,6 +2010,18 @@ class Parallel(Pipeline):
         elif is_child:
             return 0
         return _pd_trace[-1][-1]
+
+    def _pd_trace_add_pipeline(self, position: int, arg):
+        """ Add some error description to `pd_trace`. """
+        try:
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
+            try:
+                self.__getitem__(position)._pd_trace_add_pipeline(self._get_error_idx(), arg)
+            except AttributeError:
+                pass
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+        except Exception:
+            warn('Error tracing failed')
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
