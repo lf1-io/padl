@@ -158,7 +158,7 @@ class Transform:
             return True
         return self._pd_external_full_dump
         self.pd_node = padl_graph.Node(transform=self,
-                                       name=self._pd_shortrepr(),
+                                       name=self.pd_name,
                                        graph=None,
                                        )
 
@@ -1594,17 +1594,23 @@ class Compose(Pipeline):
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
+        self._pd_create_graph()
 
+    def _pd_create_graph(self):
         transform_ = self.transforms[0]
-        self.pd_node = padl_graph.Node(transform_, name=transform_._pd_shortrepr(), graph=self.pd_graph)
-        prev = self.pd_node
+        if isinstance(transform_, Pipeline):
+            node_ = transform_.pd_graph
+        else:
+            node_ = padl_graph.Node(transform_, name=transform_._pd_shortrepr())
+        self.pd_graph.add_node(node_, connect_input=True)
+        prev = node_
         for transform_ in self.transforms[1:]:
             if isinstance(transform_, Pipeline):
                 transform_node = transform_.pd_graph
             else:
-                transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
-            prev.insert_output_node(transform_node)
-            prev = transform_node
+                transform_node = padl_graph.Node(transform_, name=transform_._pd_shortrepr())
+            self.pd_graph.add_node(transform_node)
+            prev = prev.insert_output_node(transform_node)
 
     def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
                                                                           Tuple[Transform,
