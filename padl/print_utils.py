@@ -34,7 +34,7 @@ def create_reverse_arrow(start_left: int, finish_right: int, n_initial_rows: int
     :param n_initial_rows: Y-padding.
     :param n_final_rows: Y-padding.
 
-    Example:
+    Example::
 
         ____________|
         |
@@ -93,7 +93,7 @@ def create_arrow(start_left: int, finish_right: int, n_initial_rows: int, n_fina
     :param n_initial_rows: Y-padding.
     :param n_final_rows: Y-padding.
 
-    Example:
+    Example::
 
         ____________|
         |

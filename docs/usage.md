@@ -33,5 +33,5 @@ usage/extras.md
 - {obj}`~padl.same` for applying a value's method.
 - {class}`~padl.IfInfer` for conditioning on the 'infer'-stage.
 - {class}`~padl.IfEval` for conditioning on the 'eval'-stage.
-- {class}`~padl.IfTrain` for conditioning on the 'try'-stage.
+- {class}`~padl.IfTrain` for conditioning on the 'train'-stage.
 - {class}`~padl.Try` for catching exceptions in a transform.

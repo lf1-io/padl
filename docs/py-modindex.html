@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usage &mdash; PADL 0.1.0 documentation</title>
+  <title>Python Module Index &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="static/custom.css" type="text/css" />
@@ -18,8 +18,9 @@
     <script src="static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Transforms and Pipelines" href="usage/transform.html" />
-    <link rel="prev" title="Introduction" href="README.html" /> 
+ 
+
+
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,7 +40,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="README.html#installation">Installation</a></li>
@@ -51,7 +52,7 @@
 <li class="toctree-l2"><a class="reference internal" href="README.html#licensing">Licensing</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage/creating_transforms.html">Creating Transforms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
@@ -100,7 +101,7 @@
 <li class="toctree-l3"><a class="reference internal" href="usage/extras.html#exception-handling">Exception Handling</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="advanced.html">Advanced Topics</a><ul>
@@ -156,7 +157,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Usage</li>
+      <li>Python Module Index</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -165,51 +166,99 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="tex2jax_ignore mathjax_ignore section" id="usage">
-<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h1>
-<p>The following collection of pages are a concise reference of everything you need to know to use PADL.
-Read them all to know everything you need to get started!</p>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/creating_transforms.html">Creating Transforms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/combining_transforms.html">Combining Transforms into Pipelines</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/apply.html">Applying Transforms to Data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/saving.html">Saving and Loading</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/print_slice.html">Printing and Slicing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/pytorch.html">Using PyTorch Modules with Transforms</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage/extras.html">Extras</a></li>
-</ul>
-</div>
-<div class="section" id="import-anything-you-need-from-padl">
-<h2>Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code><a class="headerlink" href="#import-anything-you-need-from-padl" title="Permalink to this headline"></a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> for making Transforms.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-func docutils literal notranslate"><span class="pre">save()</span></code></a> for saving Transforms.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">load()</span></code></a> for loading Transforms.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-func docutils literal notranslate"><span class="pre">value()</span></code></a> for saving by value.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.group" title="padl.group"><code class="xref py py-func docutils literal notranslate"><span class="pre">group()</span></code></a> for grouping Pipeline.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.identity" title="padl.identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identity</span></code></a> for doing nothing.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.batch" title="padl.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a> for defining the batchified part of a pipeline.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code></a> for defining the postprocessing part of a pipeline.</p></li>
-<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> for applying a value’s method.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> for conditioning on the ‘infer’-stage.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> for conditioning on the ‘eval’-stage.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> for conditioning on the ‘train’-stage.</p></li>
-<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Try</span></code> for catching exceptions in a transform.</p></li>
-</ul>
-</div>
-</div>
+
+   <h1>Python Module Index</h1>
+
+   <div class="modindex-jumpbox">
+   <a href="#cap-p"><strong>p</strong></a>
+   </div>
+
+   <table class="indextable modindextable">
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-p"><td></td><td>
+       <strong>p</strong></td><td></td></tr>
+     <tr>
+       <td><img src="static/minus.png" class="toggler"
+              id="toggle-1" style="display: none" alt="-" /></td>
+       <td>
+       <a href="apidocs/padl.html#module-padl"><code class="xref">padl</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.html#module-padl.dumptools"><code class="xref">padl.dumptools</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.inspector.html#module-padl.dumptools.inspector"><code class="xref">padl.dumptools.inspector</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.packagefinder.html#module-padl.dumptools.packagefinder"><code class="xref">padl.dumptools.packagefinder</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.serialize.html#module-padl.dumptools.serialize"><code class="xref">padl.dumptools.serialize</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.sourceget.html#module-padl.dumptools.sourceget"><code class="xref">padl.dumptools.sourceget</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.symfinder.html#module-padl.dumptools.symfinder"><code class="xref">padl.dumptools.symfinder</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.dumptools.var2mod.html#module-padl.dumptools.var2mod"><code class="xref">padl.dumptools.var2mod</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.exceptions.html#module-padl.exceptions"><code class="xref">padl.exceptions</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.print_utils.html#module-padl.print_utils"><code class="xref">padl.print_utils</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.transforms.html#module-padl.transforms"><code class="xref">padl.transforms</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.util_transforms.html#module-padl.util_transforms"><code class="xref">padl.util_transforms</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.utils.html#module-padl.utils"><code class="xref">padl.utils</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.version.html#module-padl.version"><code class="xref">padl.version</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="apidocs/padl.wrap.html#module-padl.wrap"><code class="xref">padl.wrap</code></a></td><td>
+       <em></em></td></tr>
+   </table>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="README.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="usage/transform.html" class="btn btn-neutral float-right" title="Transforms and Pipelines" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
