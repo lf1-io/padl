@@ -49,6 +49,7 @@ def dump_packages_versions(nodes):
     Format of the string is:
 
     <package>==<version>
+
     [...]
 
     :param nodes: List of ast nodes in a module.
