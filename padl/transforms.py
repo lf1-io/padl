@@ -2017,6 +2017,7 @@ class Parallel(Pipeline):
         """ Add some error description to `pd_trace`. """
         try:
             position = self._pd_get_error_idx(depth)
+            arg = [subarg[position] for subarg in arg] if depth < -1 else arg
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             try:
                 self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
