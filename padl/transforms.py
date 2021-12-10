@@ -1083,47 +1083,46 @@ class ClassTransform(AtomicTransform):
         )
 
     @property
-    def _pd_full_dump(self):
-        module = inspect.getmodule(self.__class__)
-        if inspector.caller_module() == module:
-            return True
-        if any(module.__spec__.name.startswith(mod)
-               for mod in self._pd_external_full_dump_modules):
-            return True
-        return self._pd_external_full_dump
+    def _pd_full_dump_relevant_module(self):
+        return inspect.getmodule(self.__class__)
 
     def _pd_codegraph_add_startnodes_import_var(self, graph, name):
-        own_scope = self._pd_call_info.scope
-        varname = self.pd_varname(own_scope.module)
+        instance_scope = self._pd_call_info.scope
+        varname = self.pd_varname(instance_scope.module)
+
         import_source = f'from {self.__module__} import {varname}'
-        import_node = CodeNode.from_source(import_source, own_scope)
-        graph[ScopedName(varname, own_scope, 0)] = import_node
+        import_node = CodeNode.from_source(import_source, instance_scope)
+
+        graph[ScopedName(varname, instance_scope, 0)] = import_node
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
-            start_node = CodeNode.from_source(start_source, own_scope)
+            start_node = CodeNode.from_source(start_source, instance_scope)
             if name is not None:
-                graph[ScopedName(name, own_scope, 0)] = start_node
+                graph[ScopedName(name, instance_scope, 0)] = start_node
 
         return set()
 
     def _pd_codegraph_add_startnodes_import(self, graph, name):
-        own_scope = self._pd_call_info.scope
-        module = inspector.caller_module()
-        call_scope = symfinder.Scope.toplevel(module)
-        class_scope = symfinder.Scope.toplevel(inspect.getmodule(self.__class__))
+        instance_scope = self._pd_call_info.scope
 
-        if own_scope != class_scope:
+        # instance creation and class definition are in separate modules
+        if instance_scope.module.__name__ != self.__class__.__module__:
             return super()._pd_codegraph_add_startnodes(graph, name)
 
-        if self.pd_varname(own_scope.module) is not None:
+        # the instance has a varname - just import the instance
+        if self.pd_varname(instance_scope.module) is not None:
             return self._pd_codegraph_add_startnodes_import_var(graph, name)
-        import_source = f'from {self.__module__} import {self.__class__.__name__}'
-        import_node = CodeNode.from_source(import_source, own_scope)
-        graph[ScopedName(self.__class__.__name__, own_scope, 0)] = import_node
+
+        # import the class
+        import_source = f'from {self.__class__.__module__} import {self.__class__.__name__}'
+        import_node = CodeNode.from_source(import_source, instance_scope)
+        graph[ScopedName(self.__class__.__name__, instance_scope, 0)] = import_node
         nodes = [import_node]
 
+        # make the call
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
+        call_scope = symfinder.Scope.toplevel(inspector.caller_module())
         start_source = f'{name or "_pd_dummy"} = {call}'
         start_node = CodeNode.from_source(start_source, call_scope)
         if name is not None:
@@ -1136,17 +1135,20 @@ class ClassTransform(AtomicTransform):
         return dependencies
 
     def _pd_codegraph_add_startnodes_full(self, graph, name):
-        module = inspector.caller_module()
-        call_scope = symfinder.Scope.toplevel(module)
-        class_scope = symfinder.Scope.toplevel(inspect.getmodule(self.__class__))
-        if class_scope == call_scope:
+        call_scope = self._pd_call_info.scope
+        class_scope = self._pd_class_call_info.scope
+        if False and class_scope == call_scope:
             return super()._pd_codegraph_add_startnodes(graph, name)
 
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, class_scope)
+        start_node = CodeNode.from_source(start_source, call_scope)
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
+
+        for scoped_name in start_node.globals_:
+            if scoped_name.name == self.__class__.__name__:
+                scoped_name.scope = class_scope
 
         return set(start_node.globals_)
 

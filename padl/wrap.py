@@ -111,6 +111,7 @@ def _wrap_class(cls, ignore_scope=False):
 
     cls.__init__ = __init__
     cls.__module__ = module
+    cls._pd_class_call_info = inspector.CallInfo()
     return cls
 
 
