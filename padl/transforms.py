@@ -34,15 +34,6 @@ from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, m
     make_green, create_arrow, format_argument, visible_len
 
 
-class _Notset:
-    # pylint: disable=too-few-public-methods
-    def __bool__(self):
-        return False
-
-
-_notset = _Notset()
-
-
 def _unpack_batch(args):
     """Convert an input in batch-form into a tuple of datapoints.
 
@@ -135,7 +126,7 @@ class Transform:
         if call_info is None:
             call_info = inspector.CallInfo()
         self._pd_call_info = call_info
-        self._pd_varname = _notset
+        self._pd_varname = {}
         self._pd_name = pd_name
         self._pd_device = 'cpu'
         self._pd_layers = None
@@ -280,7 +271,7 @@ class Transform:
         """
         named_copy = copy(self)
         named_copy._pd_name = name
-        named_copy._pd_varname = _notset
+        named_copy._pd_varname = {}
         return named_copy
 
     def __invert__(self) -> "Map":
@@ -604,7 +595,7 @@ class Transform:
         except IndexError:
             return None
 
-    def pd_varname(self, module=None) -> Optional[str]:
+    def pd_varname(self, scope=None) -> Optional[str]:
         """The name of the variable name the transform was last assigned to.
 
         Example:
@@ -614,15 +605,15 @@ class Transform:
         >>> foo.pd_varname()  # doctest: +SKIP
         'foo'
 
-        :param module: Module to search
+        :param scope: Scope to search
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
         """
-        if self._pd_varname is _notset or module is not None:
-            if module is None:
-                module = inspector.caller_module()
-            self._pd_varname = self._pd_find_varname(module.__dict__)
-        return self._pd_varname
+        if scope is None:
+            scope = self._pd_call_info.scope
+        if scope not in self._pd_varname:
+            self._pd_varname[scope] = self._pd_find_varname(scope.module.__dict__)
+        return self._pd_varname[scope]
 
     def pd_forward_device_check(self) -> bool:
         """Check if all transform in forward are in correct device
@@ -1088,7 +1079,7 @@ class ClassTransform(AtomicTransform):
 
     def _pd_codegraph_add_startnodes_import_var(self, graph, name):
         instance_scope = self._pd_call_info.scope
-        varname = self.pd_varname(instance_scope.module)
+        varname = self.pd_varname(instance_scope)
 
         import_source = f'from {self.__module__} import {varname}'
         import_node = CodeNode.from_source(import_source, instance_scope)
@@ -1111,7 +1102,7 @@ class ClassTransform(AtomicTransform):
             return super()._pd_codegraph_add_startnodes(graph, name)
 
         # the instance has a varname - just import the instance
-        if self.pd_varname(instance_scope.module) is not None:
+        if self.pd_varname(instance_scope) is not None:
             return self._pd_codegraph_add_startnodes_import_var(graph, name)
 
         # import the class
@@ -1137,7 +1128,7 @@ class ClassTransform(AtomicTransform):
     def _pd_codegraph_add_startnodes_full(self, graph, name):
         call_scope = self._pd_call_info.scope
         class_scope = self._pd_class_call_info.scope
-        if False and class_scope == call_scope:
+        if class_scope == call_scope:
             return super()._pd_codegraph_add_startnodes(graph, name)
 
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
@@ -1318,7 +1309,6 @@ class Map(Transform):
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
 
-
 class Pipeline(Transform):
     """Abstract base class for Pipeline
 
@@ -1361,7 +1351,7 @@ class Pipeline(Transform):
         named_copy = copy(self)
         named_copy._pd_name = name
         named_copy._pd_group = True
-        named_copy._pd_varname = _notset
+        named_copy._pd_varname = {}
         return named_copy
 
     def __getitem__(self, item: Union[int, slice, str]) -> Transform:
@@ -1391,7 +1381,7 @@ class Pipeline(Transform):
 
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
-            x.pd_varname() or x._pd_evaluable_repr(indent + 4)
+            x.pd_varname(self._pd_call_info.scope) or x._pd_evaluable_repr(indent + 4)
             for x in self.transforms
         ]
         result = (
@@ -1404,7 +1394,7 @@ class Pipeline(Transform):
         return result
 
     def _defined_somewhere_else(self):
-        defined_as = self.pd_varname(self._pd_call_info.scope.module)
+        defined_as = self.pd_varname(self._pd_call_info.scope)
         return (
             self._pd_call_info.scope.module_name != inspector.caller_module().__name__
             and defined_as is not None
@@ -1413,7 +1403,7 @@ class Pipeline(Transform):
     def _codegraph_add_import_startnode(self, graph, name):
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
-        defined_as = self.pd_varname(self._pd_call_info.scope.module)
+        defined_as = self.pd_varname(self._pd_call_info.scope)
         source = f'from {self._pd_call_info.scope.module_name} import {defined_as}'
         if name is not None and name != defined_as:
             source += f' as {name}'
@@ -1446,7 +1436,7 @@ class Pipeline(Transform):
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
-            varname = transform.pd_varname(self._pd_call_info.module)
+            varname = transform.pd_varname(self._pd_call_info.scope)
             # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, varname)
         return graph

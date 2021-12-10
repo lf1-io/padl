@@ -228,7 +228,8 @@ class _ImportFinder(_NameFinder):
     def node(self):
         # TODO: cache deparse?
         node = ast.parse(self.deparse()).body[0]
-        node._globalscope = True
+        if node.names[0].asname is None:
+            node._globalscope = True
         return node
 
 
@@ -274,7 +275,11 @@ class _ImportFromFinder(_NameFinder):
 
     def node(self):
         # TODO: cache deparse?
-        return ast.parse(self.deparse()).body[0]
+        node = ast.parse(self.deparse()).body[0]
+        # the scope does not matter here
+        if node.names[0].asname is None:
+            node._globalscope = True
+        return node
 
 
 class _AssignFinder(_NameFinder):
@@ -603,7 +608,7 @@ def find_in_scope(name: ScopedName):
                 continue
             source, node = res
             if getattr(node, '_globalscope', False):
-                scope = scope.global_()
+                scope = Scope.empty()
 
             return (source, node), scope
         except NameNotFound:
@@ -612,7 +617,10 @@ def find_in_scope(name: ScopedName):
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
     source, node = find(name.name, scope.module, i)
-    scope = getattr(node, '_scope', scope.global_())
+    if getattr(node, '_globalscope', False):
+        scope = Scope.empty()
+    else:
+        scope = getattr(node, '_scope', scope.global_())
     return (source, node), scope
 
 
@@ -762,12 +770,12 @@ def split_call(call_source):
     """
     node = ast.parse(call_source).body[0].value
     call = ast.get_source_segment(call_source, node.func)
-    if not node.args:
-        args = ''
-    else:
-        args = sourceget.cut(call_source,
-                             node.args[0].lineno - 1,
-                             node.args[-1].end_lineno - 1,
-                             node.args[0].col_offset,
-                             node.args[-1].end_col_offset)
+    if not node.args and not node.keywords:
+        return call, ''
+    all_args = node.args + [x.value for x in node.keywords]
+    args = sourceget.cut(call_source,
+                         node.func.lineno - 1,
+                         all_args[-1].end_lineno - 1,
+                         node.func.end_col_offset + 1,
+                         all_args[-1].end_col_offset)
     return call, args
