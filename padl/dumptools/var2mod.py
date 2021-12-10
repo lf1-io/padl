@@ -427,14 +427,21 @@ class _Renamer(ast.NodeTransformer):
                                'name': name})
 
 
-def rename(tree, from_, to, rename_locals=False):
+def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
+    """Rename things in an AST tree.
+
+    :param tree: The tree in which to rename things.
+    :param from_: Rename everything called this ...
+    :param to: ... to this.
+    :param rename_locals: If *True*, rename local things, else, only rename globals.
+    """
     if not rename_locals:
         globals_ = find_globals(tree)
         if from_ not in {x[0] for x in globals_}:
             return tree
     if isinstance(tree, Iterable) and not isinstance(tree, str):
         return [rename(x, from_, to, rename_locals) for x in tree]
-    elif not isinstance(tree, ast.AST):
+    if not isinstance(tree, ast.AST):
         return tree
     renamer = _Renamer(from_, to, rename_locals)
     return renamer.visit(tree)
@@ -534,6 +541,7 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
 
 
 def find_codenode(name: ScopedName):
+    """Find the :class:`CodeNode` corresponding to a :class:`ScopedName` *name*. """
     (source, node), scope_of_next_var = find_in_scope(name)
 
     # find dependencies
@@ -626,6 +634,15 @@ def _sort(unscoped_graph):
 
 @dataclass
 class CodeNode:
+    """A node in a :class:`CodeGraph`.
+
+    A `CodeNode` has
+
+    - a *source*: The source code represented by the `CodeNode`.
+    - a set of *globals_*: Names the node depends on.
+    - (optionally) a *scope*: The module and function scope the `CodeNode` lives in.
+    - (optionally) an *ast_node*: An `ast.AST` object representing the code.
+    """
     source: str
     globals_: set
     scope: Optional[Scope] = None
@@ -633,6 +650,7 @@ class CodeNode:
 
     @classmethod
     def from_source(cls, source, scope):
+        """Build a `CodeNode` from a source string. """
         node = ast.parse(source).body[0]
         globals_ = {
             ScopedName(var, scope, n)
@@ -669,6 +687,33 @@ def _dumps_unscoped(unscoped_graph):
 
 
 class CodeGraph(dict):
+    """A graph representing python code.
+
+    The nodes in the graph are `CodeNode` objects, representing pieces of code defining python
+    variables. The edges are the dependencies between the nodes.
+
+    As an example - the following code::
+
+        import foo
+
+        def f(x):
+            return foo.bar(x) + 1
+
+        o = f(100)
+
+    defines a codegraph with the nodes::
+
+        foo: "import foo"
+        f: "def f(x) ..."
+        o: "o = f(100)"
+
+    Edges are determined by the variable dependencies between the nodes::
+
+        o -> f -> foo
+
+    As `o` depends on `f` and `f` depends on `foo`.
+    """
+
     def _unscoped(self):
         """Create a version of *self* where all non-top level variables are renamed (by prepending
         the scope) to prevent conflicts."""
@@ -706,7 +751,7 @@ class CodeGraph(dict):
 
     @classmethod
     def build(cls, scoped_name: ScopedName):
-        """Build a codegraph corresponding to a name.
+        """Build a codegraph corresponding to a `ScopedName`.
 
         The name will be searched for in its scope.
         """

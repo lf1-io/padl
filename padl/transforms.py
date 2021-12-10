@@ -143,10 +143,19 @@ class Transform:
         self._pd_external_full_dump = False
 
     @property
-    def _pd_full_dump(self):
-        module = self._pd_call_info.scope.module
+    def _pd_full_dump_relevant_module(self):
+        return self._pd_call_info.scope.module
+
+    @property
+    def _pd_full_dump(self) -> bool:
+        """If *True*, dump the Transform in full (with definition etc) even if it was defined in
+        a different module. Else, only dump an import statement. """
+        module = self._pd_full_dump_relevant_module
+        # always fully dump Transforms from the module the dump was triggered in
         if inspector.caller_module() == module:
             return True
+        # fully dump all Transforms from packages or mudules specified in
+        # _pd_external_full_dump_modules
         if any(module.__spec__.name.startswith(mod)
                for mod in self._pd_external_full_dump_modules):
             return True
@@ -366,8 +375,11 @@ class Transform:
             f.write(versions)
 
     def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> CodeNode:
-        """Build the start-code-node - the node with the source needed to create *self* as "name".
-        (in the scope where *self* was originally created). """
+        """Build the start-:class:`CodeNode` objecs - the node with the source needed to create
+        *self* as *name* (in the scope where *self* was originally created).
+
+        Returns a set of dependencies (scoped names the start-node depends on).
+        """
         scope = self._pd_call_info.scope
 
         nodes = []
@@ -376,6 +388,7 @@ class Transform:
         start = CodeNode.from_source(start_source, scope)
         nodes.append(start)
 
+        # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
         if name is not None:
             graph[ScopedName(name, scope, 0)] = start
 

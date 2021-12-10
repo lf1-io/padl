@@ -16,17 +16,14 @@ class CallInfo:
     """Information about the calling context.
 
     Contains the following information:
-        - the module from which the call was made
         - the function from which that call was made
-        - the scope (see `symfinder.Scope`)
+        - the scope (see :class:`symfinder.Scope`)
 
     :param origin: Where to look for the call, can be
         - "nextmodule": use the first frame not in the module the object was created in
         - "here": use the frame the object was created in
     :param drop_n: Drop *n* levels from the calling scope.
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
-
-    :returns: A CallInfo object.
     """
 
     def __init__(self, origin: Literal['nextmodule', 'here'] = 'nextmodule',
