@@ -295,6 +295,59 @@ def build(arg):
 
 (what-does-not-save)=
 
+## Saving Transforms from other modules
+
+When importing Transforms from a different module, saving will by default only dump the import statement.
+
+Thus, when doing
+
+```python
+from padl import save
+from some.module import a_transform
+save(a_transform, 'mytransform')
+```
+
+the `transforms.py` will contain just:
+
+```python
+from some.module import a_transform
+
+_pd_main = a_transform
+```
+
+One can switch to a full dump of the transform using {func}`padl.fulldump`:
+
+```python
+from padl import save, fulldump
+from some.module import a_transform
+
+a_transform = fulldump(a_transform)
+save(a_transform, 'mytransform')
+```
+
+This causes the `transforms.py` to contain the transform definition instead of the import:
+
+```python
+@transform
+def a_transform(x):
+    ...
+
+_pd_main = a_transform
+```
+
+Instead of using {func}`padl.fulldump` on a Transform, one can apply it to a package or module. This will enable full dump for all contained transforms.
+
+```python
+from padl import save, fulldump
+import some.module
+from some.module import a_transform
+
+fulldump(some.module)
+```
+
+To reverse the effect of {func}`~padl.fulldump`, use {func}`~padl.importdump`.
+
+
 ## What does not save
 
 Saving PADL transforms has a few caveats you should be aware of:
