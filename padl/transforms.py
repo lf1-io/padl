@@ -215,7 +215,7 @@ class Transform:
             - the "postprocess" part of the transform
         """
         component = Transform._pd_merge_components(input_components)
-        assert isinstance(component, int), ('A normal Tranform cannot process input from multiple '
+        assert isinstance(component, int), ('A normal Transform cannot process input from multiple '
                                             'stages.')
         return (
             # a normal transform doesn't change the components
@@ -509,7 +509,7 @@ class Transform:
     def _pd_all_transforms(self, result: Optional[list] = None) -> list:
         """Return a list of all transforms needed for executing the transform.
 
-        This includes the transform itself, the subtransforms of a compount transform or
+        This includes the transform itself, the subtransforms of a pipeline transform or
         transforms a function-transform depends on as a global. """
         if result is None:
             result = []
