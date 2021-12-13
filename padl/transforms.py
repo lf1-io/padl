@@ -906,7 +906,7 @@ class Transform:
             inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
             inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
         except Exception as err:
-            self._pd_trace_error(self._pd_get_error_idx(), in_args)
+            self._pd_trace_add_pipeline(-1, in_args)
             raise err
         output_format = self._pd_get_output_format()
         if output_format is not None:
