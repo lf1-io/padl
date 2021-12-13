@@ -984,7 +984,7 @@ class AtomicTransform(Transform):
                 yield v
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False, pos=None):
         return 0
 
 
@@ -1730,13 +1730,6 @@ class Compose(Pipeline):
                                                                   marker[0] == i else ''))
         return '\n'.join(output)
 
-    def pd_stage(self, is_child=False, is_preprocess=False):
-        if is_child and is_preprocess:
-            return len(self)
-        elif is_child:
-            return _pd_trace[-1][-1]
-        return self._pd_preprocess._pd_get_error_idx(True, True) + self._pd_forward._pd_get_error_idx(True, False)
-
     def __call__(self, args):
         """Call method for Compose
 
@@ -1752,19 +1745,20 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_error_idx(self, pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(self, is_child=False, is_preprocess=False, pos=None):
         if is_preprocess and is_child:
             return len(self)
         elif is_child:
             return _pd_trace[pos][-1]
-        return self.pd_preprocess(True, True) + self.pd_forward(True)
+        return self.pd_preprocess._pd_get_error_idx(is_child=True, is_preprocess=True) + \
+               self.pd_forward._pd_get_error_idx(is_child=True, pos=pos)
 
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            position = self._pd_get_error_idx(depth)
+            position = self._pd_get_error_idx(pos=depth)
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append((str_, self._pd_process_traceback(position), arg, self, position))
+            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
         except Exception:
             warn('Error tracing failed')
 
@@ -1868,7 +1862,7 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False, pos=None):
         if is_child and is_preprocess:
             return 1
         elif is_child:
@@ -1878,8 +1872,7 @@ class Rollout(Pipeline):
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            breakpoint()
-            position = self._pd_get_error_idx(depth)
+            position = self._pd_get_error_idx(pos=depth)
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             try:
                 self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
@@ -2006,7 +1999,7 @@ class Parallel(Pipeline):
         return self._pd_output_format(*out)
 
     @staticmethod
-    def _pd_get_error_idx(pos, is_child=False, is_preprocess=False):
+    def _pd_get_error_idx(is_child=False, is_preprocess=False, pos=None):
         if is_child and is_preprocess:
             return 1
         elif is_child:
@@ -2016,7 +2009,7 @@ class Parallel(Pipeline):
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace`. """
         try:
-            position = self._pd_get_error_idx(depth)
+            position = self._pd_get_error_idx(pos=depth)
             arg = [subarg[position] for subarg in arg] if depth < -1 else arg
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             try:
