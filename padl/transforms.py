@@ -3,7 +3,7 @@
 Transforms should be created using the `padl.transform` wrap-function.
 """
 import re
-from copy import copy
+from copy import copy, deepcopy
 from collections import Counter, namedtuple, OrderedDict
 import contextlib
 import inspect
@@ -282,6 +282,7 @@ class Transform:
         named_copy = copy(self)
         named_copy._pd_name = name
         named_copy._pd_varname = {}
+        named_copy.pd_node.name = name
         return named_copy
 
     def __invert__(self) -> "Map":
@@ -943,6 +944,25 @@ class AtomicTransform(Transform):
             if isinstance(v, Transform):
                 yield v
 
+    def _pd_build_node_connection(self, transform_):
+        """ Connect node of transform_ to this transform
+
+        B(A) := A -> B
+        """
+        # import pdb; pdb.set_trace()
+        _copy = copy(self)
+        _node_copy = deepcopy(self.pd_node)
+        _copy.pd_node = _node_copy
+        # import pdb; pdb.set_trace()
+
+        _copy_transform_ = copy(transform_)
+        _node_copy_transform_ = deepcopy(transform_.pd_node)
+        _copy_transform_.pd_node = _node_copy_transform_
+        # import pdb; pdb.set_trace()
+        _node_copy(_node_copy_transform_)
+        # import pdb; pdb.set_trace()
+        return _copy
+
 
 class FunctionTransform(AtomicTransform):
     """A transform that wraps a *function*.
@@ -1057,9 +1077,11 @@ class FunctionTransform(AtomicTransform):
         )
 
     def __call__(self, *args, **kwargs):
-        if len(args) == 1 and isinstance(args, Transform):
-            transform_ = args[0]
-            return transform_ >> self
+        if all(map(lambda x: isinstance(x, Transform), args)):
+            self_ref = self
+            for arg in args:
+                self_ref = self_ref._pd_build_node_connection(arg)
+            return self_ref
         return self.function(*args, **kwargs)
 
 

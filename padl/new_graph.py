@@ -1,4 +1,5 @@
 
+from copy import copy, deepcopy
 import networkx as nx
 import padl
 
@@ -21,6 +22,12 @@ class Graph:
         self.out_nodes = []
 
         self.networkx_graph = None
+
+    def build_output_connections(self):
+        """Connect all dangling ends to output"""
+        for node_ in self.nodes:
+            if len(node_.out_nodes) == 0 and node_ != self.output_node:
+                self.connect_to_output_node(node_)
 
     def move_node_to_new_graph(self, new_graph):
         """Move all nodes of this graph to New graph
@@ -86,20 +93,18 @@ class Graph:
                  node,
                  connect_input=False,
                  connect_output=False):
+        return
         if node in self.nodes:
             return
 
         if isinstance(node, Graph):
-            self._add_graph_as_node(node)
+            node.move_node_to_new_graph(self)
             return
 
         self.nodes.append(node)
         node.id = self.generate_node_id()
 
         node.update_graph(self)
-
-        if connect_output or len(node.out_nodes) == 0:
-            self.connect_to_output_node(node)
 
         if connect_input:
             # or \
@@ -127,15 +132,16 @@ class Graph:
         if with_name:
             self.networkx_graph.add_node(self.input_node.name, node=self.input_node)
             self._add_to_networkx_graph_name(self.input_node)
+
             return
 
         self.networkx_graph.add_node(self.input_node.id, node=self.input_node)
         self._add_to_networkx_graph_id(self.input_node)
         return
 
-    def draw(self, with_labels=True, **kwargs):
+    def draw(self, with_name=False, with_labels=True, **kwargs):
         if self.networkx_graph is None:
-            self.convert_to_networkx()
+            self.convert_to_networkx(with_name=with_name)
         inbuilt_kwargs = dict(
             with_labels=with_labels,
             node_size=3500,
@@ -179,10 +185,36 @@ class Node:
             return True
         return False
 
+    def _assign_graph(self, node):
+        if self.graph:
+            node.update_graph(self.graph)
+            return self.graph
+        if node.graph:
+            self.update_graph(node.graph)
+            return node.graph
+        graph = Graph()
+        self.update_graph(graph)
+        node.update_graph(graph)
+        return
+
+    def __deepcopy__(self, memo):
+        """Deepcopy of Nodes"""
+        id_self = id(self)
+        _copy = memo.get(id_self)
+        if _copy is None:
+            _copy = type(self)(
+                self.transform,
+                self.name,
+                self._graph)
+            _copy.in_nodes = copy(self.in_nodes)
+            _copy.out_nodes = copy(self.out_nodes)
+            memo[id_self] = _copy
+        return _copy
+
     def __call__(self, args, *, in_node=None):
 
         if isinstance(args, Node):
-            assert args.graph
+            self._assign_graph(args)
             self.insert_input_node(args)
             return
 
@@ -209,10 +241,12 @@ class Node:
 
     def insert_input_node(self, node):
         self.update_graph(node.graph)
+        # import pdb;pdb.set_trace()
         if node not in self.in_nodes:
+            # import pdb; pdb.set_trace()
             self.in_nodes.append(node)
-        node.insert_output_node(self)
         if self not in node.out_nodes:
+            # import pdb; pdb.set_trace()
             node.insert_output_node(self)
         return node
 
@@ -230,8 +264,11 @@ class Node:
 
         self.update_graph(node.graph)
         if node not in self.out_nodes:
+            # import pdb; pdb.set_trace()
             self.out_nodes.append(node)
+        # import pdb;pdb.set_trace()
         if self not in node.in_nodes:
+            # import pdb; pdb.set_trace()
             node.insert_input_node(self)
         return node
 
