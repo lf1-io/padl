@@ -84,7 +84,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
 
     Example:
 
-    >>> def tracefunc(frame, event, arg)
+    >>> def tracefunc(frame, event, arg):
     ...     if 'event' == 'return':
     ...         print('returning', arg)
 
