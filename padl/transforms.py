@@ -14,7 +14,7 @@ from shutil import rmtree
 import textwrap
 from tempfile import TemporaryDirectory
 import types
-from typing import Callable, Iterable, Iterator, List, Literal, Optional, Tuple, Union
+from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
 from warnings import warn
 from zipfile import ZipFile
 
@@ -145,7 +145,7 @@ class Transform:
         # always fully dump Transforms from the module the dump was triggered in
         if inspector.caller_module() == module:
             return True
-        # fully dump all Transforms from packages or mudules specified in
+        # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
         if any(module.__spec__.name.startswith(mod)
                for mod in self._pd_external_full_dump_modules):
@@ -365,8 +365,8 @@ class Transform:
         with open(path / 'versions.txt', 'w') as f:
             f.write(versions)
 
-    def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> CodeNode:
-        """Build the start-:class:`CodeNode` objecs - the node with the source needed to create
+    def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> Set:
+        """Build the start-:class:`CodeNode` objects - the node with the source needed to create
         *self* as *name* (in the scope where *self* was originally created).
 
         Returns a set of dependencies (scoped names the start-node depends on).
@@ -440,7 +440,6 @@ class Transform:
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
         :param name: The name to give the transform.
-        :param scope: The scope for the start-node. Default is to use the scope of the transform.
         :return: Updated graph.
         """
         if graph is None:
