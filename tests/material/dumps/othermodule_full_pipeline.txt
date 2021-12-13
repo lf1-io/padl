@@ -1,0 +1,32 @@
+from padl import transform
+
+
+var = 100
+
+
+@transform
+class Class:
+    def __init__(self, x):
+        self.x = x
+
+    def __call__(self, y):
+        return self.x + y
+
+
+@transform
+def function(x):
+    return x
+
+
+obj = Class(var)
+_pd_main = (
+    obj
+    >> (
+        obj
+        + function
+    )
+    >> (
+        function
+        / function
+    )
+)

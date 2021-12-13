@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usage &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
@@ -112,7 +113,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -165,7 +167,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="tex2jax_ignore mathjax_ignore section" id="usage">
+  <section class="tex2jax_ignore mathjax_ignore" id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline"></a></h1>
 <p>The following collection of pages are a concise reference of everything you need to know to use PADL.
 Read them all to know everything you need to get started!</p>
@@ -183,7 +185,7 @@ Read them all to know everything you need to get started!</p>
 <li class="toctree-l1"><a class="reference internal" href="usage/extras.html">Extras</a></li>
 </ul>
 </div>
-<div class="section" id="import-anything-you-need-from-padl">
+<section id="import-anything-you-need-from-padl">
 <h2>Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code><a class="headerlink" href="#import-anything-you-need-from-padl" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> for making Transforms.</p></li>
@@ -191,8 +193,8 @@ Read them all to know everything you need to get started!</p>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">load()</span></code></a> for loading Transforms.</p></li>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-func docutils literal notranslate"><span class="pre">value()</span></code></a> for saving by value.</p></li>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.group" title="padl.group"><code class="xref py py-func docutils literal notranslate"><span class="pre">group()</span></code></a> for grouping Pipeline.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.identity" title="padl.identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identity</span></code></a> for doing nothing.</p></li>
-<li><p><a class="reference internal" href="apidocs/padl.html#padl.batch" title="padl.batch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code></a> for defining the batchified part of a pipeline.</p></li>
+<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">identity</span></code> for doing nothing.</p></li>
+<li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code> for defining the batchified part of a pipeline.</p></li>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code></a> for defining the postprocessing part of a pipeline.</p></li>
 <li><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> for applying a value’s method.</p></li>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> for conditioning on the ‘infer’-stage.</p></li>
@@ -200,8 +202,8 @@ Read them all to know everything you need to get started!</p>
 <li><p><a class="reference internal" href="apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> for conditioning on the ‘train’-stage.</p></li>
 <li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Try</span></code> for catching exceptions in a transform.</p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
