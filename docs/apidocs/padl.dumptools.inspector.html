@@ -112,7 +112,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -175,9 +176,8 @@
 <dd><p>Information about the calling context.</p>
 <dl class="simple">
 <dt>Contains the following information:</dt><dd><ul class="simple">
-<li><p>the module from which the call was made</p></li>
 <li><p>the function from which that call was made</p></li>
-<li><p>the scope (see <cite>symfinder.Scope</cite>)</p></li>
+<li><p>the scope (see <code class="xref py py-class docutils literal notranslate"><span class="pre">symfinder.Scope</span></code>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -190,9 +190,6 @@
 <li><p><strong>drop_n</strong> – Drop <em>n</em> levels from the calling scope.</p></li>
 <li><p><strong>ignore_scope</strong> – Don’t try to determine the scope (use the toplevel scope instead).</p></li>
 </ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A CallInfo object.</p>
 </dd>
 </dl>
 <dl class="py property">
@@ -273,12 +270,12 @@ within the block and the number of spaces removed from the front.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.inspector.trace_this">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">trace_this</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracefunc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">frame</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.trace_this" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">trace_this</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tracefunc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">frame</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.trace_this" title="Permalink to this definition"></a></dt>
 <dd><p>Call in a function body to trace the rest of the function execution with function
 <em>tracefunc</em>. <em>tracefunc</em> must match the requirements for the argument of <cite>sys.settrace</cite>
 (in the documentation of which more details can be found).</p>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">tracefunc</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">tracefunc</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="k">if</span> <span class="s1">&#39;event&#39;</span> <span class="o">==</span> <span class="s1">&#39;return&#39;</span><span class="p">:</span>
 <span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;returning&#39;</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
 </pre></div>

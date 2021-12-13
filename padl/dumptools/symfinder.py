@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 """Module for symbolically finding python entities in python source code given their name.
 
 A thing in python can get its name in various ways:
@@ -51,6 +52,7 @@ class _ThingFinder(ast.NodeVisitor):
         return self._result is not None
 
     def visit_Module(self, node):
+        """Visit each statement in a module's body, from top to bottom and stop at "max_n". """
         for i, statement in enumerate(node.body[::-1]):
             if i > self.max_n:
                 return
@@ -60,6 +62,8 @@ class _ThingFinder(ast.NodeVisitor):
                 return
 
     def visit_With(self, node):
+        """With is currently not supported - raises an error if the "thing" is defined in the
+        head of a "with"-statement. """
         for item in node.items:
             if item.optional_vars is not None and item.optional_vars.id == self.var_name:
                 raise NotImplementedError(f'"{self.var_name}" is defined in the head of a with'
@@ -68,11 +72,11 @@ class _ThingFinder(ast.NodeVisitor):
             self.visit(subnode)
 
     def visit_ClassDef(self, node):
-        # don't search definitions
+        """Don't search class definitions (as that's another scope). """
         pass
 
     def visit_FunctionDef(self, node):
-        # don't search definitions
+        """Don't search function definitions (as that's another scope). """
         pass
 
     def deparse(self) -> str:
@@ -90,7 +94,30 @@ class _NameFinder(_ThingFinder):
 
 
 class _FunctionDefFinder(_NameFinder):
-    """Class for finding a *function definition* of a specified name in an AST tree. """
+    """Class for finding a *function definition* of a specified name in an AST tree.
+
+    Example:
+
+    >>> source = '''
+    ... import baz
+    ...
+    ... def foo(x):
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = 100'''
+    >>> finder = _FunctionDefFinder(source, 'foo')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'def foo(x):\\n    ...'
+    >>> finder.node()  # doctest: +ELLIPSIS
+    <_ast.FunctionDef object at 0x...>
+    """
 
     def visit_FunctionDef(self, node):
         if node.name == self.var_name:
@@ -119,7 +146,30 @@ class _FunctionDefFinder(_NameFinder):
 
 
 class _ClassDefFinder(_NameFinder):
-    """Class for finding a *class definition* of a specified name in an AST tree. """
+    """Class for finding a *class definition* of a specified name in an AST tree.
+
+    Example:
+
+    >>> source = '''
+    ... import baz
+    ...
+    ... class Foo:
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = 100'''
+    >>> finder = _ClassDefFinder(source, 'Foo')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'class Foo:\\n    ...'
+    >>> finder.node()  # doctest: +ELLIPSIS
+    <_ast.ClassDef object at 0x...>
+    """
 
     def visit_ClassDef(self, node):
         if node.name == self.var_name:
@@ -134,7 +184,30 @@ class _ClassDefFinder(_NameFinder):
 
 
 class _ImportFinder(_NameFinder):
-    """Class for finding a *module import* of a specified name in an AST tree. """
+    """Class for finding a *module import* of a specified name in an AST tree.
+
+    Works with normal imports ("import x") and aliased imports ("import x as y").
+
+    Example:
+
+    >>> source = '''
+    ... import baz as boo
+    ...
+    ... class Foo:
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = 100'''
+    >>> finder = _ImportFinder(source, 'boo')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'import baz as boo'
+    """
 
     def visit_Import(self, node):
         for name in node.names:
@@ -155,12 +228,34 @@ class _ImportFinder(_NameFinder):
     def node(self):
         # TODO: cache deparse?
         node = ast.parse(self.deparse()).body[0]
-        node._globalscope = True
+        if node.names[0].asname is None:
+            node._globalscope = True
         return node
 
 
 class _ImportFromFinder(_NameFinder):
-    """Class for finding a *from import* of a specified name in an AST tree. """
+    """Class for finding a *from import* of a specified name in an AST tree.
+
+    Example:
+
+    >>> source = '''
+    ... from boo import baz as hoo, bup
+    ...
+    ... class Foo:
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = 100'''
+    >>> finder = _ImportFromFinder(source, 'hoo')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'from boo import baz as hoo'
+    """
 
     def visit_ImportFrom(self, node):
         for name in node.names:
@@ -180,11 +275,38 @@ class _ImportFromFinder(_NameFinder):
 
     def node(self):
         # TODO: cache deparse?
-        return ast.parse(self.deparse()).body[0]
+        node = ast.parse(self.deparse()).body[0]
+        # the scope does not matter here
+        if node.names[0].asname is None:
+            node._globalscope = True
+        return node
 
 
 class _AssignFinder(_NameFinder):
-    """Class for finding a *variable assignment* of a specified name in an AST tree. """
+    """Class for finding a *variable assignment* of a specified name in an AST tree.
+
+    Example:
+
+    >>> source = '''
+    ... import baz
+    ...
+    ... class Foo:
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = 100'''
+    >>> finder = _AssignFinder(source, 'X')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'X = 100'
+    >>> finder.node()  # doctest: +ELLIPSIS
+    <_ast.Assign object at 0x...>
+    """
 
     def visit_Assign(self, node):
         for target in node.targets:
@@ -210,7 +332,30 @@ class _AssignFinder(_NameFinder):
 
 
 class _CallFinder(_ThingFinder):
-    """Class for finding a *call* in an AST tree. """
+    """Class for finding a *call* in an AST tree.
+
+    Example:
+
+    >>> source = '''
+    ... import baz
+    ...
+    ... class Foo:
+    ...     ...
+    ...
+    ... def bar(y):
+    ...     ...
+    ...
+    ... X = baz(100)'''
+    >>> finder = _CallFinder(source, 'baz')
+    >>> node = ast.parse(source)
+    >>> finder.visit(node)
+    >>> finder.found_something()
+    True
+    >>> finder.deparse()
+    'baz(100)'
+    >>> finder.node()  # doctest: +ELLIPSIS
+    <_ast.Call object at 0x...>
+    """
 
     def visit_Call(self, node):
         if node.func.id == self.var_name:
@@ -276,8 +421,13 @@ def _get_call_assignments(args, source, values, keywords):
 def _get_call_signature(source: str):
     """Get the call signature of a string containing a call.
 
-    :param source: String containing a call (e.g. "a(2, b, c=100)")
+    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)")
     :returns: A tuple with a list of positional arguments and a list of keyword arguments.
+
+    Example:
+
+    >>> _get_call_signature("a(2, b, 'f', c=100)")
+    (['2', 'b', "'f'"], {'c': '100'})
     """
     call = ast.parse(source).body[0].value
     if not isinstance(call, ast.Call):
@@ -390,12 +540,12 @@ class Scope:
     def unscoped(self, varname: str) -> str:
         """Convert a variable name in an "unscoped" version by adding strings representing
         the containing scope. """
-        if not self.scopelist:
+        if not self.scopelist and self.module_name in ('', '__main__'):
             return varname
-        return f'{"_".join(x[0] for x in [self.module_name] + self.scopelist)}_{varname}'
+        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
 
     def __repr__(self):
-        return f'Scope[{self.module_name}.{".".join(x[0] for x in self.scopelist)}]'
+        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist)}]'
 
     def __len__(self):
         return len(self.scopelist)
@@ -409,26 +559,35 @@ class Scope:
 
 @dataclass
 class ScopedName:
+    """A name with a scope and a counter. The "name" is the name of the item, the scope is its
+    :class:`Scope` and the counter counts the items with the same name, in the same scope,
+    from most recent on up.
+
+    Example - the following::
+
+        a = 1
+
+        def f(x):
+            a = 2
+
+        a = a + 1
+
+    contains four scoped names:
+
+        - The "a" of `a = a + 1`, with `name = a`, module-level scope and `n = 0` (it is the most
+          recent "a" in the module level scope).
+        - The "a" in the function body, with `name = a`, function f scope and `n = 0` (it is the
+          most recent "a" in "f" scope).
+        - the function name "f", module level scope, `n = 0`
+        - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
+          most recent "a" in its scope).
+    """
     name: str
     scope: Scope
     n: int = 0
 
     def __hash__(self):
-        return hash((self.name, self.scope))
-
-
-def find_in_function_def(var_name, source, lineno, call_source):
-    """Find where *var_name* was assigned.
-
-    :param var_name: Name of the variable to look for.
-    :param source: Source string.
-    :param lineno: Line number in the function to search in (this is being used to determine in
-        which function scope to search).
-    :param call_source: Source of the function call (e.g. `"f(123, b=1)"`). This is being used to
-        determine argument values.
-    """
-    scope = Scope.from_source(source, lineno, call_source)
-    return find_in_scope(ScopedName(var_name, scope))
+        return hash((self.name, self.scope, self.n))
 
 
 def find_in_scope(name: ScopedName):
@@ -449,7 +608,7 @@ def find_in_scope(name: ScopedName):
                 continue
             source, node = res
             if getattr(node, '_globalscope', False):
-                scope = scope.global_()
+                scope = Scope.empty()
 
             return (source, node), scope
         except NameNotFound:
@@ -458,7 +617,10 @@ def find_in_scope(name: ScopedName):
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
     source, node = find(name.name, scope.module, i)
-    scope = getattr(node, '_scope', scope.global_())
+    if getattr(node, '_globalscope', False):
+        scope = Scope.empty()
+    else:
+        scope = getattr(node, '_scope', scope.global_())
     return (source, node), scope
 
 
@@ -606,12 +768,12 @@ def split_call(call_source):
     """
     node = ast.parse(call_source).body[0].value
     call = ast.get_source_segment(call_source, node.func)
-    if not node.args:
-        args = ''
-    else:
-        args = sourceget.cut(call_source,
-                             node.args[0].lineno - 1,
-                             node.args[-1].end_lineno - 1,
-                             node.args[0].col_offset,
-                             node.args[-1].end_col_offset)
+    if not node.args and not node.keywords:
+        return call, ''
+    all_args = node.args + [x.value for x in node.keywords]
+    args = sourceget.cut(call_source,
+                         node.func.lineno - 1,
+                         all_args[-1].end_lineno - 1,
+                         node.func.end_col_offset + 1,
+                         all_args[-1].end_col_offset)
     return call, args

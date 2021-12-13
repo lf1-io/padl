@@ -1,0 +1,9 @@
+from padl import transform
+
+
+@transform
+def z(x):
+    return x
+
+
+_pd_main = z

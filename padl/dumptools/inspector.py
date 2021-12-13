@@ -20,17 +20,14 @@ class CallInfo:
     """Information about the calling context.
 
     Contains the following information:
-        - the module from which the call was made
         - the function from which that call was made
-        - the scope (see `symfinder.Scope`)
+        - the scope (see :class:`symfinder.Scope`)
 
     :param origin: Where to look for the call, can be
         - "nextmodule": use the first frame not in the module the object was created in
         - "here": use the frame the object was created in
     :param drop_n: Drop *n* levels from the calling scope.
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
-
-    :returns: A CallInfo object.
     """
 
     def __init__(self, origin: Literal['nextmodule', 'here'] = 'nextmodule',
@@ -84,14 +81,14 @@ def non_init_caller_frameinfo() -> inspect.FrameInfo:
     return frameinfo
 
 
-def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None):
+def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *args, **kwargs):
     """Call in a function body to trace the rest of the function execution with function
     *tracefunc*. *tracefunc* must match the requirements for the argument of `sys.settrace`
     (in the documentation of which more details can be found).
 
     Example:
 
-    >>> def tracefunc(frame, event, arg)
+    >>> def tracefunc(frame, event, arg):
     ...     if 'event' == 'return':
     ...         print('returning', arg)
 
@@ -110,7 +107,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None):
         frame = inspect.currentframe().f_back
 
     def trace(frame, event, arg):
-        tracefunc(frame, event, arg)
+        tracefunc(frame, event, arg, *args, **kwargs)
         if event == 'return':
             sys.settrace(previous_tracefunc)
         if previous_tracefunc is not None:

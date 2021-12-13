@@ -112,7 +112,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#mutated-objects">Mutated objects</a></li>
@@ -254,7 +255,7 @@ This means you can save a Transform from a messy ipython notebook and will get a
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see <a class="reference internal" href="#what-does-not-save"><span class="std std-ref">What does not save</span></a>).</p>
+<p>As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see <a class="reference internal" href="#what-does-not-save"><span class="std std-ref">Saving Transforms from other modules</span></a>).</p>
 <p><code class="file docutils literal notranslate"><span class="pre">versions.txt</span></code> contains all the packages that were used in creating the Transforms and their versions. This is very similar to a <code class="file docutils literal notranslate"><span class="pre">requirements.txt</span></code> - however, it contains the package names rather that their names in the <code class="docutils literal notranslate"><span class="pre">PyPI</span></code>.</p>
 </div>
 <div class="section" id="saving-by-value">
@@ -419,8 +420,49 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
 </pre></div>
 </div>
 </div>
-<div class="section" id="what-does-not-save">
-<span id="id2"></span><h2>What does not save<a class="headerlink" href="#what-does-not-save" title="Permalink to this headline"></a></h2>
+<div class="section" id="saving-transforms-from-other-modules">
+<span id="what-does-not-save"></span><h2>Saving Transforms from other modules<a class="headerlink" href="#saving-transforms-from-other-modules" title="Permalink to this headline"></a></h2>
+<p>When importing Transforms from a different module, saving will by default only dump the import statement.</p>
+<p>Thus, when doing</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
+<span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
+<span class="n">save</span><span class="p">(</span><span class="n">a_transform</span><span class="p">,</span> <span class="s1">&#39;mytransform&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>the <code class="docutils literal notranslate"><span class="pre">transforms.py</span></code> will contain just:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
+
+<span class="n">_pd_main</span> <span class="o">=</span> <span class="n">a_transform</span>
+</pre></div>
+</div>
+<p>One can switch to a full dump of the transform using <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">fulldump</span>
+<span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
+
+<span class="n">a_transform</span> <span class="o">=</span> <span class="n">fulldump</span><span class="p">(</span><span class="n">a_transform</span><span class="p">)</span>
+<span class="n">save</span><span class="p">(</span><span class="n">a_transform</span><span class="p">,</span> <span class="s1">&#39;mytransform&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This causes the <code class="docutils literal notranslate"><span class="pre">transforms.py</span></code> to contain the transform definition instead of the import:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">a_transform</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">_pd_main</span> <span class="o">=</span> <span class="n">a_transform</span>
+</pre></div>
+</div>
+<p>Instead of using <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code></a> on a Transform, one can apply it to a package or module. This will enable full dump for all contained transforms.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">fulldump</span>
+<span class="kn">import</span> <span class="nn">some.module</span>
+<span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
+
+<span class="n">fulldump</span><span class="p">(</span><span class="n">some</span><span class="o">.</span><span class="n">module</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To reverse the effect of <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">fulldump()</span></code></a>, use <a class="reference internal" href="../apidocs/padl.html#padl.importdump" title="padl.importdump"><code class="xref py py-func docutils literal notranslate"><span class="pre">importdump()</span></code></a>.</p>
+</div>
+<div class="section" id="id2">
+<h2>What does not save<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
 <p>Saving PADL transforms has a few caveats you should be aware of:</p>
 <div class="section" id="variables-defined-as-the-targets-of-with-blocks">
 <h3>Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks<a class="headerlink" href="#variables-defined-as-the-targets-of-with-blocks" title="Permalink to this headline"></a></h3>

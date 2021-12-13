@@ -112,7 +112,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -270,7 +271,31 @@ the containing scope.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.ScopedName">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">ScopedName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><span class="pre">padl.dumptools.symfinder.Scope</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.ScopedName" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>A name with a scope and a counter. The “name” is the name of the item, the scope is its
+<a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a> and the counter counts the items with the same name, in the same scope,
+from most recent on up.</p>
+<p>Example - the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>contains four scoped names:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The “a” of <cite>a = a + 1</cite>, with <cite>name = a</cite>, module-level scope and <cite>n = 0</cite> (it is the most
+recent “a” in the module level scope).</p></li>
+<li><p>The “a” in the function body, with <cite>name = a</cite>, function f scope and <cite>n = 0</cite> (it is the
+most recent “a” in “f” scope).</p></li>
+<li><p>the function name “f”, module level scope, <cite>n = 0</cite></p></li>
+<li><p>the “a” of <cite>a = 1</cite>, with <cite>name = a</cite>, module-level scope and <cite>n = 1</cite> (as it’s the second
+most recent “a” in its scope).</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find">
@@ -288,24 +313,6 @@ be searched as well.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Tuple with source code segment and corresponding ast node.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="padl.dumptools.symfinder.find_in_function_def">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_function_def</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_function_def" title="Permalink to this definition"></a></dt>
-<dd><p>Find where <em>var_name</em> was assigned.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>var_name</strong> – Name of the variable to look for.</p></li>
-<li><p><strong>source</strong> – Source string.</p></li>
-<li><p><strong>lineno</strong> – Line number in the function to search in (this is being used to determine in
-which function scope to search).</p></li>
-<li><p><strong>call_source</strong> – Source of the function call (e.g. <cite>“f(123, b=1)”</cite>). This is being used to
-determine argument values.</p></li>
-</ul>
 </dd>
 </dl>
 </dd></dl>

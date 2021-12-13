@@ -1,0 +1,9 @@
+from padl import transform
+
+
+@transform
+def function(x):
+    return x
+
+
+_pd_main = function

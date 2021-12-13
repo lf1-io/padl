@@ -112,7 +112,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -188,12 +189,12 @@ use the calling module.</p></li>
 <dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer.save">
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.save" title="Permalink to this definition"></a></dt>
 <dd><p>Save the serializer’s value to <em>path</em>.</p>
-<p>Returns a codegraph and a scopemap containing code needed to load the value.</p>
+<p>Returns a codegraph containing code needed to load the value.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.dumptools.serialize.Serializer.save_all">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codegraph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopemap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.save_all" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">codegraph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.Serializer.save_all" title="Permalink to this definition"></a></dt>
 <dd><p>Save all values.</p>
 </dd></dl>
 

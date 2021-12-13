@@ -27,7 +27,19 @@ STDLIBNAMES = list(standard_lib_names_gen())
 
 
 def get_packages(nodes):
-    """Get a list of package names given a list of ast nodes *nodes*. """
+    """Get a list of package names given a list of ast nodes *nodes*.
+
+    Example:
+
+    >>> import ast
+    >>> source = '''
+    ... import foo.bla as blu
+    ... import bup
+    ... from blip import blop
+    ... ...'''
+    >>> get_packages(ast.parse(source).body) == {'foo', 'blip', 'bup'}
+    True
+    """
     result = set()
     for node in nodes:
         if isinstance(node, ast.Import):
