@@ -275,7 +275,7 @@ within the block and the number of spaces removed from the front.</p>
 <em>tracefunc</em>. <em>tracefunc</em> must match the requirements for the argument of <cite>sys.settrace</cite>
 (in the documentation of which more details can be found).</p>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">tracefunc</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">tracefunc</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
 <span class="gp">... </span>    <span class="k">if</span> <span class="s1">&#39;event&#39;</span> <span class="o">==</span> <span class="s1">&#39;return&#39;</span><span class="p">:</span>
 <span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;returning&#39;</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
 </pre></div>
