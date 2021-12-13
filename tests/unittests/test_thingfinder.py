@@ -1,4 +1,5 @@
 import ast
+import sys
 
 from padl.dumptools import symfinder
 
@@ -60,6 +61,9 @@ def test__get_call_assignments_e():
 
 
 def test__get_call_assignments_f():
+    # only supported in python >= 3.8
+    if sys.version_info.minor <= 7:
+        return
     source = 'def f(a, b, /, c):pass'
     args = ast.parse(source).body[0].args
     values, keywords = symfinder._get_call_signature('f(1, 2, 3)')
