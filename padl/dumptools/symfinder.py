@@ -477,12 +477,10 @@ def replace_star_imports(tree: ast.Module):
         if isinstance(node, ast.ImportFrom):
             if node.names[0].name == '*':
                 try:
-                    node.names = [ast.alias(name=name, asname=None)
-                                  for name in sys.modules[node.module].__all__]
+                    names = sys.modules[node.module].__all__
                 except AttributeError:
-                    warn(f'Discovered star-import from "{node.module}". Failed to deternmine '
-                         'what is behind the star. This will prevent saving anything imported'
-                         ' by that.')
+                    names = [x for x in sys.modules[node.module].__dict__ if not x.startswith('_')]
+                node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
 def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
