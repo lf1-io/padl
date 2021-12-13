@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Using PyTorch Modules with Transforms &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
@@ -167,14 +168,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="tex2jax_ignore mathjax_ignore section" id="using-pytorch-modules-with-transforms">
+  <section class="tex2jax_ignore mathjax_ignore" id="using-pytorch-modules-with-transforms">
 <span id="pytorch"></span><h1>Using PyTorch Modules with Transforms<a class="headerlink" href="#using-pytorch-modules-with-transforms" title="Permalink to this headline"></a></h1>
 <p>Remember from <a class="reference internal" href="creating_transforms.html#creating-transforms"><span class="std std-ref">the section on creating Transforms</span></a> that <strong>PyTorch</strong> Modules can be converted into Transforms. PADL has built-in capabilities that make it convenient to work with them.</p>
-<div class="section" id="padl-automatically-saves-pytorch-state-dicts">
+<section id="padl-automatically-saves-pytorch-state-dicts">
 <h2>PADL Automatically Saves PyTorch State-Dicts<a class="headerlink" href="#padl-automatically-saves-pytorch-state-dicts" title="Permalink to this headline"></a></h2>
 <p>When using <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a> to <a class="reference internal" href="saving.html#saving"><span class="std std-ref">save a Transform</span></a>, PADL automatically stores <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>s of the contained <strong>PyTorch</strong> layers along with the code. When loading with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>, these are used to initialize the layers’ parameters.</p>
-</div>
-<div class="section" id="devices">
+</section>
+<section id="devices">
 <span id="id1"></span><h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline"></a></h2>
 <p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_to" title="padl.transforms.Transform.pd_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code></a> to send all <strong>PyTorch</strong> layers in a Transform to a device:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_pipeline</span> <span class="o">=</span> <span class="p">(</span>
@@ -187,8 +188,8 @@
 <span class="n">my_pipeline</span><span class="o">.</span><span class="n">pd_to</span><span class="p">(</span><span class="s1">&#39;cuda:1&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="accessing-layers-and-parameters">
+</section>
+<section id="accessing-layers-and-parameters">
 <h2>Accessing Layers and Parameters<a class="headerlink" href="#accessing-layers-and-parameters" title="Permalink to this headline"></a></h2>
 <p>All <strong>PyTorch</strong> layers in a Transform (this includes those nested within Pipelines) are accessible via <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_layers" title="padl.transforms.Transform.pd_layers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_layers()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_pipeline</span><span class="o">.</span><span class="n">pd_layers</span><span class="p">())</span>
@@ -212,8 +213,8 @@ This can be used to initialize a PyTorch optimizer and create a training loop:</
     <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="weight-sharing">
+</section>
+<section id="weight-sharing">
 <h2>Weight Sharing<a class="headerlink" href="#weight-sharing" title="Permalink to this headline"></a></h2>
 <p>It is possible to use the same <strong>PyTorch</strong> layer Transforms in multiple Pipelines. Those Transforms then share weights. This can be used, for instance, to create a train Pipeline and an inference Pipeline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layer</span> <span class="o">=</span> <span class="n">MyPyTorchLayer</span><span class="p">()</span>
@@ -238,8 +239,8 @@ This can be used to initialize a PyTorch optimizer and create a training loop:</
 </div>
 <p>After some training, both <code class="docutils literal notranslate"><span class="pre">train_pipeline</span></code> and <code class="docutils literal notranslate"><span class="pre">infer_pipeline</span></code> will have adapted parameters.</p>
 <p>Learn about extras and utilities in the <a class="reference internal" href="extras.html#id1"><span class="std std-ref">next section</span></a>.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

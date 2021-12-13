@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Applying Transforms to Data &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
@@ -167,7 +168,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="applying-transforms-to-data">
+  <section id="applying-transforms-to-data">
 <h1>Applying Transforms to Data<a class="headerlink" href="#applying-transforms-to-data" title="Permalink to this headline"></a></h1>
 <p>Each Transform can be applied to data in three different <strong>modes</strong>: <em>infer</em>, <em>eval</em> and <em>train</em>.</p>
 <p>To process single items in inference mode, use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.infer_apply" title="padl.transforms.Transform.infer_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">infer_apply()</span></code></a>.</p>
@@ -191,7 +192,7 @@
 </div>
 <p><a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.train_apply" title="padl.transforms.Transform.train_apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">train_apply()</span></code></a> also uses a <strong>PyTorch</strong> <code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code> for which arguments canbe passed, handles devices, and, naturally, does not disable gradients.</p>
 <p>Read the <a class="reference internal" href="saving.html#saving-and-loading"><span class="std std-ref">next section</span></a> to learn how to save and load transforms.</p>
-</div>
+</section>
 
 
            </div>
