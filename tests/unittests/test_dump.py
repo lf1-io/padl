@@ -177,16 +177,16 @@ c_c = (x
 )
 
 
-def test_compound_dump_a():
-    assert c_a._pd_dumps() == read_dump('compound_a')
+def test_pipeline_dump_a():
+    assert c_a._pd_dumps() == read_dump('pipeline_a')
 
 
-def test_compound_dump_b():
-    assert c_b._pd_dumps() == read_dump('compound_b')
+def test_pipeline_dump_b():
+    assert c_b._pd_dumps() == read_dump('pipeline_b')
 
 
-def test_compound_dump_c():
-    assert c_c._pd_dumps() == read_dump('compound_c')
+def test_pipeline_dump_c():
+    assert c_c._pd_dumps() == read_dump('pipeline_c')
 
 
 g_a = x + group(y + x + x)
