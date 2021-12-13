@@ -2209,8 +2209,19 @@ class _ItemGetter:
 
 
 def fulldump(transform_or_module):
+    """Switch a Transform or module or package to the "fulldump" mode.
+
+    This means that the Transform or any Transform from that module or package will be fully dumped
+    instead of just dumping the statement importing it.
+
+    :param transform_or_module: A Transform, module or package for which to enable full dump. Can
+        also be a string. In that case, will enable full dump for the module or package with
+        matching name.
+    """
     if isinstance(transform_or_module, types.ModuleType):
-        Transform._pd_external_full_dump_modules.add(transform_or_module.__spec__.name)
+        transform_or_module = transform_or_module.__spec__.name
+    if isinstance(transform_or_module, str):
+        Transform._pd_external_full_dump_modules.add(transform_or_module)
         return None
     assert isinstance(transform_or_module, Transform)
     t_copy = copy(transform_or_module)
@@ -2219,9 +2230,12 @@ def fulldump(transform_or_module):
 
 
 def importdump(transform_or_module):
+    """Disable full dump (see :func:`padl.transforms.fulldump` for more). """
     if isinstance(transform_or_module, types.ModuleType):
+        transform_or_module = transform_or_module.__spec__.name
+    if isinstance(transform_or_module, str):
         try:
-            Transform._pd_external_full_dump_modules.remove(transform_or_module.__spec__.name)
+            Transform._pd_external_full_dump_modules.remove(transform_or_module)
         except KeyError:
             pass
         return None
