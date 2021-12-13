@@ -220,7 +220,7 @@ class _CallFinder(_ThingFinder):
         tree = ast.parse(self.source)
         self.visit(tree)
         if self.found_something():
-            return self._get_name(self._result), *_get_call_signature(self.source)
+            return self._get_name(self._result), (*_get_call_signature(self.source),)
         raise NameNotFound(f'Did not find call of "{self.var_name}".')
 
     def _get_name(self, call: ast.Call):

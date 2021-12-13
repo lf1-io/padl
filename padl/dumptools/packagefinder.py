@@ -3,7 +3,10 @@
 import ast
 import os
 import sys
-from importlib.metadata import version, PackageNotFoundError
+try:
+    from importlib.metadata import version, PackageNotFoundError
+except ModuleNotFoundError:
+    from importlib_metadata import version, PackageNotFoundError
 
 
 def standard_lib_names_gen(include_underscored=False):

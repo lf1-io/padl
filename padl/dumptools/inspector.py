@@ -5,7 +5,11 @@ import dis
 import inspect
 import sys
 import types
-from typing import Callable, Literal, Optional
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+from typing import Callable, Optional
 from warnings import warn
 
 from padl.dumptools import symfinder, var2mod

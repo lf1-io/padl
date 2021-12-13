@@ -303,7 +303,8 @@ def build_codegraph(scoped_name: ScopedName):
 
     todo = {scoped_name}
 
-    while todo and (next_ := todo.pop()):
+    while todo:
+        next_ = todo.pop()
         # we know this already - go on
         if next_ in scopemap:
             continue
