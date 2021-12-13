@@ -126,34 +126,34 @@ class _FunctionDefFinder(_NameFinder):
     def deparse(self):
         res = ''
         res = ast_utils.get_source_segment(self.source, self._result)
-        res = _fix_indent(res)
         # for py 3.8+, the decorators are not included, we need to add them
         if not res.lstrip().startswith('@'):
             for decorator in self._result.decorator_list[::-1]:
                 res = f'@{ast_utils.get_source_segment(self.source, decorator)}\n' + res
-        return res
+        return _fix_indent(res)
 
 
 def _fix_indent(source):
-    lines = source.split('\n')
+    lines = source.lstrip().split('\n')
     res = []
-    global_indent = None
-    last_indent = None
-    fix = 0
     for line in lines:
-        indent = len(line) - len(line.lstrip(' '))
-        if last_indent is not None and indent - last_indent > 4:
-            fix = last_indent - indent + 4
-        elif fix == 0 or last_indent - fix != indent:
-            fix = 0
-        if global_indent is None:
-            global_indent = indent
+        if line.startswith('@'):
+            res.append(line.lstrip())
+        else:
+            res.append(line.lstrip())
+            break
+    lines = res + lines[len(res):]
+    res = []
+    n_indent = None
+    for line in lines:
         if not line.startswith(' '):
             res.append(line)
         else:
-            res.append(line[global_indent - fix:])
-        last_indent = indent + fix
+            if n_indent is None:
+                n_indent = len(line) - len(line.lstrip(' '))
+            res.append(' ' * 4 + line[n_indent:])
     return '\n'.join(res)
+
 
 
 class _ClassDefFinder(_NameFinder):
