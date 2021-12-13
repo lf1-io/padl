@@ -126,24 +126,33 @@ class _FunctionDefFinder(_NameFinder):
     def deparse(self):
         res = ''
         res = ast_utils.get_source_segment(self.source, self._result)
+        res = _fix_indent(res)
         # for py 3.8+, the decorators are not included, we need to add them
         if not res.lstrip().startswith('@'):
             for decorator in self._result.decorator_list[::-1]:
                 res = f'@{ast_utils.get_source_segment(self.source, decorator)}\n' + res
-        return _fix_indent(res)
+        return res
 
 
 def _fix_indent(source):
     lines = source.split('\n')
     res = []
-    n_indent = None
+    global_indent = None
+    last_indent = None
+    fix = 0
     for line in lines:
-        if n_indent is None:
-            n_indent = len(line) - len(line.lstrip(' '))
+        indent = len(line) - len(line.lstrip(' '))
+        if last_indent is not None and indent - last_indent > 4:
+            fix = last_indent - indent + 4
+        elif fix == 0 or last_indent - fix != indent:
+            fix = 0
+        if global_indent is None:
+            global_indent = indent
         if not line.startswith(' '):
             res.append(line)
         else:
-            res.append(line[n_indent:])
+            res.append(line[global_indent - fix:])
+        last_indent = indent + fix
     return '\n'.join(res)
 
 
@@ -180,11 +189,12 @@ class _ClassDefFinder(_NameFinder):
     def deparse(self):
         res = ''
         res = ast_utils.get_source_segment(self.source, self._result)
+        res = _fix_indent(res)
         # for py 3.8+, the decorators are not included, we need to add them
         if not res.lstrip().startswith('@'):
             for decorator in self._result.decorator_list[::-1]:
                 res = f'@{ast_utils.get_source_segment(self.source, decorator)}\n' + res
-        return _fix_indent(res)
+        return res
 
 
 class _ImportFinder(_NameFinder):
