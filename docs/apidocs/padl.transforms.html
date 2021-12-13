@@ -708,6 +708,21 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="padl.transforms.fulldump">
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">fulldump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_or_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.fulldump" title="Permalink to this definition"></a></dt>
+<dd><p>Switch a Transform or module or package to the “fulldump” mode.</p>
+<p>This means that the Transform or any Transform from that module or package will be fully dumped
+instead of just dumping the statement importing it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>transform_or_module</strong> – A Transform, module or package for which to enable full dump. Can
+also be a string. In that case, will enable full dump for the module or package with
+matching name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="padl.transforms.group">
 <span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.transforms.Rollout" title="padl.transforms.Rollout"><span class="pre">padl.transforms.Rollout</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#padl.transforms.Parallel" title="padl.transforms.Parallel"><span class="pre">padl.transforms.Parallel</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.group" title="Permalink to this definition"></a></dt>
 <dd><p>Group transforms. This prevents them from being flattened when used</p>
@@ -716,6 +731,12 @@ any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to <cite>a</cite>, <cite>b</cite>,
 <cite>c</cite> respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
 2-tuple whose first item will be passed to <cite>a</cite> and whose second item will be passed to <cite>b + c</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.transforms.importdump">
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">importdump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_or_module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.importdump" title="Permalink to this definition"></a></dt>
+<dd><p>Disable full dump (see <a class="reference internal" href="#padl.transforms.fulldump" title="padl.transforms.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.transforms.fulldump()</span></code></a> for more).</p>
 </dd></dl>
 
 <dl class="py function">
