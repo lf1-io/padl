@@ -156,9 +156,10 @@ class Graph:
 
 
 class Node:
+    _id = 0
 
-    def __init__(self, transform=None, name=None, graph=None):
-        self.id = None
+    def __init__(self, transform=None, name=None, graph=None, id=None):
+        self.id = id if id is not None else self.generate_id()
         self._graph = None
         self.in_nodes = []
         self.out_nodes = []
@@ -170,14 +171,23 @@ class Node:
         self.transform = transform
         self.update_graph(graph)
         self._update_input_args()
+        self.output = []
+        self.networkx_graph = None
+
+    @classmethod
+    def generate_id(cls):
+        cls._id += 1
+        return cls._id
 
     def _update_input_args(self):
         """Update dictionary of args for input"""
         self._input_args = {node: {'args': None, 'updated': False} for node in self.in_nodes}
+        if len(self._input_args) == 0:
+            self._input_args[None] = {'args': None, 'updated': False}
 
     def _register_input_args(self, args, in_node):
         """Register the input args"""
-        assert in_node in self.in_nodes, f"{in_node} not connected to {self}"
+        assert in_node in self._input_args.keys(), f"{in_node} not connected to {self}"
         self._input_args[in_node]['args'] = args
         self._input_args[in_node]['updated'] = True
 
@@ -205,16 +215,43 @@ class Node:
             _copy = type(self)(
                 self.transform,
                 self.name,
-                self._graph)
+                self._graph,
+                self.id)
             _copy.in_nodes = copy(self.in_nodes)
             _copy.out_nodes = copy(self.out_nodes)
             memo[id_self] = _copy
         return _copy
 
+    def pd_call_transform(self):
+        args = [in_args['args'] for _, in_args in self._input_args.items()]
+        if len(args) == 1:
+            return self.transform.pd_call_transform(args[0])
+        return self.transform.pd_call_transform(tuple(args))
+
+    def pd_call_node(self, args, in_node):
+        """Call this node"""
+        if self._register_input_args(args, in_node):
+            transform_output = self.pd_call_transform()
+            if self.name == 'OutputNode':
+                self.output.append(transform_output)
+            for out_node in self.out_nodes_iterator():
+                # import pdb; pdb.set_trace()
+                out_node.pd_call_node(transform_output, in_node=self)
+                # import pdb;pdb.set_trace()
+                # print('done')
+
+    def pd_call_node_graph(self, args, in_node):
+        input_node = self.get_input_node()
+        input_node.pd_call_node(args, in_node)
+        return tuple(self.output)
+
     def __call__(self, args, *, in_node=None):
 
         if isinstance(args, Node):
             self._assign_graph(args)
+            if args.name == 'OutputNode':
+                self.insert_output_node(args)
+                return
             self.insert_input_node(args)
             return
 
@@ -224,11 +261,18 @@ class Node:
                 self(node)
             return
 
+        self.pd_call_node_graph(args, in_node)
+        return tuple([v['args'] for _, v in self._input_args.items()])
+        """
         if self._register_input_args(args, in_node):
-            output = self.transform.pd_call_transform(args)
+            transform_output = self.pd_call_transform()
+            output = []
             for out_node in self.out_nodes_iterator():
-                out_node(output, in_node=self)
-        return
+                # import pdb; pdb.set_trace()
+                output.append(out_node(transform_output, in_node=self))
+                # import pdb;pdb.set_trace()
+                # print('done')
+        """       # return output
 
     def reset_input_node(self):
         self.in_nodes = []
@@ -248,13 +292,8 @@ class Node:
         if self not in node.out_nodes:
             # import pdb; pdb.set_trace()
             node.insert_output_node(self)
+        self._update_input_args()
         return node
-
-    def _insert_graph_at_end(self, graph):
-        self.unflattened_out_nodes.append(graph)
-        self.insert_output_node(graph.input_node)
-        graph.move_node_to_new_graph(self.graph)
-        return graph.output_node
 
     def insert_output_node(self, node):
         """Insert nodes/list or tuple of nodes to out"""
@@ -271,6 +310,13 @@ class Node:
             # import pdb; pdb.set_trace()
             node.insert_input_node(self)
         return node
+
+    def _insert_graph_at_end(self, graph):
+        self.unflattened_out_nodes.append(graph)
+        self.insert_output_node(graph.input_node)
+        graph.move_node_to_new_graph(self.graph)
+        return graph.output_node
+
 
     def in_nodes_iterator(self):
         for node in self.in_nodes:
@@ -304,6 +350,55 @@ class Node:
     def __hash__(self):
         return hash(repr(self))
 
+    def _add_to_networkx_graph_id(self, outnode, networkx_graph):
+        for innode in outnode.in_nodes_iterator():
+            networkx_graph.add_node(innode.id, node=innode)
+            networkx_graph.add_edge(innode.id, outnode.id)
+            self._add_to_networkx_graph_id(innode, networkx_graph)
+
+    def _add_to_networkx_graph_name(self, outnode, networkx_graph):
+        for innode in outnode.in_nodes_iterator():
+            networkx_graph.add_node(innode.name, node=innode)
+            networkx_graph.add_edge(innode.name, outnode.name)
+            self._add_to_networkx_graph_name(innode, networkx_graph)
+
+    def convert_to_networkx(self, with_name=False):
+        node = self
+        self.networkx_graph = nx.DiGraph()
+        if with_name:
+            self.networkx_graph.add_node(node.name, node=node)
+            self._add_to_networkx_graph_name(node, self.networkx_graph)
+            return self.networkx_graph
+
+        self.networkx_graph.add_node(node.id, node=node)
+        self._add_to_networkx_graph_id(node, self.networkx_graph)
+        return self.networkx_graph
+
+    def draw(self, with_name=False, with_labels=True, **kwargs):
+        self.convert_to_networkx(with_name=with_name)
+        inbuilt_kwargs = dict(
+            with_labels=with_labels,
+            node_size=3500,
+            node_shape="s",
+            width=1,
+            alpha=0.9,
+            linewidths=3,
+            node_color='lightblue',
+        )
+        inbuilt_kwargs.update(kwargs)
+        return nx.draw(self.networkx_graph, **inbuilt_kwargs)
+
+    def get_input_node(self):
+        def _get_input_node(node):
+            out = None
+            for innode in node.in_nodes:
+                if len(innode.in_nodes) == 0:
+                    return innode
+                out = _get_input_node(innode)
+            return out
+
+        return _get_input_node(self)
+
 
 class _InputNode(Node):
     def __init__(self):
@@ -330,3 +425,5 @@ class _OutputNode(Node):
         if self.graph == graph:
             return
         self.graph = graph
+
+

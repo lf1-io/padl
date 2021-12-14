@@ -952,15 +952,22 @@ class AtomicTransform(Transform):
         # import pdb; pdb.set_trace()
         _copy = copy(self)
         _node_copy = deepcopy(self.pd_node)
+        _node_copy.id = self.pd_node.generate_id()
         _copy.pd_node = _node_copy
         # import pdb; pdb.set_trace()
 
-        _copy_transform_ = copy(transform_)
-        _node_copy_transform_ = deepcopy(transform_.pd_node)
+        # _copy_transform_ = copy(transform_)
+        # _node_copy_transform_ = deepcopy(transform_.pd_node)
+        # _copy_transform_.pd_node = _node_copy_transform_
+
+        _copy_transform_ = transform_
+        _node_copy_transform_ = transform_.pd_node
         _copy_transform_.pd_node = _node_copy_transform_
         # import pdb; pdb.set_trace()
         _node_copy(_node_copy_transform_)
         # import pdb; pdb.set_trace()
+        if transform_.pd_name == 'OutputNode':
+            return _copy_transform_
         return _copy
 
 

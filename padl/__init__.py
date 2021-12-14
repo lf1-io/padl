@@ -9,6 +9,14 @@ from padl.version import __version__
 
 #: this is same
 from padl.utils import same
+
+#: The *identity* Transform: *f(x) = x*.
+identity = Identity()
+
+Input = Identity() - 'InputNode'
+Output = Identity() - 'OutputNode'
+
+#: See :class:`Batchify`.
 batch = Batchify()
 
 #: See :class:`Unbatchify`.
