@@ -25,7 +25,6 @@ from zipfile import ZipFile
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 from padl.dumptools import symfinder, inspector
 from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
@@ -109,6 +108,20 @@ def _move_to_device(args, device):
     if isinstance(args, torch.Tensor):
         return args.to(device)
     return args
+
+
+class _GeneratorWithLength:
+    """A generator with a length. """
+
+    def __init__(self, generator, length):
+        self.length = length
+        self.generator = generator
+
+    def __iter__(self):
+        yield from self.generator()
+
+    def __len__(self):
+        return self.length
 
 
 Mode = Literal['infer', 'eval', 'train']
@@ -713,39 +726,29 @@ class Transform:
         else:
             loader = args
 
-        pbar = None
-        if verbose:
-            if use_post or flatten:
-                pbar = tqdm(total=len(args))
-            else:
-                loader = tqdm(loader, total=len(loader))
+        def _gen():
+            for batch in loader:
+                batch = _move_to_device(batch, self.pd_device)
 
-        for batch in loader:
-            batch = _move_to_device(batch, self.pd_device)
+                output = batch
+                if use_forward:
+                    output = forward.pd_call_transform(batch, mode)
 
-            output = batch
-            if use_forward:
-                output = forward.pd_call_transform(batch, mode)
-
-            if use_post or flatten:
-                if verbose:
-                    pbar.update()
-
-                output = _unpack_batch(output)
-                if use_post:
-                    output = [post.pd_call_transform(x, mode) for x in output]
-                for out in output:
-                    output_format = self._pd_get_output_format()
-                    if output_format is not None:
-                        yield output_format(*out)
-                    else:
-                        yield out
-            else:
-                output_format = self._pd_get_output_format()
-                if output_format is not None:
-                    yield output_format(*output)
+                if use_post or flatten:
+                    output = _unpack_batch(output)
+                    if use_post:
+                        output = [post.pd_call_transform(x, mode) for x in output]
+                    for out in output:
+                        yield self._pd_format_output(out)
                 else:
-                    yield output
+                    yield self._pd_format_output(output)
+
+        if use_post or flatten:
+            length = len(args)
+        else:
+            length = len(loader)
+
+        return _GeneratorWithLength(_gen, length)
 
     @property
     def pd_device(self) -> str:
@@ -898,11 +901,9 @@ class Transform:
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
-        :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
-        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs,
-                                 verbose=verbose, flatten=flatten)
+        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten)
 
 
 class AtomicTransform(Transform):
