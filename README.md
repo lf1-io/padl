@@ -31,7 +31,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 pip install padl
 ```
 
-PADL currently supports python **3.8** and **3.9**.
+PADL currently supports python **3.7**, **3.8** and **3.9**.
 
 **Your first PADL program**
 
