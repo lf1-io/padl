@@ -694,17 +694,16 @@ class Transform:
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
-    def _pd_get_output_format(self):
-        return None
+    def _pd_format_output(self, x):
+        return x
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
-                     verbose: bool = False, flatten: bool = False) -> Iterator:
+                     flatten: bool = False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
         :param mode: Mode to call in ("eval", "train" or "infer")
         :param loader_kwargs: Data loader keyword arguments.
-        :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
 
         :return: A generator that allows iterating over the output.
@@ -866,13 +865,9 @@ class Transform:
         inputs = _move_to_device(inputs, self.pd_device)
         inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
         inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        output_format = self._pd_get_output_format()
-        if output_format is not None:
-            return output_format(*inputs)
-        return inputs
+        return self._pd_format_output(inputs)
 
-    def eval_apply(self, inputs: Iterable,
-                   verbose: bool = False, flatten: bool = False, **kwargs):
+    def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
         """Call transform within the eval context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -883,14 +878,12 @@ class Transform:
         :param inputs: The arguments - an iterable (e.g. list) of inputs.
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
-        :param verbose: If *True*, print progress bar.
         :param flatten: If *True*, flatten the output.
         """
         return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs,
-                                 verbose=verbose, flatten=flatten)
+                                 flatten=flatten)
 
-    def train_apply(self, inputs: Iterable,
-                    verbose: bool = False, flatten: bool = False, **kwargs):
+    def train_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
         """Call transform within the train context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1336,17 +1329,11 @@ class Pipeline(Transform):
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
 
-    def _pd_get_output_format(self):
-        last_transform = self.transforms[-1]
-        if hasattr(last_transform, '_pd_output_format'):
-            return last_transform._pd_output_format
-        return None
-
-    def _pd_get_output_format(self):
-        last_transform = self.transforms[-1]
-        if hasattr(last_transform, '_pd_output_format'):
-            return last_transform._pd_output_format
-        return None
+    def _pd_format_output(self, x):
+        try:
+            return self.transforms[-1]._pd_output_formatter(x)
+        except AttributeError:
+            return x
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1780,7 +1767,7 @@ class Rollout(Pipeline):
                  pd_name: str = None, pd_group=False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple[Transform,
@@ -1873,7 +1860,7 @@ class Rollout(Pipeline):
             out.append(transform_.pd_call_transform(args))
         if Transform.pd_mode is not None:
             return tuple(out)
-        return self._pd_output_format(*out)
+        return self._pd_output_formatter(out)
 
     def _pd_longrepr(self, formatting=True) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
@@ -1904,7 +1891,7 @@ class Parallel(Pipeline):
     def __init__(self, transforms, call_info=None, pd_name=None, pd_group=False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple[Transform, Transform, Transform],
@@ -1966,7 +1953,7 @@ class Parallel(Pipeline):
             out.append(transform_.pd_call_transform(args[ind]))
         if Transform.pd_mode is not None:
             return tuple(out)
-        return self._pd_output_format(*out)
+        return self._pd_output_formatter(out)
 
     def _pd_longrepr(self, formatting=True) -> str:
         if not formatting:
