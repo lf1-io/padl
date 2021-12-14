@@ -14,7 +14,11 @@ from shutil import rmtree
 import textwrap
 from tempfile import TemporaryDirectory
 import types
-from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from warnings import warn
 from zipfile import ZipFile
 
@@ -461,7 +465,9 @@ class Transform:
         all_vars_dict = {**globals_dict, **nonlocals_dict}
 
         # find dependencies
-        while todo and (next_name := todo.pop()):
+        while todo:
+            next_name = todo.pop()
+
             # we know this already - go on
             if next_name in graph:
                 continue

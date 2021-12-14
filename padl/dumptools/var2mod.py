@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Set
 
+from padl.dumptools import ast_utils
 from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope
 
 try:
@@ -52,8 +53,8 @@ class Finder(ast.NodeVisitor):
         nodes = self.find(ast.parse(source))
         return [
             (
-                ast.get_source_segment(source, node),
-                (node.lineno, node.end_lineno, node.col_offset, node.end_col_offset)
+                ast_utils.get_source_segment(source, node),
+                ast_utils.get_position(source, node)
             )
             for node in nodes
         ]
@@ -122,7 +123,8 @@ class _VarFinder(ast.NodeVisitor):
         ...                                             locals={('x', 0), ('z', 0), ('y', 0)})
         True
         """
-        for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
+        posonlyargs = getattr(node.args, 'posonlyargs', [])
+        for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
             self.locals.add((arg.arg, 0))
         if node.args.vararg is not None:
             self.locals.add((node.args.vararg.arg, 0))
@@ -281,7 +283,8 @@ class _VarFinder(ast.NodeVisitor):
         >>> vars == Vars(globals={('foo', 0)}, locals={('x', 0), ('y', 0)})
         True
         """
-        for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
+        posonlyargs = getattr(node.args, 'posonlyargs', [])
+        for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
             self.locals.add((arg.arg, 0))
         self.visit(node.body)
 
@@ -760,8 +763,10 @@ class CodeGraph(dict):
 
         todo = {scoped_name}
 
-        while todo and (next_name := todo.pop()):
+        while todo:
             # we know this already - go on
+            next_name = todo.pop()
+
             if next_name in done:
                 continue
 

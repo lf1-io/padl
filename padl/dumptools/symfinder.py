@@ -28,7 +28,7 @@ from types import ModuleType
 from typing import List, Tuple
 from warnings import warn
 
-from padl.dumptools import sourceget
+from padl.dumptools import ast_utils, sourceget
 
 
 class _ThingFinder(ast.NodeVisitor):
@@ -81,7 +81,7 @@ class _ThingFinder(ast.NodeVisitor):
 
     def deparse(self) -> str:
         """Get the source snipped corresponding to the found node. """
-        return ast.get_source_segment(self.source, self._result)
+        return ast_utils.get_source_segment(self.source, self._result)
 
     def node(self) -> ast.AST:
         """Get the found node. """
@@ -125,24 +125,35 @@ class _FunctionDefFinder(_NameFinder):
 
     def deparse(self):
         res = ''
-        for decorator in self._result.decorator_list:
-            res += f'@{ast.get_source_segment(self.source, decorator)}\n'
-        res += ast.get_source_segment(self.source, self._result)
-        return self._fix_indent(res)
+        res = ast_utils.get_source_segment(self.source, self._result)
+        # for py 3.8+, the decorators are not included, we need to add them
+        if not res.lstrip().startswith('@'):
+            for decorator in self._result.decorator_list[::-1]:
+                res = f'@{ast_utils.get_source_segment(self.source, decorator)}\n' + res
+        return _fix_indent(res)
 
-    @staticmethod
-    def _fix_indent(source):
-        lines = source.split('\n')
-        res = []
-        n_indent = None
-        for line in lines:
-            if not line.startswith(' '):
-                res.append(line)
-            else:
-                if n_indent is None:
-                    n_indent = len(line) - len(line.lstrip(' '))
-                res.append(' ' * 4 + line[n_indent:])
-        return '\n'.join(res)
+
+def _fix_indent(source):
+    lines = source.lstrip().split('\n')
+    res = []
+    for line in lines:
+        if line.startswith('@'):
+            res.append(line.lstrip())
+        else:
+            res.append(line.lstrip())
+            break
+    lines = res + lines[len(res):]
+    res = []
+    n_indent = None
+    for line in lines:
+        if not line.startswith(' '):
+            res.append(line)
+        else:
+            if n_indent is None:
+                n_indent = len(line) - len(line.lstrip(' '))
+            res.append(' ' * 4 + line[n_indent:])
+    return '\n'.join(res)
+
 
 
 class _ClassDefFinder(_NameFinder):
@@ -177,9 +188,12 @@ class _ClassDefFinder(_NameFinder):
 
     def deparse(self):
         res = ''
-        for decorator in self._result.decorator_list:
-            res += f'@{ast.get_source_segment(self.source, decorator)}\n'
-        res += ast.get_source_segment(self.source, self._result)
+        res = ast_utils.get_source_segment(self.source, self._result)
+        res = _fix_indent(res)
+        # for py 3.8+, the decorators are not included, we need to add them
+        if not res.lstrip().startswith('@'):
+            for decorator in self._result.decorator_list[::-1]:
+                res = f'@{ast_utils.get_source_segment(self.source, decorator)}\n' + res
         return res
 
 
@@ -328,7 +342,7 @@ class _AssignFinder(_NameFinder):
             source = self._result._source
         except AttributeError:
             source = self.source
-        return f'{self.var_name} = {ast.get_source_segment(source, self._result.value)}'
+        return f'{self.var_name} = {ast_utils.get_source_segment(source, self._result.value)}'
 
 
 class _CallFinder(_ThingFinder):
@@ -365,23 +379,26 @@ class _CallFinder(_ThingFinder):
         tree = ast.parse(self.source)
         self.visit(tree)
         if self.found_something():
-            return self._get_name(self._result), *_get_call_signature(self.source)
+            return self._get_name(self._result), (*_get_call_signature(self.source),)
         raise NameNotFound(f'Did not find call of "{self.var_name}".')
 
     def _get_name(self, call: ast.Call):
-        return ast.get_source_segment(self.source, call.func)
+        return ast_utils.get_source_segment(self.source, call.func)
 
 
 def _get_call_assignments(args, source, values, keywords):
     argnames = [x.arg for x in args.args]
-    pos_only_argnames = [x.arg for x in args.posonlyargs]
+    try:
+        pos_only_argnames = [x.arg for x in args.posonlyargs]
+    except AttributeError:
+        pos_only_argnames = []
     all_argnames = pos_only_argnames + argnames
     defaults = {
-        name: ast.get_source_segment(source, val)
+        name: ast_utils.get_source_segment(source, val)
         for name, val in zip(argnames[::-1], args.defaults[::-1])
     }
     kwonly_defaults = {
-        ast.get_source_segment(source, name): ast.get_source_segment(source, val)
+        ast_utils.get_source_segment(source, name): ast_utils.get_source_segment(source, val)
         for name, val in zip(args.kwonlyargs, args.kw_defaults)
         if val is not None
     }
@@ -432,9 +449,9 @@ def _get_call_signature(source: str):
     call = ast.parse(source).body[0].value
     if not isinstance(call, ast.Call):
         return [], {}
-    args = [ast.get_source_segment(source, arg) for arg in call.args]
+    args = [ast_utils.get_source_segment(source, arg) for arg in call.args]
     kwargs = {
-        kw.arg: ast.get_source_segment(source, kw.value) for kw in call.keywords
+        kw.arg: ast_utils.get_source_segment(source, kw.value) for kw in call.keywords
     }
     return args, kwargs
 
@@ -476,7 +493,7 @@ class Scope:
         :param drop_n: Number of levels to drop from the scope.
         """
         tree = ast.parse(def_source)
-        branch = _find_branch(tree, lineno)
+        branch = _find_branch(tree, lineno, def_source)
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
         if drop_n > 0:
             function_defs = function_defs[:-drop_n]
@@ -683,15 +700,16 @@ def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
     return find_in_source(var_name, source, i=i)
 
 
-def _find_branch(tree, lineno):
+def _find_branch(tree, lineno, source):
     """Find the branch of the ast tree *tree* containing *lineno*. """
 
-    try:
-        start, end = tree.lineno, tree.end_lineno
+    if hasattr(tree, 'lineno'):
+        position = ast_utils.get_position(source, tree)
+        start, end = position.lineno, position.end_lineno
         # we're outside
         if not start <= lineno <= end:
             return False
-    except AttributeError:
+    else:
         # this is for the case of nodes that have no lineno, for these we need to go deeper
         start = end = '?'
 
@@ -700,7 +718,7 @@ def _find_branch(tree, lineno):
         return [tree]
 
     for child_node in child_nodes:
-        res = _find_branch(child_node, lineno)
+        res = _find_branch(child_node, lineno, source)
         if res:
             return [tree] + res
 
@@ -767,13 +785,15 @@ def split_call(call_source):
     ('f', '1, 2, 3')
     """
     node = ast.parse(call_source).body[0].value
-    call = ast.get_source_segment(call_source, node.func)
+    call = ast_utils.get_source_segment(call_source, node.func)
     if not node.args and not node.keywords:
         return call, ''
     all_args = node.args + [x.value for x in node.keywords]
+    last_arg_position = ast_utils.get_position(call_source, all_args[-1])
+    func_position = ast_utils.get_position(call_source, node.func)
     args = sourceget.cut(call_source,
                          node.func.lineno - 1,
-                         all_args[-1].end_lineno - 1,
-                         node.func.end_col_offset + 1,
-                         all_args[-1].end_col_offset)
+                         last_arg_position.end_lineno - 1,
+                         func_position.end_col_offset + 1,
+                         last_arg_position.end_col_offset)
     return call, args
