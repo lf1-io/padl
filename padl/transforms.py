@@ -983,8 +983,14 @@ class AtomicTransform(Transform):
             if isinstance(v, Transform):
                 yield v
 
+    def _pd_get_preprocessing_idx(self):
+        return 1
+
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False, pos=None):
+    def _pd_get_forward_idx(pos):
+        return 0
+
+    def _pd_get_error_idx(self, pos):
         return 0
 
 
@@ -1545,10 +1551,15 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
+    def _pd_get_preprocessing_idx(self):
+        return 1
+
     @staticmethod
-    def _pd_get_error_idx(is_child=False, is_preprocess=False, pos=None):
-        """Track the index where a `Pipeline` fails from the one that fails on its
-        `self.pd_forward`.
+    def _pd_get_forward_idx(pos):
+        return 0
+
+    def _pd_get_error_idx(self, pos):
+        """Track the index where a `Pipeline` fails from the one that fails on `self.pd_forward`.
 
         Example:
             t = (t_11 >> batch >> t_12) +
@@ -1556,17 +1567,10 @@ class Pipeline(Transform):
             then,
             t.pd_forward = t_12 / t_22.
             If we know that `t.pd_forward` is failing on `t_22`, which is its element 1,
-            the index of the transform that fails on `t` is the same, and this element is kept on
-            `_pd_trace`.
+            the index of the transform that fails on `t` is the same.
 
-        :param is_child: `True` if is a subtransform of a larger one, `False` otherwise.
-        :param is_preprocess: `True` if is the `preprocessing` part of a larger transform, `False` otherwise.
-        :param pos: element of `pd_trace` we want to retrieve.
+        :param pos: level of recursion on `t` we are in.
         """
-        if is_child and is_preprocess:
-            return 1
-        elif is_child:
-            return 0
         return _pd_trace[pos][-1]
 
 
@@ -1769,41 +1773,38 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_error_idx(self, is_child=False, is_preprocess=False, pos=None):
-        """Track the index where a `Compose` fails from the one that fails on its
-        `self.pd_forward`.
+    def _pd_get_preprocessing_idx(self):
+        return len(self)
 
-        Example:
+    @staticmethod
+    def _pd_get_forward_idx(pos):
+        return _pd_trace[pos][-1]
+
+    def _pd_get_error_idx(self, pos):
+        """Track the index where a `Compose` fails from the one that fails on `self.pd_forward`.
+
+        Examples:
             t = t_1 >> t_2 >> batch >> t_3 >> t_4
             then,
             t.pd_forward = t_3 >> t_4.
-            If we know that `t.pd_forward` is failing on `t_4`, which is its element 1.
-            Since this 1 is on `_pd_trace` because it keeps the error information of
-            `t.pd_forward`, the index of the transform that fails on `t` is
-            len(t.pd_preprocess) + _pd_trace[pos][-1].
+            If we know that `t.pd_forward` is failing on `t_4`, which is its element 1, then
+            `t` is failing on len(t.pd_preprocess) + 1.
 
             t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
             then,
             t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
-            No matter what branch is failing on `t.pd_forward`, the error on `t` is
-            len(t.pd_preprocess) + 0. The second summand is gotten by calling the method
-            `_pd_get_error_idx` on `Pipeline` with `is_child`=True.
+            No matter what branch is failing on `t.pd_forward`, the error on `t` is on
+            len(t.pd_preprocess) + 0.
 
-        :param is_child: `True` if is a subtransform of a larger one, `False` otherwise.
-        :param is_preprocess: `True` if is the `preprocessing` part of a larger transform, `False` otherwise.
-        :param pos: element of `pd_trace` we want to retrieve.
+        :param pos: level of recursion on `t` we are in.
         """
-        if is_preprocess and is_child:
-            return len(self)
-        elif is_child:
-            return _pd_trace[pos][-1]
-        return self.pd_preprocess._pd_get_error_idx(is_child=True, is_preprocess=True) + \
-               self.pd_forward._pd_get_error_idx(is_child=True, pos=pos)
+        return self.pd_preprocess._pd_get_preprocessing_idx() + \
+               self.pd_forward._pd_get_forward_idx(pos=pos)
 
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace` considering the situation of the error on
         the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        `pd_stage` where it fails.
+        stage where it fails.
 
         :param depth: level of recursion we are in.
         :param arg: arguments passed to the current part of the transform.
@@ -1917,7 +1918,7 @@ class Rollout(Pipeline):
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace` considering the situation of the error on
         the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        `pd_stage` where it fails.
+        stage where it fails.
 
         :param depth: level of recursion we are in.
         :param arg: arguments passed to the current part of the transform.
@@ -2052,7 +2053,7 @@ class Parallel(Pipeline):
     def _pd_trace_add_pipeline(self, depth, arg):
         """ Add some error description to `pd_trace` considering the situation of the error on
         the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        `pd_stage` where it fails.
+        stage where it fails.
 
         :param depth: level of recursion we are in.
         :param arg: arguments passed to the current part of the transform.
