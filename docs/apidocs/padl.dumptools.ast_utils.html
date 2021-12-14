@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>padl.dumptools &mdash; PADL 0.1.0 documentation</title>
+  <title>padl.dumptools.ast_utils &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../static/custom.css" type="text/css" />
@@ -19,8 +19,8 @@
     <script src="../static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="padl.dumptools.ast_utils" href="padl.dumptools.ast_utils.html" />
-    <link rel="prev" title="padl" href="padl.html" /> 
+    <link rel="next" title="padl.dumptools.inspector" href="padl.dumptools.inspector.html" />
+    <link rel="prev" title="padl.dumptools" href="padl.dumptools.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -126,8 +126,8 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="../modules.html">API Documentation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -160,7 +160,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../modules.html">API Documentation</a> &raquo;</li>
-      <li><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></li>
+      <li><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -169,16 +169,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-padl.dumptools">
-<span id="padl-dumptools"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code><a class="headerlink" href="#module-padl.dumptools" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.dumptools.ast_utils">
+<span id="padl-dumptools-ast-utils"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code><a class="headerlink" href="#module-padl.dumptools.ast_utils" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.ast_utils.Position">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">Position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lineno</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_lineno</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_col_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.Position" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.ast_utils.get_position">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">get_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.get_position" title="Permalink to this definition"></a></dt>
+<dd><p>Get the position of <em>node</em> in <em>source</em>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.ast_utils.get_source_segment">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">get_source_segment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.get_source_segment" title="Permalink to this definition"></a></dt>
+<dd><p>Get the source segment corresponding to <em>node</em>.</p>
+<p>Same as <code class="xref py py-func docutils literal notranslate"><span class="pre">ast.get_source_segment()</span></code> in python&gt;=3.8</p>
+</dd></dl>
+
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="padl.html" class="btn btn-neutral float-left" title="padl" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="padl.dumptools.ast_utils.html" class="btn btn-neutral float-right" title="padl.dumptools.ast_utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="padl.dumptools.html" class="btn btn-neutral float-left" title="padl.dumptools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.dumptools.inspector.html" class="btn btn-neutral float-right" title="padl.dumptools.inspector" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

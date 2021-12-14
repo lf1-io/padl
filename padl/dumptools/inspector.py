@@ -5,10 +5,14 @@ import dis
 import inspect
 import sys
 import types
-from typing import Callable, Literal, Optional
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+from typing import Callable, Optional
 from warnings import warn
 
-from padl.dumptools import symfinder, var2mod
+from padl.dumptools import ast_utils, symfinder, var2mod
 from padl.dumptools.sourceget import get_source, original, cut
 
 
@@ -182,9 +186,10 @@ def _get_statement_from_block(block: str, lineno_in_block: int):
     stmts = []
     offset = 0
     for stmt in module.body:
-        if stmt.lineno <= lineno_in_block <= stmt.end_lineno:
-            stmts.append(ast.get_source_segment(block, stmt))
-            offset = lineno_in_block - stmt.lineno
+        position = ast_utils.get_position(block, stmt)
+        if position.lineno <= lineno_in_block <= position.end_lineno:
+            stmts.append(ast_utils.get_source_segment(block, stmt))
+            offset = lineno_in_block - position.lineno
     assert len(stmts) == 1
     return '\n'.join(stmts), offset
 
@@ -341,10 +346,10 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         raise RuntimeError(f'{segment_type} not found.')
 
     locs = (
-        locs[0] - 1 + offset[0],
-        locs[1] - 1 + offset[0],
-        locs[2] - offset[1],
-        locs[3] - offset[1]
+        locs.lineno - 1 + offset[0],
+        locs.end_lineno - 1 + offset[0],
+        locs.col_offset - offset[1],
+        locs.end_col_offset - offset[1]
     )
     # cutting is necessary instead of just using the segment from above for support of
     # `sourceget.ReplaceString`s
