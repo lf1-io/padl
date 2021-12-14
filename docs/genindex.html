@@ -110,7 +110,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -200,8 +201,6 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/padl.html#padl.batch">batch (in module padl)</a>
-</li>
       <li><a href="apidocs/padl.html#padl.Batchify">Batchify (class in padl)</a>
 
       <ul>
@@ -210,6 +209,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeGraph.build">build() (padl.dumptools.var2mod.CodeGraph class method)</a>
+</li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.BuiltinTransform">BuiltinTransform (class in padl.transforms)</a>
 </li>
   </ul></td>
@@ -226,12 +227,14 @@
 </li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.ClassTransform">ClassTransform (class in padl.transforms)</a>
 </li>
-      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeNode">CodeNode (class in padl.dumptools.var2mod)</a>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeGraph">CodeGraph (class in padl.dumptools.var2mod)</a>
 </li>
-      <li><a href="apidocs/padl.print_utils.html#padl.print_utils.combine_multi_line_strings">combine_multi_line_strings() (in module padl.print_utils)</a>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeNode">CodeNode (class in padl.dumptools.var2mod)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidocs/padl.print_utils.html#padl.print_utils.combine_multi_line_strings">combine_multi_line_strings() (in module padl.print_utils)</a>
+</li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.Compose">Compose (class in padl.transforms)</a>
 </li>
       <li><a href="apidocs/padl.print_utils.html#padl.print_utils.create_arrow">create_arrow() (in module padl.print_utils)</a>
@@ -253,6 +256,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.dump_packages_versions">dump_packages_versions() (in module padl.dumptools.packagefinder)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeGraph.dumps">dumps() (padl.dumptools.var2mod.CodeGraph method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -278,20 +285,20 @@
         <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.Finder.find">(padl.dumptools.var2mod.Finder method)</a>
 </li>
       </ul></li>
-      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.find_globals">find_globals() (in module padl.dumptools.var2mod)</a>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.find_codenode">find_codenode() (in module padl.dumptools.var2mod)</a>
 </li>
-      <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.find_in_function_def">find_in_function_def() (in module padl.dumptools.symfinder)</a>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.find_globals">find_globals() (in module padl.dumptools.var2mod)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.find_in_ipython">find_in_ipython() (in module padl.dumptools.symfinder)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.find_in_module">find_in_module() (in module padl.dumptools.symfinder)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.find_in_scope">find_in_scope() (in module padl.dumptools.symfinder)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.find_in_source">find_in_source() (in module padl.dumptools.symfinder)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.Finder">Finder (class in padl.dumptools.var2mod)</a>
 </li>
       <li><a href="apidocs/padl.print_utils.html#padl.print_utils.format_argument">format_argument() (in module padl.print_utils)</a>
@@ -299,7 +306,17 @@
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.from_level">from_level() (padl.dumptools.symfinder.Scope method)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.from_source">from_source() (padl.dumptools.symfinder.Scope class method)</a>
+
+      <ul>
+        <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeNode.from_source">(padl.dumptools.var2mod.CodeNode class method)</a>
 </li>
+      </ul></li>
+      <li><a href="apidocs/padl.html#padl.fulldump">fulldump() (in module padl)</a>
+
+      <ul>
+        <li><a href="apidocs/padl.transforms.html#padl.transforms.fulldump">(in module padl.transforms)</a>
+</li>
+      </ul></li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.FunctionTransform">FunctionTransform (class in padl.transforms)</a>
 </li>
   </ul></td>
@@ -317,6 +334,8 @@
       <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.get_segment_from_frame">get_segment_from_frame() (in module padl.dumptools.inspector)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.get_source">get_source() (in module padl.dumptools.sourceget)</a>
+</li>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.Finder.get_source_segments">get_source_segments() (padl.dumptools.var2mod.Finder method)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.get_statement">get_statement() (in module padl.dumptools.inspector)</a>
 </li>
@@ -350,8 +369,6 @@
         <li><a href="apidocs/padl.transforms.html#padl.transforms.Identity">(class in padl.transforms)</a>
 </li>
       </ul></li>
-      <li><a href="apidocs/padl.html#padl.identity">identity (in module padl)</a>
-</li>
       <li><a href="apidocs/padl.html#padl.IfEval">IfEval (class in padl)</a>
 
       <ul>
@@ -364,18 +381,24 @@
         <li><a href="apidocs/padl.util_transforms.html#padl.util_transforms.IfInfer">(class in padl.util_transforms)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.html#padl.IfInMode">IfInMode (class in padl)</a>
 
       <ul>
         <li><a href="apidocs/padl.util_transforms.html#padl.util_transforms.IfInMode">(class in padl.util_transforms)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.html#padl.IfTrain">IfTrain (class in padl)</a>
 
       <ul>
         <li><a href="apidocs/padl.util_transforms.html#padl.util_transforms.IfTrain">(class in padl.util_transforms)</a>
+</li>
+      </ul></li>
+      <li><a href="apidocs/padl.html#padl.importdump">importdump() (in module padl)</a>
+
+      <ul>
+        <li><a href="apidocs/padl.transforms.html#padl.transforms.importdump">(in module padl.transforms)</a>
 </li>
       </ul></li>
       <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.increment_same_name_var">increment_same_name_var() (in module padl.dumptools.var2mod)</a>
@@ -652,6 +675,8 @@
 </li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.TorchModuleTransform.pre_save">pre_save() (padl.transforms.TorchModuleTransform method)</a>
 </li>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.CodeGraph.print">print() (padl.dumptools.var2mod.CodeGraph method)</a>
+</li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.put_into_cache">put_into_cache() (in module padl.dumptools.sourceget)</a>
 </li>
   </ul></td>
@@ -660,12 +685,14 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.replace_star_imports">replace_star_imports() (in module padl.dumptools.symfinder)</a>
+      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.rename">rename() (in module padl.dumptools.var2mod)</a>
 </li>
-      <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.ReplaceString">ReplaceString (class in padl.dumptools.sourceget)</a>
+      <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.replace_star_imports">replace_star_imports() (in module padl.dumptools.symfinder)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.ReplaceString">ReplaceString (class in padl.dumptools.sourceget)</a>
+</li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.ReplaceStrings">ReplaceStrings (class in padl.dumptools.sourceget)</a>
 </li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.Rollout">Rollout (class in padl.transforms)</a>
@@ -748,8 +775,6 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.unscope_graph">unscope_graph() (in module padl.dumptools.var2mod)</a>
-</li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.unscoped">unscoped() (padl.dumptools.symfinder.Scope method)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.up">up() (padl.dumptools.symfinder.Scope method)</a>

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Introduction &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="static/pygments.css" type="text/css" />
@@ -112,7 +113,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -165,7 +167,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="tex2jax_ignore mathjax_ignore section" id="introduction">
+  <section class="tex2jax_ignore mathjax_ignore" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
 <p><strong>Pipeline abstractions for deep learning</strong></p>
 <hr class="docutils" />
@@ -178,16 +180,16 @@
 <li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
 </ul>
 <p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a>, an AI innovation lab based in Berlin, Germany.</p>
-<div class="section" id="getting-started">
+<section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline"></a></h2>
-<div class="section" id="installation">
+<section id="installation">
 <h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h3>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">padl</span>
 </pre></div>
 </div>
 <p>PADL currently supports python <strong>3.8</strong> and <strong>3.9</strong>.</p>
-</div>
-<div class="section" id="your-first-padl-program">
+</section>
+<section id="your-first-padl-program">
 <h3>Your first PADL program<a class="headerlink" href="#your-first-padl-program" title="Permalink to this headline"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -205,26 +207,26 @@
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">prepare</span> <span class="o">&gt;&gt;</span> <span class="n">batch</span> <span class="o">&gt;&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">post</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="resources">
+</section>
+<section id="resources">
 <h3>Resources<a class="headerlink" href="#resources" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>Go to <a class="reference internal" href="usage.html#usage"><span class="std std-ref">Usage</span></a> for a concise but comprehensive manual.</p></li>
 <li><p>Find examples at <a class="reference external" href="https://github.com/lf1-io/padl/tree/main/notebooks">https://github.com/lf1-io/padl/tree/main/notebooks</a>.</p></li>
 <li><p>Post issues at <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="contributing">
+</section>
+</section>
+<section id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h2>
 <p>Code of conduct: <a class="reference external" href="https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md">https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md</a>.</p>
 <p>If your interested in contributing to PADL please look at the current issues: <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p>
-</div>
-<div class="section" id="licensing">
+</section>
+<section id="licensing">
 <h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h2>
 <p>PADL is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

@@ -1,0 +1,4 @@
+from tests.material import transforms_in_module as tim
+
+
+_pd_main = tim.Class(1)

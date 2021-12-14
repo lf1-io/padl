@@ -1,0 +1,1 @@
+from tests.material.transforms_in_module import pipeline as _pd_main

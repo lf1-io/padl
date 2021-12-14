@@ -9,7 +9,7 @@ from typing import Any, Callable, List, Optional
 
 from padl.dumptools import inspector, sourceget, var2mod, symfinder
 from padl.dumptools.symfinder import ScopedName
-from padl.dumptools.var2mod import CodeNode
+from padl.dumptools.var2mod import CodeNode, CodeGraph
 
 
 SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])
@@ -40,8 +40,8 @@ class Serializer:
         if module is None:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
-        self.load_codegraph, self.load_scopemap = (
-            var2mod.build_codegraph(ScopedName(load_function.__name__, self.scope))
+        self.load_codegraph = (
+            var2mod.CodeGraph.build(ScopedName(load_function.__name__, self.scope))
         )
         self.load_name = load_function.__name__
         super().__init__()
@@ -49,7 +49,7 @@ class Serializer:
     def save(self, path: Path):
         """Save the serializer's value to *path*.
 
-        Returns a codegraph and a scopemap containing code needed to load the value.
+        Returns a codegraph containing code needed to load the value.
         """
         if path is None:
             path = Path('?')
@@ -70,16 +70,17 @@ class Serializer:
         else:
             raise ValueError('The save function must return a filename, a list of filenames or '
                              'nothing.')
-        return (
+        return CodeGraph(
             {**self.load_codegraph,
              ScopedName(self.varname, self.scope):
                  CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
-                          globals_={ScopedName(self.load_name, self.scope)}),
+                          globals_={ScopedName(self.load_name, self.scope)},
+                          scope=self.scope),
              ScopedName('pathlib', SCOPE):
                  CodeNode(source='import pathlib',
                           globals_=set(),
-                          ast_node=ast.parse('import pathlib').body[0])},
-            self.load_scopemap
+                          ast_node=ast.parse('import pathlib').body[0],
+                          scope=self.scope)}
         )
 
     @property
@@ -88,17 +89,13 @@ class Serializer:
         return f'PADL_VALUE_{self.index}'
 
     @classmethod
-    def save_all(cls, codegraph, scopemap, path):
+    def save_all(cls, codegraph, path):
         """Save all values. """
         for codenode in list(codegraph.values()):
             for serializer in cls.store:
                 if serializer.varname in codenode.source:
-                    loader_graph, loader_scopemap = serializer.save(path)
+                    loader_graph = serializer.save(path)
                     codegraph.update(loader_graph)
-                    scopemap.update(loader_scopemap)
-                    for scoped_name in codenode.globals_:
-                        if scoped_name.name == serializer.varname:
-                            scopemap[scoped_name] = SCOPE
 
 
 def save_json(val, path):

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Extras &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="../static/pygments.css" type="text/css" />
@@ -112,7 +113,8 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#what-does-not-save">What does not save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#id2">What does not save</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
@@ -166,9 +168,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="id1">
+  <section id="id1">
 <h1>Extras<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
-<div class="section" id="the-same-utility">
+<section id="the-same-utility">
 <span id="same"></span><h2>The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility<a class="headerlink" href="#the-same-utility" title="Permalink to this headline"></a></h2>
 <p>The special object <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> allows the application of arbitrary methods to the input -
 <code class="docutils literal notranslate"><span class="pre">same.something()</span></code> is the same as <code class="docutils literal notranslate"><span class="pre">transform(lambda</span> <span class="pre">x:</span> <span class="pre">x.something())</span></code>:</p>
@@ -186,8 +188,8 @@
 <span class="go">3</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="applying-transforms-depending-on-the-mode">
+</section>
+<section id="applying-transforms-depending-on-the-mode">
 <span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline"></a></h2>
 <p>Often it can be useful to apply Transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation Transforms only during training.</p>
 <p>Use an <a class="reference internal" href="../apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> Transform to apply a Transform only in the “infer” mode:</p>
@@ -200,8 +202,8 @@
 </pre></div>
 </div>
 <p>Analogously, use <a class="reference internal" href="../apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> or <a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to apply a Transform only in the “eval”- or “train” mode, respectively.</p>
-</div>
-<div class="section" id="exception-handling">
+</section>
+<section id="exception-handling">
 <h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline"></a></h2>
 <p>Use <code class="xref py py-class docutils literal notranslate"><span class="pre">Try</span></code> to handle exceptions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
@@ -222,8 +224,8 @@
 <span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
