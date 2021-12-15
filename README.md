@@ -40,7 +40,7 @@ PADL currently supports python **3.7**, **3.8** and **3.9**.
 Python version >= **3.8** is preferred because creating and loading transforms (**not** execution) 
 can be slower in **3.7**.
 
-**Your first PADL program**
+### Your first PADL program
 
 ```python
 from padl import transform, batch, unbatch
@@ -58,6 +58,10 @@ def post(x):
 
 my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 ```
+### Try out PADL in Colab notebooks
+1. [MNIST](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8)
+2. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
+3. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
 
 ### Resources
 
