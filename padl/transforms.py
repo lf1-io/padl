@@ -756,9 +756,10 @@ class Transform:
             output = batch
             if use_forward:
                 try:
+                    breakpoint()
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
-                    self._pd_trace_add_pipeline(-1, [args[i] for i in ix])
+                    self._pd_trace_error(self._pd_get_error_idx('forward'), [args[i] for i in ix])
                     raise err
 
             if use_post or flatten:
@@ -770,7 +771,7 @@ class Transform:
                     try:
                         output = [post.pd_call_transform(x, mode) for x in output]
                     except Exception as err:
-                        self._pd_trace_error(len(preprocess) + len(forward) + _pd_trace[-1][-1],
+                        self._pd_trace_error(self._pd_get_error_idx('postprocess'),
                                              [args[i] for i in ix])
                         raise err
                 for out in output:
@@ -900,13 +901,17 @@ class Transform:
         self.pd_forward_device_check()
         in_args = inputs
         _pd_trace.clear()
+        inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
+        inputs = _move_to_device(inputs, self.pd_device)
         try:
-            inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
-            inputs = _move_to_device(inputs, self.pd_device)
             inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
+        except Exception as err:
+            self._pd_trace_error(self._pd_get_error_idx('forward'), in_args)
+            raise err
+        try:
             inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
         except Exception as err:
-            self._pd_trace_add_pipeline(-1, in_args)
+            self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
             raise err
         output_format = self._pd_get_output_format()
         if output_format is not None:
@@ -983,14 +988,15 @@ class AtomicTransform(Transform):
             if isinstance(v, Transform):
                 yield v
 
-    def _pd_get_preprocessing_idx(self):
+    def _pd_get_non_target_stage_idx(self):
         return 1
 
     @staticmethod
-    def _pd_get_forward_idx(pos):
+    def _pd_get_target_stage_idx():
         return 0
 
-    def _pd_get_error_idx(self, pos):
+    def _pd_get_error_idx(self, stage:str):
+        assert stage in ('forward', 'postprocess')
         return 0
 
 
@@ -1551,14 +1557,14 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
-    def _pd_get_preprocessing_idx(self):
+    def _pd_get_non_target_stage_idx(self):
         return 1
 
     @staticmethod
-    def _pd_get_forward_idx(pos):
+    def _pd_get_target_stage_idx():
         return 0
 
-    def _pd_get_error_idx(self, pos):
+    def _pd_get_error_idx(self, stage: str):
         """Track the index where a `Pipeline` fails from the one that fails on `self.pd_forward`.
 
         Example:
@@ -1568,10 +1574,9 @@ class Pipeline(Transform):
             t.pd_forward = t_12 / t_22.
             If we know that `t.pd_forward` is failing on `t_22`, which is its element 1,
             the index of the transform that fails on `t` is the same.
-
-        :param pos: level of recursion on `t` we are in.
         """
-        return _pd_trace[pos][-1]
+        assert stage in ('forward', 'postprocess')
+        return _pd_trace[-1][-1]
 
 
 class Compose(Pipeline):
@@ -1773,14 +1778,14 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_preprocessing_idx(self):
+    def _pd_get_non_target_stage_idx(self):
         return len(self)
 
     @staticmethod
-    def _pd_get_forward_idx(pos):
-        return _pd_trace[pos][-1]
+    def _pd_get_target_stage_idx():
+        return _pd_trace[-1][-1]
 
-    def _pd_get_error_idx(self, pos):
+    def _pd_get_error_idx(self, stage: str):
         """Track the index where a `Compose` fails from the one that fails on `self.pd_forward`.
 
         Examples:
@@ -1795,27 +1800,14 @@ class Compose(Pipeline):
             t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
             No matter what branch is failing on `t.pd_forward`, the error on `t` is on
             len(t.pd_preprocess) + 0.
-
-        :param pos: level of recursion on `t` we are in.
         """
-        return self.pd_preprocess._pd_get_preprocessing_idx() + \
-               self.pd_forward._pd_get_forward_idx(pos=pos)
-
-    def _pd_trace_add_pipeline(self, depth, arg):
-        """ Add some error description to `pd_trace` considering the situation of the error on
-        the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        stage where it fails.
-
-        :param depth: level of recursion we are in.
-        :param arg: arguments passed to the current part of the transform.
-        """
-        try:
-            position = self._pd_get_error_idx(pos=depth)
-            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
-        except Exception:
-            warn('Error tracing failed')
-
+        assert stage in ('forward', 'postprocess')
+        if stage == 'forward':
+            return self.pd_preprocess._pd_get_non_target_stage_idx() + \
+                   self.pd_forward._pd_get_target_stage_idx()
+        return self.pd_preprocess._pd_get_non_target_stage_idx() + \
+               self.pd_forward._pd_get_non_target_stage_idx() + \
+               self.pd_postprocess._pd_get_target_stage_idx()
 
 class Rollout(Pipeline):
     """Apply a list of transform to same input and get tuple output
@@ -1914,25 +1906,6 @@ class Rollout(Pipeline):
                 res.append(split)
         final_splits = res
         return output_components, final_splits, has_batchify
-
-    def _pd_trace_add_pipeline(self, depth, arg):
-        """ Add some error description to `pd_trace` considering the situation of the error on
-        the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        stage where it fails.
-
-        :param depth: level of recursion we are in.
-        :param arg: arguments passed to the current part of the transform.
-        """
-        try:
-            position = self._pd_get_error_idx(pos=depth)
-            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            try:
-                self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
-            except AttributeError:
-                pass
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
-        except Exception:
-            warn('Error tracing failed')
 
     def __call__(self, args):
         """Call method for Rollout
@@ -2049,26 +2022,6 @@ class Parallel(Pipeline):
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_format(*out)
-
-    def _pd_trace_add_pipeline(self, depth, arg):
-        """ Add some error description to `pd_trace` considering the situation of the error on
-        the entire transform; in contrast to `_pd_trace_error`, which only tracks it on the
-        stage where it fails.
-
-        :param depth: level of recursion we are in.
-        :param arg: arguments passed to the current part of the transform.
-        """
-        try:
-            position = self._pd_get_error_idx(pos=depth)
-            arg = [subarg[position] for subarg in arg] if depth < -1 else arg
-            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            try:
-                self.__getitem__(position)._pd_trace_add_pipeline(depth - 1, arg)
-            except AttributeError:
-                pass
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
-        except Exception:
-            warn('Error tracing failed')
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
