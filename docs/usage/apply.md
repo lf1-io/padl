@@ -35,5 +35,18 @@ for batch in my_classifier.pd_forward.train_apply():
 
 {meth}`train_apply() <padl.transforms.Transform.train_apply>` also uses a **PyTorch** {class}`~torch.utils.data.DataLoader` for which arguments canbe passed, handles devices, and, naturally, does not disable gradients.
 
+The outputs of {meth}`~padl.transforms.Transform.eval_apply` and
+{meth}`~padl.transforms.Transform.train_apply` are {class}`~padl.transforms._GeneratorWithLength`
+objects, a generator that supports {func}`len`. This allows adding progress bars, for instance using
+[tqdm](https://github.com/tqdm/tqdm):
+
+```python
+from tqdm import tqdm
+
+[...]
+
+for batch in tqdm(my_classifier.eval_apply()):
+    ...  # loop through batches showing a progress bar
+```
 
 Read the {ref}`next section <Saving and Loading>` to learn how to save and load transforms.
