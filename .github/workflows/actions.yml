@@ -34,4 +34,9 @@ jobs:
         pip install -r requirements-test.txt
     - name: Test with pytest
       run: |
-        python -m pytest --cov=padl -n 2
+        python -m pytest --cov=padl --cov-report=xml -n 2
+    - name: "Upload coverage to Codecov"
+      if: ${{ matrix.python-version == "3.8" && matrix.os == "ubuntu-latest" }}
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true
