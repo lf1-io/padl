@@ -52,6 +52,10 @@ class CallInfo:
             return symfinder.Scope.toplevel(module)
         try:
             call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
+        except RuntimeError:
+            warn('Error determining call source.')
+            call_source = '__na()'
+        try:
             definition_source = get_source(caller_frameinfo.filename)
             fdef_lineno = caller_frameinfo.frame.f_lineno
             calling_scope = symfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
@@ -131,7 +135,7 @@ def _instructions_up_to_call(x) -> list:
 
 
 def _instructions_in_name(x) -> list:
-    """Get all instructions up to last CALL FUNCTION. """
+    """Get all LOAD_NAME and LOAD_ATTR instructions. """
     instructions = list(dis.get_instructions(x))
     i = 0
     for i, instruction in enumerate(instructions):
