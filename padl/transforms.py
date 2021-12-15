@@ -293,6 +293,11 @@ class Transform:
         """
         return Map(self)
 
+    def _pd_insert_output_node(self, transform_):
+        if isinstance(transform_, Transform):
+            return self.pd_node.insert_output_node(transform_.pd_node)
+        return self.pd_node.insert_output_node(transform_)
+
     def pd_pre_save(self, path: Path, i: int):
         """Method that is called on each transform before saving.
 
@@ -1626,20 +1631,10 @@ class Compose(Pipeline):
         self._pd_create_graph()
 
     def _pd_create_graph(self):
-        transform_ = self.transforms[0]
-        if isinstance(transform_, Pipeline):
-            node_ = transform_.pd_graph
-        else:
-            node_ = padl_graph.Node(transform_, name=transform_._pd_shortrepr())
-        self.pd_graph.add_node(node_, connect_input=True)
-        prev = node_
+        initial_transform = self.transforms[0]
         for transform_ in self.transforms[1:]:
-            if isinstance(transform_, Pipeline):
-                transform_node = transform_.pd_graph
-            else:
-                transform_node = padl_graph.Node(transform_, name=transform_._pd_shortrepr())
-            self.pd_graph.add_node(transform_node)
-            prev = prev.insert_output_node(transform_node)
+            initial_transform.pd_insert_output_node(transform_)
+            initial_transform = transform_
 
     def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
                                                                           Tuple[Transform,

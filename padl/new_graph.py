@@ -161,6 +161,8 @@ class Node:
     def __init__(self, transform=None, name=None, graph=None, id=None):
         self.id = id if id is not None else self.generate_id()
         self._graph = None
+        self._input = [_InputNode()]
+        self._output = [_OutputNode()]
         self.in_nodes = []
         self.out_nodes = []
 
@@ -173,6 +175,16 @@ class Node:
         self._update_input_args()
         self.output = []
         self.networkx_graph = None
+
+    def input(self, index):
+        if len(self._input) < index:
+            self._input = self._input + [_InputNode() for _ in range(len(self._input)-index)]
+        return self._input[index]
+
+    def output(self, index):
+        if len(self._output) < index:
+            self._output = self._output + [_OutputNode() for _ in range(len(self._output)-index)]
+        return self._output[index]
 
     @classmethod
     def generate_id(cls):
