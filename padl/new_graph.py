@@ -6,6 +6,7 @@ import padl
 class Graph:
 
     def __init__(self):
+        self._input_connected = False
         self._node_id = 0
         self.nodes = []
 
@@ -19,6 +20,14 @@ class Graph:
 
         self.networkx_graph = None
 
+    def __call__(self, args):
+        if isinstance(args, Node):
+            self.add_node(args, connect_input=True)
+        if isinstance(args, (list, tuple)):
+            for node_ in args:
+                self(node_)
+        return
+
     def generate_node_id(self):
         self._node_id += 1
         return self._node_id-1
@@ -30,8 +39,14 @@ class Graph:
         self.nodes.append(node)
         node.update_graph(self)
         node.id = self.generate_node_id()
-        if connect_input:
+
+        if connect_input or \
+                (
+                not isinstance(node, (_InputNode, _OutputNode))
+                and not self._input_connected
+                ):
             self.input_node.insert_output_node(node)
+            self._input_connected = True
 
     def _add_to_networkx_graph_id(self, innode):
         for outnode in innode.out_nodes_iterator():
@@ -67,6 +82,10 @@ class Node:
         self._graph = None
         self.in_nodes = []
         self.out_nodes = []
+
+        self.unflattened_in_nodes = []
+        self.unflattened_out_nodes = []
+
         self.name = name
         self.transform = transform
         self.update_graph(graph)
@@ -89,9 +108,16 @@ class Node:
             return
         node.insert_output_node(self)
 
-    def insert_output_node(self, node):
-        self.update_graph(node.graph)
+    def _insert_graph_at_end(self, graph):
+        self.unflattened_out_nodes.append(graph)
+        inputnode = graph.input_node
+        for node in inputnode.out_nodes_iterator():
+            self.insert_output_node(node)
 
+    def insert_output_node(self, node):
+        if isinstance(node, Graph):
+            self._insert_graph_at_end(node)
+        self.update_graph(node.graph)
         if node not in self.out_nodes:
             self.out_nodes.append(node)
         if self in node.out_nodes:
@@ -106,12 +132,9 @@ class Node:
         for node in self.out_nodes:
             yield node
 
-    def __call__(self, *args):
+    def __call__(self, args):
         if isinstance(args, Node):
             assert args.graph
-            self.insert_input_node(args)
-        if len(args) == 1:
-            args = args[0]
             self.insert_input_node(args)
         if isinstance(args, (list, tuple)):
             for node_ in args:
@@ -159,7 +182,7 @@ class _OutputNode(Node):
     def __init__(self):
         super().__init__(padl.Identity(), 'OutputNode')
 
-    def update_graph(self,graph):
+    def update_graph(self, graph):
         if graph is None:
             return
         if self.graph == graph:

@@ -37,6 +37,8 @@ from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
 
+import padl.new_graph as padl_graph
+
 
 def _unpack_batch(args):
     """Convert an input in batch-form into a tuple of datapoints.
@@ -155,6 +157,10 @@ class Transform:
                for mod in self._pd_external_full_dump_modules):
             return True
         return self._pd_external_full_dump
+        self.pd_node = padl_graph.Node(transform=self,
+                                       name=self.pd_name,
+                                       graph=None,
+                                       )
 
     @staticmethod
     def _pd_merge_components(components):
@@ -1051,6 +1057,13 @@ class FunctionTransform(AtomicTransform):
         )
 
     def __call__(self, *args, **kwargs):
+        if len(args) == 1 and isinstance(args, Transform):
+            transform_ = args[0]
+            node = padl_graph.Node(transform_,
+                                   name=transform_.pd_name,
+                                   graph=self.graph)
+            self.pd_node(node)
+            return
         return self.function(*args, **kwargs)
 
 
@@ -1334,6 +1347,7 @@ class Pipeline(Transform):
 
         transforms = self._flatten_list(transforms)
         self.transforms: List[Transform] = transforms
+        self.pd_graph = padl_graph.Graph()
 
     def _pd_get_output_format(self):
         last_transform = self.transforms[-1]
@@ -1585,6 +1599,14 @@ class Compose(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
+        transform_ = self.transforms[0]
+        self.pd_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
+        prev = self.pd_node
+        for transform_ in self.transforms[1:]:
+            transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
+            prev.insert_output_node(transform_node)
+            prev = transform_node
+
     def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
                                                                           Tuple[Transform,
                                                                                 Transform,
@@ -1780,6 +1802,12 @@ class Rollout(Pipeline):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         self.pd_keys = self._pd_get_keys(self.transforms)
         self._pd_output_format = namedtuple('namedtuple', self.pd_keys)
+
+        prev = self.pd_graph
+        for transform_ in self.transforms:
+            transform_node = padl_graph.Node(transform_, name=transform_.pd_name, graph=self.pd_graph)
+            prev(transform_node)
+            prev = transform_node
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple[Transform,
