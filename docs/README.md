@@ -5,11 +5,9 @@
 
 # Introduction
 
-**Pipeline abstractions for deep learning**
+# Pipeline Abstractions for Deep Learning
 
----
 
-Try out our example notebooks here: https://colab.research.google.com/github/lf1-io/padl/
 
 **PADL**:
 
@@ -52,6 +50,11 @@ def post(x):
 
 my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 ```
+
+### Try out PADL in Colab notebooks
+1. [MNIST](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8)
+2. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
+3. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
 
 ### Resources
 
