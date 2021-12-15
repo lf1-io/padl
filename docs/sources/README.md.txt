@@ -5,7 +5,7 @@
 
 # Introduction
 
-# Pipeline Abstractions for Deep Learning
+**Pipeline Abstractions for Deep Learning**
 
 
 
