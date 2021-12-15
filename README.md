@@ -9,9 +9,8 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lf1-io/padl/)
 [![LF1 on Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/lf1_io)
 
-**Pipeline abstractions for deep learning**.
+# Pipeline Abstractions for Deep Learning
 
----
 
 Full documentation here: https://lf1-io.github.io/padl/
 
@@ -24,6 +23,7 @@ Full documentation here: https://lf1-io.github.io/padl/
 - allows for converting standard functions to **PADL** components using a single keyword `transform`.
 
 **PADL** was developed at [LF1](https://lf1.io/), an AI innovation lab based in Berlin, Germany.
+
 
 ## Getting Started
 
@@ -67,11 +67,15 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 - Find examples at <https://github.com/lf1-io/padl/tree/main/notebooks>.
 - Post issues at <https://github.com/lf1-io/padl/issues>.
 
+
+
 ## Contributing
 
 Code of conduct: https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md
 
 If your interested in contributing to PADL please look at the current issues: https://github.com/lf1-io/padl/issues
+
+
 
 ## Licensing
 
