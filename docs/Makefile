@@ -26,15 +26,15 @@ github:
 build:
 	python gen_doc_files.py
 	make html
-	mv _build/html main
-	cp src/custom.css main/_static
+	mv _build/html unstable
+	cp src/custom.css unstable/_static
 	rm -r _build
 
 clean:
-	-rm -r main
+	-rm -r unstable
 	-rm -r _build
 
 version:
-	cp -r main $(VERSION)
+	cp -r unstable $(VERSION)
 	-ln -sT $(VERSION) latest
 	python gen_versions.py
