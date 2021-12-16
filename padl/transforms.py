@@ -15,7 +15,8 @@ import textwrap
 import traceback
 from tempfile import TemporaryDirectory
 import types
-from typing import Callable, Iterable, Iterator, List, Literal, Optional, Set, Tuple, Union
+from typing import Callable, Iterable, Iterator, List, Literal, Optional, Tuple, Union, Any
+from dataclasses import dataclass
 from warnings import warn
 from zipfile import ZipFile
 
@@ -510,7 +511,8 @@ class Transform:
         """ Add some error description to `pd_trace`. """
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append((str_, self._pd_process_traceback(), arg, self, position))
+            _pd_trace.append(_SingleTrace(str_, self._pd_process_traceback(), arg,
+                                          self, Transform.pd_mode, position))
         except Exception:
             warn('Error tracing failed')
 
@@ -751,12 +753,12 @@ class Transform:
             else:
                 loader = tqdm(loader, total=len(loader))
 
+        breakpoint()
         for batch, ix in loader:
             batch = _move_to_device(batch, self.pd_device)
             output = batch
             if use_forward:
                 try:
-                    breakpoint()
                     output = forward.pd_call_transform(batch, mode)
                 except Exception as err:
                     self._pd_trace_error(self._pd_get_error_idx('forward'), [args[i] for i in ix])
@@ -2308,3 +2310,13 @@ class _ItemGetter:
 
     def __len__(self):
         return len(self.samples)
+
+
+@dataclass
+class _SingleTrace:
+    transform_str: str
+    code_position: str
+    args: Any
+    transform: Transform
+    pd_mode: str
+    error_position: int

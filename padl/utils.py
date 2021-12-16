@@ -100,7 +100,7 @@ class _Debug:
             q(uit): quit'
         """
         pos = len(_pd_trace) - 1
-        print(self.default_msg + '\n' + _pd_trace[pos][0])
+        print(self.default_msg + '\n' + _pd_trace[pos].transform_str)
 
         while True:
             try:
@@ -112,23 +112,25 @@ class _Debug:
             elif x == 'u':
                 pos, msg = self._up_step(pos, _pd_trace)
             elif x == 'q':
-                self.args = _pd_trace[pos][2]
-                self.trans = _pd_trace[pos][3]
+                self.args = _pd_trace[pos].args
+                self.trans = _pd_trace[pos].transform
                 break
             elif x == 'w':
-                msg = _pd_trace[pos][1]
+                msg = _pd_trace[pos].code_position
             elif x == 'i':
-                msg = _pd_trace[pos][2]
+                msg = _pd_trace[pos].args
             elif x == 'r':
-                self.args = _pd_trace[pos][2]
-                self.trans = _pd_trace[pos][3]
-                self.repeat()
+                self.args = _pd_trace[pos].args
+                self.trans = _pd_trace[pos].transform
+                # This 0 is because the last element can carry a problem: when adding the last
+                # element to _pd_trace *Transform.pd_mode^ has been already set up to None again.
+                self.repeat(_pd_trace[0].pd_mode)
             elif x == 'h' or x == 'help':
                 msg = self.default_msg
             elif x == 't':
-                msg = _pd_trace[pos][0]
+                msg = _pd_trace[pos].transform_str
             else:
-                i = _pd_trace[pos][2]
+                i = _pd_trace[pos].args
                 try:
                     code = compile(x, '', 'single')
                     exec(code)
@@ -139,22 +141,28 @@ class _Debug:
             if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:
                 print(f'\n{msg}\n')
 
-    def repeat(self) -> None:
-        #infer apply eval apply or train apply
-        self.trans(self.args)
+    def repeat(self, mode: str) -> None:
+        assert mode in ('train', 'eval', 'infer')
+        _pd_trace.clear()
+        if mode == 'train':
+            breakpoint()
+            list(self.trans.train_apply(self.args, batch_size=len(self.args), num_workers=0))
+        if mode == 'eval':
+            list(self.trans.eval_apply(self.args, batch_size=len(self.args), num_workers=0))
+        self.trans.infer_apply(self.args)
 
     @staticmethod
     def _down_step(pos, pd_trace):
         if pos > 0:
             pos -= 1
-            return pos, pd_trace[pos][0]
+            return pos, pd_trace[pos].transform_str
         return pos, 'Reached the bottom.'
 
     @staticmethod
     def _up_step(pos, pd_trace):
         if pos < len(pd_trace) - 1:
             pos += 1
-            return pos, pd_trace[pos][0]
+            return pos, pd_trace[pos].transform_str
         return pos, 'Reached top level.'
 
 
