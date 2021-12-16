@@ -36,5 +36,5 @@ clean:
 
 version:
 	cp -r main $(VERSION)
-	ln -s $(VERSION) latest
+	-ln -sT $(VERSION) latest
 	python gen_versions.py
