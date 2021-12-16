@@ -5,7 +5,7 @@ def make_docfile(name):
     modname = name.replace('/', '.')
     level = modname.count('.')
     print(modname, level)
-    with open(f'apidocs/{modname}.md', 'w') as f:
+    with open(f'src/apidocs/{modname}.md', 'w') as f:
         f.write(f'##{level * "#"} `{modname}`\n'
                 '\n'
                 '```{eval-rst}\n'
