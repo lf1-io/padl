@@ -40,6 +40,13 @@ If it's a major release then it's:
 __version__ = "(x + 1).0.0"
 ```
 
+Freeze the current state of the docs. For that, go to the `docs` folder and
+execute:
+
+```
+make version VERSION=<version>
+```
+
 Once this has been done, make sure to commit and merge to `main` branch.
 
 Then build the `pip` artifact:
