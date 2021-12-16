@@ -9,6 +9,8 @@
 
 ---
 
+Try out our example notebooks here: https://colab.research.google.com/github/lf1-io/padl/
+
 **PADL**:
 
 - is a pipeline builder for **PyTorch**. 

@@ -6,6 +6,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues)
 [![Tests](https://github.com/lf1-io/padl/actions/workflows/actions.yml/badge.svg)](https://github.com/lf1-io/padl/actions/workflows/actions.yml)
 [![codecov](https://codecov.io/gh/lf1-io/padl/branch/main/graph/badge.svg?token=NLS02IWDFQ)](https://codecov.io/gh/lf1-io/padl)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lf1-io/padl/)
 [![LF1 on Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/lf1_io)
 
 **Pipeline abstractions for deep learning**.
@@ -13,6 +14,8 @@
 ---
 
 Full documentation here: https://lf1-io.github.io/padl/
+
+Try out our example notebooks here: https://colab.research.google.com/github/lf1-io/padl/
 
 **PADL**:
 
