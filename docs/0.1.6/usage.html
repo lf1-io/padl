@@ -367,7 +367,7 @@ Read them all to know everything you need to get started!</p>
             versions.forEach((ver) => {
                 elem = document.createElement('dd');
                 if (ver == currentVersion) {
-                    elem.innerHTML = '<strong style="color: #27ae60;">' + ver + '</strong>';
+                    elem.innerHTML = '<strong><a style="color: #27ae60;">' + ver + '</a></strong>';
                 }
                 else {
                     elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';

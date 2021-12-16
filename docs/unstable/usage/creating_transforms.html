@@ -415,7 +415,7 @@ For that, use the <code class="xref py py-func docutils literal notranslate"><sp
             versions.forEach((ver) => {
                 elem = document.createElement('dd');
                 if (ver == currentVersion) {
-                    elem.innerHTML = '<strong style="color: #27ae60;">' + ver + '</strong>';
+                    elem.innerHTML = '<strong><a style="color: #27ae60;">' + ver + '</a></strong>';
                 }
                 else {
                     elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
