@@ -310,7 +310,7 @@
       <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
-        <dl id='padl-versions' style="display: flex; flex-direction: vertical;">
+        <dl id='padl-versions' style="display: flex; flex-direction: column;">
         <dt>Versions</dt>
           <dd><a href=""></a></dd>
       </dl>
@@ -336,7 +336,7 @@
             versions.forEach((ver) => {
                 elem = document.createElement('dd');
                 if (ver == currentVersion) {
-                    elem.innerHTML = '<strong><a href="/padl/'+ver+'">'+ver+'</a></strong>';
+                    elem.innerHTML = '<strong style="color: #27ae60;"><a href="/padl/'+ver+'">'+ver+'</a></strong>';
                 }
                 else {
                     elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
