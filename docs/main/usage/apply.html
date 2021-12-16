@@ -369,10 +369,10 @@ objects, a generator that supports <code class="xref py py-func docutils literal
             versions.forEach((ver) => {
                 elem = document.createElement('dd');
                 if (ver == currentVersion) {
-                    elem.innerHTML = '<strong><a href="/'+ver+'">'+ver+'</a></strong>';
+                    elem.innerHTML = '<strong><a href="/padl/'+ver+'">'+ver+'</a></strong>';
                 }
                 else {
-                    elem.innerHTML = '<a href="'+ver+'"/>'+ver+'</a>';
+                    elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
                 }
                 verList.append(elem);
             })
