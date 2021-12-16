@@ -361,10 +361,10 @@
         httpRequest.open('GET', '../versions.json');
         httpRequest.send();
         var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[1];
+        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
-          .innerHTML = currentVersion;
+          .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
         
         function addVersions() {
