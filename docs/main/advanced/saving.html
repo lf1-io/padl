@@ -1,77 +1,36 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
   <title>Saving &mdash; PADL 0.1.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="API Documentation" href="../modules.html" />
     <link rel="prev" title="Advanced Topics" href="../advanced.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html">
-          
-
-          
-            
             <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
-          
           </a>
-
-          
-            
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -79,18 +38,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
@@ -197,73 +145,32 @@
 </li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../advanced.html">Advanced Topics</a> &raquo;</li>
-        
       <li>Saving</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
-  <div class="tex2jax_ignore mathjax_ignore section" id="saving">
-<h1>Saving<a class="headerlink" href="#saving" title="Permalink to this headline">¶</a></h1>
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="saving">
+<h1>Saving<a class="headerlink" href="#saving" title="Permalink to this headline"></a></h1>
 <p>All PADL Transforms can be saved via <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code>. For that, simply do:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
 
@@ -278,8 +185,8 @@
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;some/path.padl&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="section" id="how-it-works">
-<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">¶</a></h2>
+<section id="how-it-works">
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this headline"></a></h2>
 <p>When saving a Transform, PADL tracks down the statements that were used to create it
 and writes them into a python file.</p>
 <p>This works both with python modules and in interactive IPython sessions.</p>
@@ -352,9 +259,9 @@ This means you can save a Transform from a messy ipython notebook and will get a
 </div>
 <p>As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see <a class="reference internal" href="#what-does-not-save"><span class="std std-ref">Saving Transforms from other modules</span></a>).</p>
 <p><code class="file docutils literal notranslate"><span class="pre">versions.txt</span></code> contains all the packages that were used in creating the Transforms and their versions. This is very similar to a <code class="file docutils literal notranslate"><span class="pre">requirements.txt</span></code> - however, it contains the package names rather that their names in the <code class="docutils literal notranslate"><span class="pre">PyPI</span></code>.</p>
-</div>
-<div class="section" id="saving-by-value">
-<span id="id1"></span><h2>Saving by value<a class="headerlink" href="#saving-by-value" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="saving-by-value">
+<span id="id1"></span><h2>Saving by value<a class="headerlink" href="#saving-by-value" title="Permalink to this headline"></a></h2>
 <p>Sometimes you might want to save the <em>value</em> of a variable instead of the python statements
 that created it.</p>
 <p>Consider the following example:</p>
@@ -424,8 +331,8 @@ the data processing</em> in <code class="code docutils literal notranslate"><spa
 </div>
 <p>Currently, this only works with values that can be serialized as JSON. Future versions of PADL will add support for other things.
 You can also add your own serializer:</p>
-<div class="section" id="custom-serializers">
-<h3>Custom serializers<a class="headerlink" href="#custom-serializers" title="Permalink to this headline">¶</a></h3>
+<section id="custom-serializers">
+<h3>Custom serializers<a class="headerlink" href="#custom-serializers" title="Permalink to this headline"></a></h3>
 <p>You can save by value using your own serializer by defining two functions, one for saving, one for loading, and passing them to
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code>.</p>
 <p>The <em>save</em> function expects two arguments, one for the value (<em>val</em>), one for the path (<em>path</em>):</p>
@@ -479,15 +386,15 @@ file suffix in this case.</p>
 <span class="p">[</span><span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="saving-pytorch-modules">
-<h2>Saving pytorch modules<a class="headerlink" href="#saving-pytorch-modules" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="saving-pytorch-modules">
+<h2>Saving pytorch modules<a class="headerlink" href="#saving-pytorch-modules" title="Permalink to this headline"></a></h2>
 <p>When saving, PADL automatically serializes pytorch model parameters and stores them in the <code class="docutils literal notranslate"><span class="pre">.padl</span></code>
 folder as <code class="docutils literal notranslate"><span class="pre">.pt</span></code> files. When loading, the parameters of the models are set to the previously saved values.</p>
-</div>
-<div class="section" id="defining-transform-within-nested-scopes">
-<h2>Defining Transform within nested scopes<a class="headerlink" href="#defining-transform-within-nested-scopes" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="defining-transform-within-nested-scopes">
+<h2>Defining Transform within nested scopes<a class="headerlink" href="#defining-transform-within-nested-scopes" title="Permalink to this headline"></a></h2>
 <p>It is possible to create Transforms within nested scopes (for instance in a function body):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">save</span>
 
@@ -514,9 +421,9 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
     <span class="k">return</span> <span class="n">build_my_transform</span><span class="p">(</span><span class="n">arg</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="saving-transforms-from-other-modules">
-<span id="what-does-not-save"></span><h2>Saving Transforms from other modules<a class="headerlink" href="#saving-transforms-from-other-modules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="saving-transforms-from-other-modules">
+<span id="what-does-not-save"></span><h2>Saving Transforms from other modules<a class="headerlink" href="#saving-transforms-from-other-modules" title="Permalink to this headline"></a></h2>
 <p>When importing Transforms from a different module, saving will by default only dump the import statement.</p>
 <p>Thus, when doing</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
@@ -555,12 +462,12 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
 </pre></div>
 </div>
 <p>To reverse the effect of <code class="xref py py-func docutils literal notranslate"><span class="pre">fulldump()</span></code>, use <code class="xref py py-func docutils literal notranslate"><span class="pre">importdump()</span></code>.</p>
-</div>
-<div class="section" id="id2">
-<h2>What does not save<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="id2">
+<h2>What does not save<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
 <p>Saving PADL transforms has a few caveats you should be aware of:</p>
-<div class="section" id="variables-defined-as-the-targets-of-with-blocks">
-<h3>Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks<a class="headerlink" href="#variables-defined-as-the-targets-of-with-blocks" title="Permalink to this headline">¶</a></h3>
+<section id="variables-defined-as-the-targets-of-with-blocks">
+<h3>Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks<a class="headerlink" href="#variables-defined-as-the-targets-of-with-blocks" title="Permalink to this headline"></a></h3>
 <p>PADL currently cannot symbolically save anything that depends on the target of a with block. If you want to
 use a with block in your code, either wrap it in a function or save by value (<a class="reference internal" href="#saving-by-value"><span class="std std-ref">Saving by value</span></a>). Instead of:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
@@ -595,9 +502,9 @@ use a with block in your code, either wrap it in a function or save by value (<a
 <span class="p">[</span><span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="variables-defined-as-targets-of-loops">
-<h3>Variables defined as targets of loops<a class="headerlink" href="#variables-defined-as-targets-of-loops" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="variables-defined-as-targets-of-loops">
+<h3>Variables defined as targets of loops<a class="headerlink" href="#variables-defined-as-targets-of-loops" title="Permalink to this headline"></a></h3>
 <p>PADL currently cannot symbolically save anything that depends on the target of a loop:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">...</span><span class="p">]</span>
 
@@ -610,9 +517,9 @@ use a with block in your code, either wrap it in a function or save by value (<a
 </pre></div>
 </div>
 <p>Again, save by value instead (<a class="reference internal" href="#saving-by-value"><span class="std std-ref">Saving by value</span></a>) or wrap in a function.</p>
-</div>
-<div class="section" id="mutated-objects">
-<h3>Mutated objects<a class="headerlink" href="#mutated-objects" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="mutated-objects">
+<h3>Mutated objects<a class="headerlink" href="#mutated-objects" title="Permalink to this headline"></a></h3>
 <p>PADL currently does not pick up if you mutate an object after creating it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
 
@@ -624,43 +531,33 @@ use a with block in your code, either wrap it in a function or save by value (<a
 </pre></div>
 </div>
 <p>will not work (<code class="code docutils literal notranslate"><span class="pre">a.change()</span></code> will not be included in the saved <code class="file docutils literal notranslate"><span class="pre">transform.py</span></code>).</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="../modules.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../advanced.html" class="btn btn-neutral float-left" title="Advanced Topics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../modules.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2021, LF1 GmbH.
-
-    </p>
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
   
 
@@ -697,10 +594,10 @@ use a with block in your code, either wrap it in a function or save by value (<a
             versions.forEach((ver) => {
                 elem = document.createElement('dd');
                 if (ver == currentVersion) {
-                    elem.innerHTML = '<strong><a href="/'+ver+'">'+ver+'</a></strong>';
+                    elem.innerHTML = '<strong><a href="/padl/'+ver+'">'+ver+'</a></strong>';
                 }
                 else {
-                    elem.innerHTML = '<a href="'+ver+'"/>'+ver+'</a>';
+                    elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
                 }
                 verList.append(elem);
             })
@@ -710,18 +607,11 @@ use a with block in your code, either wrap it in a function or save by value (<a
     </script>
   </div>
 
- 
-
-  <script type="text/javascript">
+ <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
