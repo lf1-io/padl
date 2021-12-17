@@ -122,8 +122,8 @@ class _Debug:
             elif x == 'r':
                 self.args = _pd_trace[pos].args
                 self.trans = _pd_trace[pos].transform
-                # This 0 is because the last element can carry a problem: when adding the last
-                # element to _pd_trace *Transform.pd_mode^ has been already set up to None again.
+                # This 0 is because the last element carries a problem: when adding the last
+                # element to _pd_trace *Transform.pd_mode* has been already set up to None again.
                 self.repeat(_pd_trace[0].pd_mode)
             elif x == 'h' or x == 'help':
                 msg = self.default_msg
@@ -146,9 +146,9 @@ class _Debug:
         _pd_trace.clear()
         if mode == 'train':
             breakpoint()
-            list(self.trans.train_apply(self.args, batch_size=len(self.args), num_workers=0))
+            list(self.trans.train_apply([self.args], batch_size=len(self.args), num_workers=0))
         if mode == 'eval':
-            list(self.trans.eval_apply(self.args, batch_size=len(self.args), num_workers=0))
+            list(self.trans.eval_apply([self.args], batch_size=len(self.args), num_workers=0))
         self.trans.infer_apply(self.args)
 
     @staticmethod

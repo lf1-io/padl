@@ -744,7 +744,7 @@ class Transform:
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
-            loader = args
+            loader = list(zip(args, range(len(args))))
 
         pbar = None
         if verbose:
@@ -753,7 +753,6 @@ class Transform:
             else:
                 loader = tqdm(loader, total=len(loader))
 
-        breakpoint()
         for batch, ix in loader:
             batch = _move_to_device(batch, self.pd_device)
             output = batch
@@ -990,8 +989,8 @@ class AtomicTransform(Transform):
             if isinstance(v, Transform):
                 yield v
 
-    def _pd_get_non_target_stage_idx(self):
-        return 1
+    def _pd_get_non_target_stage_idx(self, stage_used):
+        return 1 if stage_used else 0
 
     @staticmethod
     def _pd_get_target_stage_idx():
@@ -1559,7 +1558,7 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
-    def _pd_get_non_target_stage_idx(self):
+    def _pd_get_non_target_stage_idx(self, stage_used):
         return 1
 
     @staticmethod
@@ -1578,7 +1577,7 @@ class Pipeline(Transform):
             the index of the transform that fails on `t` is the same.
         """
         assert stage in ('forward', 'postprocess')
-        return _pd_trace[-1][-1]
+        return _pd_trace[-1].error_position
 
 
 class Compose(Pipeline):
@@ -1650,7 +1649,7 @@ class Compose(Pipeline):
                 final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(builtin_identity)
-
+        breakpoint()
         return output_components, final_splits, has_batchify
 
     @staticmethod
@@ -1780,12 +1779,12 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_non_target_stage_idx(self):
+    def _pd_get_non_target_stage_idx(self, stage_used):
         return len(self)
 
     @staticmethod
     def _pd_get_target_stage_idx():
-        return _pd_trace[-1][-1]
+        return _pd_trace[-1].error_position
 
     def _pd_get_error_idx(self, stage: str):
         """Track the index where a `Compose` fails from the one that fails on `self.pd_forward`.
@@ -1804,12 +1803,16 @@ class Compose(Pipeline):
             len(t.pd_preprocess) + 0.
         """
         assert stage in ('forward', 'postprocess')
+        preprocess_used = False if (isinstance(self.pd_preprocess, Identity)) and \
+                                   not isinstance(self[0], Identity) else True
+        preprocess_idx = self.pd_preprocess.pd_get_non_target_stage_idx(preprocess_used)
         if stage == 'forward':
-            return self.pd_preprocess._pd_get_non_target_stage_idx() + \
-                   self.pd_forward._pd_get_target_stage_idx()
-        return self.pd_preprocess._pd_get_non_target_stage_idx() + \
-               self.pd_forward._pd_get_non_target_stage_idx() + \
+            return preprocess_idx + self.pd_forward._pd_get_target_stage_idx()
+        forward_used = False if (isinstance(self.pd_forward, Identity)) and \
+                                not isinstance(self[preprocess_idx], Identity) else True
+        return preprocess_idx + self.pd_forward._pd_get_non_target_stage_idx(forward_used) + \
                self.pd_postprocess._pd_get_target_stage_idx()
+
 
 class Rollout(Pipeline):
     """Apply a list of transform to same input and get tuple output
@@ -2305,7 +2308,7 @@ class _ItemGetter:
         try:
             return self.transform(self.samples[item]), item
         except Exception as err:
-            self.entire_transform._pd_trace_error(_pd_trace[-1][-1], self.samples[item])
+            self.entire_transform._pd_trace_error(_pd_trace[-1].error_position, self.samples[item])
             raise err
 
     def __len__(self):
