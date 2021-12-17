@@ -26,7 +26,7 @@ setuptools.setup(
     version=versions['__version__'],
     author="LF1",
     author_email="contact@lf1.io",
-    description="Pytorch abstractions for deep learning",
+    description="Pipeline abstractions for deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lf1-io/padl",
