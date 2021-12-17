@@ -124,7 +124,7 @@ class _Debug:
                 self.trans = _pd_trace[pos].transform
                 # This 0 is because the last element carries a problem: when adding the last
                 # element to _pd_trace *Transform.pd_mode* has been already set up to None again.
-                self.repeat(_pd_trace[0].pd_mode)
+                self.repeat(_pd_trace[0].pd_mode, pos)
             elif x == 'h' or x == 'help':
                 msg = self.default_msg
             elif x == 't':
@@ -141,15 +141,13 @@ class _Debug:
             if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:
                 print(f'\n{msg}\n')
 
-    def repeat(self, mode: str) -> None:
+    def repeat(self, mode: str, pos: int) -> None:
         assert mode in ('train', 'eval', 'infer')
+        if pos == len(_pd_trace) - 1:
+            _pd_trace.clear()
+            self._repeat_entire(mode)
         _pd_trace.clear()
-        if mode == 'train':
-            breakpoint()
-            list(self.trans.train_apply([self.args], batch_size=len(self.args), num_workers=0))
-        if mode == 'eval':
-            list(self.trans.eval_apply([self.args], batch_size=len(self.args), num_workers=0))
-        self.trans.infer_apply(self.args)
+        self._repeat_on_stage(mode)
 
     @staticmethod
     def _down_step(pos, pd_trace):
@@ -164,6 +162,16 @@ class _Debug:
             pos += 1
             return pos, pd_trace[pos].transform_str
         return pos, 'Reached top level.'
+
+    def _repeat_entire(self, mode):
+        if mode == 'train':
+            list(self.trans.train_apply(self.args, batch_size=len(self.args), num_workers=0))
+        if mode == 'eval':
+            list(self.trans.eval_apply(self.args, batch_size=len(self.args), num_workers=0))
+        self.trans.infer_apply(self.args)
+
+    def _repeat_on_stage(self, mode):
+        self.trans.pd_call_transform(self.args, mode)
 
 
 pd_debug = _Debug()

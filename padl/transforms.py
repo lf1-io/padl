@@ -1649,7 +1649,6 @@ class Compose(Pipeline):
                 final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(builtin_identity)
-        breakpoint()
         return output_components, final_splits, has_batchify
 
     @staticmethod
@@ -1805,7 +1804,7 @@ class Compose(Pipeline):
         assert stage in ('forward', 'postprocess')
         preprocess_used = False if (isinstance(self.pd_preprocess, Identity)) and \
                                    not isinstance(self[0], Identity) else True
-        preprocess_idx = self.pd_preprocess.pd_get_non_target_stage_idx(preprocess_used)
+        preprocess_idx = self.pd_preprocess._pd_get_non_target_stage_idx(preprocess_used)
         if stage == 'forward':
             return preprocess_idx + self.pd_forward._pd_get_target_stage_idx()
         forward_used = False if (isinstance(self.pd_forward, Identity)) and \
@@ -2308,7 +2307,7 @@ class _ItemGetter:
         try:
             return self.transform(self.samples[item]), item
         except Exception as err:
-            self.entire_transform._pd_trace_error(_pd_trace[-1].error_position, self.samples[item])
+            self.entire_transform._pd_trace_error(_pd_trace[-1].error_position, [self.samples[item]])
             raise err
 
     def __len__(self):
