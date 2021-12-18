@@ -4,6 +4,9 @@
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg) 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/padl)](https://pypi.org/project/padl/) 
 [![GitHub Issues](https://img.shields.io/github/issues/lf1-io/padl.svg)](https://github.com/lf1-io/padl/issues)
+[![Tests](https://github.com/lf1-io/padl/actions/workflows/actions.yml/badge.svg)](https://github.com/lf1-io/padl/actions/workflows/actions.yml)
+[![codecov](https://codecov.io/gh/lf1-io/padl/branch/main/graph/badge.svg?token=NLS02IWDFQ)](https://codecov.io/gh/lf1-io/padl)
+[![LF1 on Twitter](https://badgen.net/badge/icon/twitter?icon=twitter&label)](https://twitter.com/lf1_io)
 
 **Pipeline abstractions for deep learning**.
 
@@ -29,7 +32,10 @@ Full documentation here: https://lf1-io.github.io/padl/
 pip install padl
 ```
 
-PADL currently supports python **3.8** and **3.9**.
+PADL currently supports python **3.7**, **3.8** and **3.9**.
+
+Python version >= **3.8** is preferred because creating and loading transforms (**not** execution) 
+can be slower in **3.7**.
 
 **Your first PADL program**
 

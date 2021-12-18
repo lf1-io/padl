@@ -1,0 +1,4 @@
+from tests.material.transforms_in_module import obj
+
+
+_pd_main = obj

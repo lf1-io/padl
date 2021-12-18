@@ -11,21 +11,20 @@ import importlib
 import numpy as np
 import torch
 
-from padl.dumptools import var2mod, inspector
+from padl.dumptools import ast_utils, var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _notset
+    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform
 )
 
 import re
 
 
-def _set_local_varname(frame, event, _args):
+def _set_local_varname(frame, event, _args, scope):
     if event == 'return':
         for k, v in frame.f_locals.items():
             try:
-                if v._pd_varname is _notset or v._pd_varname is None:
-                    v._pd_varname = k
+                v._pd_varname[scope] = k
             except AttributeError:
                 continue
 
@@ -56,7 +55,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     if call_info is None:
         call_info = inspector.CallInfo(drop_n=drop_n, ignore_scope=ignore_scope)
     if call_info.function != '<module>' and not ignore_scope:
-        inspector.trace_this(_set_local_varname, caller.frame)
+        inspector.trace_this(_set_local_varname, caller.frame, scope=call_info.scope)
 
     wrapper = FunctionTransform(fun, call_info, call=call)
 
@@ -111,6 +110,7 @@ def _wrap_class(cls, ignore_scope=False):
 
     cls.__init__ = __init__
     cls.__module__ = module
+    cls._pd_class_call_info = inspector.CallInfo()
     return cls
 
 
@@ -174,17 +174,16 @@ def _wrap_lambda(fun, ignore_scope=False):
         # keep lambda nodes which are contained in a call of `lf.trans`
         if not isinstance(node.parent, ast.Call):
             continue
-        containing_call = ast.get_source_segment(source, node.parent.func)
+        containing_call = ast_utils.get_source_segment(source, node.parent.func)
         containing_function = eval(containing_call, caller_frame.f_globals)
         if containing_function is not transform:
             continue
         candidate_segments.append(
-            ast.get_source_segment(source, node),
+            ast_utils.get_source_segment(source, node),
         )
         candidate_calls.append((
-            ast.get_source_segment(source, node.parent),
-            (node.parent.lineno, node.parent.end_lineno,
-             node.parent.col_offset, node.parent.end_col_offset)
+            ast_utils.get_source_segment(source, node.parent),
+            ast_utils.get_position(source, node.parent)
         ))
 
     # compare candidate's bytecodes to that of `fun`
@@ -210,10 +209,10 @@ def _wrap_lambda(fun, ignore_scope=False):
         raise RuntimeError('Lambda not found.')
 
     locs = (
-        locs[0] - 1 + offset[0],
-        locs[1] - 1 + offset[0],
-        locs[2] - offset[1],
-        locs[3] - offset[1]
+        locs.lineno - 1 + offset[0],
+        locs.end_lineno - 1 + offset[0],
+        locs.col_offset - offset[1],
+        locs.end_col_offset - offset[1]
     )
 
     call = cut(full_source, *locs)
@@ -231,11 +230,11 @@ class PatchedModule:
 
     Example:
 
-        >>> import padl
-        >>> import numpy as np
-        >>> pd_np = padl.transform(np)
-        >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
-        True
+    >>> import padl
+    >>> import numpy as np
+    >>> pd_np = padl.transform(np)
+    >>> isinstance(pd_np.random.rand, padl.transforms.Transform)
+    True
     """
 
     def __init__(self, module, parents=None):

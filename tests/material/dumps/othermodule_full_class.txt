@@ -1,0 +1,13 @@
+from padl import transform
+
+
+@transform
+class Class:
+    def __init__(self, x):
+        self.x = x
+
+    def __call__(self, y):
+        return self.x + y
+
+
+_pd_main = Class(1)

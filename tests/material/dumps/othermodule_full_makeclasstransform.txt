@@ -1,0 +1,33 @@
+from padl import transform
+
+
+a = 1
+b = 2
+c = 3
+CONST = 123
+
+
+def k(y):
+    return y
+
+
+@transform
+def y(y):
+    return CONST + k(y)
+
+
+@transform
+class MyClassTransform:
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def calculate(self, input_):
+        return self.a * self.b + input_
+
+    def __call__(self, input_):
+        return self.calculate(input_) + y(input_) + self.c(input_)
+
+
+_pd_main = MyClassTransform(a, b, c)

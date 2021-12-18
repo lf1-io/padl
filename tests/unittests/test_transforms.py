@@ -499,14 +499,12 @@ class TestCompose:
         # loader kwargs
         for out in list(self.transform_5.train_apply(
             [1, 1, 1, 1],
-            verbose=True,
             batch_size=2)
         ):
             assert out == torch.tensor(8)
         assert list(self.transform_5.train_apply(
             [1, 2, 1, 2],
             flatten=True,
-            verbose=True,
             batch_size=2)
         ) == [torch.tensor(8), torch.tensor(12), torch.tensor(8), torch.tensor(12)]
 

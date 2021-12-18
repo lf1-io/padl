@@ -1,4 +1,4 @@
 torch
-tqdm
 numpy
 astunparse
+asttokens; python_version < '3.8'

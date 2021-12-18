@@ -1,0 +1,49 @@
+{% if READTHEDOCS or display_lower_left %}
+{# Add rst-badge after rst-versions for small badge style. #}
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Read the Docs</span>
+      <span id='current-version'></span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl id='padl-versions' style="display: flex; flex-direction: column;">
+        <dt>{{ _('Versions') }}</dt>
+          <dd><a href="{{ url }}">{{ slug }}</a></dd>
+      </dl>
+      <hr/>
+    </div>
+    <script>
+        console.log('script')
+        httpRequest = new XMLHttpRequest();
+        httpRequest.onreadystatechange = addVersions;
+        httpRequest.open('GET', '../versions.json');
+        httpRequest.send();
+        var pathname = window.location.pathname.split('/');
+        var currentVersion = pathname[2];
+
+        document.getElementById('current-version')
+          .innerHTML = 'ver: ' + currentVersion;
+        var verList = document.getElementById('padl-versions');
+        
+        function addVersions() {
+           console.log(httpRequest)
+          if (httpRequest.readyState === 4) {
+            var versions = JSON.parse(httpRequest.responseText);
+            versions.forEach((ver) => {
+                elem = document.createElement('dd');
+                if (ver == currentVersion) {
+                    elem.innerHTML = '<strong><a style="color: #27ae60;">' + ver + '</a></strong>';
+                }
+                else {
+                    elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
+                }
+                verList.append(elem);
+            })
+          } else {
+          }
+        }
+    </script>
+  </div>
+{% endif %}
+ 
