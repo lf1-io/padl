@@ -10,17 +10,36 @@ class Node:
         self.id = self.generate_id()
         self.transform = transform
         self.name = name
-        if self.name is None and self.transform is not None:
-            self.name = self.transform.pd_name
-        if self.name is not None:
-            self.name += ' '+str(self.id)
         self.in_node = []
         self.out_node = []
         self.out_index = None
         self._input_args = None
         self._output_args = {}
-        self._pd_output_slice = None
         self.pd_output = padl.transforms._OutputSlicer(self)#self.transform._pd_output_slice
+        self.set_output_slice()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, new_name):
+        self._name = new_name
+        if self._name is None and self.transform is not None:
+            self._name = self.transform.pd_name
+        if self._name is not None:
+            self._name += ' ' + str(self.id)
+
+    def set_output_slice(self):
+        if isinstance(self.transform, padl.transforms.Transform):
+            self._pd_output_slice = self.transform._pd_output_slice
+            self.transform._pd_output_slice = None
+        self._pd_output_slice = None
+
+    def get_output_slice(self):
+        out = self._pd_output_slice
+        self._pd_output_slice = None
+        return out
 
     @classmethod
     def generate_id(cls):
@@ -46,7 +65,7 @@ class Node:
         if node not in self.out_node:
             self.out_node.append(node)
             node.connect_innode(self)
-            self.
+            self._output_args[node] = self.get_output_slice()
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -73,6 +92,12 @@ class Node:
             return args[0]
         return tuple(args)
 
+    def _update_args(self, args, out_node):
+        slice = self._output_args[out_node]
+        if slice is not None:
+            return args[slice]
+        return args
+
     def pd_call_node(self, args, in_node=None):
         if self._input_args is None:
             self._create_input_args_dict()
@@ -81,6 +106,7 @@ class Node:
             output = None
             args_to_pass = self.pd_call_transform(args)
             for out_node in self.out_node:
+                updated_arg = self._update_args(args_to_pass, out_node)
                 output = out_node.pd_call_node(args_to_pass, self)
             return output if output is not None else args
 
@@ -112,6 +138,7 @@ class Graph(Node):
         if node not in self.out_node:
             self.output_node.out_node.append(node)
             node.connect_innode(self.output_node)
+            self.output_node._output_args[node] = self.get_output_slice()
 
     def compose(self, transforms):
         self._store_transform_nodes(transforms)
