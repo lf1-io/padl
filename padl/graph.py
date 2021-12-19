@@ -1,6 +1,7 @@
 import networkx as nx
 import padl
 from IPython.display import Image
+from copy import copy, deepcopy
 
 
 class Node:
@@ -34,6 +35,7 @@ class Node:
         if isinstance(self.transform, padl.transforms.Transform):
             self._pd_output_slice = self.transform._pd_output_slice
             self.transform._pd_output_slice = None
+            return
         self._pd_output_slice = None
 
     def get_output_slice(self):
@@ -54,6 +56,19 @@ class Node:
 
     def __hash__(self):
         return hash(repr(self))
+
+    def __deepcopy__(self, memo):
+        """Deepcopy of Nodes"""
+        id_self = id(self)
+        _copy = memo.get(id_self)
+        if _copy is None:
+            _copy = type(self)(
+                self.transform,
+                self.name)
+            _copy.in_node = copy(self.in_node)
+            _copy.out_node = copy(self.out_node)
+            memo[id_self] = _copy
+        return _copy
 
     def connect_innode(self, node):
         if node not in self.in_node:
@@ -107,7 +122,7 @@ class Node:
             args_to_pass = self.pd_call_transform(args)
             for out_node in self.out_node:
                 updated_arg = self._update_args(args_to_pass, out_node)
-                output = out_node.pd_call_node(args_to_pass, self)
+                output = out_node.pd_call_node(updated_arg, self)
             return output if output is not None else args
 
 
@@ -124,7 +139,8 @@ class Graph(Node):
     def _store_transform_nodes(self, transforms):
         for t_ in transforms:
             if isinstance(t_, Node):
-                self.nodes.append(t_)
+                self.nodes.append(deepcopy(t_))
+                #self.nodes.append(t_)
             else:
                 self.nodes.append(Node(t_))
 
@@ -135,8 +151,10 @@ class Graph(Node):
             self.input_node._create_input_args_dict()
 
     def connect_outnode(self, node):
-        if node not in self.out_node:
-            self.output_node.out_node.append(node)
+        # import pdb; pdb.set_trace()
+        if node not in self.output_node.out_node:
+            # self.output_node.out_node.append(node)
+            self.output_node.connect_outnode(node)
             node.connect_innode(self.output_node)
             self.output_node._output_args[node] = self.get_output_slice()
 
@@ -147,9 +165,10 @@ class Graph(Node):
         node.connect_innode(self.input_node)
 
         for next_node in self.nodes[1:]:
+            # import pdb;pdb.set_trace();
             next_node.connect_innode(node)
             node = next_node
-
+        # import pdb; pdb.set_trace();
         next_node.connect_outnode(self.output_node)
 
     def rollout(self, transforms):
@@ -159,6 +178,13 @@ class Graph(Node):
             node.connect_innode(self.input_node)
             node.connect_outnode(self.output_node)
 
+    def parallel(self, transforms):
+        self._store_transform_nodes(transforms)
+
+        for indx, node in enumerate(self.nodes):
+            node.connect_innode(self.input_node.pd_output[indx])
+            node.connect_outnode(self.output_node)
+
     def pd_call_node(self, args, in_node=None):
         output = self.input_node.pd_call_node(args, in_node)
 
@@ -166,6 +192,39 @@ class Graph(Node):
 
     def __hash__(self):
         return hash(repr(self))
+
+    def __deepcopy__(self, memo):
+        """Deepcopy of Nodes"""
+        def _copy_nodes(_copy_graph, inp_node, copy_inp_node):
+            for node in inp_node.out_node:
+                copy_node = deepcopy(node)
+                _copy_graph.nodes.append(copy_node)
+
+                copy_node.in_node = []
+                copy_node.out_node = []
+
+                copy_inp_node.connect_outnode(copy_node)
+                _copy_nodes(_copy_graph, node, copy_node)
+
+            if len(inp_node.out_node) == 0:
+                _copy_graph.output_node = copy_inp_node
+
+        id_self = id(self)
+        _copy = memo.get(id_self)
+        if _copy is None:
+            _copy = type(self)(
+                self.transform)
+            _copy.in_node = copy(self.in_node)
+            _copy.out_node = copy(self.out_node)
+
+            _copy.input_node = deepcopy(self.input_node)
+            _copy.input_node.in_node = []
+            _copy.input_node.out_node = []
+            _copy_nodes(_copy, self.input_node, _copy.input_node)
+
+            memo[id_self] = _copy
+        return _copy
+
     """
     def parallel(self, transforms):
         self._store_transform_nodes(transforms)

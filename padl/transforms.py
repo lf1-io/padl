@@ -125,13 +125,12 @@ class _GeneratorWithLength:
 
 
 class _OutputSlicer:
-    def __init__(self, transform):
-        self.transform = transform
+    def __init__(self, main_object):
+        self.main_object = main_object
 
     def __getitem__(self, item):
-        self.transform._pd_output_slice = item
-        return self.transform
-
+        self.main_object._pd_output_slice = item
+        return self.main_object
 
 
 Mode = Literal['infer', 'eval', 'train']
@@ -300,6 +299,7 @@ class Transform:
         """
         named_copy = copy(self)
         named_copy._pd_name = name
+        named_copy.pd_output = _OutputSlicer(named_copy)
         named_copy._pd_varname = {}
         return named_copy
 
