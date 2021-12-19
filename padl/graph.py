@@ -86,6 +86,7 @@ class Graph(Node):
         for next_node in self.nodes[1:]:
             node.out_node.append(next_node)
             next_node.in_node.append(node)
+            node = next_node
         next_node.out_node.append(self.output)
         self.output.in_node.append(next_node)
 
@@ -93,9 +94,11 @@ class Graph(Node):
         self._store_transform_nodes(transforms)
 
         for node in self.nodes:
+            self.input.out_node.append(node)
             node.in_node.append(self.input)
+
             node.out_node.append(self.output)
-            self.output.in_node.append(self.node)
+            self.output.in_node.append(node)
 
     def pd_call_node(self, args, in_node=None):
         output = self.input.pd_call_node(args, in_node)
@@ -112,9 +115,9 @@ class Graph(Node):
     """
 
     def _add_to_networkx_graph_id(self, innode, networkx_graph):
-        for node in innode.in_node:
+        for node in innode.out_node:
             networkx_graph.add_node(node.id, node=node)
-            networkx_graph.add_edge(node.id, innode.id)
+            networkx_graph.add_edge(innode.id, node.id)
             self._add_to_networkx_graph_id(node, networkx_graph)
 
     def _add_to_networkx_graph_name(self, innode, networkx_graph):
@@ -136,7 +139,7 @@ class Graph(Node):
         self._add_to_networkx_graph_id(node, self.networkx_graph)
         return self.networkx_graph
 
-    def draw(self, with_name=False, with_labels=True, **kwargs):
+    def draw(self, with_name=True, with_labels=True, layout='spring_layout', **kwargs):
         self.convert_to_networkx(with_name=with_name)
         inbuilt_kwargs = dict(
             with_labels=with_labels,
@@ -148,4 +151,7 @@ class Graph(Node):
             node_color='lightblue',
         )
         inbuilt_kwargs.update(kwargs)
-        return nx.draw(self.networkx_graph, **inbuilt_kwargs)
+        layout_func = getattr(nx.drawing.layout, layout)
+        pos = layout_func(self.networkx_graph)
+        #pos = nx.drawing.layout.planar_layout(self.networkx_graph)
+        return nx.draw(self.networkx_graph, pos, **inbuilt_kwargs)
