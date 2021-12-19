@@ -129,6 +129,16 @@ class _GeneratorWithLength:
         return self.length
 
 
+class _OutputSlicer:
+    def __init__(self, transform):
+        self.transform = transform
+
+    def __getitem__(self, item):
+        self.transform._pd_output_slice = item
+        return
+
+
+
 Mode = Literal['infer', 'eval', 'train']
 Stage = Literal['preprocess', 'forward', 'postprocess']
 
@@ -153,6 +163,8 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_traceback = traceback.extract_stack()
         self._pd_external_full_dump = False
+        self._pd_output_slice = None
+        self.pd_output = _OutputSlicer(self)
 
     @property
     def _pd_full_dump_relevant_module(self):
