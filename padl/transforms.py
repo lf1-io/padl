@@ -135,7 +135,7 @@ class _OutputSlicer:
 
     def __getitem__(self, item):
         self.transform._pd_output_slice = item
-        return
+        return self.transform
 
 
 
