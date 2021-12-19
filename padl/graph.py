@@ -1,5 +1,6 @@
 import networkx as nx
 import padl
+from IPython.display import Image
 
 
 class Node:
@@ -31,6 +32,16 @@ class Node:
 
     def __hash__(self):
         return hash(repr(self))
+
+    def connect_innode(self, node):
+        if node not in self.in_node:
+            self.in_node.append(node)
+            node.connect_outnode(self)
+
+    def connect_outnode(self, node):
+        if node not in self.out_node:
+            self.out_node.append(node)
+            node.connect_innode(self)
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -72,33 +83,43 @@ class Graph(Node):
         self.output = Node(padl.Identity(), name='Output')
         self._input_args = None
         self.networkx_graph = None
+        self.nodes = []
 
     def _store_transform_nodes(self, transforms):
-        self.nodes = [Node(t_) for t_ in transforms]
+        for t_ in transforms:
+            if isinstance(t_, Node):
+                self.nodes.append(t_)
+            else:
+                self.nodes.append(Node(t_))
+
+    def connect_innode(self, node):
+        if node not in self.input.in_node:
+            self.input.in_node.append(node)
+            node.connect_outnode(self.input)
+
+    def connect_outnode(self, node):
+        if node not in self.out_node:
+            self.output.out_node.append(node)
+            node.connect_innode(self.output)
 
     def compose(self, transforms):
         self._store_transform_nodes(transforms)
 
         node = self.nodes[0]
-        node.in_node.append(self.input)
-        self.input.out_node.append(node)
+        node.connect_innode(self.input)
 
         for next_node in self.nodes[1:]:
-            node.out_node.append(next_node)
-            next_node.in_node.append(node)
+            next_node.connect_innode(node)
             node = next_node
-        next_node.out_node.append(self.output)
-        self.output.in_node.append(next_node)
+
+        next_node.connect_outnode(self.output)
 
     def rollout(self, transforms):
         self._store_transform_nodes(transforms)
 
         for node in self.nodes:
-            self.input.out_node.append(node)
-            node.in_node.append(self.input)
-
-            node.out_node.append(self.output)
-            self.output.in_node.append(node)
+            node.connect_innode(self.input)
+            node.connect_outnode(self.output)
 
     def pd_call_node(self, args, in_node=None):
         output = self.input.pd_call_node(args, in_node)
@@ -139,19 +160,25 @@ class Graph(Node):
         self._add_to_networkx_graph_id(node, self.networkx_graph)
         return self.networkx_graph
 
-    def draw(self, with_name=True, with_labels=True, layout='spring_layout', **kwargs):
+    def draw_nx(self, with_name=True, with_labels=True, layout='spring_layout', **kwargs):
         self.convert_to_networkx(with_name=with_name)
         inbuilt_kwargs = dict(
             with_labels=with_labels,
-            node_size=3500,
-            node_shape="s",
+            node_size=1400,
+            node_shape="o",
             width=1,
             alpha=0.9,
             linewidths=3,
             node_color='lightblue',
         )
         inbuilt_kwargs.update(kwargs)
-        layout_func = getattr(nx.drawing.layout, layout)
-        pos = layout_func(self.networkx_graph)
-        #pos = nx.drawing.layout.planar_layout(self.networkx_graph)
+        #layout_func = getattr(nx.drawing.layout, layout)
+        pos = nx.nx_agraph.graphviz_layout(self.networkx_graph, prog='dot')
+        #pos = layout_func(self.networkx_graph)
         return nx.draw(self.networkx_graph, pos, **inbuilt_kwargs)
+
+    def draw(self, with_name=True):
+        self.convert_to_networkx(with_name=with_name)
+        dot = nx.nx_agraph.to_agraph(self.networkx_graph)
+        dot.layout('dot')
+        return Image(dot.draw(format='png', prog='dot'))
