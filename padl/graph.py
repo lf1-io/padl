@@ -18,6 +18,9 @@ class Node:
         self.out_node = []
         self.out_index = None
         self._input_args = None
+        self._output_args = {}
+        self._pd_output_slice = None
+        self.pd_output = padl.transforms._OutputSlicer(self)#self.transform._pd_output_slice
 
     @classmethod
     def generate_id(cls):
@@ -27,7 +30,7 @@ class Node:
     def __call__(self, args):
         # self._output = self.transform(self.args)
         # if self.out_index is not None:
-        #     return self.output[self.out_index]
+        #     return self.output_node[self.out_index]
         return self.pd_call_node(args)
 
     def __hash__(self):
@@ -37,11 +40,13 @@ class Node:
         if node not in self.in_node:
             self.in_node.append(node)
             node.connect_outnode(self)
+            self._create_input_args_dict()
 
     def connect_outnode(self, node):
         if node not in self.out_node:
             self.out_node.append(node)
             node.connect_innode(self)
+            self.
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -51,7 +56,7 @@ class Node:
 
     def _register_input_args(self, args, in_node):
         """Register the input args"""
-        assert in_node in self._input_args.keys(), f"{in_node} not connected to {self}"
+        assert in_node in self._input_args.keys(), f"{in_node.name} not connected to {self.name}"
         self._input_args[in_node]['args'] = args
         self._input_args[in_node]['updated'] = True
 
@@ -59,28 +64,33 @@ class Node:
             return True
         return False
 
-    def pd_call_transform(self):
+    def pd_call_transform(self, args):
+        return self.transform.pd_call_transform(args)
+
+    def gather_args(self):
         args = [in_args['args'] for _, in_args in self._input_args.items()]
         if len(args) == 1:
-            return self.transform.pd_call_transform(args[0])
-        return self.transform.pd_call_transform(tuple(args))
+            return args[0]
+        return tuple(args)
 
     def pd_call_node(self, args, in_node=None):
         if self._input_args is None:
             self._create_input_args_dict()
         if self._register_input_args(args, in_node):
-            output = self.pd_call_transform()
+            args = self.gather_args()
+            output = None
+            args_to_pass = self.pd_call_transform(args)
             for out_node in self.out_node:
-                output = out_node.pd_call_node(output, self)
-            return output
+                output = out_node.pd_call_node(args_to_pass, self)
+            return output if output is not None else args
 
 
 class Graph(Node):
     def __init__(self, transforms=None, connection=None):
         super().__init__()
         self.transforms = transforms
-        self.input = Node(padl.Identity(), name='Input')
-        self.output = Node(padl.Identity(), name='Output')
+        self.input_node = Node(padl.Identity(), name='Input')
+        self.output_node = Node(padl.Identity(), name='Output')
         self._input_args = None
         self.networkx_graph = None
         self.nodes = []
@@ -93,36 +103,37 @@ class Graph(Node):
                 self.nodes.append(Node(t_))
 
     def connect_innode(self, node):
-        if node not in self.input.in_node:
-            self.input.in_node.append(node)
-            node.connect_outnode(self.input)
+        if node not in self.input_node.in_node:
+            self.input_node.in_node.append(node)
+            node.connect_outnode(self.input_node)
+            self.input_node._create_input_args_dict()
 
     def connect_outnode(self, node):
         if node not in self.out_node:
-            self.output.out_node.append(node)
-            node.connect_innode(self.output)
+            self.output_node.out_node.append(node)
+            node.connect_innode(self.output_node)
 
     def compose(self, transforms):
         self._store_transform_nodes(transforms)
 
         node = self.nodes[0]
-        node.connect_innode(self.input)
+        node.connect_innode(self.input_node)
 
         for next_node in self.nodes[1:]:
             next_node.connect_innode(node)
             node = next_node
 
-        next_node.connect_outnode(self.output)
+        next_node.connect_outnode(self.output_node)
 
     def rollout(self, transforms):
         self._store_transform_nodes(transforms)
 
         for node in self.nodes:
-            node.connect_innode(self.input)
-            node.connect_outnode(self.output)
+            node.connect_innode(self.input_node)
+            node.connect_outnode(self.output_node)
 
     def pd_call_node(self, args, in_node=None):
-        output = self.input.pd_call_node(args, in_node)
+        output = self.input_node.pd_call_node(args, in_node)
 
         return output
 
@@ -148,7 +159,7 @@ class Graph(Node):
             self._add_to_networkx_graph_name(node, networkx_graph)
 
     def convert_to_networkx(self, with_name=False):
-        node = self.input
+        node = self.input_node
         self.networkx_graph = nx.DiGraph()
 
         if with_name:
