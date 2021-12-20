@@ -1874,7 +1874,6 @@ class Compose(Pipeline):
         return 1 if self._pd_group else len(self)
 
     def _pd_get_target_stage_idx(self, is_entire_transform: bool):
-        breakpoint()
         return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
 
     def _pd_get_error_idx(self, stage: str):
