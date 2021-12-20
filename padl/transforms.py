@@ -1739,6 +1739,10 @@ class Compose(Pipeline):
                     final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(identity)
+        if self._pd_name is not None:
+            for i, s in enumerate(final_splits):
+                if not isinstance(s, Identity):
+                    final_splits[i] = s - self._pd_name
         return output_components, final_splits, has_batchify
 
     @staticmethod
@@ -1992,8 +1996,6 @@ class Rollout(Pipeline):
             else:
                 final_splits.append(s)
 
-        final_splits = tuple(final_splits)
-
         res = []
         for split in final_splits:
             try:
@@ -2001,6 +2003,12 @@ class Rollout(Pipeline):
             except AttributeError:
                 res.append(split)
         final_splits = res
+
+        if self._pd_name is not None:
+            for i, s in enumerate(final_splits):
+                if not isinstance(s, Identity):
+                    final_splits[i] = s - self._pd_name
+
         return output_components, final_splits, has_batchify
 
     def __call__(self, args):
@@ -2099,6 +2107,11 @@ class Parallel(Pipeline):
             except AttributeError:
                 res.append(split)
         final_splits = res
+
+        if self._pd_name is not None:
+            for i, s in enumerate(final_splits):
+                if not isinstance(s, Identity):
+                    final_splits[i] = s - self._pd_name
 
         return output_components, final_splits, has_batchify
 

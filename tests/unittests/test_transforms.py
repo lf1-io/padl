@@ -713,9 +713,9 @@ class TestModel:
         g = t / Identity()
         t_preprocess = group(group((to_tensor >> batch) + (to_tensor >> batch)) /
                              group((to_tensor >> batch) + (to_tensor >> batch)))
-        g_preprocess = group(t_preprocess / Identity())
+        g_preprocess = group((t_preprocess - 'name') / Identity())
         t_forward = group(group(lin / lin) / Identity())
-        g_forward = group(t_forward / Identity())
+        g_forward = group((t_forward - 'name') / Identity())
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(g.pd_preprocess) == str(g_preprocess)
         assert str(t.pd_forward) == str(t_forward)
@@ -726,9 +726,9 @@ class TestModel:
              + (to_tensor >> batch) / (to_tensor >> batch)
         ) - 'name'
         g = t + Identity()
-        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor))
+        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor)) - 'name'
         g_preprocess = group(t_preprocess + Identity())
-        t_forward = group(group(lin / lin) / Identity())
+        t_forward = group(group(lin / lin) / Identity()) - 'name'
         g_forward = group(t_forward / Identity())
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(g.pd_preprocess) == str(g_preprocess)
