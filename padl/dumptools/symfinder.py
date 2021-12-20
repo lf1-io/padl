@@ -552,7 +552,7 @@ class Scope:
         """The name of the scope's module. """
         if self.module is None:
             return ''
-        return self.module.__name__
+        return getattr(self.module, '__name__', '__main__')
 
     def unscoped(self, varname: str) -> str:
         """Convert a variable name in an "unscoped" version by adding strings representing
