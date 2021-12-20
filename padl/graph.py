@@ -16,7 +16,7 @@ class Node:
         self.out_index = None
         self._input_args = None
         self._output_args = {}
-        self.pd_output = padl.transforms._OutputSlicer(self)#self.transform._pd_output_slice
+        self.pd_output = padl.transforms._OutputSlicer(self)
         self.set_output_slice()
 
     @property
@@ -129,6 +129,7 @@ class Node:
             for out_node in self.out_node:
                 updated_arg = self._update_args(args_to_pass, out_node)
                 output = out_node.pd_call_node(updated_arg, self)
+            self._create_input_args_dict()
             return output if output is not None else args_to_pass
 
 
@@ -146,16 +147,19 @@ class Graph(Node):
 
     def _store_transform_nodes(self, transforms):
         self.nodes.append(self.input_node)
-        self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
         for t_ in transforms:
-            if isinstance(t_, Node):
-                self.nodes.append(deepcopy(t_))
+            if isinstance(t_, Graph):
+                graph_copy = deepcopy(t_)
+                self.nodes.extend(graph_copy.nodes)
+                self.nodes.append(graph_copy)
+            elif isinstance(t_, Node):
+                node_copy = deepcopy(t_)
+                self.nodes.append(node_copy)
             else:
                 self.nodes.append(Node(t_))
             self.transform_nodes.append(self.nodes[-1])
-            self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
         self.nodes.append(self.output_node)
-        self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
+        self.node_dict = {n_.name_id: n_ for n_ in self.nodes}
 
     def connect_innode(self, node):
         if node not in self.input_node.in_node:
@@ -204,16 +208,23 @@ class Graph(Node):
 
     def __deepcopy__(self, memo):
         """Deepcopy of Nodes"""
-        def _copy_nodes(_copy_graph, inp_node, copy_inp_node):
+        def _copy_nodes(_copy_graph, inp_node, copy_inp_node, copied_node_dict={}):
             for node in inp_node.out_node:
-                copy_node = deepcopy(node)
+                if node in copied_node_dict:
+                    copy_node = copied_node_dict[node]
+                else:
+                    copy_node = deepcopy(node)
+                    copy_node.in_node = []
+                    copy_node.out_node = []
+                    copied_node_dict[node] = copy_node
+
+                if isinstance(copy_node, Graph):
+                    _copy_graph.nodes.extend(copy_node.nodes)
                 _copy_graph.nodes.append(copy_node)
 
-                copy_node.in_node = []
-                copy_node.out_node = []
-
                 copy_inp_node.connect_outnode(copy_node)
-                _copy_nodes(_copy_graph, node, copy_node)
+                copy_inp_node._output_args[copy_node] = inp_node._output_args.get(node, None)
+                _copy_nodes(_copy_graph, node, copy_node, copied_node_dict)
 
             if len(inp_node.out_node) == 0:
                 _copy_graph.output_node = copy_inp_node
@@ -226,12 +237,11 @@ class Graph(Node):
             _copy.in_node = copy(self.in_node)
             _copy.out_node = copy(self.out_node)
 
-            _copy.input_node = deepcopy(self.input_node)
             _copy.nodes.append(_copy.input_node)
+            copied_node_dict = {self.input_node: _copy.input_node,
+                                self.output_node: _copy.output_node}
+            _copy_nodes(_copy, self.input_node, _copy.input_node, copied_node_dict)
 
-            _copy.input_node.in_node = []
-            _copy.input_node.out_node = []
-            _copy_nodes(_copy, self.input_node, _copy.input_node)
             _copy.node_dict = {n_.name_id: n_ for n_ in _copy.nodes}
             memo[id_self] = _copy
         return _copy
@@ -294,7 +304,7 @@ class Graph(Node):
     def list_all_paths(self):
         return nx.all_simple_paths(self.networkx_graph, self.input_node.name_id, self.output_node.name_id)
 
-    def count_batchify(self):
+    def count_batchify_unbatchify(self):
         for path in self.list_all_paths():
             batch_counter = 0
             unbatch_counter = 0
@@ -314,3 +324,23 @@ class Graph(Node):
         if isinstance(item, str):
             return self.node_dict[item]
         raise f'Error: invalid index {item}, accept int, slice or string'
+
+    def add_edge(self, *connection_tuple):
+        """ Currently this is really badly implemented that
+        first creates connection in self and then copies self
+        and removes connection
+
+        Once we have good naming system, so name are kept when deepcopying,
+        this can be made simpler by copying graph and using the same name
+        to create edge in copy graph"""
+        for in_node_name, out_node_name in connection_tuple:
+            in_node = self[in_node_name]
+            out_node = self[out_node_name]
+            in_node.connect_outnode(out_node)
+        copy_graph = deepcopy(self)
+        for in_node_name, out_node_name in connection_tuple:
+            in_node = self[in_node_name]
+            out_node = self[out_node_name]
+            in_node.out_node.remove(out_node)
+            out_node.in_node.remove(in_node)
+        return copy_graph
