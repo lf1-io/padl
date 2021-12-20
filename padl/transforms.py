@@ -527,10 +527,10 @@ class Transform:
         """ Find where the Transform was defined (file, lineno, file) given the traceback. """
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
-            if 'padl/transforms' in a_tb[0] or 'padl/util_transforms' in a_tb[0]:
+            if 'padl' in a_tb[0]:
                 continue
             break
-        return f'{a_tb.filename} in {a_tb.name}\n----> {a_tb.lineno} {a_tb.line}'
+        return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
     def _pd_trace_error(self, position: int, arg):
         """ Add some error description to `pd_trace`. """
@@ -609,7 +609,7 @@ class Transform:
         return top_message + bottom_message
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        """A lone string representation of the transform."""
+        """A line string representation of the transform."""
         raise NotImplementedError
 
     def _pd_parensrepr(self, formatting=True) -> str:
@@ -2378,6 +2378,15 @@ class _ItemGetter:
 
 @dataclass
 class _SingleTrace:
+    """Catch information of an Exception produced in a Transform call.
+
+    :param transform_str: string representation of a *Transform* that has produced an Exception.
+    :param code_position: line where the Transform that has produced the Exception was defined.
+    :param args: arguments input to the Transform.
+    :param transform: Transform that produced the Exception.
+    :param pd_mode: mode (*train*, *eval* or *infer*) of *transform*
+    :param error_position: item inside *transform* that has produced the Exception.
+    """
     transform_str: str
     code_position: str
     args: Any
