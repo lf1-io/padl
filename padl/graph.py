@@ -141,14 +141,21 @@ class Graph(Node):
         self._input_args = None
         self.networkx_graph = None
         self.nodes = []
+        self.transform_nodes = []
+        self.node_dict = dict()
 
     def _store_transform_nodes(self, transforms):
+        self.nodes.append(self.input_node)
+        self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
         for t_ in transforms:
             if isinstance(t_, Node):
                 self.nodes.append(deepcopy(t_))
-                #self.nodes.append(t_)
             else:
                 self.nodes.append(Node(t_))
+            self.transform_nodes.append(self.nodes[-1])
+            self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
+        self.nodes.append(self.output_node)
+        self.node_dict[self.nodes[-1].name_id] = self.nodes[-1]
 
     def connect_innode(self, node):
         if node not in self.input_node.in_node:
@@ -157,9 +164,7 @@ class Graph(Node):
             self.input_node._create_input_args_dict()
 
     def connect_outnode(self, node):
-        # import pdb; pdb.set_trace()
         if node not in self.output_node.out_node:
-            # self.output_node.out_node.append(node)
             self.output_node.connect_outnode(node)
             node.connect_innode(self.output_node)
             self.output_node._output_args[node] = self.get_output_slice()
@@ -167,27 +172,25 @@ class Graph(Node):
     def compose(self, transforms):
         self._store_transform_nodes(transforms)
 
-        node = self.nodes[0]
+        node = self.transform_nodes[0]
         node.connect_innode(self.input_node)
 
-        for next_node in self.nodes[1:]:
-            # import pdb;pdb.set_trace();
+        for next_node in self.transform_nodes[1:]:
             next_node.connect_innode(node)
             node = next_node
-        # import pdb; pdb.set_trace();
         next_node.connect_outnode(self.output_node)
 
     def rollout(self, transforms):
         self._store_transform_nodes(transforms)
 
-        for node in self.nodes:
+        for node in self.transform_nodes:
             node.connect_innode(self.input_node)
             node.connect_outnode(self.output_node)
 
     def parallel(self, transforms):
         self._store_transform_nodes(transforms)
 
-        for indx, node in enumerate(self.nodes):
+        for indx, node in enumerate(self.transform_nodes):
             node.connect_innode(self.input_node.pd_output[indx])
             node.connect_outnode(self.output_node)
 
@@ -224,10 +227,12 @@ class Graph(Node):
             _copy.out_node = copy(self.out_node)
 
             _copy.input_node = deepcopy(self.input_node)
+            _copy.nodes.append(_copy.input_node)
+
             _copy.input_node.in_node = []
             _copy.input_node.out_node = []
             _copy_nodes(_copy, self.input_node, _copy.input_node)
-
+            _copy.node_dict = {n_.name_id: n_ for n_ in _copy.nodes}
             memo[id_self] = _copy
         return _copy
 
@@ -286,20 +291,26 @@ class Graph(Node):
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
 
+    def list_all_paths(self):
+        return nx.all_simple_paths(self.networkx_graph, self.input_node.name_id, self.output_node.name_id)
+
     def count_batchify(self):
-        def _count_batchify(node, counter=0):
-            if isinstance(node, Graph):
-                out_nodes = node.input_node.out_node
-            else:
-                out_nodes = node.out_node
+        for path in self.list_all_paths():
+            batch_counter = 0
+            unbatch_counter = 0
+            for node_name in path:
+                node = self[node_name]
+                if isinstance(node.transform, padl.Batchify):
+                    batch_counter += 1
+                    assert batch_counter < 2, f"Error: Path contains more than 1 batchify : {path}"
+                elif isinstance(node.transform, padl.Unbatchify):
+                    unbatch_counter += 1
+                    assert unbatch_counter < 2, f"Error: Path contains more than 1 unbatchify : {path}"
+        return
 
-            for out_node in out_nodes:
-                if isinstance(out_node.transform, padl.Batchify):
-                    counter += 1
-                assert counter < 2, f'Error: more than 1 Batchify in single path till {out_node.name}'
-                counter = _count_batchify(out_node, counter)
-
-            return counter
-
-        counter = _count_batchify(self.input_node)
-        return counter
+    def __getitem__(self, item):
+        if isinstance(item, (slice, int)):
+            return self.nodes[item]
+        if isinstance(item, str):
+            return self.node_dict[item]
+        raise f'Error: invalid index {item}, accept int, slice or string'
