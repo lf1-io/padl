@@ -23,13 +23,19 @@ class Node:
     def name(self):
         return self._name
 
+    @property
+    def name_id(self):
+        return self._name_id
+
     @name.setter
     def name(self, new_name):
         self._name = new_name
         if self._name is None and self.transform is not None:
             self._name = self.transform.pd_name
         if self._name is not None:
-            self._name += ' ' + str(self.id)
+            self._name_id =self._name + ' ' + str(self.id)
+        else:
+            self._name_id = str(self.id)
 
     def set_output_slice(self):
         if isinstance(self.transform, padl.transforms.Transform):
@@ -123,7 +129,7 @@ class Node:
             for out_node in self.out_node:
                 updated_arg = self._update_args(args_to_pass, out_node)
                 output = out_node.pd_call_node(updated_arg, self)
-            return output if output is not None else args
+            return output if output is not None else args_to_pass
 
 
 class Graph(Node):
@@ -240,8 +246,8 @@ class Graph(Node):
 
     def _add_to_networkx_graph_name(self, innode, networkx_graph):
         for node in innode.out_node:
-            networkx_graph.add_node(node.name, node=node)
-            networkx_graph.add_edge(innode.name, node.name)
+            networkx_graph.add_node(node.name_id, node=node)
+            networkx_graph.add_edge(innode.name_id, node.name_id)
             self._add_to_networkx_graph_name(node, networkx_graph)
 
     def convert_to_networkx(self, with_name=False):
@@ -249,7 +255,7 @@ class Graph(Node):
         self.networkx_graph = nx.DiGraph()
 
         if with_name:
-            self.networkx_graph.add_node(node.name, node=node)
+            self.networkx_graph.add_node(node.name_id, node=node)
             self._add_to_networkx_graph_name(node, self.networkx_graph)
             return self.networkx_graph
 
@@ -279,3 +285,21 @@ class Graph(Node):
         dot = nx.nx_agraph.to_agraph(self.networkx_graph)
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
+
+    def count_batchify(self):
+        def _count_batchify(node, counter=0):
+            if isinstance(node, Graph):
+                out_nodes = node.input_node.out_node
+            else:
+                out_nodes = node.out_node
+
+            for out_node in out_nodes:
+                if isinstance(out_node.transform, padl.Batchify):
+                    counter += 1
+                assert counter < 2, f'Error: more than 1 Batchify in single path till {out_node.name}'
+                counter = _count_batchify(out_node, counter)
+
+            return counter
+
+        counter = _count_batchify(self.input_node)
+        return counter
