@@ -160,7 +160,7 @@ class Transform:
         a different module. Else, only dump an import statement. """
         module = self._pd_full_dump_relevant_module
         # always fully dump Transforms from the module the dump was triggered in
-        if inspector.caller_module() == module:
+        if inspector.caller_module() == module or getattr(module, '__name__', '__main__') == '__main__':
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
@@ -1097,7 +1097,7 @@ class ClassTransform(AtomicTransform):
         instance_scope = self._pd_call_info.scope
 
         # instance creation and class definition are in separate modules
-        if instance_scope.module.__name__ != self.__class__.__module__:
+        if instance_scope.module_name != self.__class__.__module__:
             return super()._pd_codegraph_add_startnodes(graph, name)
 
         # the instance has a varname - just import the instance
