@@ -1897,7 +1897,7 @@ class Compose(Pipeline):
         """
         assert stage in ('forward', 'postprocess')
         preprocess_used = False if (isinstance(self.pd_preprocess, Identity)) and \
-                                   not isinstance(self[0], Identity) else True
+                                   not isinstance(self.__getitem__(0), Identity) else True
         preprocess_idx = self.pd_preprocess._pd_get_non_target_stage_idx(preprocess_used)
         if stage == 'forward':
             return preprocess_idx + self.pd_forward._pd_get_target_stage_idx()
