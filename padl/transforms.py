@@ -1000,8 +1000,7 @@ class AtomicTransform(Transform):
     def _pd_get_non_target_stage_idx(self, stage_used):
         return 1 if stage_used else 0
 
-    @staticmethod
-    def _pd_get_target_stage_idx():
+    def _pd_get_target_stage_idx(self, is_entire_transform=None):
         return 0
 
     def _pd_get_error_idx(self, stage:str):
@@ -1648,8 +1647,7 @@ class Pipeline(Transform):
     def _pd_get_non_target_stage_idx(self, stage_used):
         return 1
 
-    @staticmethod
-    def _pd_get_target_stage_idx():
+    def _pd_get_target_stage_idx(self, is_entire_transform=None):
         return 0
 
     def _pd_get_error_idx(self, stage: str):
@@ -1873,11 +1871,11 @@ class Compose(Pipeline):
         return args
 
     def _pd_get_non_target_stage_idx(self, stage_used):
-        return len(self)
+        return 1 if self._pd_group else len(self)
 
-    @staticmethod
-    def _pd_get_target_stage_idx():
-        return _pd_trace[-1].error_position
+    def _pd_get_target_stage_idx(self, is_entire_transform: bool):
+        breakpoint()
+        return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
 
     def _pd_get_error_idx(self, stage: str):
         """Track the index where a `Compose` fails from the one that fails on `self.pd_forward`.
@@ -1896,15 +1894,22 @@ class Compose(Pipeline):
             len(t.pd_preprocess) + 0.
         """
         assert stage in ('forward', 'postprocess')
-        preprocess_used = False if (isinstance(self.pd_preprocess, Identity)) and \
+        preprocess = self.pd_preprocess
+        forward = self.pd_forward
+        postprocess = self.pd_postprocess
+        preprocess_used = False if (isinstance(preprocess, Identity)) and \
                                    not isinstance(self.__getitem__(0), Identity) else True
-        preprocess_idx = self.pd_preprocess._pd_get_non_target_stage_idx(preprocess_used)
+
+        preprocess_idx = preprocess._pd_get_non_target_stage_idx(preprocess_used)
         if stage == 'forward':
-            return preprocess_idx + self.pd_forward._pd_get_target_stage_idx()
-        forward_used = False if (isinstance(self.pd_forward, Identity)) and \
-                                not isinstance(self[preprocess_idx], Identity) else True
-        return preprocess_idx + self.pd_forward._pd_get_non_target_stage_idx(forward_used) + \
-               self.pd_postprocess._pd_get_target_stage_idx()
+            is_entire_transform = str(self) == str(forward)
+            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
+
+        forward_used = False if (isinstance(forward, Identity)) and not \
+            isinstance(self.__getitem__(preprocess_idx), Identity) else True
+        is_entire_transform = str(self) == str(postprocess)
+        return preprocess_idx + forward._pd_get_non_target_stage_idx(forward_used) + \
+               postprocess._pd_get_target_stage_idx(is_entire_transform)
 
 
 class Rollout(Pipeline):
@@ -2385,7 +2390,12 @@ class _ItemGetter:
         try:
             return self.transform(self.samples[item]), item
         except Exception as err:
-            self.entire_transform._pd_trace_error(_pd_trace[-1].error_position, [self.samples[item]])
+            is_entire_transform = str(self.entire_transform) == \
+                                  str(self.entire_transform.pd_preprocess)
+            self.entire_transform._pd_trace_error(
+                self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
+                [self.samples[item]]
+            )
             raise err
 
     def __len__(self):
