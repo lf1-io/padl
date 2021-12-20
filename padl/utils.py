@@ -68,7 +68,14 @@ same = _Same()
 
 
 class _Debug:
-    """Debugger for padl Transforms.
+    """Customized debugger for padl Transforms. When an exception on the execution of a Transform
+    is produced and a _Debug object is called, an interactive debugger at different levels in the
+    Transform is gotten.
+
+    At the top, the user interacts with the entire transform and its absolute input. One level
+    down, it goes directly to the stage that got the Exception (either to `pd_preprocess`,
+    `pd_forward` and `pd_postprocess`) and each level deeper moves recursively inside the element
+    that failed until the `AtomicTransform` that got the Exception.
     """
     def __init__(self):
         self.trans = None

@@ -1733,7 +1733,10 @@ class Compose(Pipeline):
             if len(split) > 1:  # combine sub_splits
                 final_splits.append(Compose(split))
             elif len(split) == 1:  # if it's just one, no need to combine
-                final_splits.append(split[0])
+                if isinstance(split[0], Compose):
+                    final_splits.append(group(split[0]))
+                else:
+                    final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(identity)
         return output_components, final_splits, has_batchify
