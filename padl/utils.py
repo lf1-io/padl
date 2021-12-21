@@ -40,9 +40,7 @@ def _maketrans(attr, getitem=False):
 
         def _pd_longrepr(self, formatting=True, marker=None):
             out = self._pd_shortrepr()
-            if marker:
-                return out + marker[1]
-            return out
+            return out + marker[1] if marker else out
 
         def _pd_shortrepr(self, formatting=True):
             return f'{attr}({self._formatted_args()})'
