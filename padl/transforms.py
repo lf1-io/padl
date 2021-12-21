@@ -40,15 +40,8 @@ from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, m
     make_green, create_arrow, format_argument, visible_len
 
 
-class _Notset:
-    # pylint: disable=too-few-public-methods
-    def __bool__(self):
-        return False
-
-
-_notset = _Notset()
-
 _pd_trace = []
+
 
 def _unpack_batch(args):
     """Convert an input in batch-form into a tuple of datapoints.
@@ -144,8 +137,8 @@ Stage = Literal['preprocess', 'forward', 'postprocess']
 class Transform:
     """Transform base class.
 
-    :param call_info: A `CallInfo` object containing information about the how the transform wasv
-    created (needed for saving).
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
     :param pd_name: name of the transform.
     """
     pd_mode = None
@@ -596,6 +589,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle):
+        #pyling: disable=invalid-name
         p.text(self._pd_fullrepr() if not cycle else '...')
 
     def _pd_fullrepr(self, marker=None):
@@ -766,10 +760,10 @@ class Transform:
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
-            loader = list(zip(args, range(len(args))))
+            loader = list(enumerate(args))
 
         def _gen():
-            for batch, ix in loader:
+            for ix, batch in loader:
                 batch = _move_to_device(batch, self.pd_device)
                 output = batch
                 if use_forward:
@@ -914,6 +908,7 @@ class Transform:
         """
         self.pd_forward_device_check()
         in_args = inputs
+        global _pd_trace
         _pd_trace.clear()
         inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
         inputs = _move_to_device(inputs, self.pd_device)
@@ -927,11 +922,7 @@ class Transform:
         except Exception as err:
             self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
             raise err
-        output_format = self._pd_get_output_format()
-        if output_format is not None:
-            return output_format(*inputs)
-        else:
-            return inputs
+        return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
         """Call transform within the eval context.
@@ -1080,8 +1071,7 @@ class FunctionTransform(AtomicTransform):
                 return str_[0] + marker[1] + '\n'.join(str_[1:])
             return '\n'.join(str_)
         except TypeError:
-            return self._pd_call + marker[1] + '\n' if marker \
-                else self._pd_call
+            return self._pd_call + marker[1] + '\n' if marker else self._pd_call
 
     def _pd_shortrepr(self, formatting=True) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
@@ -1767,7 +1757,7 @@ class Compose(Pipeline):
         rows = [
             [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
             else [t._pd_shortrepr()]
-            for i, t in enumerate(self.transforms)
+            for t in self.transforms
         ]
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
@@ -2013,6 +2003,8 @@ class Rollout(Pipeline):
             for i, s in enumerate(final_splits):
                 if not isinstance(s, Identity):
                     final_splits[i] = s - self._pd_name
+
+        final_splits = tuple(final_splits)
 
         return output_components, final_splits, has_batchify
 
@@ -2384,11 +2376,11 @@ class _ItemGetter:
     def __getitem__(self, item):
         if self.exception:
             try:
-                return self.transform(self.samples[item]), item
+                return item, self.transform(self.samples[item])
             except self.exception:
                 return self.default, item
         try:
-            return self.transform(self.samples[item]), item
+            return item, self.transform(self.samples[item])
         except Exception as err:
             is_entire_transform = str(self.entire_transform) == \
                                   str(self.entire_transform.pd_preprocess)
