@@ -1877,19 +1877,20 @@ class Compose(Pipeline):
         return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
 
     def _pd_get_error_idx(self, stage: str):
-        """Track the index where a `Compose` fails from the one that fails on `self.pd_forward`.
+        """Track the index where a :class:`Compose` fails from the one that fails
+        on :meth:`self.pd_forward`.
 
         Examples:
             t = t_1 >> t_2 >> batch >> t_3 >> t_4
             then,
             t.pd_forward = t_3 >> t_4.
-            If we know that `t.pd_forward` is failing on `t_4`, which is its element 1, then
+            If we know that :meth:`t.pd_forward` is failing on `t_4`, which is its element 1, then
             `t` is failing on len(t.pd_preprocess) + 1.
 
             t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
             then,
             t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
-            No matter what branch is failing on `t.pd_forward`, the error on `t` is on
+            No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
             len(t.pd_preprocess) + 0.
         """
         assert stage in ('forward', 'postprocess')
