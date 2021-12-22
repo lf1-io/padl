@@ -2461,10 +2461,17 @@ class _BatchGetter:
     :param default: The default value to fall back to in case of exception.
     """
 
-    def __init__(self, samples):
+    def __init__(self, samples, exception=None, default=None):
         self.samples = samples
+        self.exception = exception
+        self.default = default
 
     def __getitem__(self, item):
+        if self.exception:
+            try:
+                return [item], self.samples[item]
+            except self.exception:
+                return [item], self.default
         return [item], self.samples[item]
 
     def __len__(self):
