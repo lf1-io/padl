@@ -15,9 +15,36 @@ class Node:
         self.out_node = []
         self.out_index = None
         self._input_args = None
-        self._output_args = {}
+        self._output_slice = {}
         self.pd_output = padl.transforms._OutputSlicer(self)
         self.set_output_slice()
+
+    def replace_outnode(self, old_node, new_node):
+        if old_node in self.out_node:
+            self.out_node = [node if node != old_node else new_node for node in self.out_node]
+            self._output_slice = {(new_node if key == old_node else key): val for key, val in self._output_slice.items()}
+
+            new_node.connect_innode(self)
+            old_node.remove_innode(self)
+
+    def replace_innode(self, old_node, new_node):
+        if old_node in self.in_node:
+            self.in_node = [node if node != old_node else new_node for node in self.in_node]
+            if self._input_args is not None:
+                self._input_args = {(new_node if key == old_node else key): val for key, val in self._input_args.items()}
+
+            new_node.connect_outnode(self)
+            old_node.remove_outnode(self)
+
+    def remove_outnode(self, node):
+        if node in self.out_node:
+            self.out_node = [n_ for n_ in self.out_node if n_ != node]
+            node.remove_innode(self)
+
+    def remove_innode(self, node):
+        if node in self.in_node:
+            self.in_node = [n_ for n_ in self.in_node if n_ != node]
+            node.remove_outnode(self)
 
     @property
     def name(self):
@@ -86,7 +113,7 @@ class Node:
         if node not in self.out_node:
             self.out_node.append(node)
             node.connect_innode(self)
-            self._output_args[node] = self.get_output_slice()
+            self._output_slice[node] = self.get_output_slice()
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -114,7 +141,7 @@ class Node:
         return tuple(args)
 
     def _update_args(self, args, out_node):
-        slice = self._output_args[out_node]
+        slice = self._output_slice[out_node]
         if slice is not None:
             return args[slice]
         return args
@@ -171,7 +198,7 @@ class Graph(Node):
         if node not in self.output_node.out_node:
             self.output_node.connect_outnode(node)
             node.connect_innode(self.output_node)
-            self.output_node._output_args[node] = self.get_output_slice()
+            self.output_node._output_slice[node] = self.get_output_slice()
 
     def compose(self, transforms):
         self._store_transform_nodes(transforms)
@@ -223,7 +250,7 @@ class Graph(Node):
                 _copy_graph.nodes.append(copy_node)
 
                 copy_inp_node.connect_outnode(copy_node)
-                copy_inp_node._output_args[copy_node] = inp_node._output_args.get(node, None)
+                copy_inp_node._output_slice[copy_node] = inp_node._output_slice.get(node, None)
                 _copy_nodes(_copy_graph, node, copy_node, copied_node_dict)
 
             if len(inp_node.out_node) == 0:
@@ -301,8 +328,12 @@ class Graph(Node):
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
 
-    def list_all_paths(self):
-        return nx.all_simple_paths(self.networkx_graph, self.input_node.name_id, self.output_node.name_id)
+    def list_all_paths(self, start_node_name=None, end_node_name=None):
+        if start_node_name is None:
+            start_node_name = self.input_node.name_id
+        if end_node_name is None:
+            end_node_name = self.output_node.name_id
+        return nx.all_simple_paths(self.networkx_graph, start_node_name, end_node_name)
 
     def count_batchify_unbatchify(self):
         for path in self.list_all_paths():
