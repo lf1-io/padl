@@ -1,7 +1,14 @@
-import networkx as nx
-import padl
+"""Node and Graph classes
+
+Graph and Node are to be used inside Transform and not independently.
+"""
+
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from IPython.display import Image
 from copy import copy, deepcopy
+
+import networkx as nx
+import padl
 
 
 class Node:
@@ -22,7 +29,8 @@ class Node:
     def replace_outnode(self, old_node, new_node):
         if old_node in self.out_node:
             self.out_node = [node if node != old_node else new_node for node in self.out_node]
-            self._output_slice = {(new_node if key == old_node else key): val for key, val in self._output_slice.items()}
+            self._output_slice = {(new_node if key == old_node else key): val for key, val in
+                                  self._output_slice.items()}
 
             new_node.connect_innode(self)
             old_node.remove_innode(self)
@@ -31,7 +39,8 @@ class Node:
         if old_node in self.in_node:
             self.in_node = [node if node != old_node else new_node for node in self.in_node]
             if self._input_args is not None:
-                self._input_args = {(new_node if key == old_node else key): val for key, val in self._input_args.items()}
+                self._input_args = {(new_node if key == old_node else key): val for key, val in
+                                    self._input_args.items()}
 
             new_node.connect_outnode(self)
             old_node.remove_outnode(self)
@@ -60,7 +69,7 @@ class Node:
         if self._name is None and self.transform is not None:
             self._name = self.transform.pd_name
         if self._name is not None:
-            self._name_id =self._name + ' ' + str(self.id)
+            self._name_id = self._name + ' ' + str(self.id)
         else:
             self._name_id = str(self.id)
 
@@ -171,6 +180,9 @@ class Graph(Node):
         self.nodes = []
         self.transform_nodes = []
         self.node_dict = dict()
+        self.pd_preprocess = None
+        self.pd_forward = None
+        self.pd_postprocess = None
 
     def _store_transform_nodes(self, transforms):
         self.nodes.append(self.input_node)
@@ -235,6 +247,7 @@ class Graph(Node):
 
     def __deepcopy__(self, memo):
         """Deepcopy of Nodes"""
+
         def _copy_nodes(_copy_graph, inp_node, copy_inp_node, copied_node_dict={}):
             for node in inp_node.out_node:
                 if node in copied_node_dict:
@@ -317,9 +330,7 @@ class Graph(Node):
             node_color='lightblue',
         )
         inbuilt_kwargs.update(kwargs)
-        #layout_func = getattr(nx.drawing.layout, layout)
         pos = nx.nx_agraph.graphviz_layout(self.networkx_graph, prog='dot')
-        #pos = layout_func(self.networkx_graph)
         return nx.draw(self.networkx_graph, pos, **inbuilt_kwargs)
 
     def draw(self, with_name=True):
@@ -362,8 +373,8 @@ class Graph(Node):
         and removes connection
 
         Once we have good naming system, so name are kept when deepcopying,
-        this can be made simpler by copying graph and using the same name
-        to create edge in copy graph"""
+        this can be made simpler by copying self and using the same name
+        to create edge in copy self"""
         for in_node_name, out_node_name in connection_tuple:
             in_node = self[in_node_name]
             out_node = self[out_node_name]
@@ -375,3 +386,207 @@ class Graph(Node):
             in_node.out_node.remove(out_node)
             out_node.in_node.remove(in_node)
         return copy_graph
+
+    def clean_nodes(self):
+        """Clean all dangling nodes
+
+        Dangling nodes are those nodes that are not connected to *Input* and *Output*
+        """
+        nodes = []
+        transform_nodes = []
+
+        def _append_to_nodes(n_):
+            if n_ not in nodes:
+                nodes.append(n_)
+
+        def _append_to_transform_nodes(n_):
+            if n_ not in transform_nodes:
+                transform_nodes.append(n_)
+
+        def _get_nodes(inp_node):
+            for out_node in inp_node.out_node:
+                if (out_node.name != 'Input') or (out_node.name != 'Output'):
+                    if isinstance(out_node, Graph):
+                        for n_ in out_node.nodes:
+                            _append_to_nodes(n_)
+                    _append_to_transform_nodes(out_node)
+                    _append_to_nodes(out_node)
+                _get_nodes(out_node)
+
+        _append_to_nodes(self.input_node)
+        _get_nodes(self.input_node)
+        _append_to_nodes(self.output_node)
+
+        self.nodes = nodes
+        self.transform_nodes = transform_nodes
+
+    def store_splits(self):
+        self.count_batchify_unbatchify()
+        self.pd_preprocess = self._store_preprocess()
+        self.pd_forward = self._store_forward()
+        self.pd_postprocess = self._store_postprocess()
+
+    def _store_preprocess(self):
+        """Store Subgraph of Preprocess"""
+
+        _copy_graph = deepcopy(self)
+        _copy_graph.convert_to_networkx(True)
+
+        output_node = Node(padl.Identity(), name='Output')
+
+        for path in list(_copy_graph.list_all_paths()):
+            if not _check_batchify_exits_in_path(_copy_graph, path):
+                last_node_batch, next_node = find_last_node_with_batchify_in_path(_copy_graph, path)
+                if last_node_batch is not None:
+                    last_node_batch.replace_outnode(next_node, output_node)
+                else:
+                    out_node = _copy_graph[path[1]]
+                    identity_node = Node(padl.Identity(), 'identity')
+                    _copy_graph.input_node.replace_outnode(out_node, identity_node)
+                    identity_node.connect_outnode(output_node)
+                continue
+
+            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
+
+            for out_node in batchify_node.out_node:
+                identity_node = Node(padl.Identity(), 'identity')
+                identity_node.connect_outnode(output_node)
+                batchify_node.replace_outnode(out_node, identity_node)
+
+        _copy_graph.output_node = output_node
+        self.clean_nodes()
+        _copy_graph.convert_to_networkx()
+
+        return _copy_graph
+
+    def _store_forward(self):
+        """Store Subgraph of Forward"""
+
+        _copy_graph = deepcopy(self)
+        _copy_graph.convert_to_networkx(True)
+
+        input_node = Node(padl.Identity(), name='Input')
+        output_node = Node(padl.Identity(), name='Output')
+
+        for path in list(_copy_graph.list_all_paths()):
+            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
+            if batchify_node is None:
+                last_node_batch, next_node = find_last_node_with_batchify_in_path(_copy_graph, path)
+                if last_node_batch is not None:
+                    next_node.connect_innode(input_node)
+                    next_node.remove_outnode(last_node_batch)
+                    out_node = _copy_graph[path[-2]]
+                    out_node.replace_outnode(_copy_graph.output_node, output_node)
+                else:
+                    in_node = _copy_graph[path[1]]
+                    in_node.replace_innode(_copy_graph.input_node, input_node)
+                    out_node = _copy_graph[path[-2]]
+                    out_node.replace_outnode(_copy_graph.output_node, output_node)
+                continue
+
+            for out_node in batchify_node.out_node:
+                identity_node = Node(padl.Identity(), 'identity')
+                identity_node.connect_innode(input_node)
+                identity_node.connect_outnode(out_node)
+                batchify_node.remove_outnode(out_node)
+                if unbatchify_node is None:
+                    out_node = identity_node
+                else:
+                    out_node = _copy_graph[path[-2]]
+                out_node.replace_outnode(_copy_graph.output_node, output_node)
+
+            if unbatchify_node is None: continue
+
+            for in_node in unbatchify_node.in_node:
+                identity_node = Node(padl.Identity(), 'identity')
+                identity_node.connect_outnode(output_node)
+                in_node.replace_outnode(unbatchify_node, identity_node)
+
+        _copy_graph.output_node = output_node
+        _copy_graph.input_node = input_node
+
+        self.clean_nodes()
+        _copy_graph.convert_to_networkx()
+        return _copy_graph
+
+    def _store_postprocess(self):
+        """Store Subgraph of Forward"""
+
+        _copy_graph = deepcopy(self)
+        _copy_graph.convert_to_networkx(True)
+
+        input_node = Node(padl.Identity(), name='Input')
+        output_node = Node(padl.Identity(), name='Output')
+
+        for path in list(_copy_graph.list_all_paths()):
+            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
+
+            if unbatchify_node is None:
+                identity_node = Node(padl.Identity(), 'identity')
+                identity_node.connect_innode(input_node)
+                identity_node.connect_outnode(output_node)
+                continue
+
+            for in_node in unbatchify_node.in_node:
+                unbatchify_node.remove_innode(in_node)
+                unbatchify_node.connect_innode(input_node)
+
+                out_node = _copy_graph[path[-2]]
+                out_node.replace_outnode(_copy_graph.output_node, output_node)
+
+        _copy_graph.output_node = output_node
+        _copy_graph.input_node = input_node
+
+        self.clean_nodes()
+        _copy_graph.convert_to_networkx()
+        return _copy_graph
+
+
+def _check_batchify_exits_in_path(graph: Graph, path: List):
+    """Check if batchify exits in a path"""
+    for n_ in path:
+        n_ = graph[n_]
+        if isinstance(n_.transform, padl.Batchify):
+            return True
+    return False
+
+
+def _check_unbatchify_exits_in_path(graph: Graph, path: List):
+    """Check if unbatchify exits in a path"""
+    for n_ in path:
+        n_ = graph[n_]
+        if isinstance(n_.transform, padl.Unbatchify):
+            return True
+    return False
+
+
+def find_last_node_with_batchify_in_path(graph: Graph, path: List):
+    """Returns last node with batchify connection and the next node to that node
+
+    For a path [a, b, c, d, e], there might be another path in one of the nodes that
+    connects to a batchify. For example, 'c' might have another path that goes through a
+    batchify.
+    This function returns that node 'c' and the out node of 'c' which is 'd'
+    """
+    path_rev = path.copy()
+    path_rev.reverse()
+
+    for idx, node_name in enumerate(path_rev):
+        node = graph[node_name]
+        for p in graph.list_all_paths(start_node_name=node.name_id):
+            if _check_batchify_exits_in_path(graph, p):
+                return node, graph[path_rev[idx - 1]]
+    return None, None
+
+
+def get_batchify_unbatchify_in_path(graph: Graph, path: List):
+    """Returns batchify and unbatchify in a given `path` in given `self`"""
+    batchify = None
+    unbatchify = None
+    for node in path:
+        node = graph[node]
+        if isinstance(node.transform, padl.Batchify):
+            batchify = node
+        if isinstance(node.transform, padl.Unbatchify):
+            unbatchify = node
+    return batchify, unbatchify
