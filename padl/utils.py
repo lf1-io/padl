@@ -67,7 +67,7 @@ same = _Same()
 
 class _Debug:
     """Customized debugger for :class:`padl.Transform`s. When an exception on the execution of
-    a :class`Transform` is produced and a :class:`_Debug` object is called, an interactive debugger
+    a :class:`Transform` is produced and a :class:`_Debug` object is called, an interactive debugger
     at different levels in the :class:`Transform` is gotten.
 
     At the top, the user interacts with the entire transform and its absolute input. One level
