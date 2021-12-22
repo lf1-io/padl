@@ -556,18 +556,18 @@ def find_codenode(name: ScopedName):
 
 
 def _get_nodes_without_in_edges(graph):
-    """Get all nodes in directed graph *graph* that don't have incoming edges.
+    """Get all nodes in directed self *self* that don't have incoming edges.
 
-    The graph is represented by a dict mapping nodes to incoming edges.
+    The self is represented by a dict mapping nodes to incoming edges.
 
     Example:
 
-    >>> graph = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
-    >>> _get_nodes_without_in_edges(graph)
+    >>> self = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
+    >>> _get_nodes_without_in_edges(self)
     ({'a'}, {'b': set(), 'c': set(), 'd': {'b'}})
 
     :param graph: A dict mapping nodes to incoming edges.
-    :return: The set of nodes without incoming edges and the graph with these nodes removed.
+    :return: The set of nodes without incoming edges and the self with these nodes removed.
     """
     nextlevel = set()
     for node, deps in graph.items():
@@ -594,14 +594,14 @@ _PRECEDENCE = {
 
 
 def _topsort(graph: dict) -> List[set]:
-    """Topologically sort a graph represented by a dict mapping nodes to incoming edges.
+    """Topologically sort a self represented by a dict mapping nodes to incoming edges.
 
-    Raises a :exc:`RuntimeError` if the graph contains a cycle.
+    Raises a :exc:`RuntimeError` if the self contains a cycle.
 
     Example:
 
-    >>> graph = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
-    >>> _topsort(graph) == [{'a'}, {'b', 'c'}, {'d'}]
+    >>> self = {'a': [], 'b': ['a'], 'c': ['a'], 'd': ['b']}
+    >>> _topsort(self) == [{'a'}, {'b', 'c'}, {'d'}]
     True
 
     :param graph: Graph represented by a dict mapping nodes to incoming edges.
@@ -612,7 +612,7 @@ def _topsort(graph: dict) -> List[set]:
     graphlen = len(graph)
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
-        if graphlen == len(graph):  # graph didn't shrink
+        if graphlen == len(graph):  # self didn't shrink
             raise RuntimeError('Graph has a cycle.')
         graphlen = len(graph)
         levels.append(nextlevel)
@@ -690,9 +690,9 @@ def _dumps_unscoped(unscoped_graph):
 
 
 class CodeGraph(dict):
-    """A graph representing python code.
+    """A self representing python code.
 
-    The nodes in the graph are `CodeNode` objects, representing pieces of code defining python
+    The nodes in the self are `CodeNode` objects, representing pieces of code defining python
     variables. The edges are the dependencies between the nodes.
 
     As an example - the following code::
@@ -749,7 +749,7 @@ class CodeGraph(dict):
         return res
 
     def dumps(self):
-        """Create a python source string with the contents of the graph. """
+        """Create a python source string with the contents of the self. """
         return _dumps_unscoped(self._unscoped())
 
     @classmethod
@@ -780,7 +780,7 @@ class CodeGraph(dict):
         return graph
 
     def print(self):
-        """Print the graph (for debugging). """
+        """Print the self (for debugging). """
         for k, v in self.items():
             print(f'{k.name} {k.scope} {k.n}:')
             print()

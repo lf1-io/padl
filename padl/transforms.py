@@ -428,14 +428,14 @@ class Transform:
 
         A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
         code defining the name and a set of dependencies (other scoped names). The dependencies
-        can be understood as the edges in the graph.
+        can be understood as the edges in the self.
 
         A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
         representing an assignment of the transform's evaluable representation to a variable
         called *name*.
 
         From there, iteratively, all :class:`CodeNode`s representing the existing dependencies are
-        searched for and added to the graph.
+        searched for and added to the self.
 
         Example:
 
@@ -469,7 +469,7 @@ class Transform:
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
         :param name: The name to give the transform.
-        :return: Updated graph.
+        :return: Updated self.
         """
         if graph is None:
             graph = CodeGraph()
@@ -1420,7 +1420,7 @@ class Pipeline(Transform):
     def _pd_build_codegraph(self, graph=None, name=None):
         """Build a codegraph defining the transform.
 
-        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
+        See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-self is.
 
         The codegraph of a :class:`Pipeline` is the union of the codegraphs of the
         contained transforms plus the node defining the transform itself.
