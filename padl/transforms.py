@@ -36,6 +36,8 @@ from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
 
+import padl.graph as padl_graph
+
 
 def _unpack_batch(args):
     """Convert an input in batch-form into a tuple of datapoints.
@@ -142,7 +144,7 @@ class Transform:
 
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the transform
+    :param pd_name: pd_name of the transform
     """
     pd_mode = None
     _pd_external_full_dump_modules = set()
@@ -175,7 +177,7 @@ class Transform:
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
-        if any(module.__spec__.name.startswith(mod)
+        if any(module.__spec__.pd_name.startswith(mod)
                for mod in self._pd_external_full_dump_modules):
             return True
         return self._pd_external_full_dump
@@ -255,12 +257,12 @@ class Transform:
 
     @property
     def pd_name(self) -> Optional[str]:
-        """The "name" of the transform.
+        """The "pd_name" of the transform.
 
-        A transform can have a name. This is optional, but helps when inspecting complex transforms.
+        A transform can have a pd_name. This is optional, but helps when inspecting complex transforms.
         Good transform names indicate what the transform does.
 
-        If a transform does not have an explicitly set name, the name will default to the name of
+        If a transform does not have an explicitly set pd_name, the pd_name will default to the pd_name of
         the *last variable the transforms was assigned to*.
         """
         if not self._pd_name:
@@ -273,7 +275,9 @@ class Transform:
         Example:
             t = a >> b >> c
         """
-        return Compose([self, other])
+        graph = padl_graph.Graph()
+        graph.compose([self, other])
+        return graph
 
     def __add__(self, other: "Transform") -> "Rollout":
         """Rollout with *other*.
@@ -281,7 +285,9 @@ class Transform:
         Example:
             t = a + b + c
         """
-        return Rollout([self, other])
+        graph = padl_graph.Graph()
+        graph.rollout([self, other])
+        return graph
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """Parallel with *other*.
@@ -289,7 +295,9 @@ class Transform:
         Example:
             t = a / b / c
         """
-        return Parallel([self, other])
+        graph = padl_graph.Graph()
+        graph.parallel([self, other])
+        return graph
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -340,7 +348,7 @@ class Transform:
     def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a zip-file at *path*.
 
-        The file's name should end with '.padl'. If no extension is given, it will be added
+        The file's pd_name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
         If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
@@ -368,7 +376,7 @@ class Transform:
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
 
-        The folder's name should end with '.padl'. If no extension is given, it will be added
+        The folder's pd_name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
         If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
@@ -396,7 +404,7 @@ class Transform:
 
     def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> Set:
         """Build the start-:class:`CodeNode` objects - the node with the source needed to create
-        *self* as *name* (in the scope where *self* was originally created).
+        *self* as *pd_name* (in the scope where *self* was originally created).
 
         Returns a set of dependencies (scoped names the start-node depends on).
         """
@@ -408,7 +416,7 @@ class Transform:
         start = CodeNode.from_source(start_source, scope)
         nodes.append(start)
 
-        # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
+        # if pd_name is given, add the node to the CodeGraph, otherwise only use the dependencies
         if name is not None:
             graph[ScopedName(name, scope, 0)] = start
 
@@ -426,13 +434,13 @@ class Transform:
                             name: Optional[str] = None) -> Tuple[dict, dict]:
         """Build a codegraph defining the transform.
 
-        A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
-        code defining the name and a set of dependencies (other scoped names). The dependencies
+        A codegraph's nodes are :class:`CodeNode` instances which contain a scoped pd_name, a piece of
+        code defining the pd_name and a set of dependencies (other scoped names). The dependencies
         can be understood as the edges in the self.
 
         A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
         representing an assignment of the transform's evaluable representation to a variable
-        called *name*.
+        called *pd_name*.
 
         From there, iteratively, all :class:`CodeNode`s representing the existing dependencies are
         searched for and added to the self.
@@ -449,7 +457,7 @@ class Transform:
             def f(x):
                 return x + a
 
-        ... ``f._pd_build_codegraph(name='mytransform')`` would first create the start-node::
+        ... ``f._pd_build_codegraph(pd_name='mytransform')`` would first create the start-node::
 
             "mytransform": CodeNode(source='mytransform = f',
                                     globals_={('f', 0)})
@@ -468,14 +476,14 @@ class Transform:
         The codegraph can be used to compile a python module defining ``f``.
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
-        :param name: The name to give the transform.
+        :param name: The pd_name to give the transform.
         :return: Updated self.
         """
         if graph is None:
             graph = CodeGraph()
 
         # build the start node ->
-        # if the *name* is the same as the call, we don't need to assign to the name
+        # if the *pd_name* is the same as the call, we don't need to assign to the pd_name
         # this can be the case for function transforms
         if getattr(self, '_pd_call', None) == name:
             new_name = None
@@ -498,17 +506,17 @@ class Transform:
                 continue
 
             # ignoring this (it comes from the serializer)
-            if next_name.name.startswith('PADL_VALUE'):
+            if next_name.pd_name.startswith('PADL_VALUE'):
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
                 if next_name.scope.is_global():
-                    next_obj = globals_dict[next_name.name]
+                    next_obj = globals_dict[next_name.pd_name]
                 else:
-                    next_obj = all_vars_dict[next_name.name]
+                    next_obj = all_vars_dict[next_name.pd_name]
                 # pylint: disable=protected-access
-                next_obj._pd_build_codegraph(graph, next_name.name)
+                next_obj._pd_build_codegraph(graph, next_name.pd_name)
             except (KeyError, AttributeError):
                 pass
             else:
@@ -577,7 +585,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle) -> str:
-        # pylint: disable=invalid-name
+        # pylint: disable=invalid-pd_name
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
@@ -612,9 +620,9 @@ class Transform:
         return self._pd_tinyrepr()
 
     def _pd_find_varname(self, scopedict: dict) -> Optional[str]:
-        """Find the name of the variable name the transform was last assigned to.
+        """Find the pd_name of the variable pd_name the transform was last assigned to.
 
-        :return: A string with the variable name or *None* if the transform has not been assigned
+        :return: A string with the variable pd_name or *None* if the transform has not been assigned
             to any variable.
         """
         try:
@@ -626,7 +634,7 @@ class Transform:
             return None
 
     def pd_varname(self, scope=None) -> Optional[str]:
-        """The name of the variable name the transform was last assigned to.
+        """The pd_name of the variable pd_name the transform was last assigned to.
 
         Example:
 
@@ -636,7 +644,7 @@ class Transform:
         'foo'
 
         :param scope: Scope to search
-        :return: A string with the variable name or *None* if the transform has not been assigned
+        :return: A string with the variable pd_name or *None* if the transform has not been assigned
             to any variable.
         """
         if scope is None:
@@ -921,7 +929,7 @@ class AtomicTransform(Transform):
     :param call: The transform's call string.
     :param call_info: A :class:`CallInfo` object containing information about the how the
         transform was created (needed for saving).
-    :param pd_name: The transform's name.
+    :param pd_name: The transform's pd_name.
     """
 
     def __init__(self, call: str, call_info: Optional[inspector.CallInfo] = None,
@@ -966,8 +974,8 @@ class FunctionTransform(AtomicTransform):
     :param function: The wrapped function.
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the transform
-    :param call: The call string (defaults to the function's name).
+    :param pd_name: pd_name of the transform
+    :param call: The call string (defaults to the function's pd_name).
     :param source: The source code (optional).
     """
 
@@ -1065,7 +1073,7 @@ class ClassTransform(AtomicTransform):
 
     Do not use this directly, instead, use the `transform` decorator to wrap a class.
 
-    :param pd_name: name of the transform
+    :param pd_name: pd_name of the transform
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
     :param arguments: ordered dictionary of initialization arguments to be used in printing
     """
@@ -1149,7 +1157,7 @@ class ClassTransform(AtomicTransform):
             graph[ScopedName(name, call_scope, 0)] = start_node
 
         for scoped_name in start_node.globals_:
-            if scoped_name.name == self.__class__.__name__:
+            if scoped_name.pd_name == self.__class__.__name__:
                 scoped_name.scope = class_scope
 
         return set(start_node.globals_)
@@ -1242,7 +1250,7 @@ class Map(Transform):
     :param transform: Transform to be applied to a list of inputs.
     :param call_info: A `CallInfo` object containing information about the how the transform was
     created (needed for saving).
-    :param pd_name: name of the transform
+    :param pd_name: pd_name of the transform
     """
 
     def __init__(self, transform: Transform, call_info: Optional[inspector.CallInfo] = None,
@@ -1364,7 +1372,7 @@ class Pipeline(Transform):
 
         If int, gets item'th transform in this Pipeline.
         If slice, gets sliced transform of same type
-        If str, gets first transform with name item
+        If str, gets first transform with pd_name item
 
         :param item: Should be of type {int, slice, str}
         """
@@ -1580,7 +1588,7 @@ class Compose(Pipeline):
     :param transforms: List of transforms to compose.
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the Compose transform
+    :param pd_name: pd_name of the Compose transform
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `Pipeline`.
     :return: output from series of transforms
@@ -2127,10 +2135,10 @@ class Batchify(BuiltinTransform):
 
 def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
          compress: bool = False):
-    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
+    """Save the transform to a folder at *path* or a compressed (zip-)file of the same pd_name if
     *compress* == True.
 
-    The folder's name should end with '.padl'. If no extension is given, it will be added
+    The folder's pd_name should end with '.padl'. If no extension is given, it will be added
     automatically.
 
     If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
@@ -2233,7 +2241,7 @@ def fulldump(transform_or_module):
 
     :param transform_or_module: A Transform, module or package for which to enable full dump. Can
         also be a string. In that case, will enable full dump for the module or package with
-        matching name.
+        matching pd_name.
     """
     if isinstance(transform_or_module, types.ModuleType):
         transform_or_module = transform_or_module.__spec__.name
