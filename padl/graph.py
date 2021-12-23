@@ -17,7 +17,7 @@ class Node:
     def __init__(self, transform=None, name=None):
         self.id = self.generate_id()
         self.transform = transform
-        self.name = name
+        self.pd_name = name
         self.in_node = []
         self.out_node = []
         self.out_index = None
@@ -56,15 +56,15 @@ class Node:
             node.remove_outnode(self)
 
     @property
-    def name(self):
+    def pd_name(self):
         return self._name
 
     @property
     def name_id(self):
         return self._name_id
 
-    @name.setter
-    def name(self, new_name):
+    @pd_name.setter
+    def pd_name(self, new_name):
         self._name = new_name
         if self._name is None and self.transform is not None:
             self._name = self.transform.pd_name
@@ -106,7 +106,7 @@ class Node:
         if _copy is None:
             _copy = type(self)(
                 self.transform,
-                self.name)
+                self.pd_name)
             _copy.in_node = copy(self.in_node)
             _copy.out_node = copy(self.out_node)
             memo[id_self] = _copy
@@ -132,7 +132,7 @@ class Node:
 
     def _register_input_args(self, args, in_node):
         """Register the input args"""
-        assert in_node in self._input_args.keys(), f"{in_node.name} not connected to {self.name}"
+        assert in_node in self._input_args.keys(), f"{in_node.pd_name} not connected to {self.pd_name}"
         self._input_args[in_node]['args'] = args
         self._input_args[in_node]['updated'] = True
 
@@ -170,7 +170,7 @@ class Node:
 
 
 class Graph(Node):
-    def __init__(self, transforms=None, connection=None):
+    def __init__(self, transforms=None):
         super().__init__()
         self.transforms = transforms
         self.input_node = Node(padl.Identity(), name='Input')
@@ -183,8 +183,34 @@ class Graph(Node):
         self.pd_preprocess = None
         self.pd_forward = None
         self.pd_postprocess = None
+        self._pd_group = False
+        self._operation_type = None
+        self._pd_name = None
+
+    def _flatten_list(self, transform_list: List, operation_type):
+        """Flatten *list_* such that members of *cls* are not nested.
+
+        :param transform_list: List of transforms or graph.
+        :param operation_type: Compose, rollout or parallel
+        """
+        list_flat = []
+
+        for transform in transform_list:
+            if isinstance(transform, Graph):
+                if transform._operation_type == operation_type:
+                    if transform._pd_group:
+                        list_flat.append(transform)
+                    else:
+                        list_flat += transform.transforms
+                else:
+                    list_flat.append(transform)
+            else:
+                list_flat.append(transform)
+
+        return list_flat
 
     def _store_transform_nodes(self, transforms):
+        self.transforms = transforms
         self.nodes.append(self.input_node)
         for t_ in transforms:
             if isinstance(t_, Graph):
@@ -213,6 +239,8 @@ class Graph(Node):
             self.output_node._output_slice[node] = self.get_output_slice()
 
     def compose(self, transforms):
+        self._operation_type = 'compose'
+        transforms = self._flatten_list(transforms, 'compose')
         self._store_transform_nodes(transforms)
 
         node = self.transform_nodes[0]
@@ -224,6 +252,8 @@ class Graph(Node):
         next_node.connect_outnode(self.output_node)
 
     def rollout(self, transforms):
+        self._operation_type = 'rollout'
+        transforms = self._flatten_list(transforms, 'rollout')
         self._store_transform_nodes(transforms)
 
         for node in self.transform_nodes:
@@ -231,11 +261,53 @@ class Graph(Node):
             node.connect_outnode(self.output_node)
 
     def parallel(self, transforms):
+        self._operation_type = 'parallel'
+        transforms = self._flatten_list(transforms, 'parallel')
         self._store_transform_nodes(transforms)
 
         for indx, node in enumerate(self.transform_nodes):
             node.connect_innode(self.input_node.pd_output[indx])
             node.connect_outnode(self.output_node)
+
+    def __rshift__(self, other: "Transform") -> "Compose":
+        """Compose with *other*.
+
+        Example:
+            t = a >> b >> c
+        """
+        graph = Graph()
+        graph.compose([self, other])
+        return graph
+
+    def __add__(self, other: "Transform") -> "Rollout":
+        """Rollout with *other*.
+
+        Example:
+            t = a + b + c
+        """
+        graph = Graph()
+        graph.rollout([self, other])
+        return graph
+
+    def __truediv__(self, other: "Transform") -> "Parallel":
+        """Parallel with *other*.
+
+        Example:
+            t = a / b / c
+        """
+        graph = Graph()
+        graph.parallel([self, other])
+        return graph
+
+    def __sub__(self, name: str) -> "Transform":
+        """Create a named clone of the transform.
+
+        Example:
+            named_t = t - 'rescale image'
+        """
+        named_copy = deepcopy(self)
+        named_copy.pd_name = name
+        return named_copy
 
     def pd_call_node(self, args, in_node=None):
         output = self.input_node.pd_call_node(args, in_node)
@@ -372,8 +444,8 @@ class Graph(Node):
         first creates connection in self and then copies self
         and removes connection
 
-        Once we have good naming system, so name are kept when deepcopying,
-        this can be made simpler by copying self and using the same name
+        Once we have good naming system, so pd_name are kept when deepcopying,
+        this can be made simpler by copying self and using the same pd_name
         to create edge in copy self"""
         for in_node_name, out_node_name in connection_tuple:
             in_node = self[in_node_name]
@@ -405,7 +477,7 @@ class Graph(Node):
 
         def _get_nodes(inp_node):
             for out_node in inp_node.out_node:
-                if (out_node.name != 'Input') or (out_node.name != 'Output'):
+                if (out_node.pd_name != 'Input') or (out_node.pd_name != 'Output'):
                     if isinstance(out_node, Graph):
                         for n_ in out_node.nodes:
                             _append_to_nodes(n_)
