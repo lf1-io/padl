@@ -757,12 +757,12 @@ class Transform:
 
                 output = batch
                 if use_forward:
-                    output = forward.pd_call_transform(batch, mode)
+                    output = forward.pd_call_in_mode(batch, mode)
 
                 if use_post or flatten:
                     output = _unpack_batch(output)
                     if use_post:
-                        output = [post.pd_call_transform(x, mode) for x in output]
+                        output = [post.pd_call_in_mode(x, mode) for x in output]
                     for out in output:
                         yield self._pd_format_output(out)
                 else:
@@ -871,7 +871,7 @@ class Transform:
         """
         sequence = _ItemGetter(
             args,
-            lambda *args: preprocess.pd_call_transform(*args, mode),
+            lambda *args: preprocess.pd_call_in_mode(*args, mode, ignore_grad=True),
         )
 
         return DataLoader(
