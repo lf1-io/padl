@@ -5,7 +5,7 @@ Transforms should be created using the `padl.transform` wrap-function.
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
-from functools import lru_cache, cached_property
+from functools import lru_cache
 import inspect
 from itertools import chain
 from pathlib import Path
