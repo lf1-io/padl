@@ -815,7 +815,8 @@ class Transform:
             layer.to(device)
         return self
 
-    @cached_property
+    @property
+    @lru_cache(maxsize=128)
     def pd_layers(self) -> List[torch.nn.Module]:
         """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
         """
