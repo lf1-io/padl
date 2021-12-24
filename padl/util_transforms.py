@@ -45,8 +45,8 @@ class IfInMode(ClassTransform):
                                                'directly.')
 
         if Transform.pd_mode == self.target_mode:
-            return self.if_.pd_call_transform(args)
-        return self.else_.pd_call_transform(args)
+            return self.if_._pd_unpack_args_and_call(args)
+        return self.else_._pd_unpack_args_and_call(args)
 
     def _pd_splits(self, input_components=0):
         # pylint: disable=protected-access
@@ -171,11 +171,11 @@ class Try(ClassTransform):
 
     def __call__(self, args):
         try:
-            output = self.transform.pd_call_transform(args)
+            output = self.transform._pd_unpack_args_and_call(args)
         except self.exceptions:
-            output = self.catch_transform.pd_call_transform(args)
+            output = self.catch_transform._pd_unpack_args_and_call(args)
         else:
-            output = self.else_transform.pd_call_transform(output)
+            output = self.else_transform._pd_unpack_args_and_call(output)
         finally:
-            self.finally_transform.pd_call_transform(args)
+            self.finally_transform._pd_unpack_args_and_call(args)
         return output

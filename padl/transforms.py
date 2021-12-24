@@ -1323,7 +1323,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return tuple([self.transform.pd_call_transform(arg) for arg in args])
+        return tuple([self.transform._pd_unpack_args_and_call(arg) for arg in args])
 
     def _pd_longrepr(self, formatting=True) -> str:
         return '~ ' + self.transform._pd_shortrepr(formatting)
@@ -1775,7 +1775,7 @@ class Compose(Pipeline):
         :return: Output from series of transforms.
         """
         for transform_ in self.transforms:
-            args = transform_.pd_call_transform(args)
+            args = transform_._pd_unpack_args_and_call(args)
         return args
 
 
@@ -1888,7 +1888,7 @@ class Rollout(Pipeline):
         """
         out = []
         for transform_ in self.transforms:
-            out.append(transform_.pd_call_transform(args))
+            out.append(transform_._pd_unpack_args_and_call(args))
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
@@ -1981,7 +1981,7 @@ class Parallel(Pipeline):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_.pd_call_transform(args[ind]))
+            out.append(transform_._pd_unpack_args_and_call(args[ind]))
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
