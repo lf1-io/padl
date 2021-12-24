@@ -674,23 +674,47 @@ class Transform:
             return True
         return False
 
-    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+    def _pd_unpack_args_and_call(self, arg):
+        if self._pd_unpack_argument(arg):
+            return self(*arg)
+        return self(arg)
+
+    def pd_call_in_mode(self, arg, mode: Mode, ignore_grad=False):
         """Call the transform, with possibility to pass multiple arguments.
 
         :param arg: argument to call the transform with
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
         :return: Whatever the transform returns.
         """
+        no_grad = mode in ('eval', 'infer') and not ignore_grad
 
-        if mode in ('eval', 'infer'):
-            torch_context = torch.no_grad()
-        else:
-            torch_context = contextlib.suppress()
+        if mode is not None:
+            layers = self.pd_layers
+            training_before = [layer.training for layer in layers]
+            for layer in layers:
+                if mode == 'train':
+                    layer.train()
+                else:
+                    layer.eval()
+            Transform.pd_mode = mode
 
-        with self.pd_set_mode(mode), torch_context:
-            if self._pd_unpack_argument(arg):
-                return self(*arg)
-            return self(arg)
+        if no_grad:
+            grad_before = torch.is_grad_enabled()
+            torch.set_grad_enabled(False)
+
+        try:
+            return self._pd_unpack_args_and_call(arg)
+        finally:
+            if mode is not None:
+                for i, training in enumerate(training_before):
+                    layer = layers[i]
+                    if training:
+                        layer.train()
+                    else:
+                        layer.eval()
+            Transform.pd_mode = None
+            if no_grad:
+                torch.set_grad_enabled(grad_before)
 
     def _pd_get_signature(self):
         """Get the signature of the transform. """
