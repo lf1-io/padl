@@ -987,9 +987,29 @@ class AtomicTransform(Transform):
                 yield v
 
     def _pd_get_non_target_stage_idx(self):
-        return 0
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = forward_1 >> unbatch >> post
+
+            Let's suppose we get an error on `post`, `post` is the index 1 of
+            `t.pd_postprocess`, then the element that fails on `t` is
+            t.pd_forward._pd_get_non_target_stage_idx() + 1 = 1 + 1 = 2
+        """
+        return 1
 
     def _pd_get_target_stage_idx(self, is_entire_transform=None):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = prep >> batch >> forward_1
+            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
+
+        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
+            else *False*
+        """
         return 0
 
     def _pd_get_error_idx(self, stage: str):
@@ -1633,33 +1653,29 @@ class Pipeline(Transform):
         return deduped_keys
 
     def _pd_get_non_target_stage_idx(self):
-        """When a :class:`Compose` gets an Exception and has a non-failing stage which is a
-        :class:`Parallel` or a :class:`Rollout`, the index they contribute to track the
-        element that got the Exception on the entire :class:`Compose` is 1.
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
         Example:
             t = ((prep_1 >> batch) + (prep_2 >> batch)) >> forward_1
-            Let's suppose we get an error on `forward_1`, so the item that is failing on `t` is 1.
-            `forward_1` is the index 0 of `t.pd_forward`, then the element that fails on `t` is
+            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
             t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 1 + 0 = 1
         """
         return 1
 
     def _pd_get_target_stage_idx(self, is_entire_transform=None):
-        """When a :class:`Compose` gets an Exception and the failing stage is a :class:`Parallel`
-        or a :class:`Rollout`, the index they contribute with to track the element that got the
-        Exception on the entire :class:`Compose` is 0.
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
         Example:
             t = prep >> batch >> (forward_1 + forward_2)
-            Let's suppose we get an error on `(forward_1 + forward_2)`, so the item that is
-            failing on `t` is 2. `(forward_1 + forward_2)` is the index 0 of `t.pd_forward`,
-            then the element that fails on `t` is
+            Let's suppose we get an error on `(forward_1 + forward_2)`. `(forward_1 + forward_2)`
+            is the index 0 of `t.pd_forward`, then the element that fails on `t` is
             2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
 
-        :param is_entire_transform: *True* if *self* constitutes entirely an overlying
-            :class:`Transform`, else *False*
+        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
+            else *False*
         """
+
         return 0
 
     def _pd_get_error_idx(self, stage: str):
@@ -1883,42 +1899,36 @@ class Compose(Pipeline):
         return args
 
     def _pd_get_non_target_stage_idx(self):
-        """When a :class:`Compose` gets an Exception and has a non-failing stage which is a
-        :class:`Compose`, the index they contribute with to track the element that got the
-        Exception on the entire :class:`Compose` is the length of the stage or 1 if the stage
-        is grouped.
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
         Example:
             t = prep >> batch >> forward_1
-            Let's suppose we get an error on `forward_1`, so the item that is failing on `t` is 2.
-            `forward_1` is the index 0 of `t.pd_forward`, then the element that fails on `t` is
-            t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 2 + 0 = 1
 
-            prep = (prep_1 >> prep_2 >> batch) - 'prep_name'
-            t = prep >> forward_1
-            In this case, the index `t.pd_preprocess` contributes to the item that fails on `t` is
-            1.
+            Let's suppose we get an error on `forward_1`, `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            `t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = len(t.pd_preprocess) + 0 =
+                2 + 0 = 2
         """
         return 1 if self._pd_group else len(self)
 
     def _pd_get_target_stage_idx(self, is_entire_transform: bool):
-        """When a :class:`Compose` gets an Exception and the failing stage is a :class:`Compose`,
-        the index they contribute with to track the element that got the Exception on the entire
-        :class:`Compose` is the element stored on the trace or 0 if it is grouped.
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
         Example:
-            t = prep >> batch >> forward_1 >> forward_2
-            Let's suppose we get an error on `forward_2`, so the item that is failing on `t` is 3.
-            `forward_2` is the index 1 of `t.pd_forward`, then the element that fails on `t` is
+             t = prep >> batch >> forward_1 >> forward_2
+
+            Let's suppose we get an error on `forward_2`. `t.pd_forward` is
+            `t.pd_forward` = forward_1 >> forward_2`. `forward_2` is the index 1 of `t.pd_forward`,
+            then the element that fails on `t` is
             2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
 
-        :param is_entire_transform: *True* if *self* constitutes entirely an overlying
-            :class:`Transform`, else *False*
+        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
+            else *False*
         """
         return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
 
     def _pd_get_error_idx(self, stage: str):
-        """Track the index where a :class:`Compose` fails from the one that got the Exception
+        """Track the index where a :class:`Compose` fails from the index that got the Exception
         on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
 
         Examples:
@@ -1932,7 +1942,7 @@ class Compose(Pipeline):
             then,
             t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
             No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
-            len(t.pd_preprocess) + 0.
+            len(t.pd_preprocess) + 0 = 3.
         """
         assert stage in ('forward', 'postprocess')
         preprocess = self.pd_preprocess
@@ -2230,6 +2240,10 @@ class Identity(BuiltinTransform):
 
     def __call__(self, args):
         return args
+
+    def _pd_get_non_target_stage_idx(self):
+        breakpoint()
+        return 0
 
 
 identity = Identity()
