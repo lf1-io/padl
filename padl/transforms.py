@@ -735,8 +735,6 @@ class Transform:
         """
         assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
 
-        self.pd_forward_device_check()
-
         preprocess = self.pd_preprocess
         forward = self.pd_forward
         post = self.pd_postprocess
@@ -744,6 +742,9 @@ class Transform:
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
         use_post = not isinstance(post, Identity)
+
+        if use_forward:
+            self.pd_forward_device_check()
 
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
@@ -857,6 +858,7 @@ class Transform:
         :param inputs: The input.
         """
         self.pd_forward_device_check()
+
         if not isinstance(self.pd_preprocess, Identity):
             inputs = self.pd_preprocess.pd_call_in_mode(inputs, mode='infer')
         if self.pd_device != 'cpu':
