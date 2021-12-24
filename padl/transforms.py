@@ -2242,7 +2242,6 @@ class Identity(BuiltinTransform):
         return args
 
     def _pd_get_non_target_stage_idx(self):
-        breakpoint()
         return 0
 
 
