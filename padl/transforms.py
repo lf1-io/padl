@@ -1511,6 +1511,9 @@ class Pipeline(Transform):
 
         :return: Bool
         """
+        if isinstance(self.pd_forward, Identity):
+            return True
+
         return_val = True
 
         if isinstance(self.pd_forward, type(self)):
