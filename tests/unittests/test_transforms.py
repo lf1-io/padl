@@ -336,14 +336,6 @@ class TestParallel:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
 
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('train'):
-            assert self.transform_1.pd_mode is 'train'
-            assert self.transform_1.pd_preprocess.pd_mode == 'train'
-            assert self.transform_1.pd_forward.pd_mode == 'train'
-            assert self.transform_1.pd_postprocess.pd_mode == 'train'
-
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
@@ -427,14 +419,6 @@ class TestRollout:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
 
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('train'):
-            assert self.transform_1.pd_mode is 'train'
-            assert self.transform_1.pd_preprocess.pd_mode == 'train'
-            assert self.transform_1.pd_forward.pd_mode == 'train'
-            assert self.transform_1.pd_postprocess.pd_mode == 'train'
-
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
@@ -507,14 +491,6 @@ class TestCompose:
             flatten=True,
             batch_size=2)
         ) == [torch.tensor(8), torch.tensor(12), torch.tensor(8), torch.tensor(12)]
-
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('eval'):
-            assert self.transform_1.pd_mode is 'eval'
-            assert self.transform_1.pd_preprocess.pd_mode == 'eval'
-            assert self.transform_1.pd_forward.pd_mode == 'eval'
-            assert self.transform_1.pd_postprocess.pd_mode == 'eval'
 
     def test_all_transforms_1(self):
         c = plus_one >> times_two >> times_two
@@ -765,14 +741,6 @@ class TestFunctionTransform:
         assert len(out) == 2
         assert out[0] == 'hello'
         assert out[1] == 'dog'
-
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('infer'):
-            assert self.transform_1.pd_mode is 'infer'
-            assert self.transform_1.pd_preprocess.pd_mode == 'infer'
-            assert self.transform_1.pd_forward.pd_mode == 'infer'
-            assert self.transform_1.pd_postprocess.pd_mode == 'infer'
 
     def test_all_transforms(self):
         all_ = trans_with_globals._pd_all_transforms()

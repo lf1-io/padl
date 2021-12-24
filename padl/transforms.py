@@ -191,7 +191,7 @@ class Transform:
             return Transform._pd_merge_components(res)
         return res
 
-    @lru_cache
+    @lru_cache(maxsize=None)
     def _pd_get_stages(self):
         if self._pd_stages is None:
             _, splits, has_batchify = self._pd_splits()
@@ -827,37 +827,6 @@ class Transform:
         """Iterate over all (pytorch-) parameters in all layers contained in the transform. """
         for layer in self.pd_layers:
             yield from layer.parameters()
-
-    @contextlib.contextmanager
-    def pd_set_mode(self, mode: Optional[str] = None):
-        """Set of mode of Transform
-
-        :param mode: mode ('train', 'eval', 'infer')
-        """
-        assert mode in ('train', 'eval', 'infer', None)
-
-        if mode is None:
-            yield
-            return
-
-        layers = self.pd_layers
-        training_before = [layer.training for layer in layers]
-        try:
-            for layer in layers:
-                if mode == 'train':
-                    layer.train()
-                else:
-                    layer.eval()
-            Transform.pd_mode = mode
-            yield
-        finally:
-            for i, training in enumerate(training_before):
-                layer = layers[i]
-                if training:
-                    layer.train()
-                else:
-                    layer.eval()
-            Transform.pd_mode = None
 
     @staticmethod
     def pd_get_loader(args, preprocess, mode, **kwargs) -> DataLoader:
