@@ -16,12 +16,11 @@ import traceback
 from tempfile import TemporaryDirectory
 import types
 from dataclasses import dataclass
-from typing import Any
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
-from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, Any
 from warnings import warn
 from zipfile import ZipFile
 
@@ -517,7 +516,7 @@ class Transform:
         return graph
 
     def _pd_process_traceback(self):
-        """ Find where the Transform was defined (file, lineno, file) given the traceback. """
+        """Find where the Transform was defined (file, lineno, file) given the traceback. """
         a_tb = None
         for a_tb in self._pd_traceback[::-1]:
             if 'padl' in a_tb[0]:
@@ -526,11 +525,11 @@ class Transform:
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
     def _pd_trace_error(self, position: int, arg):
-        """ Add some error description to `pd_trace`. """
+        """Add some error description to :obj:`pd_trace`. """
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
-            _pd_trace.append(_SingleTrace(str_, self._pd_process_traceback(), arg,
-                                          self, Transform.pd_mode, position))
+            _pd_trace.append(_TraceItem(str_, self._pd_process_traceback(), arg,
+                                        self, Transform.pd_mode, position))
         except Exception:
             warn('Error tracing failed')
 
@@ -589,7 +588,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle):
-        #pyling: disable=invalid-name
+        #pylint: disable=invalid-name
         p.text(self._pd_fullrepr() if not cycle else '...')
 
     def _pd_fullrepr(self, marker=None):
@@ -744,7 +743,6 @@ class Transform:
         """
         assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
 
-        global _pd_trace
         _pd_trace.clear()
 
         self.pd_forward_device_check()
@@ -760,7 +758,8 @@ class Transform:
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
-            loader = _BatchGetter(args)
+            loader = _SimpleGetter(args)
+#            loader = self.pd_get_loader(args, Identity(), mode, batch_size=1)
 
         def _gen():
             for ix, batch in loader:
@@ -908,7 +907,6 @@ class Transform:
         """
         self.pd_forward_device_check()
         in_args = inputs
-        global _pd_trace
         _pd_trace.clear()
         inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
         inputs = _move_to_device(inputs, self.pd_device)
@@ -988,8 +986,8 @@ class AtomicTransform(Transform):
             if isinstance(v, Transform):
                 yield v
 
-    def _pd_get_non_target_stage_idx(self, stage_used: bool):
-        return 1 if stage_used else 0
+    def _pd_get_non_target_stage_idx(self):
+        return 0
 
     def _pd_get_target_stage_idx(self, is_entire_transform=None):
         return 0
@@ -1634,7 +1632,7 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
-    def _pd_get_non_target_stage_idx(self, stage_used: bool):
+    def _pd_get_non_target_stage_idx(self):
         """When a :class:`Compose` gets an Exception and has a non-failing stage which is a
         :class:`Parallel` or a :class:`Rollout`, the index they contribute to track the
         element that got the Exception on the entire :class:`Compose` is 1.
@@ -1643,9 +1641,7 @@ class Pipeline(Transform):
             t = ((prep_1 >> batch) + (prep_2 >> batch)) >> forward_1
             Let's suppose we get an error on `forward_1`, so the item that is failing on `t` is 1.
             `forward_1` is the index 0 of `t.pd_forward`, then the element that fails on `t` is
-            t._pd_preprocess._pd_get_non_target_stage_idx() + 0 = 1 + 0 = 1
-
-        :param stage_used: *True* if stage used on the :class:`Compose`, else *False*
+            t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 1 + 0 = 1
         """
         return 1
 
@@ -1659,7 +1655,7 @@ class Pipeline(Transform):
             Let's suppose we get an error on `(forward_1 + forward_2)`, so the item that is
             failing on `t` is 2. `(forward_1 + forward_2)` is the index 0 of `t.pd_forward`,
             then the element that fails on `t` is
-            2 + t._pd_forward._pd_get_stage_idx() = 2 + 0 = 2
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
 
         :param is_entire_transform: *True* if *self* constitutes entirely an overlying
             :class:`Transform`, else *False*
@@ -1671,8 +1667,7 @@ class Pipeline(Transform):
         :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
 
         Example:
-            t = (t_11 >> batch >> t_12) +
-                (t_21 >> batch >> t_22)
+            t = (t_11 >> batch >> t_12) + (t_21 >> batch >> t_22)
             then,
             t.pd_forward = t_12 / t_22.
             If we know that :meth:`t.pd_forward` is failing on `t_22`, which is its element 1,
@@ -1887,7 +1882,7 @@ class Compose(Pipeline):
                 raise err
         return args
 
-    def _pd_get_non_target_stage_idx(self, stage_used: bool):
+    def _pd_get_non_target_stage_idx(self):
         """When a :class:`Compose` gets an Exception and has a non-failing stage which is a
         :class:`Compose`, the index they contribute with to track the element that got the
         Exception on the entire :class:`Compose` is the length of the stage or 1 if the stage
@@ -1897,14 +1892,12 @@ class Compose(Pipeline):
             t = prep >> batch >> forward_1
             Let's suppose we get an error on `forward_1`, so the item that is failing on `t` is 2.
             `forward_1` is the index 0 of `t.pd_forward`, then the element that fails on `t` is
-            t._pd_preprocess._pd_get_non_target_stage_idx() + 0 = 2 + 0 = 1
+            t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 2 + 0 = 1
 
             prep = (prep_1 >> prep_2 >> batch) - 'prep_name'
             t = prep >> forward_1
             In this case, the index `t.pd_preprocess` contributes to the item that fails on `t` is
             1.
-
-        :param stage_used: *True* if stage used on the :class:`Compose`, else *False*
         """
         return 1 if self._pd_group else len(self)
 
@@ -1913,12 +1906,11 @@ class Compose(Pipeline):
         the index they contribute with to track the element that got the Exception on the entire
         :class:`Compose` is the element stored on the trace or 0 if it is grouped.
 
-            Example:
-                t = prep >> batch >> forward_1 >> forward_2
-                Let's suppose we get an error on `forward_2`, so the item that is failing on `t`
-                is 3. `forward_2` is the index 1 of `t.pd_forward`,
-                then the element that fails on `t` is
-                2 + t._pd_forward._pd_get_stage_idx() = 2 + 1 = 3
+        Example:
+            t = prep >> batch >> forward_1 >> forward_2
+            Let's suppose we get an error on `forward_2`, so the item that is failing on `t` is 3.
+            `forward_2` is the index 1 of `t.pd_forward`, then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
 
         :param is_entire_transform: *True* if *self* constitutes entirely an overlying
             :class:`Transform`, else *False*
@@ -1946,18 +1938,16 @@ class Compose(Pipeline):
         preprocess = self.pd_preprocess
         forward = self.pd_forward
         postprocess = self.pd_postprocess
-        preprocess_used = False if (isinstance(preprocess, Identity)) and \
-                                   not isinstance(self.__getitem__(0), Identity) else True
+        preprocess_idx = preprocess._pd_get_non_target_stage_idx()
 
-        preprocess_idx = preprocess._pd_get_non_target_stage_idx(preprocess_used)
         if stage == 'forward':
-            is_entire_transform = str(self) == str(forward)
+            is_entire_transform = isinstance(preprocess, Identity) and \
+                                  isinstance(postprocess, Identity)
             return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
 
-        forward_used = False if (isinstance(forward, Identity)) and not \
-            isinstance(self.__getitem__(preprocess_idx), Identity) else True
-        is_entire_transform = str(self) == str(postprocess)
-        return preprocess_idx + forward._pd_get_non_target_stage_idx(forward_used) + \
+        is_entire_transform = isinstance(preprocess, Identity) and \
+                              isinstance(forward, Identity)
+        return preprocess_idx + forward._pd_get_non_target_stage_idx() + \
                postprocess._pd_get_target_stage_idx(is_entire_transform)
 
 
@@ -2421,6 +2411,8 @@ class _ItemGetter:
 
     :param samples: An object implementing __getitem__ and __len__.
     :param transform: Preprocessing transform.
+    :param entire_transform: :class:`Transform` which *transform* belongs to, i.e.,
+        :class:`Transform` whose preprocessing part is *transform*.
     :param exception: Exception to catch for (fall back to *default*).
     :param default: The default value to fall back to in case of exception.
     """
@@ -2441,8 +2433,8 @@ class _ItemGetter:
         try:
             return item, self.transform(self.samples[item])
         except Exception as err:
-            is_entire_transform = str(self.entire_transform) == \
-                                  str(self.entire_transform.pd_preprocess)
+            is_entire_transform = isinstance(self.entire_transform.pd_forward, Identity) and \
+                                  isinstance(self.entire_transform.pd_postprocess, Identity)
             self.entire_transform._pd_trace_error(
                 self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
                 [self.samples[item]]
@@ -2453,7 +2445,7 @@ class _ItemGetter:
         return len(self.samples)
 
 
-class _BatchGetter:
+class _SimpleGetter:
     """A simple item getter.
 
     :param samples: An object implementing __getitem__ and __len__.
@@ -2479,7 +2471,7 @@ class _BatchGetter:
 
 
 @dataclass
-class _SingleTrace:
+class _TraceItem:
     """Catch information of an Exception produced in a Transform call.
 
     :param transform_str: string representation of a *Transform* that has produced an Exception.

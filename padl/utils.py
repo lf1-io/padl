@@ -66,9 +66,11 @@ same = _Same()
 
 
 class _Debug:
-    """Customized debugger for :class:`padl.Transform`s. When an exception on the execution of
-    a :class:`Transform` is produced and a :class:`_Debug` object is called, an interactive debugger
-    at different levels in the :class:`Transform` is gotten.
+    """Customized debugger for :class:`padl.Transform`s.
+
+    When an exception on the execution of a :class:`Transform` is produced and a :class:`_Debug`
+    object is called, an interactive debugger at different levels in the :class:`Transform` is
+    gotten.
 
     At the top, the user interacts with the entire transform and its absolute input. One level
     down, it goes directly to the stage that got the Exception (either to
@@ -95,8 +97,8 @@ class _Debug:
         )
 
     def __call__(self) -> None:
-        """
-        Call me in case of error.
+        """Call me for getting an interactive debugger in case of error.
+
         User can give following input and expect response
             u(p): step up\n'
             d(own): step down\n'
@@ -143,12 +145,17 @@ class _Debug:
                     exec(code)
                 except Exception as err:
                     print(err)
-                finally:
-                    continue
+
             if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:
                 print(f'\n{msg}\n')
 
     def repeat(self, mode: str, pos: int) -> None:
+        """Repeat the execution from the current position *pos* (the same Exception will be
+        produced).
+
+        :param mode: mode ('train', 'eval', 'infer').
+        :param pos: level of the :class:`Transform` we are inspecting.
+        """
         assert mode in ('train', 'eval', 'infer')
         if pos == len(_pd_trace) - 1:
             _pd_trace.clear()
