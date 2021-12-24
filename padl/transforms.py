@@ -888,10 +888,14 @@ class Transform:
         :param inputs: The input.
         """
         self.pd_forward_device_check()
-        inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
-        inputs = _move_to_device(inputs, self.pd_device)
-        inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
-        inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
+        if not isinstance(self.pd_preprocess, Identity):
+            inputs = self.pd_preprocess.pd_call_in_mode(inputs, mode='infer')
+        if self.pd_device != 'cpu':
+            inputs = _move_to_device(inputs, self.pd_device)
+        if not isinstance(self.pd_forward, Identity):
+            inputs = self.pd_forward.pd_call_in_mode(inputs, mode='infer')
+        if not isinstance(self.pd_postprocess, Identity):
+            inputs = self.pd_postprocess.pd_call_in_mode(inputs, mode='infer')
         return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
