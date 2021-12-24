@@ -5,8 +5,7 @@ Transforms should be created using the `padl.transform` wrap-function.
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
-import contextlib
-from functools import lru_cache
+from functools import lru_cache, cached_property
 import inspect
 from itertools import chain
 from pathlib import Path
@@ -191,7 +190,7 @@ class Transform:
             return Transform._pd_merge_components(res)
         return res
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=128)
     def _pd_get_stages(self):
         if self._pd_stages is None:
             _, splits, has_batchify = self._pd_splits()
@@ -812,16 +811,17 @@ class Transform:
             layer.to(device)
         return self
 
-    @property
-    @lru_cache(maxsize=None)
+    @cached_property
     def pd_layers(self) -> List[torch.nn.Module]:
         """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
         """
-        layers = []
-        for subtrans in self._pd_all_transforms():
-            if isinstance(subtrans, torch.nn.Module):
-                layers.append(subtrans)
-        return layers
+        if self._pd_layers is None:
+            layers = []
+            for subtrans in self._pd_all_transforms():
+                if isinstance(subtrans, torch.nn.Module):
+                    layers.append(subtrans)
+            self._pd_layers = layers
+        return self._pd_layers
 
     def pd_parameters(self) -> Iterator:
         """Iterate over all (pytorch-) parameters in all layers contained in the transform. """
