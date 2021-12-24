@@ -2063,22 +2063,13 @@ class Unbatchify(BuiltinTransform):
         # put the output component to 2 ("un-batchified")
         return 2, (identity, identity, self), False
 
-    def _move_to_device(self, args):
-        if isinstance(args, tuple):
-            return tuple([self._move_to_device(x) for x in args])
-        if isinstance(args, list):
-            return [self._move_to_device(x) for x in args]
-        if isinstance(args, torch.Tensor):
-            return args.to('cpu')
-        return args
-
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
                                                'or train_apply instead of calling the transform '
                                                'directly.')
 
         if Transform.pd_mode != 'infer':
-            return self._move_to_device(args) if self.cpu else args
+            return _move_to_device(args, 'cpu') if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, list):
