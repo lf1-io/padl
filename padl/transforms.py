@@ -813,7 +813,7 @@ class Transform:
         return self
 
     @property
-    @lru_cache
+    @lru_cache(maxsize=None)
     def pd_layers(self) -> List[torch.nn.Module]:
         """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
         """
