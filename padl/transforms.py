@@ -811,7 +811,7 @@ class Transform:
 
         :param device: Device to set the transform to {'cpu', 'cuda', 'cuda:N'}.
         """
-        self._pd_device = device
+        self.pd_set_device(device)
         for layer in self.pd_layers:
             layer.to(device)
         return self
@@ -1474,7 +1474,7 @@ class Pipeline(Transform):
 
         :param device: device on which to send {'cpu', cuda', 'cuda:N'}
         """
-        self._pd_device = device
+        self.pd_set_device(device)
         for transform_ in self.transforms:
             transform_.pd_to(device)
         return self
