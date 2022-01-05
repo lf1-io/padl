@@ -1552,6 +1552,13 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
+    def _add_name_to_splits(self, final_splits):
+        """Ad name to split-transforms. """
+        if self._pd_name is not None:
+            for i, s in enumerate(final_splits):
+                if not isinstance(s, Identity):
+                    final_splits[i] = s - self._pd_name
+
 
 class Compose(Pipeline):
     """Apply series of transforms on input.
@@ -1622,6 +1629,8 @@ class Compose(Pipeline):
                 final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(identity)
+
+        self._add_name_to_splits(final_splits)
 
         return output_components, final_splits, has_batchify
 
@@ -1837,8 +1846,6 @@ class Rollout(Pipeline):
             else:
                 final_splits.append(s)
 
-        final_splits = tuple(final_splits)
-
         res = []
         for split in final_splits:
             try:
@@ -1846,6 +1853,8 @@ class Rollout(Pipeline):
             except AttributeError:
                 res.append(split)
         final_splits = res
+
+        self._add_name_to_splits(final_splits)
 
         return output_components, final_splits, has_batchify
 
@@ -1939,6 +1948,8 @@ class Parallel(Pipeline):
             except AttributeError:
                 res.append(split)
         final_splits = res
+
+        self._add_name_to_splits(final_splits)
 
         return output_components, final_splits, has_batchify
 
