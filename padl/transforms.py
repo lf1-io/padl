@@ -690,14 +690,15 @@ class Transform:
         no_grad = mode in ('eval', 'infer') and not ignore_grad
 
         if mode is not None:
-            layers = self.pd_layers
-            training_before = [layer.training for layer in layers]
-            for layer in layers:
-                if mode == 'train':
-                    layer.train()
-                else:
-                    layer.eval()
             Transform.pd_mode = mode
+            layers = self.pd_layers
+            if layers:
+                training_before = [layer.training for layer in layers]
+                for layer in layers:
+                    if mode == 'train':
+                        layer.train()
+                    else:
+                        layer.eval()
 
         if no_grad:
             grad_before = torch.is_grad_enabled()
@@ -707,12 +708,13 @@ class Transform:
             return self._pd_unpack_args_and_call(arg)
         finally:
             if mode is not None:
-                for i, training in enumerate(training_before):
-                    layer = layers[i]
-                    if training:
-                        layer.train()
-                    else:
-                        layer.eval()
+                if layers:
+                    for i, training in enumerate(training_before):
+                        layer = layers[i]
+                        if training:
+                            layer.train()
+                        else:
+                            layer.eval()
             Transform.pd_mode = None
             if no_grad:
                 torch.set_grad_enabled(grad_before)
