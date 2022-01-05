@@ -708,6 +708,7 @@ class Transform:
             return self._pd_unpack_args_and_call(arg)
         finally:
             if mode is not None:
+                Transform.pd_mode = None
                 if layers:
                     for i, training in enumerate(training_before):
                         layer = layers[i]
@@ -715,7 +716,6 @@ class Transform:
                             layer.train()
                         else:
                             layer.eval()
-            Transform.pd_mode = None
             if no_grad:
                 torch.set_grad_enabled(grad_before)
 
