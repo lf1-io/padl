@@ -190,6 +190,7 @@ class Transform:
             return Transform._pd_merge_components(res)
         return res
 
+    @property
     @lru_cache(maxsize=128)
     def _pd_get_stages(self):
         if self._pd_stages is None:
@@ -776,34 +777,35 @@ class Transform:
 
         return _GeneratorWithLength(_gen, length)
 
-    def pd_set_device(self, device: str):
-        self._pd_device = device
-
     @property
     def pd_device(self) -> str:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
+    @pd_device.setter
+    def pd_device(self, device: str):
+        self._pd_device = device
+
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        pre = self._pd_get_stages()[0]
-        pre.pd_set_device(self.pd_device)
+        pre = self._pd_get_stages[0]
+        pre.pd_device = self.pd_device
         return pre
 
     @property
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        forward = self._pd_get_stages()[1]
-        forward.pd_set_device(self.pd_device)
+        forward = self._pd_get_stages[1]
+        forward.pd_device = self.pd_device
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        post = self._pd_get_stages()[2]
-        post.pd_set_device(self.pd_device)
+        post = self._pd_get_stages[2]
+        post.pd_device = self.pd_device
         return post
 
     def pd_to(self, device: str) -> "Transform":
@@ -811,7 +813,7 @@ class Transform:
 
         :param device: Device to set the transform to {'cpu', 'cuda', 'cuda:N'}.
         """
-        self.pd_set_device(device)
+        self.pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
         return self
@@ -1474,7 +1476,7 @@ class Pipeline(Transform):
 
         :param device: device on which to send {'cpu', cuda', 'cuda:N'}
         """
-        self.pd_set_device(device)
+        self.pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
         return self
