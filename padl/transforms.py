@@ -684,7 +684,7 @@ class Transform:
 
         :param arg: argument to call the transform with
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
-        :param ignore_grad: If *True* gradients are disabled
+        :param ignore_grad: If *True* gradient settings are ignored
         :return: Whatever the transform returns.
         """
         no_grad = mode in ('eval', 'infer') and not ignore_grad
