@@ -641,12 +641,15 @@ class Transform:
         All transforms in forward need to be in same device as specified for
         the whole Pipeline.
         """
-        for layer in self.pd_forward.pd_layers:
+        pd_device = self.pd_device
+        pd_layers = self.pd_forward.pd_layers
+        for layer in pd_layers:
             for parameters in layer.parameters():
                 parameter_device = parameters.device.type
-                if ':' in self.pd_device and 'cuda' in parameter_device:
-                    parameter_device += f':{parameters.device.index}'
-                if parameter_device != self.pd_device:
+                parameter_device_index = parameters.device.index
+                if ':' in pd_device and 'cuda' in parameter_device:
+                    parameter_device += f':{parameter_device_index}'
+                if parameter_device != pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -656,19 +659,21 @@ class Transform:
         if not isinstance(arg, (list, tuple)):
             return False
 
-        if hasattr(self, '_pd_number_of_inputs') and self._pd_number_of_inputs is not None:
-            return self._pd_number_of_inputs > 1
+        _pd_number_of_inputs = self._pd_number_of_inputs
+        if hasattr(self, '_pd_number_of_inputs') and _pd_number_of_inputs is not None:
+            return _pd_number_of_inputs > 1
 
         try:
             parameters = self._pd_get_signature().values()
         except ValueError:
             return False
         for param in parameters:
-            if param.kind in (
+            param_kind = param.kind
+            if param_kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
                 signature_count += 1
-            if param.kind == param.VAR_POSITIONAL:
+            if param_kind == param.VAR_POSITIONAL:
                 return True
         if signature_count > 1:
             return True
@@ -867,15 +872,19 @@ class Transform:
         :param inputs: The input.
         """
         self.pd_forward_device_check()
+        pd_preprocess = self.pd_preprocess
+        pd_forward = self.pd_forward
+        pd_postprocess = self.pd_postprocess
+        pd_device = self.pd_device
 
-        if not isinstance(self.pd_preprocess, Identity):
-            inputs = self.pd_preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
-        if self.pd_device != 'cpu':
-            inputs = _move_to_device(inputs, self.pd_device)
-        if not isinstance(self.pd_forward, Identity):
-            inputs = self.pd_forward.pd_call_in_mode(inputs, mode='infer')
-        if not isinstance(self.pd_postprocess, Identity):
-            inputs = self.pd_postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+        if not isinstance(pd_preprocess, Identity):
+            inputs = pd_preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+        if pd_device != 'cpu':
+            inputs = _move_to_device(inputs, pd_device)
+        if not isinstance(pd_forward, Identity):
+            inputs = pd_forward.pd_call_in_mode(inputs, mode='infer')
+        if not isinstance(pd_postprocess, Identity):
+            inputs = pd_postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
         return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
