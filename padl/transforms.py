@@ -663,7 +663,7 @@ class Transform:
             return self._pd_number_of_inputs > 1
 
         try:
-            parameters = self._pd_get_signature().values()
+            parameters = self._pd_get_signature.values()
         except ValueError:
             return False
         for param in parameters:
@@ -726,6 +726,8 @@ class Transform:
             if no_grad:
                 torch.set_grad_enabled(grad_before)
 
+    @property
+    @lru_cache(maxsize=128)
     def _pd_get_signature(self):
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
@@ -1020,6 +1022,8 @@ class FunctionTransform(AtomicTransform):
         body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
         return body_msg
 
+    @property
+    @lru_cache(maxsize=128)
     def _pd_get_signature(self) -> List[str]:
         if self._pd_number_of_inputs is None:
             return inspect.signature(self).parameters
@@ -1217,6 +1221,8 @@ class ClassTransform(AtomicTransform):
 class TorchModuleTransform(ClassTransform):
     """Transform class for use with `torch.nn.Module`."""
 
+    @property
+    @lru_cache(maxsize=128)
     def _pd_get_signature(self):
         return inspect.signature(self.forward).parameters
 
@@ -1746,7 +1752,7 @@ class Compose(Pipeline):
             if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
                 all_params = []
                 for tt in t.transforms:
-                    all_params.append(list(tt._pd_get_signature().keys()))
+                    all_params.append(list(tt._pd_get_signature.keys()))
                 to_combine = [
                     ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
                     if len(params) > 1
@@ -1755,7 +1761,7 @@ class Compose(Pipeline):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                params = t._pd_get_signature()
+                params = t._pd_get_signature
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
                     list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
