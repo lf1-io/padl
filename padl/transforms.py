@@ -659,9 +659,8 @@ class Transform:
         if not isinstance(arg, (list, tuple)):
             return False
 
-        _pd_number_of_inputs = self._pd_number_of_inputs
-        if hasattr(self, '_pd_number_of_inputs') and _pd_number_of_inputs is not None:
-            return _pd_number_of_inputs > 1
+        if hasattr(self, '_pd_number_of_inputs') and self._pd_number_of_inputs is not None:
+            return self._pd_number_of_inputs > 1
 
         try:
             parameters = self._pd_get_signature().values()
@@ -694,9 +693,12 @@ class Transform:
         """
         no_grad = mode in ('eval', 'infer') and not ignore_grad
 
+        layers = self.pd_layers
+        if not layers:
+            no_grad = False
+
         if mode is not None:
             Transform.pd_mode = mode
-            layers = self.pd_layers
             if layers:
                 training_before = [layer.training for layer in layers]
                 for layer in layers:
@@ -871,20 +873,26 @@ class Transform:
 
         :param inputs: The input.
         """
-        self.pd_forward_device_check()
-        pd_preprocess = self.pd_preprocess
-        pd_forward = self.pd_forward
-        pd_postprocess = self.pd_postprocess
+        preprocess = self.pd_preprocess
+        forward = self.pd_forward
+        postprocess = self.pd_postprocess
         pd_device = self.pd_device
 
-        if not isinstance(pd_preprocess, Identity):
-            inputs = pd_preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+        use_preprocess = not isinstance(preprocess, Identity)
+        use_forward = not isinstance(forward, Identity)
+        use_post = not isinstance(postprocess, Identity)
+
+        if use_forward:
+            self.pd_forward_device_check()
+
+        if use_preprocess:
+            inputs = preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
         if pd_device != 'cpu':
             inputs = _move_to_device(inputs, pd_device)
-        if not isinstance(pd_forward, Identity):
-            inputs = pd_forward.pd_call_in_mode(inputs, mode='infer')
-        if not isinstance(pd_postprocess, Identity):
-            inputs = pd_postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+        if use_forward:
+            inputs = forward.pd_call_in_mode(inputs, mode='infer')
+        if use_post:
+            inputs = postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
         return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
