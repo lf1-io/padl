@@ -146,8 +146,6 @@ class Transform:
         self._pd_varname = {}
         self._pd_name = pd_name
         self._pd_device = 'cpu'
-        self._pd_layers = None
-        self._pd_stages = None
         self._pd_external_full_dump = False
 
     @property
@@ -192,16 +190,14 @@ class Transform:
 
     @property
     @lru_cache(maxsize=128)
-    def _pd_get_stages(self):
-        if self._pd_stages is None:
-            _, splits, has_batchify = self._pd_splits()
-            if has_batchify:
-                preprocess, forward, postprocess = splits
-            else:
-                preprocess, forward, postprocess = identity, splits[0], splits[2]
-            self._pd_stages = preprocess, forward, postprocess
-
-        return self._pd_stages
+    def pd_stages(self):
+        """Get a tuple of the pre-process, forward, and post-process stages."""
+        _, splits, has_batchify = self._pd_splits()
+        if has_batchify:
+            preprocess, forward, postprocess = splits
+        else:
+            preprocess, forward, postprocess = identity, splits[0], splits[2]
+        return preprocess, forward, postprocess
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple['Transform',
@@ -642,13 +638,11 @@ class Transform:
         the whole Pipeline.
         """
         pd_device = self.pd_device
-        pd_layers = self.pd_forward.pd_layers
-        for layer in pd_layers:
+        for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
                 parameter_device = parameters.device.type
-                parameter_device_index = parameters.device.index
                 if ':' in pd_device and 'cuda' in parameter_device:
-                    parameter_device += f':{parameter_device_index}'
+                    parameter_device += f':{parameters.device.index}'
                 if parameter_device != pd_device:
                     raise WrongDeviceError(self, layer)
         return True
@@ -800,7 +794,7 @@ class Transform:
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        pre = self._pd_get_stages[0]
+        pre = self.pd_stages[0]
         pre.pd_device = self.pd_device
         return pre
 
@@ -808,14 +802,14 @@ class Transform:
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        forward = self._pd_get_stages[1]
+        forward = self.pd_stages[1]
         forward.pd_device = self.pd_device
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        post = self._pd_get_stages[2]
+        post = self.pd_stages[2]
         post.pd_device = self.pd_device
         return post
 
@@ -834,13 +828,11 @@ class Transform:
     def pd_layers(self) -> List[torch.nn.Module]:
         """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
         """
-        if self._pd_layers is None:
-            layers = []
-            for subtrans in self._pd_all_transforms():
-                if isinstance(subtrans, torch.nn.Module):
-                    layers.append(subtrans)
-            self._pd_layers = layers
-        return self._pd_layers
+        layers = []
+        for subtrans in self._pd_all_transforms():
+            if isinstance(subtrans, torch.nn.Module):
+                layers.append(subtrans)
+        return layers
 
     def pd_parameters(self) -> Iterator:
         """Iterate over all (pytorch-) parameters in all layers contained in the transform. """
