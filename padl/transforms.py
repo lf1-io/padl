@@ -1007,8 +1007,8 @@ class AtomicTransform(Transform):
             `t.pd_forward`, then the element that fails on `t` is
             2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
 
-        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
-            else *False*
+        :param is_entire_transform: *False* if *self* is not a part of a larger :class:`Transform`,
+            else *True*
         """
         return 0
 
@@ -1672,8 +1672,8 @@ class Pipeline(Transform):
             is the index 0 of `t.pd_forward`, then the element that fails on `t` is
             2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
 
-        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
-            else *False*
+        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
+            else *True*
         """
 
         return 0
@@ -1922,8 +1922,8 @@ class Compose(Pipeline):
             then the element that fails on `t` is
             2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
 
-        :param is_entire_transform: *True* if *self* is a part of a larger :class:`Transform`,
-            else *False*
+        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
+            else *True*
         """
         return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
 
@@ -2438,7 +2438,7 @@ class _ItemGetter:
         self.default = default
 
     def __getitem__(self, item):
-        if self.exception:
+        if self.exception is not None:
             try:
                 return item, self.transform(self.samples[item])
             except self.exception:
