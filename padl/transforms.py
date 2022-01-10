@@ -2073,7 +2073,6 @@ class Rollout(Pipeline):
                 if not isinstance(s, Identity):
                     final_splits[i] = s - self._pd_name
 
-        final_splits = tuple(final_splits)
         self._add_name_to_splits(final_splits)
         return output_components, final_splits, has_batchify
 
