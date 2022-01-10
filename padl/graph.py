@@ -23,15 +23,17 @@ class Node:
         self.out_index = None
         self._input_args = None
         self._output_slice = {}
+        self._input_slice = {}
         self.pd_output = padl.transforms._OutputSlicer(self)
+        self.pd_input = padl.transforms._InputSlicer(self)
         self.set_output_slice()
+        self.set_input_slice()
 
     def replace_outnode(self, old_node, new_node):
         if old_node in self.out_node:
             self.out_node = [node if node != old_node else new_node for node in self.out_node]
             self._output_slice = {(new_node if key == old_node else key): val for key, val in
                                   self._output_slice.items()}
-
             new_node.connect_innode(self)
             old_node.remove_innode(self)
 
@@ -41,7 +43,6 @@ class Node:
             if self._input_args is not None:
                 self._input_args = {(new_node if key == old_node else key): val for key, val in
                                     self._input_args.items()}
-
             new_node.connect_outnode(self)
             old_node.remove_outnode(self)
 
@@ -73,6 +74,13 @@ class Node:
         else:
             self._name_id = str(self.id)
 
+    def set_input_slice(self):
+        if isinstance(self.transform, padl.transforms.Transform):
+            self._pd_input_slice = self.transform._pd_input_slice
+            self.transform._pd_input_slice = None
+            return
+        self._pd_input_slice = None
+
     def set_output_slice(self):
         if isinstance(self.transform, padl.transforms.Transform):
             self._pd_output_slice = self.transform._pd_output_slice
@@ -83,6 +91,11 @@ class Node:
     def get_output_slice(self):
         out = self._pd_output_slice
         self._pd_output_slice = None
+        return out
+
+    def get_input_slice(self):
+        out = self._pd_input_slice
+        self._pd_input_slice = None
         return out
 
     @classmethod
@@ -116,6 +129,7 @@ class Node:
         if node not in self.in_node:
             self.in_node.append(node)
             node.connect_outnode(self)
+            self._input_slice[node] = self.get_input_slice()
             self._create_input_args_dict()
 
     def connect_outnode(self, node):
@@ -144,15 +158,36 @@ class Node:
         return self.transform.pd_call_transform(args)
 
     def gather_args(self):
-        args = [in_args['args'] for _, in_args in self._input_args.items()]
+        """Gather args to call self.transform
+
+        This gathers all the args and arranges with according to the
+        input_slice order.
+        """
+        gathered_args = {k: None for k in range(len(self._input_args.keys()))}
+
+        not_included_nodes = copy(list(self._input_args.keys()))
+
+        for node, pos in self._input_slice.items():
+            if pos is None:
+                continue
+            arg_ = self._input_args[node]['args']
+            gathered_args[pos] = arg_
+            not_included_nodes.remove(node)
+
+        for pos, arg_ in gathered_args.items():
+            if arg_ is None:
+                node = not_included_nodes.pop(0)
+                gathered_args[pos] = self._input_args[node]['args']
+
+        args = list(gathered_args.values())
         if len(args) == 1:
             return args[0]
         return tuple(args)
 
     def _update_args(self, args, out_node):
-        slice = self._output_slice[out_node]
-        if slice is not None:
-            return args[slice]
+        slice_ = self._output_slice[out_node]
+        if slice_ is not None:
+            return args[slice_]
         return args
 
     def pd_call_node(self, args, in_node=None):
@@ -357,13 +392,6 @@ class Graph(Node):
             _copy.node_dict = {n_.name_id: n_ for n_ in _copy.nodes}
             memo[id_self] = _copy
         return _copy
-
-    """
-    def parallel(self, transforms):
-        self._store_transform_nodes(transforms)
-        
-        for ind, node in enumerate(self.nodes):
-    """
 
     def _add_to_networkx_graph_id(self, innode, networkx_graph):
         for node in innode.out_node:
