@@ -140,6 +140,16 @@ class _OutputSlicer:
         return self.main_object
 
 
+class _InputSlicer:
+    def __init__(self, main_object):
+        self.main_object = main_object
+
+    def __getitem__(self, item):
+        assert not isinstance(item, slice)
+        self.main_object._pd_input_slice = item
+        return self.main_object
+
+
 Mode = Literal['infer', 'eval', 'train']
 Stage = Literal['preprocess', 'forward', 'postprocess']
 
@@ -165,7 +175,9 @@ class Transform:
         self._pd_traceback = traceback.extract_stack()
         self._pd_external_full_dump = False
         self._pd_output_slice = None
+        self._pd_input_slice = None
         self.pd_output = _OutputSlicer(self)
+        self.pd_input = _InputSlicer(self)
 
     @property
     def _pd_full_dump_relevant_module(self):
