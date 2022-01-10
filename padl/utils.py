@@ -156,7 +156,7 @@ class _Debug:
         :param mode: mode ('train', 'eval', 'infer').
         :param pos: level of the :class:`Transform` we are inspecting.
         """
-        assert mode in ('train', 'eval', 'infer')
+        assert mode in ('train', 'eval', 'infer'), 'Mode should be "train", "eval" or "infer'
         if pos == len(_pd_trace) - 1:
             _pd_trace.clear()
             self._repeat_entire(mode)
@@ -180,9 +180,11 @@ class _Debug:
     def _repeat_entire(self, mode):
         if mode == 'train':
             list(self.trans.train_apply(self.args, batch_size=len(self.args), num_workers=0))
-        if mode == 'eval':
+        elif mode == 'eval':
             list(self.trans.eval_apply(self.args, batch_size=len(self.args), num_workers=0))
-        self.trans.infer_apply(self.args)
+        elif mode == 'infer':
+            self.trans.infer_apply(self.args)
+        raise ValueError('Mode is not set, it should be "train", "eval" or "infer')
 
     def _repeat_on_stage(self, mode):
         self.trans.pd_call_transform(self.args, mode)

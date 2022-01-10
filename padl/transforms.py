@@ -759,7 +759,6 @@ class Transform:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
             loader = _SimpleGetter(args)
-#            loader = self.pd_get_loader(args, Identity(), mode, batch_size=1)
 
         def _gen():
             for ix, batch in loader:
