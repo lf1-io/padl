@@ -2289,6 +2289,8 @@ def importdump(transform_or_module):
 
 class Node:
     _id = 0
+    op = NotImplemented
+    display_op = NotImplemented
 
     def __init__(self, transform=None, name=None):
         self.id = self.generate_id()
@@ -2398,6 +2400,8 @@ class Node:
                 self.pd_name)
             _copy.in_node = copy(self.in_node)
             _copy.out_node = copy(self.out_node)
+            _copy.op = self.op
+            _copy.display_op = self.display_op
             memo[id_self] = _copy
         return _copy
 
@@ -2553,6 +2557,9 @@ class Graph(Node, Pipeline):
         self.display_op = '>>'
         self.op = '>>'
 
+        self.input_node.display_op = '>>'
+        self.input_node.op = '>>'
+
         self._operation_type = 'compose'
         transforms = self._flatten_list(transforms, 'compose')
         self._store_transform_nodes(transforms)
@@ -2568,6 +2575,9 @@ class Graph(Node, Pipeline):
     def rollout(self, transforms):
         self.display_op = '+'
         self.op = '+'
+        self.input_node.display_op = '+'
+        self.input_node.op = '+'
+
         self._operation_type = 'rollout'
         transforms = self._flatten_list(transforms, 'rollout')
         self._store_transform_nodes(transforms)
@@ -2579,6 +2589,9 @@ class Graph(Node, Pipeline):
     def parallel(self, transforms):
         self.display_op = '/'
         self.op = '/'
+        self.input_node.display_op = '/'
+        self.input_node.op = '/'
+
         self._operation_type = 'parallel'
         transforms = self._flatten_list(transforms, 'parallel')
         self._store_transform_nodes(transforms)
@@ -2664,6 +2677,11 @@ class Graph(Node, Pipeline):
         if _copy is None:
             _copy = type(self)(
                 self.transform)
+            _copy.input_node.op = self.op
+            _copy.input_node.display_op = self.display_op
+            _copy.op = self.op
+            _copy.display_op = self.display_op
+
             _copy.in_node = copy(self.in_node)
             _copy.out_node = copy(self.out_node)
             _copy.transforms = copy(self.transforms)
@@ -2745,11 +2763,20 @@ class Graph(Node, Pipeline):
         return
 
     def __getitem__(self, item):
-        if isinstance(item, (slice, int)):
-            return self.nodes[item]
+        if isinstance(item, int):
+            return self.transforms[item]
+        if isinstance(item, slice):
+            transform_ = type(self)(self.transforms[item])
+            transform_.pd_to(self.pd_device)
+            return transform_
         if isinstance(item, str):
-            return self.node_dict[item]
-        raise f'Error: invalid index {item}, accept int, slice or string'
+            for transform_ in self.transforms:
+                if transform_.pd_name == item:
+                    return transform_
+            if item in self.node_dict:
+                return self.node_dict[item]
+            raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
+        raise TypeError('Unknown type for get item: expected type {int, slice, str}')
 
     def add_edge(self, *connection_tuple):
         """ Currently this is really badly implemented that
@@ -2784,7 +2811,8 @@ class Graph(Node, Pipeline):
                \
               Output
 
-        Here C is dangling node.
+        Here C is dangling node. Dangling nodes are also all the other nodes that might
+        not be connected at all with Input & Output.
         """
         nodes = []
         transform_nodes = []
@@ -2811,9 +2839,32 @@ class Graph(Node, Pipeline):
         _get_nodes(self.input_node)
         _append_to_nodes(self.output_node)
 
+        # if self._operation_type in ['rollout', 'parallel']:
+        #      self._split_branches()
+
         self.nodes = nodes
         self.transform_nodes = transform_nodes
         self.transforms = [node_.transform for node_ in self.transform_nodes]
+
+    def _split_branches(self):
+        """Recursively break the branches for rollout and parallel
+        """
+
+        def _get_last_node(node):
+            for n_ in node.out_node:
+                if n_.id == self.output_node.id:
+                    return n_
+                return _get_last_node(n_)
+
+        nodes = []
+        if self._operation_type in ['rollout', 'parallel']:
+            for node_ in self.input_node.out_node:
+
+                nodes.append(node_)
+
+            # for node_
+
+
 
     def _pd_splits(self, input_components=0):
         self.store_splits()
