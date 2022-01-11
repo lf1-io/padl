@@ -35,3 +35,4 @@ usage/extras.md
 - {class}`~padl.IfEval` for conditioning on the 'eval'-stage.
 - {class}`~padl.IfTrain` for conditioning on the 'train'-stage.
 - {class}`~padl.Try` for catching exceptions in a transform.
+- {class}`~padl.utils.pd_debug` for debugging Transforms.
