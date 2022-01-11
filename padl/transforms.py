@@ -292,7 +292,7 @@ class Transform:
         Example:
             t = a >> b >> c
         """
-        graph = padl_graph.Graph()
+        graph = Graph()
         graph.compose([self, other])
         return graph
 
@@ -302,7 +302,7 @@ class Transform:
         Example:
             t = a + b + c
         """
-        graph = padl_graph.Graph()
+        graph = Graph()
         graph.rollout([self, other])
         return graph
 
@@ -312,7 +312,7 @@ class Transform:
         Example:
             t = a / b / c
         """
-        graph = padl_graph.Graph()
+        graph = Graph()
         graph.parallel([self, other])
         return graph
 
@@ -2480,7 +2480,7 @@ class Node:
             return output if output is not None else args_to_pass
 
 
-class Graph(Pipeline, Node):
+class Graph(Node, Pipeline):
     def __init__(self, transforms=None):
         Pipeline.__init__(self, transforms)
         Node.__init__(self)
@@ -2550,6 +2550,9 @@ class Graph(Pipeline, Node):
             self.output_node._output_slice[node] = self.get_output_slice()
 
     def compose(self, transforms):
+        self.display_op = '>>'
+        self.op = '>>'
+
         self._operation_type = 'compose'
         transforms = self._flatten_list(transforms, 'compose')
         self._store_transform_nodes(transforms)
@@ -2563,6 +2566,8 @@ class Graph(Pipeline, Node):
         next_node.connect_outnode(self.output_node)
 
     def rollout(self, transforms):
+        self.display_op = '+'
+        self.op = '+'
         self._operation_type = 'rollout'
         transforms = self._flatten_list(transforms, 'rollout')
         self._store_transform_nodes(transforms)
@@ -2572,6 +2577,8 @@ class Graph(Pipeline, Node):
             node.connect_outnode(self.output_node)
 
     def parallel(self, transforms):
+        self.display_op = '/'
+        self.op = '/'
         self._operation_type = 'parallel'
         transforms = self._flatten_list(transforms, 'parallel')
         self._store_transform_nodes(transforms)
@@ -2629,7 +2636,7 @@ class Graph(Pipeline, Node):
         return hash(repr(self))
 
     def __deepcopy__(self, memo):
-        """Deepcopy of Nodes"""
+        """Deepcopy of Graph"""
 
         def _copy_nodes(_copy_graph, inp_node, copy_inp_node, copied_node_dict={}):
             for node in inp_node.out_node:
@@ -2659,6 +2666,7 @@ class Graph(Pipeline, Node):
                 self.transform)
             _copy.in_node = copy(self.in_node)
             _copy.out_node = copy(self.out_node)
+            _copy.transforms = copy(self.transforms)
 
             _copy.nodes.append(_copy.input_node)
             copied_node_dict = {self.input_node: _copy.input_node,
@@ -2767,6 +2775,16 @@ class Graph(Pipeline, Node):
         """Clean all dangling nodes
 
         Dangling nodes are those nodes that are not connected to *Input* and *Output*
+
+            Input
+             |
+             A
+            / \
+           C  D
+               \
+              Output
+
+        Here C is dangling node.
         """
         nodes = []
         transform_nodes = []
@@ -2795,6 +2813,7 @@ class Graph(Pipeline, Node):
 
         self.nodes = nodes
         self.transform_nodes = transform_nodes
+        self.transforms = [node_.transform for node_ in self.transform_nodes]
 
     def _pd_splits(self, input_components=0):
         self.store_splits()
@@ -2836,6 +2855,7 @@ class Graph(Pipeline, Node):
 
         _copy_graph.output_node = output_node
         self.clean_nodes()
+        _copy_graph.clean_nodes()
         _copy_graph.convert_to_networkx()
 
         return _copy_graph
@@ -2887,6 +2907,7 @@ class Graph(Pipeline, Node):
         _copy_graph.input_node = input_node
 
         self.clean_nodes()
+        _copy_graph.clean_nodes()
         _copy_graph.convert_to_networkx()
         return _copy_graph
 
@@ -2919,6 +2940,7 @@ class Graph(Pipeline, Node):
         _copy_graph.input_node = input_node
 
         self.clean_nodes()
+        _copy_graph.clean_nodes()
         _copy_graph.convert_to_networkx()
         return _copy_graph
 
