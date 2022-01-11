@@ -524,6 +524,9 @@ class Transform:
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
+    def _pd_get_error_idx(self):
+        return NotImplemented
+
     def _pd_trace_error(self, position: int, arg):
         """Add some error description to :obj:`pd_trace`. """
         try:
@@ -2470,21 +2473,12 @@ class _SimpleGetter:
     """A simple item getter.
 
     :param samples: An object implementing __getitem__ and __len__.
-    :param exception: Exception to catch for (fall back to *default*).
-    :param default: The default value to fall back to in case of exception.
     """
 
-    def __init__(self, samples, exception=None, default=None):
+    def __init__(self, samples):
         self.samples = samples
-        self.exception = exception
-        self.default = default
 
     def __getitem__(self, item):
-        if self.exception:
-            try:
-                return [item], self.samples[item]
-            except self.exception:
-                return [item], self.default
         return [item], self.samples[item]
 
     def __len__(self):
