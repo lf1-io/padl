@@ -187,7 +187,7 @@ class _Debug:
         raise ValueError('Mode is not set, it should be "train", "eval" or "infer')
 
     def _repeat_on_stage(self, mode):
-        self.trans.pd_call_transform(self.args, mode)
+        self.trans.pd_call_in_mode(self.args, mode)
 
 
 pd_debug = _Debug()

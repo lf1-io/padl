@@ -5,7 +5,7 @@ Transforms should be created using the `padl.transform` wrap-function.
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
-import contextlib
+from functools import lru_cache
 import inspect
 from itertools import chain
 from pathlib import Path
@@ -151,7 +151,6 @@ class Transform:
         self._pd_varname = {}
         self._pd_name = pd_name
         self._pd_device = 'cpu'
-        self._pd_layers = None
         self._pd_traceback = traceback.extract_stack()
         self._pd_stages = None
         self._pd_external_full_dump = False
@@ -196,15 +195,16 @@ class Transform:
             return Transform._pd_merge_components(res)
         return res
 
-    def _pd_get_stages(self):
-        if self._pd_stages is None:
-            _, splits, has_batchify = self._pd_splits()
-            if has_batchify:
-                preprocess, forward, postprocess = splits
-            else:
-                preprocess, forward, postprocess = identity, splits[0], splits[2]
-            self._pd_stages = preprocess, forward, postprocess
-        return self._pd_stages
+    @property
+    @lru_cache(maxsize=128)
+    def pd_stages(self):
+        """Get a tuple of the pre-process, forward, and post-process stages."""
+        _, splits, has_batchify = self._pd_splits()
+        if has_batchify:
+            preprocess, forward, postprocess = splits
+        else:
+            preprocess, forward, postprocess = identity, splits[0], splits[2]
+        return preprocess, forward, postprocess
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple['Transform',
@@ -668,12 +668,13 @@ class Transform:
         All transforms in forward need to be in same device as specified for
         the whole Pipeline.
         """
+        pd_device = self.pd_device
         for layer in self.pd_forward.pd_layers:
             for parameters in layer.parameters():
                 parameter_device = parameters.device.type
-                if ':' in self.pd_device and 'cuda' in parameter_device:
+                if ':' in pd_device and 'cuda' in parameter_device:
                     parameter_device += f':{parameters.device.index}'
-                if parameter_device != self.pd_device:
+                if parameter_device != pd_device:
                     raise WrongDeviceError(self, layer)
         return True
 
@@ -687,21 +688,22 @@ class Transform:
             return self._pd_number_of_inputs > 1
 
         try:
-            parameters = self._pd_get_signature().values()
+            parameters = self._pd_signature.values()
         except ValueError:
             return False
         for param in parameters:
-            if param.kind in (
+            param_kind = param.kind
+            if param_kind in (
                     param.POSITIONAL_OR_KEYWORD,
                     param.POSITIONAL_ONLY):
                 signature_count += 1
-            if param.kind == param.VAR_POSITIONAL:
+            if param_kind == param.VAR_POSITIONAL:
                 return True
         if signature_count > 1:
             return True
         return False
 
-    def _pd_call_transform(self, arg):
+    def _pd_unpack_args_and_call(self, arg):
         try:
             if self._pd_unpack_argument(arg):
                 return self(*arg)
@@ -710,23 +712,52 @@ class Transform:
             self._pd_trace_error(0, arg)
             raise err
 
-    def pd_call_transform(self, arg, mode: Optional[Mode] = None):
+    def pd_call_in_mode(self, arg, mode: Mode, ignore_grad=False):
         """Call the transform, with possibility to pass multiple arguments.
 
         :param arg: argument to call the transform with
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
+        :param ignore_grad: If *True* gradient settings are ignored
         :return: Whatever the transform returns.
         """
+        no_grad = mode in ('eval', 'infer') and not ignore_grad
 
-        if mode in ('eval', 'infer'):
-            torch_context = torch.no_grad()
-        else:
-            torch_context = contextlib.suppress()
+        layers = self.pd_layers
+        if not layers:
+            no_grad = False
 
-        with self.pd_set_mode(mode), torch_context:
-            return self._pd_call_transform(arg)
+        if mode is not None:
+            Transform.pd_mode = mode
+            if layers:
+                training_before = [layer.training for layer in layers]
+                for layer in layers:
+                    if mode == 'train':
+                        layer.train()
+                    else:
+                        layer.eval()
 
-    def _pd_get_signature(self):
+        if no_grad:
+            grad_before = torch.is_grad_enabled()
+            torch.set_grad_enabled(False)
+
+        try:
+            return self._pd_unpack_args_and_call(arg)
+        finally:
+            if mode is not None:
+                Transform.pd_mode = None
+                if layers:
+                    for i, training in enumerate(training_before):
+                        layer = layers[i]
+                        if training:
+                            layer.train()
+                        else:
+                            layer.eval()
+            if no_grad:
+                torch.set_grad_enabled(grad_before)
+
+    @property
+    @lru_cache(maxsize=128)
+    def _pd_signature(self):
         """Get the signature of the transform. """
         return inspect.signature(self).parameters
 
@@ -758,6 +789,9 @@ class Transform:
         use_forward = not isinstance(forward, Identity)
         use_post = not isinstance(post, Identity)
 
+        if use_forward:
+            self.pd_forward_device_check()
+
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
@@ -767,9 +801,10 @@ class Transform:
             for ix, batch in loader:
                 batch = _move_to_device(batch, self.pd_device)
                 output = batch
+
                 if use_forward:
                     try:
-                        output = forward.pd_call_transform(batch, mode)
+                        output = forward.pd_call_in_mode(batch, mode)
                     except Exception as err:
                         self._pd_trace_error(self._pd_get_error_idx('forward'),
                                              [args[i] for i in ix])
@@ -779,11 +814,13 @@ class Transform:
                     output = _unpack_batch(output)
                     if use_post:
                         try:
-                            output = [post.pd_call_transform(x, mode) for x in output]
+                            output = [post.pd_call_in_mode(x, mode, ignore_grad=True) \
+                                      for x in output]
                         except Exception as err:
                             self._pd_trace_error(self._pd_get_error_idx('postprocess'),
                                                  [args[i] for i in ix])
                             raise err
+
                     for out in output:
                         yield self._pd_format_output(out)
                 else:
@@ -801,26 +838,30 @@ class Transform:
         """Return the device ("cpu" / "cuda") the transform is on."""
         return self._pd_device
 
+    @pd_device.setter
+    def pd_device(self, device: str):
+        self._pd_device = device
+
     @property
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
-        pre = self._pd_get_stages()[0]
-        pre.pd_to(self.pd_device)
+        pre = self.pd_stages[0]
+        pre.pd_device = self.pd_device
         return pre
 
     @property
     def pd_forward(self) -> "Transform":
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
-        forward = self._pd_get_stages()[1]
-        forward.pd_to(self.pd_device)
+        forward = self.pd_stages[1]
+        forward.pd_device = self.pd_device
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
-        post = self._pd_get_stages()[2]
-        post.pd_to(self.pd_device)
+        post = self.pd_stages[2]
+        post.pd_device = self.pd_device
         return post
 
     def pd_to(self, device: str) -> "Transform":
@@ -828,12 +869,13 @@ class Transform:
 
         :param device: Device to set the transform to {'cpu', 'cuda', 'cuda:N'}.
         """
-        self._pd_device = device
+        self.pd_device = device
         for layer in self.pd_layers:
             layer.to(device)
         return self
 
     @property
+    @lru_cache(maxsize=128)
     def pd_layers(self) -> List[torch.nn.Module]:
         """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
         """
@@ -848,37 +890,6 @@ class Transform:
         for layer in self.pd_layers:
             yield from layer.parameters()
 
-    @contextlib.contextmanager
-    def pd_set_mode(self, mode: Optional[str] = None):
-        """Set of mode of Transform
-
-        :param mode: mode ('train', 'eval', 'infer')
-        """
-        assert mode in ('train', 'eval', 'infer', None)
-
-        if mode is None:
-            yield
-            return
-
-        layers = self.pd_layers
-        training_before = [layer.training for layer in layers]
-        try:
-            for layer in layers:
-                if mode == 'train':
-                    layer.train()
-                else:
-                    layer.eval()
-            Transform.pd_mode = mode
-            yield
-        finally:
-            for i, training in enumerate(training_before):
-                layer = layers[i]
-                if training:
-                    layer.train()
-                else:
-                    layer.eval()
-            Transform.pd_mode = None
-
     def pd_get_loader(self, args, preprocess, mode, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
@@ -890,7 +901,7 @@ class Transform:
         """
         sequence = _ItemGetter(
             args,
-            lambda *args: preprocess.pd_call_transform(*args, mode),
+            lambda *args: preprocess.pd_call_in_mode(*args, mode, ignore_grad=True),
             self
         )
 
@@ -907,21 +918,37 @@ class Transform:
 
         :param inputs: The input.
         """
-        self.pd_forward_device_check()
         in_args = inputs
         _pd_trace.clear()
-        inputs = self.pd_preprocess.pd_call_transform(inputs, mode='infer')
-        inputs = _move_to_device(inputs, self.pd_device)
-        try:
-            inputs = self.pd_forward.pd_call_transform(inputs, mode='infer')
-        except Exception as err:
-            self._pd_trace_error(self._pd_get_error_idx('forward'), in_args)
-            raise err
-        try:
-            inputs = self.pd_postprocess.pd_call_transform(inputs, mode='infer')
-        except Exception as err:
-            self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
-            raise err
+
+        preprocess = self.pd_preprocess
+        forward = self.pd_forward
+        postprocess = self.pd_postprocess
+        pd_device = self.pd_device
+
+        use_preprocess = not isinstance(preprocess, Identity)
+        use_forward = not isinstance(forward, Identity)
+        use_post = not isinstance(postprocess, Identity)
+
+        if use_forward:
+            self.pd_forward_device_check()
+
+        if use_preprocess:
+            inputs = preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+        if pd_device != 'cpu':
+            inputs = _move_to_device(inputs, self.pd_device)
+        if use_forward:
+            try:
+                inputs = forward.pd_call_in_mode(inputs, mode='infer')
+            except Exception as err:
+                self._pd_trace_error(self._pd_get_error_idx('forward'), in_args)
+                raise err
+        if use_post:
+            try:
+                inputs = postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+            except Exception as err:
+                self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
+                raise err
         return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
@@ -1079,7 +1106,9 @@ class FunctionTransform(AtomicTransform):
         body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
         return body_msg
 
-    def _pd_get_signature(self) -> List[str]:
+    @property
+    @lru_cache(maxsize=128)
+    def _pd_signature(self) -> List[str]:
         if self._pd_number_of_inputs is None:
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
@@ -1282,7 +1311,9 @@ class ClassTransform(AtomicTransform):
 class TorchModuleTransform(ClassTransform):
     """Transform class for use with `torch.nn.Module`."""
 
-    def _pd_get_signature(self):
+    @property
+    @lru_cache(maxsize=128)
+    def _pd_signature(self):
         return inspect.signature(self.forward).parameters
 
     def pre_save(self, path: Path, i: int):
@@ -1388,7 +1419,7 @@ class Map(Transform):
         """
         :param args: Args list to call transforms with
         """
-        return tuple([self.transform.pd_call_transform(arg) for arg in args])
+        return tuple([self.transform._pd_unpack_args_and_call(arg) for arg in args])
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         str_ = '~ ' + self.transform._pd_shortrepr(formatting)
@@ -1469,7 +1500,7 @@ class Pipeline(Transform):
     def __len__(self):
         return len(self.transforms)
 
-    def _pd_call_transform(self, arg):
+    def _pd_unpack_args_and_call(self, arg):
         if self._pd_unpack_argument(arg):
             return self(*arg)
         return self(arg)
@@ -1569,7 +1600,7 @@ class Pipeline(Transform):
 
         :param device: device on which to send {'cpu', cuda', 'cuda:N'}
         """
-        self._pd_device = device
+        self.pd_device = device
         for transform_ in self.transforms:
             transform_.pd_to(device)
         return self
@@ -1582,6 +1613,9 @@ class Pipeline(Transform):
 
         :return: Bool
         """
+        if isinstance(self.pd_forward, Identity):
+            return True
+
         return_val = True
 
         if isinstance(self.pd_forward, type(self)):
@@ -1872,7 +1906,7 @@ class Compose(Pipeline):
             if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
                 all_params = []
                 for tt in t.transforms:
-                    all_params.append(list(tt._pd_get_signature().keys()))
+                    all_params.append(list(tt._pd_signature.keys()))
                 to_combine = [
                     ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
                     if len(params) > 1
@@ -1881,7 +1915,7 @@ class Compose(Pipeline):
                 ]
                 to_format = combine_multi_line_strings(to_combine)
             else:
-                params = t._pd_get_signature()
+                params = t._pd_signature
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
                     list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
@@ -1904,7 +1938,7 @@ class Compose(Pipeline):
         _in_args = args
         for i, transform_ in enumerate(self.transforms):
             try:
-                args = transform_.pd_call_transform(args)
+                args = transform_._pd_unpack_args_and_call(args)
             except Exception as err:
                 self._pd_trace_error(i, _in_args)
                 raise err
@@ -2087,10 +2121,11 @@ class Rollout(Pipeline):
         out = []
         for i, transform_ in enumerate(self.transforms):
             try:
-                out.append(transform_.pd_call_transform(args))
+                out.append(transform_._pd_unpack_args_and_call(args))
             except Exception as err:
                 self._pd_trace_error(i, args)
                 raise err
+
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
@@ -2191,10 +2226,11 @@ class Parallel(Pipeline):
         out = []
         for ind, transform_ in enumerate(self.transforms):
             try:
-                out.append(transform_.pd_call_transform(args[ind]))
+                out.append(transform_._pd_unpack_args_and_call(args[ind]))
             except Exception as err:
                 self._pd_trace_error(ind, args)
                 raise err
+
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
@@ -2284,22 +2320,13 @@ class Unbatchify(BuiltinTransform):
         # put the output component to 2 ("un-batchified")
         return 2, (identity, identity, self), False
 
-    def _move_to_device(self, args):
-        if isinstance(args, tuple):
-            return tuple([self._move_to_device(x) for x in args])
-        if isinstance(args, list):
-            return [self._move_to_device(x) for x in args]
-        if isinstance(args, torch.Tensor):
-            return args.to('cpu')
-        return args
-
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
                                                'or train_apply instead of calling the transform '
                                                'directly.')
 
         if Transform.pd_mode != 'infer':
-            return self._move_to_device(args) if self.cpu else args
+            return _move_to_device(args, 'cpu') if self.cpu else args
         if isinstance(args, tuple):
             return tuple([self(x) for x in args])
         if isinstance(args, list):
@@ -2437,23 +2464,14 @@ class _ItemGetter:
     :param transform: Preprocessing transform.
     :param entire_transform: :class:`Transform` which *transform* belongs to, i.e.,
         :class:`Transform` whose preprocessing part is *transform*.
-    :param exception: Exception to catch for (fall back to *default*).
-    :param default: The default value to fall back to in case of exception.
     """
 
-    def __init__(self, samples, transform, entire_transform, exception=None, default=None):
+    def __init__(self, samples, transform, entire_transform):
         self.samples = samples
         self.transform = transform
         self.entire_transform = entire_transform
-        self.exception = exception
-        self.default = default
 
     def __getitem__(self, item):
-        if self.exception is not None:
-            try:
-                return item, self.transform(self.samples[item])
-            except self.exception:
-                return item, self.default
         try:
             return item, self.transform(self.samples[item])
         except Exception as err:
@@ -2483,7 +2501,6 @@ class _SimpleGetter:
 
     def __len__(self):
         return len(self.samples)
-
 
 @dataclass
 class _TraceItem:
