@@ -7,6 +7,8 @@ PADL provides a customized debugger to inspect and diagnose errors raised when a
 For using this functionality, call {obj}`~pd_debug` after the execution failed, such as 
 
 ```python
+# train_apply, eval_apply or infer_apply that produced a RuntimeError
+
 from padl import pd_debug
 
 pd_debug()
@@ -21,16 +23,18 @@ The debugger console has defined the following commands:
 * d(own): go one abstraction level down on the {class}`~padl.transforms.Pipeline`.
 * w(here am I?): show code position where the {class}`~padl.transforms.Transform` was defined.
 * i(nput): show input to this level.
+* r(epeat): repeat the execution from here (it will produce the same Exception).
+* t(ransform): display the current Transform.
 * h(elp): print help about the commands.
 * q(uit): quit the debugger.
 ```
 
-On top of this, it incorporates an in-line compiler so the user can define and inspect variables, 
+On top of this, it incorporates an in-line co:mpiler so the user can define and inspect variables, 
 check attributes, import packages...
 
-#### Example
+### Example
 
-Let {obj}`~t` be the following {class}`~padl.transforms.Pipeline`.
+Let `t` be the following {class}`~padl.transforms.Pipeline`.
 
 ```python
 import torch
@@ -48,15 +52,16 @@ Then, if we run
 list(t.train_apply([[9,8,8], [4, 4, 4], [5, 5, 5], [6, 6, 6]], batch_size=2, num_workers=0))
 ```
 
-we get an error since the shape of the embeddings does not match wit the one expected by the linear
-layer. Calling {obj}`~pd_debug` after this will retrieve a console where we can make some checks. 
+we get an error since the shape of the embeddings does not match with the one expected by the linear
+layer. Calling {obj}`~padl.pd_debug` after this will retrieve a console where we can make some checks. 
 
 At the starting level of the debugger, we interact with the entire Transform and its absolute 
-input. One level down, it goes directly to the **stage** that got the Exception (*preprocess*, 
+input. When going down one level by entering `d` , the debugger switches to the 
+{ref} stage <stages> that got the Exception (*preprocess*, 
 *forward* or *postprocess*), and each level deeper moves recursively inside the element that failed
 until the {class}`~padl.transforms.AtomicTransform` that failed is reached.
 
-Below, some examples are provided:
+Below, some commands and statements are shown:
 
 ```python
 > i
@@ -69,7 +74,7 @@ Compose - "t":
 
       │
       ▼ x
-   0: to_tensor                                    
+   0: lambda x: torch.LongTensor(x)                
       │
       ▼ args
    1: Batchify(dim=0)                              
@@ -78,9 +83,13 @@ Compose - "t":
    2: Embedding(num_embeddings=10, embedding_dim=8)
       │
       ▼ input
-   3: Linear(-?-)                                    <---- error here 
+   3: Linear(in_features=5, out_features=5)          <---- error here 
 
->  d
+> w
+    
+----> 7    t = to_tensor >> batch >> emb >> linear
+
+> d
 
 Compose:
 
@@ -89,22 +98,26 @@ Compose:
    0: Embedding(num_embeddings=10, embedding_dim=8)
       │
       ▼ input
-   1: Linear(-?-)                                    <---- error here 
+   1: Linear(in_features=5, out_features=5)          <---- error here 
 
 > d
 
-Linear(-?-) - "linear":
+Linear(in_features=5, out_features=5) - "linear":
 
    Linear(in_features=5, out_features=5, bias=True)  <---- error here 
+
+> w
+
+----> 6    linear = transform(torch.nn.Linear)(5, 5)
 
 > i.shape
 
 torch.Size([2, 3, 8])
 
 > a = 4
-> a
+> a + 1
 
-4
+5
 
 > q
 ```

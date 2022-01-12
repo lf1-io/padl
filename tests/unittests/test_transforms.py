@@ -965,9 +965,9 @@ class TestTrace:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         emb = transform(torch.nn.Embedding)(10, 8)
-        linear = transform(torch.nn.Linear)(8, 4)
+        linear = transform(torch.nn.Linear)(4, 4)
         to_tensor = transform(lambda x: torch.LongTensor(x))
-        request.cls.pipeline = to_tensor >> emb >> linear
+        request.cls.pipeline = to_tensor >> batch >> emb >> linear
 
     def test_pd_trace(self):
         try:
@@ -975,10 +975,10 @@ class TestTrace:
                                            batch_size=2, num_workers=0))
         except:
             from padl.transforms import _pd_trace
-            len(_pd_trace) == 3
-            _pd_trace[0].error_position == 0
-            _pd_trace[1].args == torch.LongTensor([[9, 8, 8], [4, 4, 4]])
-            _pd_trace[1].error_position == 1
-            _pd_trace[1].pd_mode == 'train'
-            _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
-            _pd_trace[2].error_position == 3
+            assert len(_pd_trace) == 3
+            assert _pd_trace[0].error_position == 0
+            assert torch.equal(_pd_trace[1].args, torch.LongTensor([[9, 8, 8], [4, 4, 4]]))
+            assert _pd_trace[1].error_position == 1
+            assert _pd_trace[1].pd_mode == 'train'
+            assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
+            assert _pd_trace[2].error_position == 3

@@ -16,6 +16,7 @@ usage/apply.md
 usage/saving.md
 usage/print_slice.md
 usage/pytorch.md
+usage/debugging_your_transforms.md
 usage/extras.md
 ```
 
@@ -34,5 +35,5 @@ usage/extras.md
 - {class}`~padl.IfInfer` for conditioning on the 'infer'-stage.
 - {class}`~padl.IfEval` for conditioning on the 'eval'-stage.
 - {class}`~padl.IfTrain` for conditioning on the 'train'-stage.
-- {class}`~padl.Try` for catching exceptions in a transform.
+- {class}`~padl.Try` for catching exceptions in a Transform.
 - {class}`~padl.utils.pd_debug` for debugging Transforms.

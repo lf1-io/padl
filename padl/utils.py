@@ -66,18 +66,18 @@ same = _Same()
 
 
 class _Debug:
-    """Customized debugger for :class:`padl.Transform`s.
+    """Customized debugger for :class:`padl.transforms.Transform`s.
 
-    When an exception on the execution of a :class:`Transform` is produced and a :class:`_Debug`
-    object is called, an interactive debugger at different levels in the :class:`Transform` is
-    gotten.
+    When an exception on the execution of a :class:`padl.transforms.Transform` is produced and a
+    :class:`_Debug` object is called, an interactive debugger at different levels in the
+    :class:`padl.transforms.Transform` is gotten.
 
     At the top, the user interacts with the entire transform and its absolute input. One level
     down, it goes directly to the stage that got the Exception (either to
     :meth:`padl.transforms.Transform.pd_preprocess`, :meth:`padl.transforms.Transform.pd_forward`,
     or :meth:`padl.transforms.Transform.pd_postprocess`) and each level deeper moves recursively
-    inside the element that failed until the :class:`AtomicTransform` that got the Exception is
-    reached.
+    inside the element that failed until the :class:`padl.transforms.AtomicTransform` that got the
+    Exception is reached.
     """
     def __init__(self):
         self.trans = None
@@ -157,11 +157,11 @@ class _Debug:
         :param pos: level of the :class:`Transform` we are inspecting.
         """
         assert mode in ('train', 'eval', 'infer'), 'Mode should be "train", "eval" or "infer'
-        if pos == len(_pd_trace) - 1:
-            _pd_trace.clear()
-            self._repeat_entire(mode)
         _pd_trace.clear()
-        self._repeat_on_stage(mode)
+        if pos == len(_pd_trace) - 1:
+            self._repeat_entire(mode)
+        else:
+            self._repeat_on_stage(mode)
 
     @staticmethod
     def _down_step(pos, pd_trace):

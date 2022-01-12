@@ -152,7 +152,6 @@ class Transform:
         self._pd_name = pd_name
         self._pd_device = 'cpu'
         self._pd_traceback = traceback.extract_stack()
-        self._pd_stages = None
         self._pd_external_full_dump = False
 
     @property
@@ -525,6 +524,11 @@ class Transform:
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
     def _pd_get_error_idx(self):
+        """Get what element of a {class}`Transform` is failing if an Exception is produced during
+        an execution.
+
+        Subclasses of {class}`padl.transforms.Transform` need to implement this method.
+        """
         return NotImplemented
 
     def _pd_trace_error(self, position: int, arg):
@@ -936,7 +940,7 @@ class Transform:
         if use_preprocess:
             inputs = preprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
         if pd_device != 'cpu':
-            inputs = _move_to_device(inputs, self.pd_device)
+            inputs = _move_to_device(inputs, pd_device)
         if use_forward:
             try:
                 inputs = forward.pd_call_in_mode(inputs, mode='infer')
@@ -1809,11 +1813,6 @@ class Compose(Pipeline):
             else:  # if it's empty: identity
                 final_splits.append(identity)
 
-        if self._pd_name is not None:
-            for i, s in enumerate(final_splits):
-                if not isinstance(s, Identity):
-                    final_splits[i] = s - self._pd_name
-
         self._add_name_to_splits(final_splits)
         return output_components, final_splits, has_batchify
 
@@ -2104,11 +2103,6 @@ class Rollout(Pipeline):
                 res.append(split)
         final_splits = res
 
-        if self._pd_name is not None:
-            for i, s in enumerate(final_splits):
-                if not isinstance(s, Identity):
-                    final_splits[i] = s - self._pd_name
-
         self._add_name_to_splits(final_splits)
         return output_components, final_splits, has_batchify
 
@@ -2210,10 +2204,6 @@ class Parallel(Pipeline):
                 res.append(split)
         final_splits = res
 
-        if self._pd_name is not None:
-            for i, s in enumerate(final_splits):
-                if not isinstance(s, Identity):
-                    final_splits[i] = s - self._pd_name
         self._add_name_to_splits(final_splits)
         return output_components, final_splits, has_batchify
 
