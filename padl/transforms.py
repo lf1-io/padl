@@ -524,10 +524,10 @@ class Transform:
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
     def _pd_get_error_idx(self):
-        """Get what element of a {class}`Transform` is failing if an Exception is produced during
-        an execution.
+        """Get what element of a :class:`padl.transforms.Transform` is failing if an Exception is
+        produced during an execution.
 
-        Subclasses of {class}`padl.transforms.Transform` need to implement this method.
+        Subclasses of :class:`padl.transforms.Transform` need to implement this method.
         """
         return NotImplemented
 
