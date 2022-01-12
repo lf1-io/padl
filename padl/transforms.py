@@ -175,7 +175,7 @@ class Transform:
         self._pd_layers = None
         self._pd_stages = None
         self._pd_external_full_dump = False
-        self._pd_output_slice = None
+        self._pd_output_slice = None  # why this?
         self._pd_input_slice = None
         self.pd_output = _OutputSlicer(self)
         self.pd_input = _InputSlicer(self)
@@ -2290,129 +2290,58 @@ def importdump(transform_or_module):
 class Node:
     _id = 0
 
-    def __init__(self, transform=None, name=None):
-        self.id = self.generate_id()
+    def __init__(self, transform):
+        self.id = self._generate_id()  # keep?
         self.transform = transform
-        self.pd_name = name
-        self.in_node = []
-        self.out_node = []
-        self.out_index = None
         self._input_args = None
         self._output_slice = {}
         self._input_slice = {}
-        self.pd_output = _OutputSlicer(self)
-        self.pd_input = _InputSlicer(self)
-        self.set_output_slice()
-        self.set_input_slice()
 
     def replace_outnode(self, old_node, new_node):
-        if old_node in self.out_node:
-            self.out_node = [node if node != old_node else new_node for node in self.out_node]
-            self._output_slice = {(new_node if key == old_node else key): val for key, val in
-                                  self._output_slice.items()}
-            new_node.connect_innode(self)
-            old_node.remove_innode(self)
+        self._output_slice = {(new_node if key == old_node else key): val for key, val in
+                              self._output_slice.items()}
+        new_node.connect_innode(self)
+        old_node.remove_connection(self)
 
-    def replace_innode(self, old_node, new_node):
-        if old_node in self.in_node:
-            self.in_node = [node if node != old_node else new_node for node in self.in_node]
-            if self._input_args is not None:
-                self._input_args = {(new_node if key == old_node else key): val for key, val in
-                                    self._input_args.items()}
-            new_node.connect_outnode(self)
-            old_node.remove_outnode(self)
+    def replace_innode(self, old_node, new_node):  # what with the input slice?
+        new_node.connect_outnode(self)
+        self.remove_connection(old_node)
 
-    def remove_outnode(self, node):
-        if node in self.out_node:
-            self.out_node = [n_ for n_ in self.out_node if n_ != node]
-            node.remove_innode(self)
-
-    def remove_innode(self, node):
-        if node in self.in_node:
-            self.in_node = [n_ for n_ in self.in_node if n_ != node]
-            node.remove_outnode(self)
+    def remove_connection(self, node):
+        del self._output_slice[node]
+        del self._input_slice[node]
 
     @property
-    def pd_name(self):
-        return self._name
-
-    @pd_name.setter
-    def pd_name(self, new_name):
-        self._name = new_name
-        if self._name is None and self.transform is not None:
-            self._name = self.transform.pd_name
-        if self._name is not None:
-            self._name_id = self._name + ' ' + str(self.id)
-        else:
-            self._name_id = str(self.id)
+    def name(self):
+        return self.transform.pd_name
 
     @property
     def name_id(self):
-        return self._name_id
-
-    def set_input_slice(self):
-        if isinstance(self.transform, Transform):
-            self._pd_input_slice = self.transform._pd_input_slice
-            self.transform._pd_input_slice = None
-            return
-        self._pd_input_slice = None
-
-    def set_output_slice(self):
-        if isinstance(self.transform, Transform):
-            self._pd_output_slice = self.transform._pd_output_slice
-            self.transform._pd_output_slice = None
-            return
-        self._pd_output_slice = None
-
-    def get_output_slice(self):
-        out = self._pd_output_slice
-        self._pd_output_slice = None
-        return out
-
-    def get_input_slice(self):
-        out = self._pd_input_slice
-        self._pd_input_slice = None
-        return out
+        return self.name + str(self.id)
 
     @classmethod
-    def generate_id(cls):
+    def _generate_id(cls):
         cls._id += 1
         return cls._id
 
-    def __call__(self, args):
-        # self._output = self.transform(self.args)
-        # if self.out_index is not None:
-        #     return self.output_node[self.out_index]
+    def __call__(self, args):  # should a node be callable?
         return self.pd_call_node(args)
 
-    def __hash__(self):
-        return hash(repr(self))
+    def copy(self, memo):
+        try:
+            return memo[self]
+        except KeyError:
+            pass
 
-    def __deepcopy__(self, memo):
-        """Deepcopy of Nodes"""
-        id_self = id(self)
-        _copy = memo.get(id_self)
-        if _copy is None:
-            _copy = type(self)(
-                self.transform,
-                self.pd_name)
-            _copy.in_node = copy(self.in_node)
-            _copy.out_node = copy(self.out_node)
-            memo[id_self] = _copy
+        _copy = type(self)(self.transform)
+        _copy._input_slice = copy(self._input_slice)
+        _copy._output_slice = copy(self._output_slice)
+        memo[self] = _copy
         return _copy
 
-    def connect_innode(self, node):
-        if node not in self.in_node:
-            self.in_node.append(node)
-            node.connect_outnode(self)
-            self._input_slice[node] = self.get_input_slice()
-            self._create_input_args_dict()
-
-    def connect_outnode(self, node):
-        if node not in self.out_node:
-            self.out_node.append(node)
-            node.connect_innode(self)
-            self._output_slice[node] = self.get_output_slice()
+    def connect(self, other, output_slice, input_slice):
+        self._input_slice[other] = input_slice
+        other._output_slice[self] = output_slice
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -2422,16 +2351,14 @@ class Node:
 
     def _register_input_args(self, args, in_node):
         """Register the input args"""
-        assert in_node in self._input_args.keys(), f"{in_node.pd_name} not connected to {self.pd_name}"
+        assert in_node in self._input_args.keys(), \
+            f"{in_node.name} not connected to {self.name}"
+
         self._input_args[in_node]['args'] = args
         self._input_args[in_node]['updated'] = True
 
-        if all([in_args['updated'] for _, in_args in self._input_args.items()]):
-            return True
-        return False
-
-    def pd_call_transform(self, args):
-        return self.transform.pd_call_transform(args)
+    def _all_args_filled(self):
+        return all([in_args['updated'] for _, in_args in self._input_args.items()])
 
     def gather_args(self):
         """Gather args to call self.transform
@@ -2439,59 +2366,49 @@ class Node:
         This gathers all the args and arranges with according to the
         input_slice order.
         """
-        gathered_args = {k: None for k in range(len(self._input_args.keys()))}
+        gathered_args = [None for _ in range(len(self._input_args.keys()))]
 
-        not_included_nodes = copy(list(self._input_args.keys()))
-
-        for node, pos in self._input_slice.items():
-            if pos is None:
-                continue
+        for node, pos in self._input_slice.items():  # simplify? make all inputs have a pos
             arg_ = self._input_args[node]['args']
             gathered_args[pos] = arg_
-            not_included_nodes.remove(node)
 
-        for pos, arg_ in gathered_args.items():
-            if arg_ is None:
-                node = not_included_nodes.pop(0)
-                gathered_args[pos] = self._input_args[node]['args']
-
-        args = list(gathered_args.values())
-        if len(args) == 1:
-            return args[0]
-        return tuple(args)
+        return tuple(gathered_args)
 
     def _update_args(self, args, out_node):
         slice_ = self._output_slice[out_node]
-        if slice_ is not None:
-            return args[slice_]
-        return args
+        return args[slice_]
 
-    def pd_call_node(self, args, in_node=None):
+    def call_node(self, args, in_node=None):
         if self._input_args is None:
             self._create_input_args_dict()
-        if self._register_input_args(args, in_node):
-            args = self.gather_args()
-            output = None
-            args_to_pass = self.pd_call_transform(args)
-            for out_node in self.out_node:
-                updated_arg = self._update_args(args_to_pass, out_node)
-                output = out_node.pd_call_node(updated_arg, self)
-            self._create_input_args_dict()
-            return output if output is not None else args_to_pass
 
+        self._register_input_args(args, in_node)
+        if not self._all_args_filled():
+            return None
 
-class Graph(Node, Pipeline):
-    def __init__(self, transforms=None):
-        Pipeline.__init__(self, transforms)
-        Node.__init__(self)
-        self.transforms = transforms
-        self.input_node = Node(Identity(), name='Input')
-        self.output_node = Node(Identity(), name='Output')
+        args = self.gather_args()
+        output = None
+        args_to_pass = self.transform.pd_call_transform(args)
+        for out_node in self.out_node:  # move graph-traversal to Graph
+            updated_arg = self._update_args(args_to_pass, out_node)
+            output = out_node.pd_call_node(updated_arg, self)
         self._input_args = None
-        self.networkx_graph = None
-        self.nodes = []
+        return output if output is not None else args_to_pass
+
+
+class Graph(Pipeline):
+    def __init__(self, transforms=None):
+        Pipeline.__init__(self, transforms)  # later remove?
+
+        self.input_node = Node(Identity() - 'Input')  # potential overhead
+        self.output_node = Node(Identity() - 'Output')
+
+        self.networkx_graph = None  # ... later drop
+
+        self.nodes = []  # ...
         self.transform_nodes = []
         self.node_dict = dict()
+
         self._pd_group = False
         self._operation_type = None
         self._pd_name = None
@@ -2520,7 +2437,7 @@ class Graph(Node, Pipeline):
 
         return list_flat
 
-    def _store_transform_nodes(self, transforms):
+    def _store_transform_nodes(self, transforms):  # why both transforms and nodes?
         self.transforms = transforms
         self.nodes.append(self.input_node)
         for t_ in transforms:
@@ -2528,7 +2445,7 @@ class Graph(Node, Pipeline):
                 graph_copy = deepcopy(t_)
                 self.nodes.extend(graph_copy.nodes)
                 self.nodes.append(graph_copy)
-            elif isinstance(t_, Node):
+            elif isinstance(t_, Node):  # ? Node is not a transform
                 node_copy = deepcopy(t_)
                 self.nodes.append(node_copy)
             else:
@@ -2537,20 +2454,20 @@ class Graph(Node, Pipeline):
         self.nodes.append(self.output_node)
         self.node_dict = {n_.name_id: n_ for n_ in self.nodes}
 
-    def connect_innode(self, node):
+    def connect_innode(self, node):  # necessary? -> move to node
         if node not in self.input_node.in_node:
             self.input_node.in_node.append(node)
             node.connect_outnode(self.input_node)
             self.input_node._create_input_args_dict()
 
-    def connect_outnode(self, node):
+    def connect_outnode(self, node):  # same
         if node not in self.output_node.out_node:
             self.output_node.connect_outnode(node)
             node.connect_innode(self.output_node)
             self.output_node._output_slice[node] = self.get_output_slice()
 
-    def compose(self, transforms):
-        self.display_op = '>>'
+    def compose(self, transforms):  # why does this override the complete thing -> make a classmethod??
+        self.display_op = '>>'  # ??
         self.op = '>>'
 
         self._operation_type = 'compose'
@@ -2565,7 +2482,7 @@ class Graph(Node, Pipeline):
             node = next_node
         next_node.connect_outnode(self.output_node)
 
-    def rollout(self, transforms):
+    def rollout(self, transforms):  # see above
         self.display_op = '+'
         self.op = '+'
         self._operation_type = 'rollout'
@@ -2573,10 +2490,9 @@ class Graph(Node, Pipeline):
         self._store_transform_nodes(transforms)
 
         for node in self.transform_nodes:
-            node.connect_innode(self.input_node)
-            node.connect_outnode(self.output_node)
+            node.connect(self.input_node, slice(), slice())
 
-    def parallel(self, transforms):
+    def parallel(self, transforms):  # see above
         self.display_op = '/'
         self.op = '/'
         self._operation_type = 'parallel'
@@ -2632,10 +2548,10 @@ class Graph(Node, Pipeline):
 
         return output
 
-    def __hash__(self):
+    def __hash__(self):  # why reimplement
         return hash(repr(self))
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo):  # not really "deep", use different method?
         """Deepcopy of Graph"""
 
         def _copy_nodes(_copy_graph, inp_node, copy_inp_node, copied_node_dict={}):
@@ -2789,7 +2705,7 @@ class Graph(Node, Pipeline):
         nodes = []
         transform_nodes = []
 
-        def _append_to_nodes(n_):
+        def _append_to_nodes(n_):  # really necessary to have an internal function for this?
             if n_ not in nodes:
                 nodes.append(n_)
 
@@ -2829,8 +2745,8 @@ class Graph(Node, Pipeline):
     def _store_preprocess(self):
         """Store Subgraph of Preprocess"""
 
-        _copy_graph = deepcopy(self)
-        _copy_graph.convert_to_networkx(True)
+        _copy_graph = deepcopy(self)  # can we not make a new graph??
+        _copy_graph.convert_to_networkx(True)  # nee
 
         output_node = Node(Identity(), name='Output')
 
@@ -2945,7 +2861,7 @@ class Graph(Node, Pipeline):
         return _copy_graph
 
 
-def _check_batchify_exits_in_path(graph: Graph, path: List):
+def _check_batchify_exits_in_path(graph: Graph, path: List):  # why are these functions?
     """Check if batchify exits in a path"""
     for n_ in path:
         n_ = graph[n_]
