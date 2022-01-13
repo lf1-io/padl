@@ -92,20 +92,18 @@ class _Debug:
             '   t(ransform): displays the current transform\n'
             '   h(elp): print help about the commands\n'
             '   q(uit): quit'
-            '     -> this will store the input at this level in debug.args\n'
-            '        and the transform in debug.trans\n'
         )
 
     def __call__(self) -> None:
         """Call me for getting an interactive debugger in case of error.
 
         User can give following input and expect response
-            u(p): step up\n'
-            d(own): step down\n'
-            w(here am I?): show code position\n'
-            i(nput): show input here\n'
-            r(epeat): repeat here (will produce the same exception)\n'
-            h(elp): print help about the commands\n
+            u(p): step up
+            d(own): step down
+            w(here am I?): show code position
+            i(nput): show input here
+            r(epeat): repeat here (will produce the same exception)
+            h(elp): print help about the commands
             q(uit): quit'
         """
         pos = len(_pd_trace) - 1
@@ -143,7 +141,9 @@ class _Debug:
                 try:
                     code = compile(x, '', 'single')
                     exec(code)
+                    breakpoint()
                 except Exception as err:
+                    breakpoint()
                     print(err)
 
             if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:
