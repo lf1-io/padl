@@ -193,7 +193,7 @@
 <section id="applying-transforms-depending-on-the-mode">
 <span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline"></a></h2>
 <p>Often it can be useful to apply Transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation Transforms only during training.</p>
-<p>Use an <code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code> Transform to apply a Transform only in the “infer” mode:</p>
+<p>Use an <a class="reference internal" href="../apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> Transform to apply a Transform only in the “infer” mode:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">IfInfer</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">IfInfer</span><span class="p">(</span><span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>
@@ -202,7 +202,7 @@
 <span class="go">200</span>
 </pre></div>
 </div>
-<p>Analogously, use <code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code> to apply a Transform only in the “eval”- or “train” mode, respectively.</p>
+<p>Analogously, use <a class="reference internal" href="../apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> or <a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to apply a Transform only in the “eval”- or “train” mode, respectively.</p>
 </section>
 <section id="exception-handling">
 <h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline"></a></h2>

@@ -169,8 +169,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="padl-dumptools-packagefinder">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code><a class="headerlink" href="#padl-dumptools-packagefinder" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.dumptools.packagefinder">
+<span id="padl-dumptools-packagefinder"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code><a class="headerlink" href="#module-padl.dumptools.packagefinder" title="Permalink to this headline"></a></h1>
+<p>Utilities for finding packages used in code.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.packagefinder.dump_packages_versions">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">dump_packages_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.dump_packages_versions" title="Permalink to this definition"></a></dt>
+<dd><p>Dump packages and their versions to a string.</p>
+<p>Format of the string is:</p>
+<p>&lt;package&gt;==&lt;version&gt;</p>
+<p>[…]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nodes</strong> – List of ast nodes in a module.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>String with packages and versions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.packagefinder.get_packages">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">get_packages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.get_packages" title="Permalink to this definition"></a></dt>
+<dd><p>Get a list of package names given a list of ast nodes <em>nodes</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ast</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">... </span><span class="s1">import foo.bla as blu</span>
+<span class="gp">... </span><span class="s1">import bup</span>
+<span class="gp">... </span><span class="s1">from blip import blop</span>
+<span class="gp">... </span><span class="s1">...&#39;&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_packages</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;blip&#39;</span><span class="p">,</span> <span class="s1">&#39;bup&#39;</span><span class="p">}</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.packagefinder.get_version">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">get_version</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">package</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.get_version" title="Permalink to this definition"></a></dt>
+<dd><p>Get a package’s version (defaults to ‘?’).</p>
+</dd></dl>
+
 </section>
 
 

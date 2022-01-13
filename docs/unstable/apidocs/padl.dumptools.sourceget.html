@@ -169,8 +169,153 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="padl-dumptools-sourceget">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code><a class="headerlink" href="#padl-dumptools-sourceget" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.dumptools.sourceget">
+<span id="padl-dumptools-sourceget"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code><a class="headerlink" href="#module-padl.dumptools.sourceget" title="Permalink to this headline"></a></h1>
+<p>Module for getting source-code strings of various things (source files, modules, ipython cells).
+In addition, the module maintains a cache of source-strings in which the values can be modified.</p>
+<p>Use <cite>get_source</cite> to get source-strings given source filenames or ipython cell ids.
+<cite>get_module_source</cite> allows to get source of modules.</p>
+<p>Both will try to get the source-strings from the <cite>replace_cache</cite>, which can contain modified
+versions of the source-strings.</p>
+<p>To add a modified source-string to the <cite>replace_cache</cite>, use <cite>put_into_cache</cite>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceString">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">ReplaceString</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceString" title="Permalink to this definition"></a></dt>
+<dd><p>A string with a replaced section.</p>
+<p>Has an attribute <cite>original</cite> which gives the original string (pre-replacing).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>string</strong> – The original string.</p></li>
+<li><p><strong>repl</strong> – The string to insert at the specified location.</p></li>
+<li><p><strong>from_line</strong> – The first line to replace in.</p></li>
+<li><p><strong>to_line</strong> – The last line to replace in.</p></li>
+<li><p><strong>from_col</strong> – The first col on <em>from_line</em> to replace.</p></li>
+<li><p><strong>to_col</strong> – The last col on <em>to_line</em> to replace.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceString.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceString.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut and return the resulting sub-<cite>ReplaceString</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceStrings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">ReplaceStrings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rstrings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.dumptools.sourceget.ReplaceString" title="padl.dumptools.sourceget.ReplaceString"><span class="pre">padl.dumptools.sourceget.ReplaceString</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceStrings" title="Permalink to this definition"></a></dt>
+<dd><p>A collection of replacestrings with different replacements in an original string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rstrings</strong> – A list of <cite>ReplaceString`s with the same `original</cite> and non-overlapping
+replace locations.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceStrings.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceStrings.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut and return the resulting sub-<cite>ReplaceStrings</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.cut">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut a string (can be a normal <cite>str</cite>, a <cite>ReplaceString</cite> or a <cite>ReplaceStrings</cite>) and return the
+resulting substring.</p>
+<p>Example:</p>
+<blockquote>
+<div><p>Given a <em>string</em>,</p>
+<dl class="simple">
+<dt>“xxxxxxxxxxx</dt><dd><p>xxxxxAXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXBxxxx
+xxxx”</p>
+</dd>
+</dl>
+<p>, to cut a substring from <em>A</em> to <em>B</em>, give as <em>from_line</em> the line of <em>A</em> (1) and <em>to_line</em>
+the line of <em>B</em> (2). <em>from_col</em> determines the position of <em>A</em> within the line (5) and
+<em>to_col</em> determines the position of <em>B</em> (13).
+The result would be:</p>
+<dl class="simple">
+<dt>“AXXXXXXXXXXXXXXXXXXXX</dt><dd><p>XXXXXXXXXXXXXB”</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>If used with a <cite>ReplaceString</cite>, the result will be a <cite>ReplaceString</cite> with original and
+replacement at the expected positions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>string</strong> – The input string.</p></li>
+<li><p><strong>from_line</strong> – The first line to include.</p></li>
+<li><p><strong>to_line</strong> – The last line to include.</p></li>
+<li><p><strong>from_col</strong> – The first col on <em>from_line</em> to include.</p></li>
+<li><p><strong>to_col</strong> – The last col on <em>to_line</em> to include.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The cut-out string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.get_module_source">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">get_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_replace_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.get_module_source" title="Permalink to this definition"></a></dt>
+<dd><p>Get the source code of a module.</p>
+<p>If <em>use_replace_cache</em>, try getting the source from the “replace_cache”, which can contain
+explicit replacements of the original source strings.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.get_source">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">get_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_replace_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.get_source" title="Permalink to this definition"></a></dt>
+<dd><p>Get source from <em>filename</em>.</p>
+<p>The filename is as in the code object gotten from an <cite>inspect.frame</cite>,
+this can be “&lt;ipython input-…&gt;” in which case the source is taken from the ipython cache.</p>
+<p>If <em>use_replace_cache</em>, try getting the source from the “replace_cache”, which can contain
+explicit replacements of the original source strings.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.original">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">original</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.original" title="Permalink to this definition"></a></dt>
+<dd><p>Get either the original of a <cite>ReplaceString</cite> or a string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.put_into_cache">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">put_into_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">loc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.put_into_cache" title="Permalink to this definition"></a></dt>
+<dd><p>Put a string into the “replace_cache”.</p>
+<p>Specify the original string, a replacing string and the insertion replacement.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">put_into_cache</span><span class="p">(</span><span class="s1">&#39;mykey&#39;</span><span class="p">,</span> <span class="s1">&#39;f(value(x))&#39;</span><span class="p">,</span> <span class="s1">&#39;CONSTANT&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">replace_cache</span><span class="p">[</span><span class="s1">&#39;mykey&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ReplaceStrings</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">&#39;f(CONSTANT))&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">original</span>
+<span class="go">&#39;f(value(x))&#39;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – The key for the cache dict.</p></li>
+<li><p><strong>source</strong> – The source.</p></li>
+<li><p><strong>repl</strong> – The string new inserted / replaced part.</p></li>
+<li><p><strong>*loc</strong> – <p>The location where <em>repl</em> is to be inserted (give as <em>from_line</em>, <em>to_line</em>,
+<em>from_col</em>, <em>to_col</em>).</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
