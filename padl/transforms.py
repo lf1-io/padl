@@ -3,7 +3,6 @@
 Transforms should be created using the `padl.transform` wrap-function.
 """
 
-
 import re
 from copy import copy, deepcopy
 from collections import Counter, namedtuple, OrderedDict
@@ -18,6 +17,7 @@ import traceback
 from tempfile import TemporaryDirectory
 import types
 from dataclasses import dataclass
+
 try:
     from typing import Literal
 except ImportError:
@@ -42,6 +42,7 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
+
 
 # import padl.graph as padl_graph
 
@@ -1573,9 +1574,9 @@ class Pipeline(Transform):
             for x in self.transforms
         ]
         result = (
-            '(\n    ' + ' ' * indent
-            + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
-            + '\n' + ' ' * indent + ')'
+                '(\n    ' + ' ' * indent
+                + ('\n' + ' ' * indent + f'    {self.op} ').join(sub_reprs)
+                + '\n' + ' ' * indent + ')'
         )
         if self._pd_group:
             result = 'padl.group' + result
@@ -1584,8 +1585,8 @@ class Pipeline(Transform):
     def _defined_somewhere_else(self):
         defined_as = self.pd_varname(self._pd_call_info.scope)
         return (
-            self._pd_call_info.scope.module_name != inspector.caller_module().__name__
-            and defined_as is not None
+                self._pd_call_info.scope.module_name != inspector.caller_module().__name__
+                and defined_as is not None
         )
 
     def _codegraph_add_import_startnode(self, graph, name):
@@ -1735,7 +1736,7 @@ class Pipeline(Transform):
         names = []
         for ind, transform_ in enumerate(transforms):
             if not transform_.pd_name:
-                name = 'out_'+str(ind)
+                name = 'out_' + str(ind)
             else:
                 name = transform_.pd_name
             names.append(name)
@@ -1938,7 +1939,7 @@ class Compose(Pipeline):
                 for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
                         0, sum(widths) - j + j * 4,
-                        len(children_widths[i - 1]) - j + 1, j + 1
+                           len(children_widths[i - 1]) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
 
@@ -1974,7 +1975,7 @@ class Compose(Pipeline):
             else:
                 params = t._pd_signature
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
-                    list(params)[0]
+                                                                                list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
@@ -2299,6 +2300,7 @@ class Parallel(Pipeline):
 
         def horizontal(n):
             return "─" * n
+
         len_ = len(self.transforms)
         out = ''
         for i, t in enumerate(self.transforms):
@@ -2462,7 +2464,7 @@ def load(path):
         '_pd_module': module,
         '__file__': str(path / 'transform.py')
     })
-    code = compile(source, path/'transform.py', 'exec')
+    code = compile(source, path / 'transform.py', 'exec')
     exec(code, module.__dict__)
     # pylint: disable=no-member,protected-access
     transform = module._pd_main
@@ -2613,8 +2615,8 @@ class Node:
         self.id = self._generate_id()  # keep?
         self.transform = transform
         self._input_args = None
-        self._output_slice = {}
-        self._input_slice = {}
+        self._output_slice = {}  # Rename to something meaningful: Output slicer
+        self._input_slice = {}  # Rename to somehting meaningful: Input position
 
     def replace_outnode(self, old_node, new_node):
         self._output_slice = {(new_node if key == old_node else key): val for key, val in
@@ -2643,7 +2645,13 @@ class Node:
         cls._id += 1
         return cls._id
 
+    def next_outnode(self):
+        """Generator that yields the next outnode"""
+        for node in self._output_slice.keys():
+            yield node
+
     def __call__(self, args):  # should a node be callable?
+        """Call Method for Node"""
         return self.pd_call_node(args)
 
     def copy(self, memo):
@@ -2658,9 +2666,13 @@ class Node:
         memo[self] = _copy
         return _copy
 
-    def connect(self, other, output_slice, input_slice):
-        self._input_slice[other] = input_slice
-        other._output_slice[self] = output_slice
+    def connect(self, next_node, output_slice=slice(None), input_slice=-1):
+        """Connect self with next_node
+
+        self.connect(next_node) = self -> next_node
+        """
+        next_node._input_slice[self] = input_slice
+        self._output_slice[next_node] = output_slice
 
     def _create_input_args_dict(self):
         """Update dictionary of args for input"""
@@ -2710,12 +2722,22 @@ class Node:
         args_to_pass = self.transform.pd_call_transform(args)
         for out_node in self.out_node:  # move graph-traversal to Graph
             updated_arg = self._update_args(args_to_pass, out_node)
-            output = out_node.pd_call_node(updated_arg, self)
+            output = out_node.call_node(updated_arg, self)
         self._input_args = None
         return output if output is not None else args_to_pass
 
 
 class Graph(Pipeline):
+    """Graph: New Pipeline
+
+    * Nodes listed: Should Contain Nodes to do the operation
+    * Edges are to be connected and only contained in a Graph
+    Example:
+    comp1 = A >> B >> C
+    comp2 = comp1 >> X >> Y
+    the connection from `comp1 >> X` should not leak in comp1
+    """
+
     def __init__(self, transforms=None):
         Pipeline.__init__(self, transforms)  # later remove?
 
@@ -2731,6 +2753,64 @@ class Graph(Pipeline):
         self._pd_group = False
         self._operation_type = None
         self._pd_name = None
+
+        self._input_args = None
+        self._output_slice = {}  # Rename to something meaningful: Output slicer
+        self._input_slice = {}  # Rename to something meaningful: Input position
+
+    def __call__(self, args, in_node=None):
+        """Call Method for Graph
+
+        Apply Breadth First Search to apply transforms
+
+         A
+        | \
+        C  D
+        |  |
+        X  Y
+        A > C > D > X > Y
+
+        in = A
+        cn = C
+        cn = D
+        in = X
+        """
+        if self._input_args is None:
+            self._create_input_args_dict()
+
+        self._register_input_args(args, in_node)
+
+        if not self._all_args_filled():
+            return None
+
+        args = self.gather_args()
+        args = self.input_node.call_node(args, in_node)
+
+        queue = [self.input_node]
+        visited = []
+        while queue:
+            current_node = queue.pop(0)
+            args = current_node.call_node(args, in_node)
+            for node_ in current_node.next_outnode():
+                if node_ not in visited:
+                    queue.append(node_)
+                    visited.append(node_)
+            if queue[0] not in list(in_node.next_outnode()):
+                in_node = current_node
+
+
+        current_node = self.input_node
+        parent_node = self.input_node
+        while current_node is not None:
+            args = current_node.call_node(args, in_node)
+            try:
+                current_node = parent_node.next_outnode()
+            except StopIteration:
+                parent_node = parent_node.first_outnode()
+                current_node = parent_node.next()
+                in_node = parent_node
+
+        return args
 
     def _flatten_list(self, transform_list: List, operation_type=None):
         """Flatten *list_* such that members of *cls* are not nested.
@@ -2753,7 +2833,6 @@ class Graph(Pipeline):
                     list_flat.append(transform)
             else:
                 list_flat.append(transform)
-
         return list_flat
 
     def _store_transform_nodes(self, transforms):  # why both transforms and nodes?
@@ -2773,17 +2852,19 @@ class Graph(Pipeline):
         self.nodes.append(self.output_node)
         self.node_dict = {n_.name_id: n_ for n_ in self.nodes}
 
-    def connect_innode(self, node):  # necessary? -> move to node
-        if node not in self.input_node.in_node:
-            self.input_node.in_node.append(node)
-            node.connect_outnode(self.input_node)
-            self.input_node._create_input_args_dict()
+    @staticmethod
+    def connect(first: Node, second: Node):  # necessary? -> move to node
+        """Connect two nodes in the graph"""
+        # Should assert that first, second are in self?
+        first.connect(second)
 
-    def connect_outnode(self, node):  # same
-        if node not in self.output_node.out_node:
-            self.output_node.connect_outnode(node)
-            node.connect_innode(self.output_node)
-            self.output_node._output_slice[node] = self.get_output_slice()
+    def connect(self,
+                next_node: Union[Node, Graph],
+                output_slice: Union[int, slice] = slice(None),
+                input_slice: int = -1):
+        """Connect self (Graph) with next_node (which is Graph or Node)"""
+        next_node._input_slice[self] = input_slice
+        self._output_slice[next_node] = output_slice
 
     def compose(self, transforms):  # why does this override the complete thing -> make a classmethod??
         self.display_op = '>>'  # ??
@@ -2794,32 +2875,35 @@ class Graph(Pipeline):
         self._store_transform_nodes(transforms)
 
         node = self.transform_nodes[0]
-        node.connect_innode(self.input_node)
+        self.input_node.connect(node)
 
         for next_node in self.transform_nodes[1:]:
-            next_node.connect_innode(node)
+            node.connect(next_node)
             node = next_node
-        next_node.connect_outnode(self.output_node)
+
+        next_node.connect(self.output_node)
 
     def rollout(self, transforms):  # see above
         self.display_op = '+'
         self.op = '+'
+
         self._operation_type = 'rollout'
         transforms = self._flatten_list(transforms, 'rollout')
         self._store_transform_nodes(transforms)
 
         for node in self.transform_nodes:
-            node.connect(self.input_node, slice(), slice())
+            node.connect(self.input_node, slice(None), -1)
 
     def parallel(self, transforms):  # see above
         self.display_op = '/'
         self.op = '/'
+
         self._operation_type = 'parallel'
         transforms = self._flatten_list(transforms, 'parallel')
         self._store_transform_nodes(transforms)
 
-        for indx, node in enumerate(self.transform_nodes):
-            node.connect_innode(self.input_node.pd_output[indx])
+        for idx, node in enumerate(self.transform_nodes):
+            node.connect_innode(self.input_node.pd_output[idx])
             node.connect_outnode(self.output_node)
 
     def __rshift__(self, other: "Transform") -> "Compose":
