@@ -177,7 +177,7 @@
 <span id="id1"></span><h2>Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code><a class="headerlink" href="#compose" title="Permalink to this headline"></a></h2>
 <p>Transforms can be <strong>composed</strong> using <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code>:</p>
 <p>Pipelines arising from a compose process their input in a sequence: The output of the first Transform in a composition becomes the input of the second and so on.</p>
-<img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
+<img src="../img/compose.png" style='display: block; margin: auto; width: 150px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">&gt;&gt;</span> <span class="n">t2</span> <span class="o">&gt;&gt;</span> <span class="n">t3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="n">t3</span><span class="p">(</span><span class="n">t2</span><span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
 <span class="go">True</span>
@@ -187,7 +187,7 @@
 <section id="rollout">
 <h2>Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code><a class="headerlink" href="#rollout" title="Permalink to this headline"></a></h2>
 <p>An input can be <strong>rolled out</strong> to multiple Transforms using <code class="docutils literal notranslate"><span class="pre">+</span></code>. This means applying different Transforms to the same input. The result is a tuple.</p>
-<img src="img/rollout.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/rollout.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">+</span> <span class="n">t2</span> <span class="o">+</span> <span class="n">t3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t2</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t3</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 <span class="go">True</span>
@@ -197,7 +197,7 @@
 <section id="parallel">
 <h2>Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code><a class="headerlink" href="#parallel" title="Permalink to this headline"></a></h2>
 <p>Multiple Transforms can be <strong>applied in parallel</strong> to multiple inputs using <code class="docutils literal notranslate"><span class="pre">/</span></code>. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.</p>
-<img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/parallel.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">/</span> <span class="n">t2</span> <span class="o">/</span> <span class="n">t3</span><span class="p">)((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span> <span class="o">==</span> <span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t2</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">t3</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
 <span class="go">True</span>
@@ -207,7 +207,7 @@
 <section id="map">
 <h2>Map <code class="docutils literal notranslate"><span class="pre">~</span></code><a class="headerlink" href="#map" title="Permalink to this headline"></a></h2>
 <p>Transforms can be <strong>mapped</strong> using <code class="docutils literal notranslate"><span class="pre">~</span></code>. Mapping applies the same Transform to multiple inputs. The output has the same length as the input.</p>
-<img src="img/map.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/map.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="o">~</span><span class="n">t</span><span class="p">)([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">z</span><span class="p">)]</span>
 <span class="go">True</span>
