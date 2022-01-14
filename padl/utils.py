@@ -141,9 +141,7 @@ class _Debug:
                 try:
                     code = compile(x, '', 'single')
                     exec(code)
-                    breakpoint()
                 except Exception as err:
-                    breakpoint()
                     print(err)
 
             if x in {'d', 'u', 'w', 'i', 'h', 'help', 't'}:

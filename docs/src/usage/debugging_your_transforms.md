@@ -4,7 +4,7 @@
 PADL provides a customized debugger to inspect and diagnose errors raised when applying a 
 {class}`~padl.transforms.Pipeline`.
 
-For using this functionality, call {obj}`~pd_debug` after the execution failed, such as 
+For using this functionality, call {obj}`~padl.pd_debug` after the execution failed, such as 
 
 ```python
 # train_apply, eval_apply or infer_apply that produced a RuntimeError
