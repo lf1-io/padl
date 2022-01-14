@@ -5,8 +5,14 @@ Transforms should be created using the `padl.transform` wrap-function.
 
 import re
 from copy import copy, deepcopy
+<<<<<<< HEAD
 from collections import Counter, namedtuple, OrderedDict
 from functools import lru_cache
+=======
+from collections import Counter, namedtuple, OrderedDict, defaultdict
+from functools import lru_cache
+import contextlib
+>>>>>>> 48192ec (Graph works for building and calling)
 import inspect
 from itertools import chain
 from pathlib import Path
@@ -42,7 +48,6 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
-
 
 # import padl.graph as padl_graph
 
@@ -321,8 +326,10 @@ class Transform:
         Example:
             named_t = t - 'rescale image'
         """
-        named_copy = deepcopy(self)
-        named_copy.pd_name = name
+        named_copy = copy(self)
+        named_copy._pd_name = name
+        named_copy._pd_group = True
+        named_copy._pd_varname = {}
         return named_copy
 
     def __invert__(self) -> "Map":
@@ -1908,7 +1915,7 @@ class Compose(Pipeline):
 
         for i, r in enumerate(rows):
             if len(r) > 1:
-                rows[i] = f' {make_green(self.transforms[i].display_op)} '.join(r)
+                rows[i] = f' {make_green(self.transforms[i].op)} '.join(r)
             else:
                 rows[i] = r[0]
         output = []
@@ -2178,7 +2185,7 @@ class Rollout(Pipeline):
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
         make_bold_ = lambda x: make_bold(x, not formatting)
-        between = f'\n{make_green_("│ " + self.display_op)}  \n'
+        between = f'\n{make_green_("│ " + self.op)}  \n'
         rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
                 + (marker[1] if marker and marker[0] == i else '')
                 for i, t in enumerate(self.transforms[:-1])]
@@ -2302,8 +2309,12 @@ class Parallel(Pipeline):
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
+<<<<<<< HEAD
                 out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
 
+=======
+                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.op)}  \n'
+>>>>>>> 48192ec (Graph works for building and calling)
         return out
 
 
@@ -2601,36 +2612,17 @@ def importdump(transform_or_module):
 
 
 class Node:
+    """Node wrapper for transforms
+
+    Nodes wrap a transform and can be connected in graph to form complex
+    graphs.
+    :param transform: Transform to wrap
+    """
     _id = 0
 
-    def __init__(self, transform):
+    def __init__(self, transform: Transform):
         self.id = self._generate_id()  # keep?
         self.transform = transform
-        self._input_args = None
-        self._output_slice = {}  # Rename to something meaningful: Output slicer
-        self._input_slice = {}  # Rename to somehting meaningful: Input position
-
-    @property
-    def children(self):
-        return list(self._output_slice.keys())
-
-    @property
-    def parents(self):
-        return list(self._input_slice.keys())
-
-    def replace_outnode(self, old_node, new_node):
-        self._output_slice = {(new_node if key == old_node else key): val for key, val in
-                              self._output_slice.items()}
-        new_node.connect_innode(self)
-        old_node.remove_connection(self)
-
-    def replace_innode(self, old_node, new_node):  # what with the input slice?
-        new_node.connect_outnode(self)
-        self.remove_connection(old_node)
-
-    def remove_connection(self, node):
-        del self._output_slice[node]
-        del self._input_slice[node]
 
     @property
     def name(self):
@@ -2647,65 +2639,14 @@ class Node:
 
     def __call__(self, args):  # should a node be callable?
         """Call Method for Node"""
-        return self.pd_call_node(args)
+        return self.call_node(args)
 
-    def copy(self, memo):
-        try:
-            return memo[self]
-        except KeyError:
-            pass
-
+    def copy(self):
         _copy = type(self)(self.transform)
-        _copy._input_slice = copy(self._input_slice)
-        _copy._output_slice = copy(self._output_slice)
-        memo[self] = _copy
         return _copy
 
-    def connect(self, next_node, output_slice=slice(None), input_slice=slice(None)):
-        """Connect self with next_node
-
-        self.connect(next_node) = self -> next_node
-        """
-        next_node._input_slice[self] = input_slice
-        self._output_slice[next_node] = output_slice
-
-    def _create_input_args_dict(self):
-        """Update dictionary of args for input"""
-        self._input_args = {node: {'args': None, 'updated': False} for node in self.in_node}
-        if len(self._input_args) == 0:
-            self._input_args[None] = {'args': None, 'updated': False}
-
-    def _register_input_args(self, args, in_node):
-        """Register the input args"""
-        assert in_node in self._input_args.keys(), \
-            f"{in_node.name} not connected to {self.name}"
-
-        self._input_args[in_node]['args'] = args
-        self._input_args[in_node]['updated'] = True
-
-    def _all_args_filled(self):
-        return all([in_args['updated'] for _, in_args in self._input_args.items()])
-
-    def gather_args(self, inputs, graph):
-        """Gather args to call self.transform
-
-        This gathers all the args and arranges with according to the
-        input_slice order.
-        """
-        gathered_args = [None for _ in self.parents]
-
-        for node, pos in self._input_slice.items():  # simplify? make all inputs have a pos
-            arg_ = inputs[node]['args']
-            gathered_args[pos] = arg_
-
-        return tuple(gathered_args)
-
-    def _update_args(self, args, out_node):
-        slice_ = self._output_slice[out_node]
-        return args[slice_]
-
-    def call_node(self, inputs):
-        return self.transform.pd_call_transform(self.gather_args(inputs))
+    def call_node(self, args):
+        return self.transform.pd_call_transform(args)
 
 
 class Graph(Pipeline):
@@ -2728,28 +2669,54 @@ class Graph(Pipeline):
         self.networkx_graph = None  # ... later drop
 
         self._pd_group = False
-        self.edges = {}
+        self.edges = defaultdict(dict)
+        self.parents = defaultdict(list)
 
-    def connect(self, node_a, node_b, output_slice=slice(None), input_slice=slice(None)):
-        """Connect self with next_node
+    def _gather_args_for_node(self, node: Node, inputs: dict):
+        """Gather args to call node.transform
 
-        self.connect(next_node) = self -> next_node
+        This gathers all the args and arranges with according to the
+        input_slice order.
         """
-        self.edges[node_a].append((node_b, output_slice, input_slice))
+        gathered_args = [None for _ in self.parents[node]]
 
-    def top_sorted(self):
+        for idx, parent_node in enumerate(self.parents[node]):
+            output_slice, input_slice = self.edges[parent_node][node]
+            arg = inputs[parent_node]
+            if output_slice is not None:
+                arg = arg[output_slice]
+            #TODO: make sure there is always input_slice and non overlapping input_slice
+            if input_slice is not None:
+                gathered_args[input_slice] = arg
+            else:
+                gathered_args[idx] = arg
+
+        if len(gathered_args) == 1:
+            return gathered_args[0]
+        return tuple(gathered_args)
+
+    def connect(self, node_a, node_b, output_slice=None, input_slice=None):
+        """Connect node_a with node_b
+
+        node_a -> node_b
+        """
+        self.edges[node_a][node_b] = (output_slice, input_slice)
+        self.parents[node_b].append(node_a)
+
+    @lru_cache
+    def _topological_node_sort(self):
         queue = [self.input_node]
         sorted_ = []
         while queue:
             node = queue.pop(0)
             sorted_.append(node)
-            queue += [child for child in node.children if all(p in sorted_ for p in node.parents)]
+            queue += [child for child in self.edges[node].keys() if all(p in sorted_ for p in self.parents[node])]
         return sorted_
 
-    def __call__(self, args, in_node=None):
+    def __call__(self, args):
         """Call Method for Graph
 
-        Apply Breadth First Search to apply transforms
+        Apply Breadth First transforms
 
          A
         | \
@@ -2757,15 +2724,11 @@ class Graph(Pipeline):
         |  |
         X  Y
         A > C > D > X > Y
-
-        in = A
-        cn = C
-        cn = D
-        in = X
         """
-        results = {}
-        for node in self.top_sorted():
-            results[node] = node.call_node(results)
+        results = {self.input_node: args}
+        for node in self._topological_node_sort()[1:]:
+            node_arg = self._gather_args_for_node(node, results)
+            results[node] = node.call_node(node_arg)
             # TODO: remove results that aren't needed any more
 
         return results[self.output_node]
@@ -2778,12 +2741,6 @@ class Graph(Pipeline):
             # TODO: remove results that aren't needed any more
 
         return results[self.output_node]
-
-    @staticmethod
-    def connect(first: Node, second: Node):  # TODO: how to make it work, add slices etc
-        """Connect two nodes in the graph"""
-        # Should assert that first, second are in self?
-        first.connect(second)
 
     def __deepcopy__(self, memo):  # not really "deep", use different method?
         """Deepcopy of Graph"""
@@ -3105,10 +3062,9 @@ class Compose(Graph):
 
         for next_transform in self.transforms:
             next_node = Node(next_transform)
-            current_node.connect(next_node)
+            self.connect(current_node, next_node)
             current_node = next_node
-
-        current_node.connect(self.output_node)
+        self.connect(current_node, self.output_node)
 
 
 class Rollout(Graph):
@@ -3119,20 +3075,19 @@ class Rollout(Graph):
 
         for transform in self.transforms:
             node = Node(transform)
-            self.input_node.connect(node)
-            node.connect(self.output_node)
+            self.connect(self.input_node, node)
+            self.connect(node, self.output_node)
 
 
 class Parallel(Graph):
     op = '/'
 
-    def parallel(self, transforms):
+    def __init__(self, transforms):
         super().__init__(transforms)
-
         for idx, transform in enumerate(self.transforms):
             node = Node(transform)
-            self.input_node.connect(node, idx, slice(None))
-            node.connect_outnode(self.output_node)
+            self.connect(self.input_node, node, output_slice=idx)
+            self.connect(node, self.output_node)
 
 
 def _check_batchify_exits_in_path(graph: Graph, path: List):  # why are these functions?
