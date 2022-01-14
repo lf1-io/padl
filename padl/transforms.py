@@ -2630,7 +2630,7 @@ class Node:
 
     @property
     def name_id(self):
-        return self.name + str(self.id)
+        return self.name +' '+ str(self.id)
 
     @classmethod
     def _generate_id(cls):
@@ -2716,14 +2716,12 @@ class Graph(Pipeline):
     def __call__(self, args):
         """Call Method for Graph
 
-        Apply Breadth First transforms
+        Apply Breadth-First transforms
 
-         A
-        | \
-        C  D
-        |  |
-        X  Y
-        A > C > D > X > Y
+        In __ C __ X __ Out
+          \__ D __ Y __/
+
+        In > C > D > X > Out
         """
         results = {self.input_node: args}
         for node in self._topological_node_sort()[1:]:
@@ -2784,48 +2782,17 @@ class Graph(Pipeline):
             memo[id_self] = _copy
         return _copy
 
-    def _add_to_networkx_graph_id(self, innode, networkx_graph):
-        for node in innode.out_node:
-            networkx_graph.add_node(node.id, node=node)
-            networkx_graph.add_edge(innode.id, node.id)
-            self._add_to_networkx_graph_id(node, networkx_graph)
-
-    def _add_to_networkx_graph_name(self, innode, networkx_graph):
-        for node in innode.out_node:
-            networkx_graph.add_node(node.name_id, node=node)
-            networkx_graph.add_edge(innode.name_id, node.name_id)
-            self._add_to_networkx_graph_name(node, networkx_graph)
-
-    def convert_to_networkx(self, with_name=False):
-        node = self.input_node
-        self.networkx_graph = nx.DiGraph()
-
-        if with_name:
-            self.networkx_graph.add_node(node.name_id, node=node)
-            self._add_to_networkx_graph_name(node, self.networkx_graph)
-            return self.networkx_graph
-
-        self.networkx_graph.add_node(node.id, node=node)
-        self._add_to_networkx_graph_id(node, self.networkx_graph)
-        return self.networkx_graph
-
-    def draw_nx(self, with_name=True, with_labels=True, layout='spring_layout', **kwargs):
-        self.convert_to_networkx(with_name=with_name)
-        inbuilt_kwargs = dict(
-            with_labels=with_labels,
-            node_size=1400,
-            node_shape="o",
-            width=1,
-            alpha=0.9,
-            linewidths=3,
-            node_color='lightblue',
-        )
-        inbuilt_kwargs.update(kwargs)
-        pos = nx.nx_agraph.graphviz_layout(self.networkx_graph, prog='dot')
-        return nx.draw(self.networkx_graph, pos, **inbuilt_kwargs)
+    def convert_to_networkx(self):
+        networkx_graph = nx.DiGraph()
+        for parent, children_dict in self.edges.items():
+            networkx_graph.add_node(parent.name_id, node=parent)
+            for child in children_dict:
+                networkx_graph.add_node(child.name_id, node=child)
+                networkx_graph.add_edge(parent.name_id, child.name_id)
+        self.networkx_graph = networkx_graph
 
     def draw(self, with_name=True):
-        self.convert_to_networkx(with_name=with_name)
+        self.convert_to_networkx()
         dot = nx.nx_agraph.to_agraph(self.networkx_graph)
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
@@ -2850,26 +2817,6 @@ class Graph(Pipeline):
                     unbatch_counter += 1
                     assert unbatch_counter < 2, f"Error: Path contains more than 1 unbatchify : {path}"
         return
-
-    def add_edge(self, *connection_tuple):
-        """ Currently this is really badly implemented that
-        first creates connection in self and then copies self
-        and removes connection
-
-        Once we have good naming system, so pd_name are kept when deepcopying,
-        this can be made simpler by copying self and using the same pd_name
-        to create edge in copy self"""
-        for in_node_name, out_node_name in connection_tuple:
-            in_node = self[in_node_name]
-            out_node = self[out_node_name]
-            in_node.connect_outnode(out_node)
-        copy_graph = deepcopy(self)
-        for in_node_name, out_node_name in connection_tuple:
-            in_node = self[in_node_name]
-            out_node = self[out_node_name]
-            in_node.out_node.remove(out_node)
-            out_node.in_node.remove(in_node)
-        return copy_graph
 
     def clean_nodes(self):
         """Clean all dangling nodes
