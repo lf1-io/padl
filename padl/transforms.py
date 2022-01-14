@@ -5,14 +5,8 @@ Transforms should be created using the `padl.transform` wrap-function.
 
 import re
 from copy import copy, deepcopy
-<<<<<<< HEAD
 from collections import Counter, namedtuple, OrderedDict
 from functools import lru_cache
-=======
-from collections import Counter, namedtuple, OrderedDict, defaultdict
-from functools import lru_cache
-import contextlib
->>>>>>> 48192ec (Graph works for building and calling)
 import inspect
 from itertools import chain
 from pathlib import Path
@@ -143,6 +137,7 @@ class _GeneratorWithLength:
 
 
 class _OutputSlicer:
+    """Helper class to store output slice"""
     def __init__(self, main_object):
         self.main_object = main_object
 
@@ -152,11 +147,11 @@ class _OutputSlicer:
 
 
 class _InputSlicer:
+    """Helper class to store input slice"""
     def __init__(self, main_object):
         self.main_object = main_object
 
     def __getitem__(self, item):
-        assert not isinstance(item, slice)
         self.main_object._pd_input_slice = item
         return self.main_object
 
@@ -185,7 +180,7 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_traceback = traceback.extract_stack()
         self._pd_external_full_dump = False
-        self._pd_output_slice = None  # why this?
+        self._pd_output_slice = None
         self._pd_input_slice = None
         self.pd_output = _OutputSlicer(self)
         self.pd_input = _InputSlicer(self)
@@ -1804,7 +1799,7 @@ class Compose(Pipeline):
     Compose([t1, t2, t3])(x) = t3(t2(t1(x)))
 
     :param transforms: List of transforms to compose.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
+    :param call_info: A `CallInfo` object containing information about how the transform was
         created (needed for saving).
     :param pd_name: name of the Compose transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
@@ -2309,12 +2304,8 @@ class Parallel(Pipeline):
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
-<<<<<<< HEAD
                 out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
 
-=======
-                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.op)}  \n'
->>>>>>> 48192ec (Graph works for building and calling)
         return out
 
 
@@ -2623,6 +2614,8 @@ class Node:
     def __init__(self, transform: Transform):
         self.id = self._generate_id()  # keep?
         self.transform = transform
+        self.pd_input_slice = self.transform._pd_input_slice
+        self.pd_output_slice = self.transform._pd_output_slice
 
     @property
     def name(self):
@@ -2630,7 +2623,7 @@ class Node:
 
     @property
     def name_id(self):
-        return self.name +' '+ str(self.id)
+        return self.name + ' ' + str(self.id)
 
     @classmethod
     def _generate_id(cls):
@@ -2659,9 +2652,10 @@ class Graph(Pipeline):
     comp2 = comp1 >> X >> Y
     the connection from `comp1 >> X` should not leak in comp1
     """
-
-    def __init__(self, transforms=None):
-        Pipeline.__init__(self, transforms)  # later remove?
+    # TODO: Remove unncessary input/output_node in Graph of Graphs
+    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+                 pd_name: Optional[str] = None, pd_group: bool = False):
+        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         self.input_node = Node(Identity() - 'Input')  # potential overhead
         self.output_node = Node(Identity() - 'Output')
@@ -2731,57 +2725,6 @@ class Graph(Pipeline):
 
         return results[self.output_node]
 
-    def split(self):
-        results = {self.input_node: 0}
-
-        for node in self.top_sorted():
-            results[node] = node.split(results)
-            # TODO: remove results that aren't needed any more
-
-        return results[self.output_node]
-
-    def __deepcopy__(self, memo):  # not really "deep", use different method?
-        """Deepcopy of Graph"""
-
-        def _copy_nodes(_copy_graph, inp_node, copy_inp_node, copied_node_dict={}):
-            for node in inp_node.out_node:
-                if node in copied_node_dict:
-                    copy_node = copied_node_dict[node]
-                else:
-                    copy_node = deepcopy(node)
-                    copy_node.in_node = []
-                    copy_node.out_node = []
-                    copied_node_dict[node] = copy_node
-
-                if isinstance(copy_node, Graph):
-                    _copy_graph.nodes.extend(copy_node.nodes)
-                _copy_graph.nodes.append(copy_node)
-
-                copy_inp_node.connect_outnode(copy_node)
-                copy_inp_node._output_slice[copy_node] = inp_node._output_slice.get(node, None)
-                _copy_nodes(_copy_graph, node, copy_node, copied_node_dict)
-
-            if len(inp_node.out_node) == 0:
-                _copy_graph.output_node = copy_inp_node
-
-        id_self = id(self)
-        _copy = memo.get(id_self)
-        if _copy is None:
-            _copy = type(self)(
-                self.transform)
-            _copy.in_node = copy(self.in_node)
-            _copy.out_node = copy(self.out_node)
-            _copy.transforms = copy(self.transforms)
-
-            _copy.nodes.append(_copy.input_node)
-            copied_node_dict = {self.input_node: _copy.input_node,
-                                self.output_node: _copy.output_node}
-            _copy_nodes(_copy, self.input_node, _copy.input_node, copied_node_dict)
-
-            _copy.node_dict = {n_.name_id: n_ for n_ in _copy.nodes}
-            memo[id_self] = _copy
-        return _copy
-
     def convert_to_networkx(self):
         networkx_graph = nx.DiGraph()
         for parent, children_dict in self.edges.items():
@@ -2791,13 +2734,14 @@ class Graph(Pipeline):
                 networkx_graph.add_edge(parent.name_id, child.name_id)
         self.networkx_graph = networkx_graph
 
-    def draw(self, with_name=True):
+    def draw(self):
         self.convert_to_networkx()
         dot = nx.nx_agraph.to_agraph(self.networkx_graph)
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
 
     def list_all_paths(self, start_node_name=None, end_node_name=None):
+        # TODO: List proper path with consideration to output_slice and input_slice
         if start_node_name is None:
             start_node_name = self.input_node.name_id
         if end_node_name is None:
@@ -2995,14 +2939,18 @@ class Graph(Pipeline):
 class Compose(Graph):
     op = '>>'
 
-    def __init__(self, transforms):
-        super().__init__(transforms)
+    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+                 pd_name: Optional[str] = None, pd_group: bool = False):
+        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         current_node = self.input_node
 
-        for next_transform in self.transforms:
-            next_node = Node(next_transform)
-            self.connect(current_node, next_node)
+        for transform in self.transforms:
+            next_node = Node(transform)
+            self.connect(current_node,
+                         next_node,
+                         output_slice=current_node.pd_output_slice,
+                         input_slice=next_node.pd_input_slice)
             current_node = next_node
         self.connect(current_node, self.output_node)
 
@@ -3010,24 +2958,38 @@ class Compose(Graph):
 class Rollout(Graph):
     op = '+'
 
-    def __init__(self, transforms):
-        super().__init__(transforms)
+    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+                 pd_name: Optional[str] = None, pd_group: bool = False):
+        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for transform in self.transforms:
             node = Node(transform)
-            self.connect(self.input_node, node)
-            self.connect(node, self.output_node)
+            self.connect(self.input_node,
+                         node,
+                         output_slice=self.input_node.pd_output_slice,
+                         input_slice=node.pd_input_slice)
+            self.connect(node,
+                         self.output_node,
+                         output_slice=node.pd_output_slice,
+                         input_slice=self.output_node.pd_input_slice)
 
 
 class Parallel(Graph):
     op = '/'
 
-    def __init__(self, transforms):
-        super().__init__(transforms)
+    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+                 pd_name: Optional[str] = None, pd_group: bool = False):
+        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
         for idx, transform in enumerate(self.transforms):
             node = Node(transform)
-            self.connect(self.input_node, node, output_slice=idx)
-            self.connect(node, self.output_node)
+            self.connect(self.input_node,
+                         node,
+                         output_slice=idx,
+                         input_slice=node.pd_input_slice)
+            self.connect(node,
+                         self.output_node,
+                         output_slice=node.pd_output_slice,
+                         input_slice=self.output_node.pd_input_slice)
 
 
 def _check_batchify_exits_in_path(graph: Graph, path: List):  # why are these functions?
