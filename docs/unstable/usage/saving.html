@@ -235,17 +235,18 @@
     </div>
     <script>
         console.log('script')
+        var pathname = window.location.pathname.split('padl/')[1].split('/');
+        var currentVersion = pathname[1];
+        var versionsFile = window.location.pathname.split('padl/')[0] + 'padl/docs/versions.json';
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -265,8 +266,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
