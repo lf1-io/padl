@@ -2851,13 +2851,6 @@ class Graph(Pipeline):
                     assert unbatch_counter < 2, f"Error: Path contains more than 1 unbatchify : {path}"
         return
 
-    def __getitem__(self, item):
-        if isinstance(item, (slice, int)):
-            return self.nodes[item]
-        if isinstance(item, str):
-            return self.node_dict[item]
-        raise f'Error: invalid index {item}, accept int, slice or string'
-
     def add_edge(self, *connection_tuple):
         """ Currently this is really badly implemented that
         first creates connection in self and then copies self
