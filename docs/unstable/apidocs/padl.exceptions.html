@@ -169,8 +169,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="padl-exceptions">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code><a class="headerlink" href="#padl-exceptions" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.exceptions">
+<span id="padl-exceptions"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code><a class="headerlink" href="#module-padl.exceptions" title="Permalink to this headline"></a></h1>
+<p>Exceptions.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="padl.exceptions.WrongDeviceError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.exceptions.</span></span><span class="sig-name descname"><span class="pre">WrongDeviceError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mother_transform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">child_transform</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.exceptions.WrongDeviceError" title="Permalink to this definition"></a></dt>
+<dd><p>Devices do not match for all transforms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mother_transform</strong> – Main transform that contains child transform.</p></li>
+<li><p><strong>child_transform</strong> – Transform that is contained in mother transform.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -214,17 +229,18 @@
     </div>
     <script>
         console.log('script')
+        var pathname = window.location.pathname.split('padl/')[1].split('/');
+        var currentVersion = pathname[1];
+        var versionsFile = window.location.pathname.split('padl/')[0] + 'padl/docs/versions.json';
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -244,8 +260,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

@@ -171,7 +171,7 @@
              
   <section id="saving-and-loading">
 <h1>Saving and Loading<a class="headerlink" href="#saving-and-loading" title="Permalink to this headline"></a></h1>
-<p>All PADL Transforms can be saved via <code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code>:</p>
+<p>All PADL Transforms can be saved via <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
 
 <span class="n">save</span><span class="p">(</span><span class="n">my_pipeline</span><span class="p">,</span> <span class="s1">&#39;mypipeline.padl&#39;</span><span class="p">)</span>
@@ -185,7 +185,7 @@
 </div>
 <p>containing a python file defining the Transform and a file containing a list of all package dependencies and their versions.</p>
 <p>When saving Pipelines which include PyTorch <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>s as Transforms, checkpoint files with all parameters are stored, too.</p>
-<p>Saved Transforms can be loaded with <code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code>:</p>
+<p>Saved Transforms can be loaded with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
 
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;mypipeline.padl&#39;</span><span class="p">)</span>
@@ -235,17 +235,18 @@
     </div>
     <script>
         console.log('script')
+        var pathname = window.location.pathname.split('padl/')[1].split('/');
+        var currentVersion = pathname[1];
+        var versionsFile = window.location.pathname.split('padl/')[0] + 'padl/docs/versions.json';
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -265,8 +266,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

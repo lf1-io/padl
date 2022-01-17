@@ -4,74 +4,74 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <title>Combining Transforms into Pipelines &mdash; PADL 0.1.0 documentation</title>
-  
 
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Combining Transforms into Pipelines &mdash; PADL 0.1.0 documentation</title>
+
+
+
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
 
-  
-  
 
-  
-  
 
-  
 
-  
+
+
+
+
+
+
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  
-    
+
+
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-    
+
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-    
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Stages: Preprocess, Forward and Postprocess" href="stages.html" />
-    <link rel="prev" title="Creating Transforms" href="creating_transforms.html" /> 
+    <link rel="prev" title="Creating Transforms" href="creating_transforms.html" />
 </head>
 
 <body class="wy-body-for-nav">
 
-   
+
   <div class="wy-grid-for-nav">
-    
+
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
 
-          
+
+
             <a href="../index.html">
-          
 
-          
-            
+
+
+
             <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
-          
+
           </a>
 
-          
-            
-            
-          
 
-          
+
+
+
+
+
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -80,17 +80,17 @@
   </form>
 </div>
 
-          
+
         </div>
 
-        
+
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+
+
+
+
+
+
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
@@ -197,29 +197,29 @@
 </li>
 </ul>
 
-            
-          
+
+
         </div>
-        
+
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
-      
+
       <nav class="wy-nav-top" aria-label="top navigation">
-        
+
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">PADL</a>
-        
+
       </nav>
 
 
       <div class="wy-nav-content">
-        
+
         <div class="rst-content">
-        
-          
+
+
 
 
 
@@ -240,28 +240,28 @@
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
-    
+
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
+
           <li><a href="../usage.html">Usage</a> &raquo;</li>
-        
+
       <li>Combining Transforms into Pipelines</li>
-    
-    
+
+
       <li class="wy-breadcrumbs-aside">
-        
-          
-        
+
+
+
       </li>
-    
+
   </ul>
 
-  
+
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+
   <div class="section" id="combining-transforms-into-pipelines">
 <h1>Combining Transforms into Pipelines<a class="headerlink" href="#combining-transforms-into-pipelines" title="Permalink to this headline">¶</a></h1>
 <p>PADL provides functional operators, which allow to combine Transforms to create powerful <code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code> instances.</p>
@@ -270,7 +270,7 @@
 <span id="id1"></span><h2>Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code><a class="headerlink" href="#compose" title="Permalink to this headline">¶</a></h2>
 <p>Transforms can be <strong>composed</strong> using <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code>:</p>
 <p>Pipelines arising from a compose process their input in a sequence: The output of the first Transform in a composition becomes the input of the second and so on.</p>
-<img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
+<img src="../img/compose.png" style='display: block; margin: auto; width: 150px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">&gt;&gt;</span> <span class="n">t2</span> <span class="o">&gt;&gt;</span> <span class="n">t3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="n">t3</span><span class="p">(</span><span class="n">t2</span><span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
 <span class="go">True</span>
@@ -280,7 +280,7 @@
 <div class="section" id="rollout">
 <h2>Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code><a class="headerlink" href="#rollout" title="Permalink to this headline">¶</a></h2>
 <p>An input can be <strong>rolled out</strong> to multiple Transforms using <code class="docutils literal notranslate"><span class="pre">+</span></code>. This means applying different Transforms to the same input. The result is a tuple.</p>
-<img src="img/rollout.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/rollout.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">+</span> <span class="n">t2</span> <span class="o">+</span> <span class="n">t3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t2</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t3</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 <span class="go">True</span>
@@ -290,7 +290,7 @@
 <div class="section" id="parallel">
 <h2>Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code><a class="headerlink" href="#parallel" title="Permalink to this headline">¶</a></h2>
 <p>Multiple Transforms can be <strong>applied in parallel</strong> to multiple inputs using <code class="docutils literal notranslate"><span class="pre">/</span></code>. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.</p>
-<img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/parallel.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">/</span> <span class="n">t2</span> <span class="o">/</span> <span class="n">t3</span><span class="p">)((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span> <span class="o">==</span> <span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t2</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">t3</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
 <span class="go">True</span>
@@ -300,7 +300,7 @@
 <div class="section" id="map">
 <h2>Map <code class="docutils literal notranslate"><span class="pre">~</span></code><a class="headerlink" href="#map" title="Permalink to this headline">¶</a></h2>
 <p>Transforms can be <strong>mapped</strong> using <code class="docutils literal notranslate"><span class="pre">~</span></code>. Mapping applies the same Transform to multiple inputs. The output has the same length as the input.</p>
-<img src="img/map.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/map.png" style='display: block; margin: auto; width: 300px'>
 <p>Thus:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="o">~</span><span class="n">t</span><span class="p">)([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="n">t</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="n">z</span><span class="p">)]</span>
 <span class="go">True</span>
@@ -392,8 +392,8 @@
 <span class="n">tvt</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tvt</span><span class="p">)</span>
 <span class="n">preprocess_image</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>  <span class="c1"># load an image from a path</span>
-    <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span> 
-        <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span> 
+    <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span>
         <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">))</span>  <span class="c1"># generate three different crops</span>
 <span class="p">)</span>
 </pre></div>
@@ -438,8 +438,8 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
 <span class="n">tvt</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">tvt</span><span class="p">)</span>
 <span class="n">preprocess_image</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>  <span class="c1"># load an image from a path</span>
-    <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span> 
-        <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span> 
+    <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">)</span>
         <span class="o">+</span> <span class="n">tvt</span><span class="o">.</span><span class="n">RandomResizedCrop</span><span class="p">(</span><span class="mi">244</span><span class="p">))</span>  <span class="c1"># generate three different crops</span>
     <span class="o">&gt;&gt;</span> <span class="o">~</span> <span class="n">tvt</span><span class="o">.</span><span class="n">PILToTensor</span><span class="p">()</span>
 <span class="p">)</span>
@@ -453,7 +453,7 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
 
 
            </div>
-           
+
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
@@ -469,14 +469,14 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
 
     </p>
   </div>
-    
-    
-    
+
+
+
     Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
 
 </footer>
         </div>
@@ -485,7 +485,7 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
     </section>
 
   </div>
-  
+
 
   <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
@@ -512,7 +512,7 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -533,7 +533,7 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
     </script>
   </div>
 
- 
+
 
   <script type="text/javascript">
       jQuery(function () {
@@ -541,10 +541,10 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
       });
   </script>
 
-  
-  
-    
-   
+
+
+
+
 
 </body>
 </html>
