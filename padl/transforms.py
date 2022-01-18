@@ -142,8 +142,14 @@ class _OutputSlicer:
         self.main_object = main_object
 
     def __getitem__(self, item):
-        self.main_object._pd_output_slice = item
-        return self.main_object
+        named_copy = copy(self.main_object)
+        named_copy._pd_name = self.main_object._pd_name
+        named_copy._pd_group = True
+        named_copy._pd_varname = {}
+        named_copy.pd_output = _OutputSlicer(named_copy)
+        named_copy.pd_input = _InputSlicer(named_copy)
+        named_copy._pd_output_slice = item
+        return named_copy
 
 
 class _InputSlicer:
@@ -152,8 +158,15 @@ class _InputSlicer:
         self.main_object = main_object
 
     def __getitem__(self, item):
-        self.main_object._pd_input_slice = item
-        return self.main_object
+        named_copy = copy(self.main_object)
+        named_copy._pd_name = self.main_object._pd_name
+        named_copy._pd_group = True
+        named_copy._pd_varname = {}
+        named_copy.pd_output = _OutputSlicer(named_copy)
+        named_copy.pd_input = _InputSlicer(named_copy)
+        named_copy._pd_input_slice = item
+
+        return named_copy
 
 
 Mode = Literal['infer', 'eval', 'train']
@@ -1532,6 +1545,8 @@ class Pipeline(Transform):
         named_copy._pd_name = name
         named_copy._pd_group = True
         named_copy._pd_varname = {}
+        named_copy.pd_output = _OutputSlicer(named_copy)
+        named_copy.pd_input = _InputSlicer(named_copy)
         return named_copy
 
     def __getitem__(self, item: Union[int, slice, str]) -> Transform:
