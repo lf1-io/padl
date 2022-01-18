@@ -325,6 +325,8 @@ class Transform:
         named_copy._pd_name = name
         named_copy._pd_group = True
         named_copy._pd_varname = {}
+        named_copy.pd_output = _OutputSlicer(named_copy)
+        named_copy.pd_input = _InputSlicer(named_copy)
         return named_copy
 
     def __invert__(self) -> "Map":
