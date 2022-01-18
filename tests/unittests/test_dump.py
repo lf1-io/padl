@@ -240,6 +240,14 @@ def test_dumping_selfassign():
     assert SelfAssign(1)._pd_dumps() == read_dump('selfassign')
 
 
+def test_multiline_init():
+    a = MyClassTransform(
+        a=1,
+        b=2,
+        c=3
+    )  # no further testing, this should just not fail
+
+
 class TestOtherModule:
     def test_import_function(self):
         importdump(tim)
