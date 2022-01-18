@@ -168,8 +168,38 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="padl-wrap">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code><a class="headerlink" href="#padl-wrap" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.wrap">
+<span id="padl-wrap"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code><a class="headerlink" href="#module-padl.wrap" title="Permalink to this headline"></a></h1>
+<p>Wrappers.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.wrap.PatchedModule">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.wrap.</span></span><span class="sig-name descname"><span class="pre">PatchedModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.wrap.PatchedModule" title="Permalink to this definition"></a></dt>
+<dd><p>Class that patches a module, such that all functions and classes in that module come out
+wrapped as Transforms.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">padl</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pd_np</span> <span class="o">=</span> <span class="n">padl</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">np</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">pd_np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">,</span> <span class="n">padl</span><span class="o">.</span><span class="n">transforms</span><span class="o">.</span><span class="n">Transform</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.wrap.transform">
+<span class="sig-prename descclassname"><span class="pre">padl.wrap.</span></span><span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wrappee</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.wrap.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transform wrapper / decorator. Use to wrap a class, module or callable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wrappee</strong> – class, module or callable to be wrapped</p></li>
+<li><p><strong>ignore_scope</strong> – Don’t try to determine the scope (use the toplevel scope instead).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -212,17 +242,18 @@
     </div>
     <script>
         console.log('script')
+        var pathname = window.location.pathname.split('padl/')[1].split('/');
+        var currentVersion = pathname[1];
+        var versionsFile = window.location.pathname.split('padl/')[0] + 'padl/docs/versions.json';
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -242,8 +273,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

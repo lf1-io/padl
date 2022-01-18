@@ -13,7 +13,7 @@ Transforms can be **composed** using `>>`:
 
 Pipelines arising from a compose process their input in a sequence: The output of the first Transform in a composition becomes the input of the second and so on.
 
-<img src="img/compose.png" style='display: block; margin: auto; width: 150px'>
+<img src="../img/compose.png" style='display: block; margin: auto; width: 150px'>
 
 Thus:
 
@@ -26,7 +26,7 @@ True
 
 An input can be **rolled out** to multiple Transforms using `+`. This means applying different Transforms to the same input. The result is a tuple.
 
-<img src="img/rollout.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/rollout.png" style='display: block; margin: auto; width: 300px'>
 
 Thus:
 
@@ -40,7 +40,7 @@ True
 
 Multiple Transforms can be **applied in parallel** to multiple inputs using `/`. The input must be a tuple and the nth Transform is applied to the nth item in the tuple.
 
-<img src="img/parallel.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/parallel.png" style='display: block; margin: auto; width: 300px'>
 
 Thus:
 
@@ -53,7 +53,7 @@ True
 
 Transforms can be **mapped** using `~`. Mapping applies the same Transform to multiple inputs. The output has the same length as the input.
 
-<img src="img/map.png" style='display: block; margin: auto; width: 300px'>
+<img src="../img/map.png" style='display: block; margin: auto; width: 300px'>
 
 Thus:
 

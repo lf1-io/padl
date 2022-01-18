@@ -27,6 +27,7 @@ build:
 	python gen_doc_files.py
 	make html
 	mv _build/html unstable
+	cp -r src/img unstable/
 	cp src/custom.css unstable/_static
 	rm -r _build
 
