@@ -38,16 +38,19 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     """
     caller = inspect.stack()[2]
 
-    try:
-        # case transform(f)
-        call = inspector.get_segment_from_frame(caller.frame, 'call')
-    except RuntimeError:
+    if '@' in caller.code_context[0]:
+        call = None
+    else:
         try:
-            # case importer.np.transform
-            call = inspector.get_segment_from_frame(caller.frame, 'attribute')
+            # case transform(f)
+            call = inspector.get_segment_from_frame(caller.frame, 'call')
         except RuntimeError:
-            # decorator case @transform ..
-            call = None
+            # case importer.np.transform
+            try:
+                call = inspector.get_segment_from_frame(caller.frame, 'attribute')
+            except RuntimeError:
+                # needed for python 3.7 support
+                call = None
 
     # if this is the decorator case we drop one leven from the scope (this is the decorated
     # function itself)

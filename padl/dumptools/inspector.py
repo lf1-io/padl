@@ -320,7 +320,15 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
 
-    source, offset = get_statement(original(full_source), caller_frame.f_lineno)
+    lineno = caller_frame.f_lineno
+    # in python <= 3.7, the lineno points to the end of
+    # the statement rathere than the beginning, therefore we need to decrement it
+    if segment_type == 'call':
+        lines = original(full_source).split('\n')
+        while '(' not in lines[lineno - 1]:
+            lineno -= 1
+
+    source, offset = get_statement(original(full_source), lineno)
     # the source can contain surrounding stuff we need to discard
     # as we only have the line number (this is what makes this complicated)
 
