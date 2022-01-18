@@ -2636,6 +2636,8 @@ class Node:
 
     @property
     def name(self):
+        if self.transform.pd_name is None and isinstance(self.transform, Graph):
+            return self.transform._name
         return self.transform.pd_name
 
     @property
@@ -2955,6 +2957,7 @@ class Graph(Pipeline):
 
 class Compose(Graph):
     op = '>>'
+    _name = 'compose'
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -2974,6 +2977,7 @@ class Compose(Graph):
 
 class Rollout(Graph):
     op = '+'
+    _name = 'rollout'
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -2993,6 +2997,7 @@ class Rollout(Graph):
 
 class Parallel(Graph):
     op = '/'
+    _name = 'parallel'
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
