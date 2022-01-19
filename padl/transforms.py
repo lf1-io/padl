@@ -43,6 +43,7 @@ from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
 
+
 # import padl.graph as padl_graph
 
 
@@ -138,6 +139,7 @@ class _GeneratorWithLength:
 
 class _OutputSlicer:
     """Helper class to store output slice"""
+
     def __init__(self, main_object):
         self.main_object = main_object
 
@@ -154,6 +156,7 @@ class _OutputSlicer:
 
 class _InputSlicer:
     """Helper class to store input slice"""
+
     def __init__(self, main_object):
         self.main_object = main_object
 
@@ -2671,6 +2674,7 @@ class Graph(Pipeline):
     comp2 = comp1 >> X >> Y
     the connection from `comp1 >> X` should not leak in comp1
     """
+
     # TODO: Remove unncessary input/output_node in Graph of Graphs
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -2698,7 +2702,7 @@ class Graph(Pipeline):
             arg = inputs[parent_node]
             if output_slice is not None:
                 arg = arg[output_slice]
-            #TODO: make sure there is always input_slice and non overlapping input_slice
+            # TODO: make sure there is always input_slice and non overlapping input_slice
             if input_slice is not None:
                 gathered_args[input_slice] = arg
             else:
@@ -2715,6 +2719,54 @@ class Graph(Pipeline):
         """
         self.edges[node_a][node_b] = (output_slice, input_slice)
         self.parents[node_b].append(node_a)
+
+    def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=0):
+        """Connect node_a with a graph graph_b
+        node_a -> input_node of graph_b -> ...
+
+        :param node_a:
+        :param graph_b:
+        :param output_slice:
+        :param input_slice:
+        :param parent_position:
+        :return:
+        """
+
+        for node_b in graph_b.edges[graph_b.input_node]:
+            node_b_output_slice, input_slice = graph_b.edges[graph_b.input_node][node_b]
+            if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
+                output_slice = node_b_output_slice if output_slice is None else output_slice
+                output_slice = None if output_slice == parent_position else output_slice
+                # print(node_a.name_id, output_slice, '->', node_b.name_id, input_slice)
+                self.connect(node_a,
+                             node_b,
+                             output_slice=output_slice,
+                             input_slice=input_slice,
+                             )
+
+        temp_edges = defaultdict(dict)
+        temp_parents = defaultdict(list)
+
+        for parent, children in graph_b.edges.items():
+            if parent in (graph_b.input_node, graph_b.output_node):
+                continue
+            for child in children:
+                if child not in (graph_b.input_node, graph_b.output_node):
+                    temp_edges[parent][child] = graph_b[parent][child]
+        for parent, children in self.edges.items():
+            for child in children:
+                temp_edges[parent][child] = self.edges[parent][child]
+
+        for child, parents in graph_b.parents.items():
+            if child in (graph_b.input_node, graph_b.output_node):
+                continue
+            for parent in parents:
+                if parent in (graph_b.input_node, graph_b.output_node):
+                    continue
+                temp_parents[child].append(parent)
+        for child, parents in self.edges.items():
+            for parent in parents:
+                temp_parents[child].append(parent)
 
     @lru_cache
     def _topological_node_sort(self):
@@ -2759,6 +2811,67 @@ class Graph(Pipeline):
         dot.layout('dot')
         return Image(dot.draw(format='png', prog='dot'))
 
+    @staticmethod
+    def _check_edge_compatibility(output_slice, input_slice, parent_pos):
+        input_slice = input_slice if input_slice is not None else parent_pos
+        if input_slice is None:
+            return True
+        if isinstance(input_slice, slice):
+            if input_slice.stop is None:
+                return True
+            input_slice = range(input_slice.stop)[input_slice]
+        if output_slice is None:
+            return True
+        elif isinstance(output_slice, slice):
+            if output_slice.stop is None:
+                return True
+            output_slice = range(output_slice.stop)[output_slice]
+        if isinstance(input_slice, int) and isinstance(output_slice, list):
+            if input_slice in output_slice:
+                return True
+            return False
+        elif isinstance(input_slice, list) and isinstance(output_slice, int):
+            if output_slice in input_slice:
+                return True
+            return False
+        elif isinstance(input_slice, int) and isinstance(output_slice, int):
+            if input_slice == output_slice:
+                return True
+            return False
+        else:
+            if len(set(input_slice).intersection(set(input_slice))) > 0:
+                return True
+            return False
+
+    def list_all_paths(self, inp_node=None, path=[]):
+        if inp_node is None:
+            path = [self.input_node]
+            inp_node = self.input_node
+
+        if len(self.edges[inp_node]) == 0:
+            return path
+
+        return_path = []
+
+        for idx, out_node in enumerate(self.edges[inp_node]):
+            parent_position = self.parents[out_node].index(inp_node)
+
+            output_slice, input_slice = self.edges[inp_node][out_node]
+            if not self._check_edge_compatibility(output_slice, input_slice, parent_position):
+                print(False)
+                continue
+            path_copy = path.copy()
+            if isinstance(out_node.transform, Graph):
+                path_copy.append(out_node.transform.input_node)
+                return_path.append(out_node.transform.list_all_paths(out_node.transform.input_node, path_copy))
+            else:
+                path_copy.append(out_node)
+                return_path.append(self.list_all_paths(out_node, path_copy))
+        if len(return_path) == 1:
+            return return_path[0]
+        return return_path
+
+    """
     def list_all_paths(self, start_node_name=None, end_node_name=None):
         # TODO: List proper path with consideration to output_slice and input_slice
         if start_node_name is None:
@@ -2766,6 +2879,7 @@ class Graph(Pipeline):
         if end_node_name is None:
             end_node_name = self.output_node.name_id
         return nx.all_simple_paths(self.networkx_graph, start_node_name, end_node_name)
+    """
 
     def count_batchify_unbatchify(self):
         for path in self.list_all_paths():
@@ -2963,16 +3077,28 @@ class Compose(Graph):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        current_node = self.input_node
+        current_nodes = [self.input_node]
 
         for transform in self.transforms:
+            if isinstance(transform, Graph):
+                for idx, node_a in enumerate(current_nodes):
+                    self.connect_graph(node_a,
+                                       transform,
+                                       parent_position=idx if len(current_nodes) > 1 else None,
+                                       output_slice=None,
+                                       input_slice=None)
+                current_nodes = transform.parents[transform.output_node]
+                continue
+
             next_node = Node(transform)
-            self.connect(current_node,
-                         next_node,
-                         output_slice=current_node.pd_output_slice,
-                         input_slice=next_node.pd_input_slice)
-            current_node = next_node
-        self.connect(current_node, self.output_node)
+            for node_a in current_nodes:
+                self.connect(node_a,
+                             next_node,
+                             output_slice=node_a.pd_output_slice,
+                             input_slice=next_node.pd_input_slice)
+            current_nodes = [next_node]
+        for node_a in current_nodes:
+            self.connect(node_a, self.output_node)
 
 
 class Rollout(Graph):
@@ -2984,6 +3110,13 @@ class Rollout(Graph):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for transform in self.transforms:
+            if isinstance(transform, Graph):
+                self.connect_graph(self.input_node, transform)
+                out_nodes = transform.parents[transform.output_node]
+                for out_node in out_nodes:
+                    self.connect(out_node,
+                                 self.output_node)
+                continue
             node = Node(transform)
             self.connect(self.input_node,
                          node,
@@ -3002,7 +3135,17 @@ class Parallel(Graph):
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
+
         for idx, transform in enumerate(self.transforms):
+            if isinstance(transform, Graph):
+                self.connect_graph(self.input_node,
+                                   transform,
+                                   output_slice=idx)
+                out_nodes = transform.parents[transform.output_node]
+                out_node = out_nodes[idx]
+                self.connect(out_node,
+                             self.output_node)
+                continue
             node = Node(transform)
             self.connect(self.input_node,
                          node,
