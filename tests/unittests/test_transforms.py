@@ -959,3 +959,26 @@ class TestAssertNoDoubleBatch:
     def test_no_double(self):
         t = plus_one >> plus_one / batch >> batch / plus_one >> plus_one
         t.pd_forward
+
+
+class TestTrace:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        emb = transform(torch.nn.Embedding)(10, 8)
+        linear = transform(torch.nn.Linear)(4, 4)
+        to_tensor = transform(lambda x: torch.LongTensor(x))
+        request.cls.pipeline = to_tensor >> batch >> emb >> linear
+
+    def test_pd_trace(self):
+        try:
+            list(self.pipeline.train_apply([[9, 8, 8], [4, 4, 4], [5, 5, 5], [6, 6, 6]],
+                                           batch_size=2, num_workers=0))
+        except:
+            from padl.transforms import _pd_trace
+            assert len(_pd_trace) == 3
+            assert _pd_trace[0].error_position == 0
+            assert torch.equal(_pd_trace[1].args, torch.LongTensor([[9, 8, 8], [4, 4, 4]]))
+            assert _pd_trace[1].error_position == 1
+            assert _pd_trace[1].pd_mode == 'train'
+            assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
+            assert _pd_trace[2].error_position == 3

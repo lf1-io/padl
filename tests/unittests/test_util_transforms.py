@@ -1,7 +1,6 @@
 import pytest
 import torch
-
-from padl import transform, Batchify, Unbatchify, batch, Identity
+from padl import transform, Batchify, batch, Identity
 import padl.transforms as padl
 from padl.util_transforms import IfTrain, IfEval, IfInfer, Try
 
