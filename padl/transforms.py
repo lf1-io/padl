@@ -3081,6 +3081,7 @@ class Compose(Graph):
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
+        # if transforms are duplicated make a copy.
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         current_nodes = [self.input_node]
