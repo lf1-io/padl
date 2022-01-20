@@ -2753,7 +2753,7 @@ class Graph(Pipeline):
                 continue
             for child in children:
                 if child not in (graph_b.input_node, graph_b.output_node):
-                    temp_edges[parent][child] = graph_b[parent][child]
+                    temp_edges[parent][child] = graph_b.edges[parent][child]
         for parent, children in self.edges.items():
             for child in children:
                 temp_edges[parent][child] = self.edges[parent][child]
@@ -2765,18 +2765,21 @@ class Graph(Pipeline):
                 if parent in (graph_b.input_node, graph_b.output_node):
                     continue
                 temp_parents[child].append(parent)
-        for child, parents in self.edges.items():
+        for child, parents in self.parents.items():
             for parent in parents:
                 temp_parents[child].append(parent)
 
-    @lru_cache
+        self.edges = temp_edges
+        self.parents = temp_parents
+
+    # @lru_cache
     def _topological_node_sort(self):
         queue = [self.input_node]
         sorted_ = []
         while queue:
             node = queue.pop(0)
             sorted_.append(node)
-            queue += [child for child in self.edges[node].keys() if all(p in sorted_ for p in self.parents[node])]
+            queue += [child for child in self.edges[node].keys() if all(p in sorted_ for p in self.parents[child])]
         return sorted_
 
     def __call__(self, args):
@@ -2883,6 +2886,8 @@ class Graph(Pipeline):
     """
 
     def count_batchify_unbatchify(self):
+        return
+        """
         for path in self.list_all_paths():
             batch_counter = 0
             unbatch_counter = 0
@@ -2894,7 +2899,7 @@ class Graph(Pipeline):
                 elif isinstance(node.transform, Unbatchify):
                     unbatch_counter += 1
                     assert unbatch_counter < 2, f"Error: Path contains more than 1 unbatchify : {path}"
-        return
+        """
 
     def clean_nodes(self):
         """Clean all dangling nodes
