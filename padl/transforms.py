@@ -2733,14 +2733,15 @@ class Graph(Pipeline):
         """
 
         for node_b in graph_b.edges[graph_b.input_node]:
+            temp_output_slice = output_slice
             node_b_output_slice, input_slice = graph_b.edges[graph_b.input_node][node_b]
             if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
-                output_slice = node_b_output_slice if output_slice is None else output_slice
-                output_slice = None if output_slice == parent_position else output_slice
-                # print(node_a.name_id, output_slice, '->', node_b.name_id, input_slice)
+                temp_output_slice = node_b_output_slice if temp_output_slice is None else temp_output_slice
+                temp_output_slice = None if temp_output_slice == parent_position else temp_output_slice
+                # print(node_a.name_id, temp_output_slice, '->', node_b.name_id, input_slice)
                 self.connect(node_a,
                              node_b,
-                             output_slice=output_slice,
+                             output_slice=temp_output_slice,
                              input_slice=input_slice,
                              )
 
