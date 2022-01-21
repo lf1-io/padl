@@ -363,9 +363,16 @@ explicit replacements of the original source strings.</p>
     </div>
     <script>
         console.log('script')
-        var pathname = window.location.pathname.split('padl/')[1].split('/');
-        var currentVersion = pathname[1];
-        var versionsFile = window.location.pathname.split('padl/')[0] + 'padl/docs/versions.json';
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
         httpRequest.open('GET', versionsFile);
