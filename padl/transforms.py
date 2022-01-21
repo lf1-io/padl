@@ -18,6 +18,8 @@ from tempfile import TemporaryDirectory
 import types
 from dataclasses import dataclass
 
+import padl
+
 try:
     from typing import Literal
 except ImportError:
@@ -2772,7 +2774,7 @@ class Graph(Pipeline):
         self.edges = temp_edges
         self.parents = temp_parents
 
-    # @lru_cache
+    @lru_cache
     def _topological_node_sort(self):
         queue = [self.input_node]
         sorted_ = []
@@ -2810,6 +2812,10 @@ class Graph(Pipeline):
         self.networkx_graph = networkx_graph
 
     def draw(self):
+        """Draw the graph
+
+        :return:
+        """
         self.convert_to_networkx()
         dot = nx.nx_agraph.to_agraph(self.networkx_graph)
         dot.layout('dot')
@@ -2817,6 +2823,13 @@ class Graph(Pipeline):
 
     @staticmethod
     def _check_edge_compatibility(output_slice, input_slice, parent_pos):
+        """Check if given edge detail gives a valid path
+
+        :param output_slice:
+        :param input_slice:
+        :param parent_pos:
+        :return:
+        """
         input_slice = input_slice if input_slice is not None else parent_pos
         if input_slice is None:
             return True
@@ -2848,6 +2861,12 @@ class Graph(Pipeline):
             return False
 
     def list_all_paths(self, inp_node=None, path=[]):
+        """List all paths
+
+        :param inp_node:
+        :param path:
+        """
+
         if inp_node is None:
             path = [self.input_node]
             inp_node = self.input_node
@@ -2875,204 +2894,105 @@ class Graph(Pipeline):
             return return_path[0]
         return return_path
 
-    """
-    def list_all_paths(self, start_node_name=None, end_node_name=None):
-        # TODO: List proper path with consideration to output_slice and input_slice
-        if start_node_name is None:
-            start_node_name = self.input_node.name_id
-        if end_node_name is None:
-            end_node_name = self.output_node.name_id
-        return nx.all_simple_paths(self.networkx_graph, start_node_name, end_node_name)
-    """
-
-    def count_batchify_unbatchify(self):
-        return
-        """
-        for path in self.list_all_paths():
-            batch_counter = 0
-            unbatch_counter = 0
-            for node_name in path:
-                node = self[node_name]
-                if isinstance(node.transform, Batchify):
-                    batch_counter += 1
-                    assert batch_counter < 2, f"Error: Path contains more than 1 batchify : {path}"
-                elif isinstance(node.transform, Unbatchify):
-                    unbatch_counter += 1
-                    assert unbatch_counter < 2, f"Error: Path contains more than 1 unbatchify : {path}"
+    def _generate_preprocess_dict(self,
+                                  current_node,
+                                  preprocess_edges=defaultdict(dict),
+                                  batchify_node={},
+                                  batchify_found=False):
         """
 
-    def clean_nodes(self):
-        """Clean all dangling nodes
-
-        Dangling nodes are those nodes that are not connected to *Input* and *Output*
-
-            Input
-             |
-             A
-            / \
-           C  D
-               \
-              Output
-
-        Here C is dangling node.
+        :param current_node:
+        :param preprocess_edges:
+        :param batchify_node:
+        :param batchify_found:
+        :return:
         """
-        nodes = []
-        transform_nodes = []
+        for child in self.edges[current_node]:
+            if child.transform == padl.batch:
+                batchify_found = True
+                if child not in batchify_node:
+                    batchify_node[child] = Node(padl.Identity() - 'batchify Marker')
+                preprocess_edges[current_node][batchify_node[child]] = self.edges[current_node][child]
+                preprocess_edges[batchify_node[child]][self.output_node] = (None, None)
+            elif child == self.output_node and batchify_found:
+                raise SyntaxError('If a path has batchify, all paths must contain batchify')
+            else:
+                preprocess_edges[current_node][child] = self.edges[current_node][child]
+                preprocess_edges, batchify_found = self._generate_preprocess_dict(child, preprocess_edges, batchify_node,
+                                                                                  batchify_found)
+        return preprocess_edges, batchify_found
 
-        def _append_to_nodes(n_):  # really necessary to have an internal function for this?
-            if n_ not in nodes:
-                nodes.append(n_)
+    def _generate_forward_dict(self,
+                               current_node=None,
+                               forward_edges=defaultdict(dict),
+                               unbatchify_node={},
+                               unbatchify_found=False,
+                               ):
+        if current_node is None:
+            batchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.batch]
+            for batch_node in batchify_nodes:
+                forward_edges[self.input_node][batch_node] = (None, None)
+                forward_edges, unbatchify_found = self._generate_forward_dict(batch_node, forward_edges, unbatchify_node,
+                                                                              unbatchify_found)
+            return forward_edges, unbatchify_found
 
-        def _append_to_transform_nodes(n_):
-            if n_ not in transform_nodes:
-                transform_nodes.append(n_)
+        for child in self.edges[current_node]:
+            if child.transform == padl.batch:
+                raise SyntaxError("Two batchify in same path is not allowed")
+            elif child.transform == padl.unbatch:
+                unbatchify_found = True
+                if child not in unbatchify_node:
+                    unbatchify_node[child] = Node(padl.Identity() - 'unbatch Marker')
+                forward_edges[current_node][unbatchify_node[child]] = self.edges[current_node][child]
+                forward_edges[unbatchify_node[child]][self.output_node] = (None, None)
+            elif child == self.output_node and unbatchify_found:
+                raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify')
+            else:
+                forward_edges[current_node][child] = self.edges[current_node][child]
+                forward_edges, unbatchify_found = self._generate_forward_dict(child, forward_edges, unbatchify_node,
+                                                                              unbatchify_found=unbatchify_found)
+        return forward_edges, unbatchify_found
 
-        def _get_nodes(inp_node):
-            for out_node in inp_node.out_node:
-                if (out_node.pd_name != 'Input') or (out_node.pd_name != 'Output'):
-                    if isinstance(out_node, Graph):
-                        for n_ in out_node.nodes:
-                            _append_to_nodes(n_)
-                    _append_to_transform_nodes(out_node)
-                    _append_to_nodes(out_node)
-                _get_nodes(out_node)
+    def _generate_postprocess_dict(self,
+                                   current_node=None,
+                                   postprocess_edges=defaultdict(dict)
+                                   ):
+        if current_node is None:
+            unbatchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.unbatch]
+            for unbatch_node in unbatchify_nodes:
+                postprocess_edges[self.input_node][unbatch_node] = (None, None)
+                postprocess_edges = self._generate_postprocess_dict(unbatch_node, postprocess_edges)
+            return postprocess_edges
 
-        _append_to_nodes(self.input_node)
-        _get_nodes(self.input_node)
-        _append_to_nodes(self.output_node)
-
-        self.nodes = nodes
-        self.transform_nodes = transform_nodes
-        self.transforms = [node_.transform for node_ in self.transform_nodes]
+        for child in self.edges[current_node]:
+            if child.transform == padl.unbatch:
+                raise SyntaxError("Two Unbatchify in same path is not allowed")
+            else:
+                postprocess_edges[current_node][child] = self.edges[current_node][child]
+                postprocess_edges = self._generate_postprocess_dict(child, postprocess_edges)
+        return postprocess_edges
 
     def _pd_splits(self, input_components=0):
-        self.store_splits()
-        return None, self._pd_stages, True
+        """Generate splits
 
-    def store_splits(self):
-        self.count_batchify_unbatchify()
-        pd_preprocess = self._store_preprocess()
-        pd_forward = self._store_forward()
-        pd_postprocess = self._store_postprocess()
-        self._pd_stages = (pd_preprocess, pd_forward, pd_postprocess)
+        :param input_components:
+        :return:
+        """
+        preprocess_edges_dict, batchify_found = self._generate_preprocess_dict(self.input_node)
+        forward_edges_dict, unbatchify_found = self._generate_forward_dict()
+        postprocess_edges_dict = self._generate_postprocess_dict()
 
-    def _store_preprocess(self):
-        """Store Subgraph of Preprocess"""
+        if batchify_found:
+            self._preprocess_edges = preprocess_edges_dict
+            self._forward_edges = forward_edges_dict
+        else:
+            self._preprocess_edges = Compose([padl.Identity() - 'Preprocess Identity']).edges
+            self._forward_edges = preprocess_edges_dict
 
-        _copy_graph = deepcopy(self)  # can we not make a new graph??
-        _copy_graph.convert_to_networkx(True)  # nee
-
-        output_node = Node(Identity(), name='Output')
-
-        for path in list(_copy_graph.list_all_paths()):
-            if not _check_batchify_exits_in_path(_copy_graph, path):
-                last_node_batch, next_node = find_last_node_with_batchify_in_path(_copy_graph, path)
-                if last_node_batch is not None:
-                    last_node_batch.replace_outnode(next_node, output_node)
-                else:
-                    out_node = _copy_graph[path[1]]
-                    identity_node = Node(Identity(), 'identity')
-                    _copy_graph.input_node.replace_outnode(out_node, identity_node)
-                    identity_node.connect_outnode(output_node)
-                continue
-
-            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
-
-            for out_node in batchify_node.out_node:
-                identity_node = Node(Identity(), 'identity')
-                identity_node.connect_outnode(output_node)
-                batchify_node.replace_outnode(out_node, identity_node)
-
-        _copy_graph.output_node = output_node
-        self.clean_nodes()
-        _copy_graph.clean_nodes()
-        _copy_graph.convert_to_networkx()
-
-        return _copy_graph
-
-    def _store_forward(self):
-        """Store Subgraph of Forward"""
-
-        _copy_graph = deepcopy(self)
-        _copy_graph.convert_to_networkx(True)
-
-        input_node = Node(Identity(), name='Input')
-        output_node = Node(Identity(), name='Output')
-
-        for path in list(_copy_graph.list_all_paths()):
-            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
-            if batchify_node is None:
-                last_node_batch, next_node = find_last_node_with_batchify_in_path(_copy_graph, path)
-                if last_node_batch is not None:
-                    next_node.connect_innode(input_node)
-                    next_node.remove_outnode(last_node_batch)
-                    out_node = _copy_graph[path[-2]]
-                    out_node.replace_outnode(_copy_graph.output_node, output_node)
-                else:
-                    in_node = _copy_graph[path[1]]
-                    in_node.replace_innode(_copy_graph.input_node, input_node)
-                    out_node = _copy_graph[path[-2]]
-                    out_node.replace_outnode(_copy_graph.output_node, output_node)
-                continue
-
-            for out_node in batchify_node.out_node:
-                identity_node = Node(Identity(), 'identity')
-                identity_node.connect_innode(input_node)
-                identity_node.connect_outnode(out_node)
-                batchify_node.remove_outnode(out_node)
-                if unbatchify_node is None:
-                    out_node = identity_node
-                else:
-                    out_node = _copy_graph[path[-2]]
-                out_node.replace_outnode(_copy_graph.output_node, output_node)
-
-            if unbatchify_node is None: continue
-
-            for in_node in unbatchify_node.in_node:
-                identity_node = Node(Identity(), 'identity')
-                identity_node.connect_outnode(output_node)
-                in_node.replace_outnode(unbatchify_node, identity_node)
-
-        _copy_graph.output_node = output_node
-        _copy_graph.input_node = input_node
-
-        self.clean_nodes()
-        _copy_graph.clean_nodes()
-        _copy_graph.convert_to_networkx()
-        return _copy_graph
-
-    def _store_postprocess(self):
-        """Store Subgraph of Forward"""
-
-        _copy_graph = deepcopy(self)
-        _copy_graph.convert_to_networkx(True)
-
-        input_node = Node(Identity(), name='Input')
-        output_node = Node(Identity(), name='Output')
-
-        for path in list(_copy_graph.list_all_paths()):
-            batchify_node, unbatchify_node = get_batchify_unbatchify_in_path(_copy_graph, path)
-
-            if unbatchify_node is None:
-                identity_node = Node(Identity(), 'identity')
-                identity_node.connect_innode(input_node)
-                identity_node.connect_outnode(output_node)
-                continue
-
-            for in_node in unbatchify_node.in_node:
-                unbatchify_node.remove_innode(in_node)
-                unbatchify_node.connect_innode(input_node)
-
-                out_node = _copy_graph[path[-2]]
-                out_node.replace_outnode(_copy_graph.output_node, output_node)
-
-        _copy_graph.output_node = output_node
-        _copy_graph.input_node = input_node
-
-        self.clean_nodes()
-        _copy_graph.clean_nodes()
-        _copy_graph.convert_to_networkx()
-        return _copy_graph
+        if len(postprocess_edges_dict) > 0:
+            self._postprocess_edges = postprocess_edges_dict
+        else:
+            self._postprocess_edges = Compose([padl.Identity() - 'Postprocess Identity']).edges
 
 
 class Compose(Graph):
