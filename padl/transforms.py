@@ -2855,13 +2855,14 @@ class Graph(Pipeline):
                 return True
             return False
 
-    def list_all_paths(self, inp_node=None, path=[]):
+    def list_all_paths(self, inp_node=None, path=None):
         """List all paths
 
         :param inp_node:
         :param path:
         """
-
+        if path is None:
+            path = []
         if inp_node is None:
             path = [self.input_node]
             inp_node = self.input_node
@@ -2890,8 +2891,8 @@ class Graph(Pipeline):
 
     def _generate_preprocess_dict(self,
                                   current_node,
-                                  preprocess_edges=defaultdict(dict),
-                                  batchify_node={},
+                                  preprocess_edges=None,
+                                  batchify_node=None,
                                   batchify_found=False):
         """
 
@@ -2901,7 +2902,14 @@ class Graph(Pipeline):
         :param batchify_found:
         :return:
         """
+        if batchify_node is None:
+            batchify_node = dict()
+        if preprocess_edges is None:
+            preprocess_edges = defaultdict(dict)
+
+        # import pdb;pdb.set_trace()
         for child in self.edges[current_node]:
+            # import pdb;pdb.set_trace()
             if child.transform == padl.batch:
                 batchify_found = True
                 if child not in batchify_node:
@@ -2912,17 +2920,22 @@ class Graph(Pipeline):
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
             else:
                 preprocess_edges[current_node][child] = self.edges[current_node][child]
-                preprocess_edges, batchify_found = self._generate_preprocess_dict(child, preprocess_edges,
+                preprocess_edges, batchify_found = self._generate_preprocess_dict(child,
+                                                                                  preprocess_edges,
                                                                                   batchify_node,
                                                                                   batchify_found)
         return preprocess_edges, batchify_found
 
     def _generate_forward_dict(self,
                                current_node=None,
-                               forward_edges=defaultdict(dict),
-                               unbatchify_node={},
+                               forward_edges=None,
+                               unbatchify_node=None,
                                unbatchify_found=False,
                                ):
+        if unbatchify_node is None:
+            unbatchify_node = dict()
+        if forward_edges is None:
+            forward_edges = defaultdict(dict)
         if current_node is None:
             batchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.batch]
             for batch_node in batchify_nodes:
@@ -2951,8 +2964,11 @@ class Graph(Pipeline):
 
     def _generate_postprocess_dict(self,
                                    current_node=None,
-                                   postprocess_edges=defaultdict(dict)
+                                   postprocess_edges=None,
                                    ):
+        if postprocess_edges is None:
+            postprocess_edges = defaultdict(dict)
+
         if current_node is None:
             unbatchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.unbatch]
             for unbatch_node in unbatchify_nodes:
@@ -3131,11 +3147,15 @@ def _helper_convert_compose(edges_dict=None,
                             parents_dict=None,
                             current_node=None,
                             current_type=None,
-                            transform_list=[],
-                            meta_transform_list=[],
+                            transform_list=None,
+                            meta_transform_list=None,
                             nodes_left=None,
                             input_node=None):
     """Helper function to convert compose to list"""
+    if transform_list is None:
+        transform_list = []
+    if meta_transform_list is None:
+        meta_transform_list = []
     children = edges_dict[current_node]
     child_node = list(children.keys())[0]
 
@@ -3176,8 +3196,8 @@ def _helper_convert_to_operators(edges_dict=None,
                                  parents_dict=None,
                                  current_node=None,
                                  current_type=None,
-                                 transform_list=[],
-                                 meta_transform_list=[],
+                                 transform_list=None,
+                                 meta_transform_list=None,
                                  nodes_left=None,
                                  input_node=None,
                                  ):
@@ -3193,6 +3213,10 @@ def _helper_convert_to_operators(edges_dict=None,
     :param input_node:
     :return:
     """
+    if transform_list is None:
+        transform_list = []
+    if meta_transform_list is None:
+        meta_transform_list = []
     children = edges_dict[current_node]
     # import pdb; pdb.set_trace()
     if len(children) == 0:
