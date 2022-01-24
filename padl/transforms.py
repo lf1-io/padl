@@ -4,8 +4,8 @@ Transforms should be created using the `padl.transform` wrap-function.
 """
 
 import re
-from copy import copy, deepcopy
-from collections import Counter, namedtuple, OrderedDict
+from copy import copy
+from collections import Counter, namedtuple, OrderedDict, defaultdict
 from functools import lru_cache
 import inspect
 from itertools import chain
@@ -44,12 +44,6 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
-
-
-# import padl.graph as padl_graph
-
-
-_pd_trace = []
 
 
 def _unpack_batch(args):
@@ -384,7 +378,7 @@ class Transform:
     def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a zip-file at *path*.
 
-        The file's pd_name should end with '.padl'. If no extension is given, it will be added
+        The file's name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
         If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
@@ -412,7 +406,7 @@ class Transform:
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
 
-        The folder's pd_name should end with '.padl'. If no extension is given, it will be added
+        The folder's name should end with '.padl'. If no extension is given, it will be added
         automatically.
 
         If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
@@ -513,7 +507,7 @@ class Transform:
 
         :param graph: A codegraph to extend. If *None* a new codegraph will be created.
         :param name: The pd_name to give the transform.
-        :return: Updated self.
+        :return: Updated graph.
         """
         if graph is None:
             graph = CodeGraph()
@@ -2677,7 +2671,6 @@ class Graph(Pipeline):
     the connection from `comp1 >> X` should not leak in comp1
     """
 
-    # TODO: Remove unncessary input/output_node in Graph of Graphs
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
