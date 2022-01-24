@@ -1095,7 +1095,7 @@ class FunctionTransform(AtomicTransform):
         return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump or self._wrap_type == 'module':
+        if self._pd_full_dump or self._wrap_type in ('module', 'lambda'):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
