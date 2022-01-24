@@ -255,6 +255,7 @@ def get_surrounding_block(source: str, lineno: int):
         if next_white is None or next_white == 0:
             break
         block.pop(0)
+        lineno_in_block -= 1
     while after:
         next_ = after.pop(0)
         next_white = _count_leading_whitespace(next_)
