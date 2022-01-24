@@ -472,7 +472,7 @@ class Transform:
 
         A codegraph's nodes are :class:`CodeNode` instances which contain a scoped pd_name, a piece of
         code defining the pd_name and a set of dependencies (other scoped names). The dependencies
-        can be understood as the edges in the self.
+        can be understood as the edges_dict in the self.
 
         A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
         representing an assignment of the transform's evaluable representation to a variable
@@ -2740,7 +2740,6 @@ class Graph(Pipeline):
             if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
                 temp_output_slice = node_b_output_slice if temp_output_slice is None else temp_output_slice
                 temp_output_slice = None if temp_output_slice == parent_position else temp_output_slice
-                # print(node_a.name_id, temp_output_slice, '->', node_b.name_id, input_slice)
                 self.connect(node_a,
                              node_b,
                              output_slice=temp_output_slice,
@@ -2774,15 +2773,10 @@ class Graph(Pipeline):
         self.edges = temp_edges
         self.parents = temp_parents
 
-    @lru_cache
-    def _topological_node_sort(self):
-        queue = [self.input_node]
-        sorted_ = []
-        while queue:
-            node = queue.pop(0)
-            sorted_.append(node)
-            queue += [child for child in self.edges[node].keys() if all(p in sorted_ for p in self.parents[child])]
-        return sorted_
+    @lru_cache()
+    def sorted_nodes(self):
+        """Topologically sorted nodes"""
+        return _topological_node_sort(self.input_node, self.edges, self.parents)
 
     def __call__(self, args):
         """Call Method for Graph
@@ -2795,7 +2789,7 @@ class Graph(Pipeline):
         In > C > D > X > Out
         """
         results = {self.input_node: args}
-        for node in self._topological_node_sort()[1:]:
+        for node in self.sorted_nodes()[1:]:
             node_arg = self._gather_args_for_node(node, results)
             results[node] = node.call_node(node_arg)
             # TODO: remove results that aren't needed any more
@@ -2830,6 +2824,7 @@ class Graph(Pipeline):
         :param parent_pos:
         :return:
         """
+        # TODO: Check, TEST & Simplify
         input_slice = input_slice if input_slice is not None else parent_pos
         if input_slice is None:
             return True
@@ -2881,7 +2876,6 @@ class Graph(Pipeline):
 
             output_slice, input_slice = self.edges[inp_node][out_node]
             if not self._check_edge_compatibility(output_slice, input_slice, parent_position):
-                print(False)
                 continue
             path_copy = path.copy()
             if isinstance(out_node.transform, Graph):
@@ -2918,7 +2912,8 @@ class Graph(Pipeline):
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
             else:
                 preprocess_edges[current_node][child] = self.edges[current_node][child]
-                preprocess_edges, batchify_found = self._generate_preprocess_dict(child, preprocess_edges, batchify_node,
+                preprocess_edges, batchify_found = self._generate_preprocess_dict(child, preprocess_edges,
+                                                                                  batchify_node,
                                                                                   batchify_found)
         return preprocess_edges, batchify_found
 
@@ -2932,7 +2927,8 @@ class Graph(Pipeline):
             batchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.batch]
             for batch_node in batchify_nodes:
                 forward_edges[self.input_node][batch_node] = (None, None)
-                forward_edges, unbatchify_found = self._generate_forward_dict(batch_node, forward_edges, unbatchify_node,
+                forward_edges, unbatchify_found = self._generate_forward_dict(batch_node, forward_edges,
+                                                                              unbatchify_node,
                                                                               unbatchify_found)
             return forward_edges, unbatchify_found
 
@@ -2982,17 +2978,53 @@ class Graph(Pipeline):
         forward_edges_dict, unbatchify_found = self._generate_forward_dict()
         postprocess_edges_dict = self._generate_postprocess_dict()
 
+        build_splits = []
         if batchify_found:
             self._preprocess_edges = preprocess_edges_dict
             self._forward_edges = forward_edges_dict
+            build_splits += ['preprocess', 'forward']
         else:
-            self._preprocess_edges = Compose([padl.Identity() - 'Preprocess Identity']).edges
+            self._pd_preprocess = Compose([padl.Identity() - 'Preprocess Identity'])
+            self._preprocess_edges = self._pd_preprocess.edges
+            self._preprocess_parents = self._pd_preprocess.parents
+
             self._forward_edges = preprocess_edges_dict
+            build_splits += ['forward']
 
         if len(postprocess_edges_dict) > 0:
             self._postprocess_edges = postprocess_edges_dict
+            build_splits += ['postprocess']
         else:
-            self._postprocess_edges = Compose([padl.Identity() - 'Postprocess Identity']).edges
+            self._pd_postprocess = Compose([padl.Identity() - 'Postprocess Identity'])
+            self._postprocess_edges = self._pd_postprocess.edges
+            self._postprocess_parents = self._pd_postprocess.parents
+
+        if 'preprocess' in build_splits:
+            self._preprocess_parents = _generate_parents_dict_from_edge_dict(self._preprocess_edges)
+            self._preprocess_list = _convert_to_structured_list(start_node=self.input_node,
+                                                                edges_dict=self._preprocess_edges,
+                                                                parents_dict=self._preprocess_parents,
+                                                                exclude_start_node=True,
+                                                                )
+            self._pd_preprocess = _build_transform_from_list(self._preprocess_list)
+
+        if 'forward' in build_splits:
+            self._forward_parents = _generate_parents_dict_from_edge_dict(self._forward_edges)
+            self._forward_list = _convert_to_structured_list(start_node=self.input_node,
+                                                             edges_dict=self._forward_edges,
+                                                             parents_dict=self._forward_parents,
+                                                             exclude_start_node=True,
+                                                             )
+            self._pd_forward = _build_transform_from_list(self._forward_list)
+
+        if 'postprocess' in build_splits:
+            self._postprocess_parents = _generate_parents_dict_from_edge_dict(self._postprocess_edges)
+            self._postprocess_list = _convert_to_structured_list(start_node=self.input_node,
+                                                           edges_dict=self._postprocess_edges,
+                                                           parents_dict=self._postprocess_parents,
+                                                           exclude_start_node=True,
+                                                           )
+            self._pd_postprocess = _build_transform_from_list(self._postprocess_list)
 
 
 class Compose(Graph):
@@ -3084,51 +3116,221 @@ class Parallel(Graph):
                          input_slice=self.output_node.pd_input_slice)
 
 
-def _check_batchify_exits_in_path(graph: Graph, path: List):  # why are these functions?
-    """Check if batchify exits in a path"""
-    for n_ in path:
-        n_ = graph[n_]
-        if isinstance(n_.transform, Batchify):
-            return True
-    return False
+def _check_parallel(children):
+    """Check if current dict passed is Parallel or not"""
+    output_slices = []
+    for child, (output_slice, input_slice) in children.items():
+        output_slices.append(output_slice)
+    try:
+        return sorted(output_slices) == list(range(len(children)))
+    except TypeError:
+        return False
 
 
-def _check_unbatchify_exits_in_path(graph: Graph, path: List):
-    """Check if unbatchify exits in a path"""
-    for n_ in path:
-        n_ = graph[n_]
-        if isinstance(n_.transform, Unbatchify):
-            return True
-    return False
+def _helper_convert_compose(edges_dict=None,
+                            parents_dict=None,
+                            current_node=None,
+                            current_type=None,
+                            transform_list=[],
+                            meta_transform_list=[],
+                            nodes_left=None,
+                            input_node=None):
+    """Helper function to convert compose to list"""
+    children = edges_dict[current_node]
+    child_node = list(children.keys())[0]
+
+    # Multiple parents marks end of Compose
+    continue_compose = len(parents_dict[child_node]) == 1
+
+    if current_type == Compose and continue_compose:
+        transform_list += list(children.keys())
+        nodes_left.remove(transform_list[-1])
+    else:
+        current_type = Compose
+        transform_list = [current_type, current_node] if current_node != input_node else [current_type]
+        nodes_left.remove(current_node)
+        if continue_compose:
+            transform_list += list(children.keys())
+            nodes_left.remove(transform_list[-1])
+
+        meta_transform_list.append(transform_list)
+    # import pdb; pdb.set_trace()
+
+    if continue_compose:
+        current_node = transform_list[-1]
+        transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
+            edges_dict,
+            parents_dict,
+            current_node,
+            current_type,
+            transform_list,
+            meta_transform_list,
+            nodes_left=nodes_left,
+            input_node=input_node,
+        )
+
+    return transform_list, meta_transform_list, nodes_left
 
 
-def find_last_node_with_batchify_in_path(graph: Graph, path: List):
-    """Returns last node with batchify connection and the next node to that node
+def _helper_convert_to_operators(edges_dict=None,
+                                 parents_dict=None,
+                                 current_node=None,
+                                 current_type=None,
+                                 transform_list=[],
+                                 meta_transform_list=[],
+                                 nodes_left=None,
+                                 input_node=None,
+                                 ):
+    """Helper function to convert given edge_dict to operator list
 
-    For a path [a, b, c, d, e], there might be another path in one of the nodes that
-    connects to a batchify. For example, 'c' might have another path that goes through a
-    batchify.
-    This function returns that node 'c' and the out node of 'c' which is 'd'
+    :param edges_dict:
+    :param parents_dict:
+    :param current_node:
+    :param current_type:
+    :param transform_list:
+    :param meta_transform_list:
+    :param nodes_left:
+    :param input_node:
+    :return:
     """
-    path_rev = path.copy()
-    path_rev.reverse()
+    children = edges_dict[current_node]
+    # import pdb; pdb.set_trace()
+    if len(children) == 0:
+        return transform_list, meta_transform_list, nodes_left
 
-    for idx, node_name in enumerate(path_rev):
-        node = graph[node_name]
-        for p in graph.list_all_paths(start_node_name=node.name_id):
-            if _check_batchify_exits_in_path(graph, p):
-                return node, graph[path_rev[idx - 1]]
-    return None, None
+    if len(children) == 1:
+        transform_list, meta_transform_list, nodes_left = _helper_convert_compose(
+            edges_dict=edges_dict,
+            parents_dict=parents_dict,
+            current_node=current_node,
+            current_type=current_type,
+            transform_list=transform_list,
+            meta_transform_list=meta_transform_list,
+            nodes_left=nodes_left,
+            input_node=input_node,
+        )
+        return transform_list, meta_transform_list, nodes_left
+
+    if current_type is None and current_node != input_node:
+        meta_transform_list.append(current_node)
+
+    if _check_parallel(children):
+        # PARALLEL
+        transform_list = [Parallel]
+        meta_transform_list.append(transform_list)
+        for idx, child in enumerate(children):
+            _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
+                                                            parents_dict=parents_dict,
+                                                            current_node=child,
+                                                            current_type=Parallel,
+                                                            transform_list=None,
+                                                            meta_transform_list=transform_list,
+                                                            nodes_left=nodes_left,
+                                                            input_node=input_node,
+                                                            )
+        return transform_list, meta_transform_list, nodes_left
+
+    # ROLLOUT
+    transform_list = [Rollout]
+    meta_transform_list.append(transform_list)
+    for idx, child in enumerate(children):
+        _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
+                                                        parents_dict=parents_dict,
+                                                        current_node=child,
+                                                        current_type=Rollout,
+                                                        transform_list=None,
+                                                        meta_transform_list=transform_list,
+                                                        nodes_left=nodes_left,
+                                                        input_node=input_node,
+                                                        )
+    return transform_list, meta_transform_list, nodes_left
 
 
-def get_batchify_unbatchify_in_path(graph: Graph, path: List):
-    """Returns batchify and unbatchify in a given `path` in given `self`"""
-    batchify = None
-    unbatchify = None
-    for node in path:
-        node = graph[node]
-        if isinstance(node.transform, Batchify):
-            batchify = node
-        if isinstance(node.transform, Unbatchify):
-            unbatchify = node
-    return batchify, unbatchify
+def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_start_node=True):
+    """Convert an edge_dict to list of operations
+
+    :param start_node: node to start the conversion from
+    :param edge_dict: dict of edges_dict of nodes
+    :param parents_dict: dict of parents of nodes
+    :param exclude_start_node: True if start_node is not to be included
+    :return: list of operations
+    """
+
+    nodes_left = _topological_node_sort(start_node, edges_dict, parents_dict)
+
+    meta_transform_list = []
+    transform_list = []
+    current_node = start_node
+
+    if not exclude_start_node:
+        start_node = None
+
+    while len(nodes_left) > 2:
+        transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
+            edges_dict=edges_dict,
+            parents_dict=parents_dict,
+            current_node=current_node,
+            current_type=None,
+            transform_list=transform_list,
+            meta_transform_list=meta_transform_list,
+            nodes_left=nodes_left,
+            input_node=start_node,
+        )
+        current_node = nodes_left[0]
+
+    return meta_transform_list
+
+
+def _build_transform_from_list(input_list):
+    """Build transforms from a list
+
+    input_list can have following elements:
+    1. transforms
+    2. list starting with Class (Compose/Rollout/Parallel) and contains transforms
+        e.g. [Compose, t1, t2, t3]
+
+    :param input_list: list of transforms
+    """
+    current_type = input_list[0]
+    start_pos = 1
+    if not inspect.isclass(current_type):
+        current_type = Compose
+        start_pos = 0
+
+    transform_list = []
+    for l_ in input_list[start_pos:]:
+        if isinstance(l_, list):
+            transform_list.append(_build_transform_from_list(l_))
+        else:
+            transform_list.append(l_.transform)
+    return current_type(transform_list)
+
+
+def _generate_parents_dict_from_edge_dict(edge_dict):
+    """Generate parents dict
+
+    :param edge_dict: dict of edges_dict for nodes
+    :return:
+    """
+    parents = defaultdict(list)
+    for parent, children in edge_dict.items():
+        for child in children:
+            parents[child].append(parent)
+    return parents
+
+
+def _topological_node_sort(start_node, edges_dict, parents_dict):
+    """Sort nodes topologically (BFS)
+
+    :param start_node: Node to start the search with
+    :param edges_dict: dict of edges_dict for nodes
+    :param parents_dict: dict of parents for nodes
+    :return: sorted list of nodes
+    """
+    queue = [start_node]
+    sorted_ = []
+    while queue:
+        node = queue.pop(0)
+        sorted_.append(node)
+        queue += [child for child in edges_dict[node].keys() if all(p in sorted_ for p in parents_dict[child])]
+    return sorted_
