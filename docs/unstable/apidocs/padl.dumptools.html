@@ -96,6 +96,10 @@
 <li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#weight-sharing">Weight Sharing</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/debugging_your_transforms.html">Debugging your Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/debugging_your_transforms.html#example">Example</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../usage/extras.html">Extras</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
@@ -170,8 +174,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="padl-dumptools">
-<h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code><a class="headerlink" href="#padl-dumptools" title="Permalink to this headline"></a></h1>
+  <section id="module-padl.dumptools">
+<span id="padl-dumptools"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code><a class="headerlink" href="#module-padl.dumptools" title="Permalink to this headline"></a></h1>
 </section>
 
 
@@ -215,17 +219,25 @@
     </div>
     <script>
         console.log('script')
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -245,8 +257,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

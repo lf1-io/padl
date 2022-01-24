@@ -96,6 +96,10 @@
 <li class="toctree-l3"><a class="reference internal" href="pytorch.html#weight-sharing">Weight Sharing</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_your_transforms.html">Debugging your Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="debugging_your_transforms.html#example">Example</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="extras.html">Extras</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
 <li class="toctree-l3"><a class="reference internal" href="extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
@@ -180,7 +184,7 @@
 <li><p><em>postprocess</em> stands for post-processing - for example converting the output of a model to a readable format</p></li>
 </ul>
 <p>To define stages, use the special Transforms <code class="xref py py-obj docutils literal notranslate"><span class="pre">padl.batch</span></code> and
-<code class="xref py py-obj docutils literal notranslate"><span class="pre">padl.unbatch</span></code> in a <a class="reference internal" href="combining_transforms.html#id2"><span class="std std-ref">composed</span></a> Pipeline:</p>
+<a class="reference internal" href="../apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">padl.unbatch</span></code></a> in a <a class="reference internal" href="combining_transforms.html#id2"><span class="std std-ref">composed</span></a> Pipeline:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">unbatch</span>
 <span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">models</span>
 
@@ -206,7 +210,7 @@
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>The different stages of a Pipeline can be accessed via <code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_preprocess</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_forward</span></code> and <code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_postprocess</span></code>:</p>
+<p>The different stages of a Pipeline can be accessed via <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_preprocess" title="padl.transforms.Transform.pd_preprocess"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_preprocess</span></code></a>, <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_forward" title="padl.transforms.Transform.pd_forward"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_forward</span></code></a> and <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_postprocess" title="padl.transforms.Transform.pd_postprocess"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.pd_postprocess</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_preprocess</span>
 <span class="go">load_image &gt;&gt; transforms.ToTensor() &gt;&gt; batch</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_classifier</span><span class="o">.</span><span class="n">pd_forward</span>
@@ -260,17 +264,25 @@
     </div>
     <script>
         console.log('script')
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -290,8 +302,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

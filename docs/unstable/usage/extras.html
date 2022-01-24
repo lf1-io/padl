@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Advanced Topics" href="../advanced.html" />
-    <link rel="prev" title="Using PyTorch Modules with Transforms" href="pytorch.html" /> 
+    <link rel="prev" title="Debugging your Transforms" href="debugging_your_transforms.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -94,6 +94,10 @@
 <li class="toctree-l3"><a class="reference internal" href="pytorch.html#devices">Devices</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="debugging_your_transforms.html">Debugging your Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="debugging_your_transforms.html#example">Example</a></li>
 </ul>
 </li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Extras</a><ul>
@@ -194,7 +198,7 @@
 <section id="applying-transforms-depending-on-the-mode">
 <span id="if-in-mode"></span><h2>Applying Transforms Depending on the Mode<a class="headerlink" href="#applying-transforms-depending-on-the-mode" title="Permalink to this headline"></a></h2>
 <p>Often it can be useful to apply Transforms depending on what mode (infer, eval or train) is being applied. For example, you might want to apply augmentation Transforms only during training.</p>
-<p>Use an <code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code> Transform to apply a Transform only in the “infer” mode:</p>
+<p>Use an <a class="reference internal" href="../apidocs/padl.html#padl.IfInfer" title="padl.IfInfer"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfInfer</span></code></a> Transform to apply a Transform only in the “infer” mode:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">IfInfer</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">IfInfer</span><span class="p">(</span><span class="n">MinusX</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">infer_apply</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>
@@ -203,7 +207,7 @@
 <span class="go">200</span>
 </pre></div>
 </div>
-<p>Analogously, use <code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code> to apply a Transform only in the “eval”- or “train” mode, respectively.</p>
+<p>Analogously, use <a class="reference internal" href="../apidocs/padl.html#padl.IfEval" title="padl.IfEval"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfEval</span></code></a> or <a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to apply a Transform only in the “eval”- or “train” mode, respectively.</p>
 </section>
 <section id="exception-handling">
 <h2>Exception Handling<a class="headerlink" href="#exception-handling" title="Permalink to this headline"></a></h2>
@@ -233,7 +237,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pytorch.html" class="btn btn-neutral float-left" title="Using PyTorch Modules with Transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="debugging_your_transforms.html" class="btn btn-neutral float-left" title="Debugging your Transforms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="../advanced.html" class="btn btn-neutral float-right" title="Advanced Topics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
@@ -270,17 +274,25 @@
     </div>
     <script>
         console.log('script')
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;
         var verList = document.getElementById('padl-versions');
-        
+
         function addVersions() {
            console.log(httpRequest)
           if (httpRequest.readyState === 4) {
@@ -300,8 +312,7 @@
         }
     </script>
   </div>
-
- <script>
+<script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });

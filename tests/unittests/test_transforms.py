@@ -336,14 +336,6 @@ class TestParallel:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
 
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('train'):
-            assert self.transform_1.pd_mode is 'train'
-            assert self.transform_1.pd_preprocess.pd_mode == 'train'
-            assert self.transform_1.pd_forward.pd_mode == 'train'
-            assert self.transform_1.pd_postprocess.pd_mode == 'train'
-
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
@@ -427,14 +419,6 @@ class TestRollout:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
 
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('train'):
-            assert self.transform_1.pd_mode is 'train'
-            assert self.transform_1.pd_preprocess.pd_mode == 'train'
-            assert self.transform_1.pd_forward.pd_mode == 'train'
-            assert self.transform_1.pd_postprocess.pd_mode == 'train'
-
     def test_save_and_load(self, tmp_path):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
@@ -507,14 +491,6 @@ class TestCompose:
             flatten=True,
             batch_size=2)
         ) == [torch.tensor(8), torch.tensor(12), torch.tensor(8), torch.tensor(12)]
-
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('eval'):
-            assert self.transform_1.pd_mode is 'eval'
-            assert self.transform_1.pd_preprocess.pd_mode == 'eval'
-            assert self.transform_1.pd_forward.pd_mode == 'eval'
-            assert self.transform_1.pd_postprocess.pd_mode == 'eval'
 
     def test_all_transforms_1(self):
         c = plus_one >> times_two >> times_two
@@ -713,9 +689,9 @@ class TestModel:
         g = t / Identity()
         t_preprocess = group(group((to_tensor >> batch) + (to_tensor >> batch)) /
                              group((to_tensor >> batch) + (to_tensor >> batch)))
-        g_preprocess = group(t_preprocess / Identity())
+        g_preprocess = group((t_preprocess - 'name') / Identity())
         t_forward = group(group(lin / lin) / Identity())
-        g_forward = group(t_forward / Identity())
+        g_forward = group((t_forward - 'name') / Identity())
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(g.pd_preprocess) == str(g_preprocess)
         assert str(t.pd_forward) == str(t_forward)
@@ -726,9 +702,9 @@ class TestModel:
              + (to_tensor >> batch) / (to_tensor >> batch)
         ) - 'name'
         g = t + Identity()
-        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor))
+        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor)) - 'name'
         g_preprocess = group(t_preprocess + Identity())
-        t_forward = group(group(lin / lin) / Identity())
+        t_forward = group(group(lin / lin) / Identity()) - 'name'
         g_forward = group(t_forward / Identity())
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(g.pd_preprocess) == str(g_preprocess)
@@ -766,14 +742,6 @@ class TestFunctionTransform:
         assert out[0] == 'hello'
         assert out[1] == 'dog'
 
-    def test_context(self):
-        assert self.transform_1.pd_mode is None
-        with self.transform_1.pd_set_mode('infer'):
-            assert self.transform_1.pd_mode is 'infer'
-            assert self.transform_1.pd_preprocess.pd_mode == 'infer'
-            assert self.transform_1.pd_forward.pd_mode == 'infer'
-            assert self.transform_1.pd_postprocess.pd_mode == 'infer'
-
     def test_all_transforms(self):
         all_ = trans_with_globals._pd_all_transforms()
         assert set(all_) == set([plus, times_two, trans_with_globals])
@@ -808,7 +776,8 @@ class TestTransformDeviceCheck:
         self.transform_1.pd_to('gpu')
         self.transform_1.transforms[1].pd_to('cpu')
 
-        assert self.transform_1.pd_forward_device_check()
+        with pytest.raises(WrongDeviceError):
+            self.transform_1.pd_forward_device_check()
 
         self.transform_2.pd_to('gpu')
         assert self.transform_2.pd_forward_device_check()
@@ -990,3 +959,26 @@ class TestAssertNoDoubleBatch:
     def test_no_double(self):
         t = plus_one >> plus_one / batch >> batch / plus_one >> plus_one
         t.pd_forward
+
+
+class TestTrace:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        emb = transform(torch.nn.Embedding)(10, 8)
+        linear = transform(torch.nn.Linear)(4, 4)
+        to_tensor = transform(lambda x: torch.LongTensor(x))
+        request.cls.pipeline = to_tensor >> batch >> emb >> linear
+
+    def test_pd_trace(self):
+        try:
+            list(self.pipeline.train_apply([[9, 8, 8], [4, 4, 4], [5, 5, 5], [6, 6, 6]],
+                                           batch_size=2, num_workers=0))
+        except:
+            from padl.transforms import _pd_trace
+            assert len(_pd_trace) == 3
+            assert _pd_trace[0].error_position == 0
+            assert torch.equal(_pd_trace[1].args, torch.LongTensor([[9, 8, 8], [4, 4, 4]]))
+            assert _pd_trace[1].error_position == 1
+            assert _pd_trace[1].pd_mode == 'train'
+            assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
+            assert _pd_trace[2].error_position == 3
