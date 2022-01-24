@@ -3037,7 +3037,7 @@ class Rollout(Graph):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for transform in self.transforms:
-            if isinstance(transform, Graph):
+            if isinstance(transform, Parallel):
                 self.connect_graph(self.input_node, transform)
                 out_nodes = transform.parents[transform.output_node]
                 for out_node in out_nodes:
@@ -3064,7 +3064,7 @@ class Parallel(Graph):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for idx, transform in enumerate(self.transforms):
-            if isinstance(transform, Graph):
+            if isinstance(transform, Parallel):
                 self.connect_graph(self.input_node,
                                    transform,
                                    output_slice=idx)
