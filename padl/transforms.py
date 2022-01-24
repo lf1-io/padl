@@ -1090,11 +1090,23 @@ class FunctionTransform(AtomicTransform):
         self._inline_wrap = inline_wrap
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump or self._inline_wrap:
+        if self._pd_full_dump:
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
         source = f'from {self.__module__} import {self.__name__}'
+
+        if self._inline_wrap:
+            node = CodeNode.from_source(source, scope)
+            graph[ScopedName(self.__name__, scope, 0)] = node
+            graph[ScopedName('transform', scope, 0)] = \
+                CodeNode.from_source('from padl import transform', scope)
+            start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
+            start = CodeNode.from_source(start_source, scope)
+            if name is not None:
+                graph[ScopedName(name, scope, 0)] = start
+            return {}
+
         if name is not None:
             source += f' as {name}'
         else:
