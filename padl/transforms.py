@@ -1075,20 +1075,22 @@ class FunctionTransform(AtomicTransform):
     :param pd_name: name of the transform
     :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
+    :param inline_wrap: True if the function was wrapped in-line.
     """
 
     def __init__(self, function: Callable, call_info: inspector.CallInfo,
                  pd_name: Optional[str] = None, call: Optional[str] = None,
-                 source: Optional[str] = None):
+                 source: Optional[str] = None, inline_wrap: bool = False):
         if call is None:
             call = function.__name__
         super().__init__(call=call, call_info=call_info, pd_name=pd_name)
         self.function = function
         self._pd_number_of_inputs = None
         self._source = source
+        self._inline_wrap = inline_wrap
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump:
+        if self._pd_full_dump or self._inline_wrap:
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
