@@ -2684,6 +2684,38 @@ class Graph(Pipeline):
         self.edges = defaultdict(dict)
         self.parents = defaultdict(list)
 
+    def copy(self):
+        """Return copy of this graph"""
+        copy_graph = type(self)(self.transforms)
+        copy_graph._pd_name = self._pd_name
+        copy_graph._pd_group = self._pd_group
+        copy_graph._pd_varname = {}
+        copy_graph.pd_output = _OutputSlicer(copy_graph)
+        copy_graph.pd_input = _InputSlicer(copy_graph)
+        return copy_graph
+
+    @classmethod
+    def _flatten_list(cls, transform_list: List[Transform]):
+        """Flatten *list_* such that members of *cls* are not nested.
+
+        :param transform_list: List of transforms.
+        """
+        list_flat = []
+
+        for transform in transform_list:
+            if isinstance(transform, Graph):
+                transform = transform.copy()
+
+            if isinstance(transform, cls):
+                if transform._pd_group:
+                    list_flat.append(transform)
+                else:
+                    list_flat += transform.transforms
+            else:
+                list_flat.append(transform)
+
+        return list_flat
+
     def _gather_args_for_node(self, node: Node, inputs: dict):
         """Gather args to call node.transform
 
@@ -3078,7 +3110,7 @@ class Rollout(Graph):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for transform in self.transforms:
-            if isinstance(transform, Parallel):
+            if isinstance(transform, Graph):
                 self.connect_graph(self.input_node, transform)
                 out_nodes = transform.parents[transform.output_node]
                 for out_node in out_nodes:
@@ -3113,6 +3145,15 @@ class Parallel(Graph):
                 out_node = out_nodes[idx]
                 self.connect(out_node,
                              self.output_node)
+                continue
+            if isinstance(transform, Graph):
+                self.connect_graph(self.input_node,
+                                   transform,
+                                   output_slice=idx)
+                out_nodes = transform.parents[transform.output_node]
+                for out_node in out_nodes:
+                    self.connect(out_node,
+                                 self.output_node)
                 continue
             node = Node(transform)
             self.connect(self.input_node,
