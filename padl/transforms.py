@@ -1090,7 +1090,7 @@ class FunctionTransform(AtomicTransform):
         self._wrap_type = wrap_type
 
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
-        if self._wrap_type == 'inline':
+        if not self._pd_full_dump and self._wrap_type == 'inline':
             return f'transform({self.__name__})'
         return self._pd_call
 
