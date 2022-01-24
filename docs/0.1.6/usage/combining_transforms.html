@@ -502,12 +502,20 @@ all resulting <code class="docutils literal notranslate"><span class="pre">PIL</
     </div>
     <script>
         console.log('script')
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
         httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = addVersions;
-        httpRequest.open('GET', '../versions.json');
+        httpRequest.open('GET', versionsFile);
         httpRequest.send();
-        var pathname = window.location.pathname.split('/');
-        var currentVersion = pathname[2];
 
         document.getElementById('current-version')
           .innerHTML = 'ver: ' + currentVersion;

@@ -12,13 +12,15 @@ from pathlib import Path
 from os import remove
 from shutil import rmtree
 import textwrap
+import traceback
 from tempfile import TemporaryDirectory
 import types
+from dataclasses import dataclass
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
-from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, Any
 from warnings import warn
 from zipfile import ZipFile
 
@@ -35,6 +37,9 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
+
+
+_pd_trace = []
 
 
 def _unpack_batch(args):
@@ -133,7 +138,7 @@ class Transform:
 
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the transform
+    :param pd_name: name of the transform.
     """
     pd_mode = None
     _pd_external_full_dump_modules = set()
@@ -146,6 +151,7 @@ class Transform:
         self._pd_varname = {}
         self._pd_name = pd_name
         self._pd_device = 'cpu'
+        self._pd_traceback = traceback.extract_stack()
         self._pd_external_full_dump = False
 
     @property
@@ -508,6 +514,32 @@ class Transform:
 
         return graph
 
+    def _pd_process_traceback(self):
+        """Find where the Transform was defined (file, lineno, file) given the traceback. """
+        a_tb = None
+        for a_tb in self._pd_traceback[::-1]:
+            if 'padl' in a_tb[0]:
+                continue
+            break
+        return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
+
+    def _pd_get_error_idx(self):
+        """Get what element of a :class:`padl.transforms.Transform` is failing if an Exception is
+        produced during an execution.
+
+        Subclasses of :class:`padl.transforms.Transform` need to implement this method.
+        """
+        return NotImplemented
+
+    def _pd_trace_error(self, position: int, arg):
+        """Add some error description to :obj:`pd_trace`. """
+        try:
+            str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
+            _pd_trace.append(_TraceItem(str_, self._pd_process_traceback(), arg,
+                                        self, Transform.pd_mode, position))
+        except Exception:
+            warn('Error tracing failed')
+
     def _pd_evaluable_repr(self, indent: int = 0) -> str:
         """Return a string that if evaluated *in the same scope where the transform was created*
         creates the transform. """
@@ -562,19 +594,22 @@ class Transform:
     def __repr__(self):
         return self._pd_shortrepr(formatting=False)
 
-    def _repr_pretty_(self, p, cycle) -> str:
-        # pylint: disable=invalid-name
+    def _repr_pretty_(self, p, cycle):
+        #pylint: disable=invalid-name
+        p.text(self._pd_fullrepr() if not cycle else '...')
+
+    def _pd_fullrepr(self, marker=None):
         title = self._pd_title()
         if self.pd_name is not None and self.pd_name != title:
             title = make_bold(title) + f' - "{self.pd_name}"'
         else:
             title = make_bold(title)
         top_message = title + ':' + '\n\n'
-        bottom_message = textwrap.indent(self._pd_longrepr(), '   ')
-        p.text(top_message + bottom_message if not cycle else '...')
+        bottom_message = textwrap.indent(self._pd_longrepr(marker=marker), '   ')
+        return top_message + bottom_message
 
-    def _pd_longrepr(self, formatting=True) -> str:
-        """A lone string representation of the transform."""
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        """A line string representation of the transform."""
         raise NotImplementedError
 
     def _pd_parensrepr(self, formatting=True) -> str:
@@ -673,9 +708,13 @@ class Transform:
         return False
 
     def _pd_unpack_args_and_call(self, arg):
-        if self._pd_unpack_argument(arg):
-            return self(*arg)
-        return self(arg)
+        try:
+            if self._pd_unpack_argument(arg):
+                return self(*arg)
+            return self(arg)
+        except Exception as err:
+            self._pd_trace_error(0, arg)
+            raise err
 
     def pd_call_in_mode(self, arg, mode: Mode, ignore_grad=False):
         """Call the transform, with possibility to pass multiple arguments.
@@ -742,6 +781,10 @@ class Transform:
         """
         assert mode in ('eval', 'train'), '_pd_itercall can only be used with mode eval or train'
 
+        _pd_trace.clear()
+
+        self.pd_forward_device_check()
+
         preprocess = self.pd_preprocess
         forward = self.pd_forward
         post = self.pd_postprocess
@@ -756,20 +799,32 @@ class Transform:
         if use_preprocess:
             loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
-            loader = args
+            loader = _SimpleGetter(args)
 
         def _gen():
-            for batch in loader:
+            for ix, batch in loader:
                 batch = _move_to_device(batch, self.pd_device)
-
                 output = batch
+
                 if use_forward:
-                    output = forward.pd_call_in_mode(batch, mode)
+                    try:
+                        output = forward.pd_call_in_mode(batch, mode)
+                    except Exception as err:
+                        self._pd_trace_error(self._pd_get_error_idx('forward'),
+                                             [args[i] for i in ix])
+                        raise err
 
                 if use_post or flatten:
                     output = _unpack_batch(output)
                     if use_post:
-                        output = [post.pd_call_in_mode(x, mode, ignore_grad=True) for x in output]
+                        try:
+                            output = [post.pd_call_in_mode(x, mode, ignore_grad=True) \
+                                      for x in output]
+                        except Exception as err:
+                            self._pd_trace_error(self._pd_get_error_idx('postprocess'),
+                                                 [args[i] for i in ix])
+                            raise err
+
                     for out in output:
                         yield self._pd_format_output(out)
                 else:
@@ -839,8 +894,7 @@ class Transform:
         for layer in self.pd_layers:
             yield from layer.parameters()
 
-    @staticmethod
-    def pd_get_loader(args, preprocess, mode, **kwargs) -> DataLoader:
+    def pd_get_loader(self, args, preprocess, mode, **kwargs) -> DataLoader:
         """Get a pytorch data loader.
 
         :param args: A sequence of datapoints.
@@ -852,6 +906,7 @@ class Transform:
         sequence = _ItemGetter(
             args,
             lambda *args: preprocess.pd_call_in_mode(*args, mode, ignore_grad=True),
+            self
         )
 
         return DataLoader(
@@ -867,6 +922,9 @@ class Transform:
 
         :param inputs: The input.
         """
+        in_args = inputs
+        _pd_trace.clear()
+
         preprocess = self.pd_preprocess
         forward = self.pd_forward
         postprocess = self.pd_postprocess
@@ -884,9 +942,17 @@ class Transform:
         if pd_device != 'cpu':
             inputs = _move_to_device(inputs, pd_device)
         if use_forward:
-            inputs = forward.pd_call_in_mode(inputs, mode='infer')
+            try:
+                inputs = forward.pd_call_in_mode(inputs, mode='infer')
+            except Exception as err:
+                self._pd_trace_error(self._pd_get_error_idx('forward'), in_args)
+                raise err
         if use_post:
-            inputs = postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+            try:
+                inputs = postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
+            except Exception as err:
+                self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
+                raise err
         return self._pd_format_output(inputs)
 
     def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
@@ -952,6 +1018,36 @@ class AtomicTransform(Transform):
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
             if isinstance(v, Transform):
                 yield v
+
+    def _pd_get_non_target_stage_idx(self):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = forward_1 >> unbatch >> post
+
+            Let's suppose we get an error on `post`, `post` is the index 1 of
+            `t.pd_postprocess`, then the element that fails on `t` is
+            t.pd_forward._pd_get_non_target_stage_idx() + 1 = 1 + 1 = 2
+        """
+        return 1
+
+    def _pd_get_target_stage_idx(self, is_entire_transform=None):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = prep >> batch >> forward_1
+            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
+
+        :param is_entire_transform: *False* if *self* is not a part of a larger :class:`Transform`,
+            else *True*
+        """
+        return 0
+
+    def _pd_get_error_idx(self, stage: str):
+        assert stage in ('forward', 'postprocess')
+        return 0
 
 
 class FunctionTransform(AtomicTransform):
@@ -1021,11 +1117,14 @@ class FunctionTransform(AtomicTransform):
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         try:
-            return '\n'.join(self.source.split('\n')[:30])
+            str_ = self.source.split('\n')[:30]
+            if marker:
+                return str_[0] + marker[1] + '\n'.join(str_[1:])
+            return '\n'.join(str_)
         except TypeError:
-            return self._pd_call
+            return self._pd_call + marker[1] + '\n' if marker else self._pd_call
 
     def _pd_shortrepr(self, formatting=True) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
@@ -1199,11 +1298,14 @@ class ClassTransform(AtomicTransform):
                 args_list.append(f'{key}={format_argument(value)}')
         return ', '.join(args_list)
 
-    def _pd_longrepr(self) -> str:
+    def _pd_longrepr(self, marker=None) -> str:
         try:
-            return '\n'.join(self.source.split('\n')[:30])
+            str_ = self.source.split('\n')[:30]
+            if marker:
+                return str_[0] + marker[1] + '\n' + '\n'.join(str_[1:])
+            return '\n'.join(str_)
         except symfinder.NameNotFound:
-            return self._pd_call
+            return self._pd_call + marker[1] if marker else self._pd_call
 
     def _pd_title(self) -> str:
         title = type(self).__name__
@@ -1240,8 +1342,11 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path))
 
-    def _pd_longrepr(self) -> str:
-        return torch.nn.Module.__repr__(self)
+    def _pd_longrepr(self, marker=None) -> str:
+        out = torch.nn.Module.__repr__(self)
+        if marker:
+            return out + marker[1]
+        return out
 
 
 class Map(Transform):
@@ -1320,8 +1425,9 @@ class Map(Transform):
         """
         return tuple([self.transform._pd_unpack_args_and_call(arg) for arg in args])
 
-    def _pd_longrepr(self, formatting=True) -> str:
-        return '~ ' + self.transform._pd_shortrepr(formatting)
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        str_ = '~ ' + self.transform._pd_shortrepr(formatting)
+        return str_ + marker[1] if marker else str_
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
@@ -1398,6 +1504,11 @@ class Pipeline(Transform):
     def __len__(self):
         return len(self.transforms)
 
+    def _pd_unpack_args_and_call(self, arg):
+        if self._pd_unpack_argument(arg):
+            return self(*arg)
+        return self(arg)
+
     def _pd_evaluable_repr_inner(self, indent=0):
         sub_reprs = [
             x.pd_varname(self._pd_call_info.scope) or x._pd_evaluable_repr(indent + 4)
@@ -1460,7 +1571,7 @@ class Pipeline(Transform):
             transform._pd_build_codegraph(graph, varname)
         return graph
 
-    def _pd_longrepr(self, formatting=True):
+    def _pd_longrepr(self, formatting=True, marker=None):
         between = f'\n{make_green(self.display_op, not formatting)}  \n'
         rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting)
                 for i, t in enumerate(self.transforms)]
@@ -1581,8 +1692,48 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
+    def _pd_get_non_target_stage_idx(self):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = ((prep_1 >> batch) + (prep_2 >> batch)) >> forward_1
+            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 1 + 0 = 1
+        """
+        return 1
+
+    def _pd_get_target_stage_idx(self, is_entire_transform=None):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = prep >> batch >> (forward_1 + forward_2)
+            Let's suppose we get an error on `(forward_1 + forward_2)`. `(forward_1 + forward_2)`
+            is the index 0 of `t.pd_forward`, then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
+
+        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
+            else *True*
+        """
+
+        return 0
+
+    def _pd_get_error_idx(self, stage: str):
+        """Track the index where a :class:`Pipeline` fails from the one that got the Exception on
+        :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
+
+        Example:
+            t = (t_11 >> batch >> t_12) + (t_21 >> batch >> t_22)
+            then,
+            t.pd_forward = t_12 / t_22.
+            If we know that :meth:`t.pd_forward` is failing on `t_22`, which is its element 1,
+            the index of the :class:`Transform` that fails on `t` is the same.
+        """
+        assert stage in ('forward', 'postprocess')
+        return _pd_trace[-1].error_position
+
     def _add_name_to_splits(self, final_splits):
-        """Ad name to split-transforms. """
+        """Add name to split-transforms. """
         if self._pd_name is not None:
             for i, s in enumerate(final_splits):
                 if not isinstance(s, Identity):
@@ -1592,12 +1743,12 @@ class Pipeline(Transform):
 class Compose(Pipeline):
     """Apply series of transforms on input.
 
-    Compose([t1, t2, t3])(x) = t3(t1(t2(x)))
+    Compose([t1, t2, t3])(x) = t3(t2(t1(x)))
 
     :param transforms: List of transforms to compose.
     :param call_info: A `CallInfo` object containing information about the how the transform was
         created (needed for saving).
-    :param pd_name: name of the Compose transform
+    :param pd_name: name of the Compose transform.
     :param pd_group: If *True*, do not flatten this when used as child transform in a
         `Pipeline`.
     :return: output from series of transforms
@@ -1655,12 +1806,14 @@ class Compose(Pipeline):
             if len(split) > 1:  # combine sub_splits
                 final_splits.append(Compose(split))
             elif len(split) == 1:  # if it's just one, no need to combine
-                final_splits.append(split[0])
+                if isinstance(split[0], Compose):
+                    final_splits.append(group(split[0]))
+                else:
+                    final_splits.append(split[0])
             else:  # if it's empty: identity
                 final_splits.append(identity)
 
         self._add_name_to_splits(final_splits)
-
         return output_components, final_splits, has_batchify
 
     @staticmethod
@@ -1679,7 +1832,7 @@ class Compose(Pipeline):
 
         return type_
 
-    def _pd_longrepr(self, formatting=True) -> str:  # TODO: make it respect the formatting
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:  # TODO: make it respect the formatting
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
@@ -1689,7 +1842,6 @@ class Compose(Pipeline):
             else [t._pd_shortrepr()]
             for t in self.transforms
         ]
-
         children_widths = [[visible_len(x) for x in row] for row in rows]
         # get maximum widths in "columns"
         children_widths_matrix = np.zeros((len(self.transforms),
@@ -1772,7 +1924,8 @@ class Compose(Pipeline):
             mark = combine_multi_line_strings(subarrows + [to_format])
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
-            output.append(make_bold(f'{i}: ') + r)
+            output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
+                                                                  marker[0] == i else ''))
         return '\n'.join(output)
 
     def __call__(self, args):
@@ -1781,9 +1934,76 @@ class Compose(Pipeline):
         :param args: Arguments to call with.
         :return: Output from series of transforms.
         """
-        for transform_ in self.transforms:
-            args = transform_._pd_unpack_args_and_call(args)
+        _in_args = args
+        for i, transform_ in enumerate(self.transforms):
+            try:
+                args = transform_._pd_unpack_args_and_call(args)
+            except Exception as err:
+                self._pd_trace_error(i, _in_args)
+                raise err
         return args
+
+    def _pd_get_non_target_stage_idx(self):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = prep >> batch >> forward_1
+
+            Let's suppose we get an error on `forward_1`, `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            `t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = len(t.pd_preprocess) + 0 =
+                2 + 0 = 2
+        """
+        return 1 if self._pd_group else len(self)
+
+    def _pd_get_target_stage_idx(self, is_entire_transform: bool):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+             t = prep >> batch >> forward_1 >> forward_2
+
+            Let's suppose we get an error on `forward_2`. `t.pd_forward` is
+            `t.pd_forward` = forward_1 >> forward_2`. `forward_2` is the index 1 of `t.pd_forward`,
+            then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
+
+        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
+            else *True*
+        """
+        return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
+
+    def _pd_get_error_idx(self, stage: str):
+        """Track the index where a :class:`Compose` fails from the index that got the Exception
+        on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
+
+        Examples:
+            t = t_1 >> t_2 >> batch >> t_3 >> t_4
+            then,
+            t.pd_forward = t_3 >> t_4.
+            If we know that :meth:`t.pd_forward` is failing on `t_4`, which is its element 1, then
+            `t` is failing on len(t.pd_preprocess) + 1.
+
+            t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
+            then,
+            t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
+            No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
+            len(t.pd_preprocess) + 0 = 3.
+        """
+        assert stage in ('forward', 'postprocess')
+        preprocess = self.pd_preprocess
+        forward = self.pd_forward
+        postprocess = self.pd_postprocess
+        preprocess_idx = preprocess._pd_get_non_target_stage_idx()
+
+        if stage == 'forward':
+            is_entire_transform = isinstance(preprocess, Identity) and \
+                                  isinstance(postprocess, Identity)
+            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
+
+        is_entire_transform = isinstance(preprocess, Identity) and \
+                              isinstance(forward, Identity)
+        return preprocess_idx + forward._pd_get_non_target_stage_idx() + \
+               postprocess._pd_get_target_stage_idx(is_entire_transform)
 
 
 class Rollout(Pipeline):
@@ -1884,7 +2104,6 @@ class Rollout(Pipeline):
         final_splits = res
 
         self._add_name_to_splits(final_splits)
-
         return output_components, final_splits, has_batchify
 
     def __call__(self, args):
@@ -1894,20 +2113,27 @@ class Rollout(Pipeline):
         :return: namedtuple of outputs
         """
         out = []
-        for transform_ in self.transforms:
-            out.append(transform_._pd_unpack_args_and_call(args))
+        for i, transform_ in enumerate(self.transforms):
+            try:
+                out.append(transform_._pd_unpack_args_and_call(args))
+            except Exception as err:
+                self._pd_trace_error(i, args)
+                raise err
+
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
         make_bold_ = lambda x: make_bold(x, not formatting)
         between = f'\n{make_green_("│ " + self.display_op)}  \n'
         rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
+                + (marker[1] if marker and marker[0] == i else '')
                 for i, t in enumerate(self.transforms[:-1])]
         rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
-                    + self.transforms[-1]._pd_shortrepr())
+                    + self.transforms[-1]._pd_shortrepr() +
+                    (marker[1] if marker and marker[0] == len(self.transforms) - 1 else ''))
         return between.join(rows) + '\n'
 
 
@@ -1979,7 +2205,6 @@ class Parallel(Pipeline):
         final_splits = res
 
         self._add_name_to_splits(final_splits)
-
         return output_components, final_splits, has_batchify
 
     def __call__(self, args):
@@ -1990,12 +2215,17 @@ class Parallel(Pipeline):
         """
         out = []
         for ind, transform_ in enumerate(self.transforms):
-            out.append(transform_._pd_unpack_args_and_call(args[ind]))
+            try:
+                out.append(transform_._pd_unpack_args_and_call(args[ind]))
+            except Exception as err:
+                self._pd_trace_error(ind, args)
+                raise err
+
         if Transform.pd_mode is not None:
             return tuple(out)
         return self._pd_output_formatter(out)
 
-    def _pd_longrepr(self, formatting=True) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
             make_green_ = lambda x: x
             make_bold_ = lambda x: x
@@ -2016,15 +2246,23 @@ class Parallel(Pipeline):
         for i, t in enumerate(self.transforms):
             out += (
                 make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold_(f'{i}: ') + t._pd_shortrepr() + '\n'
+                make_bold_(f'{i}: ') + t._pd_shortrepr()
             )
+            out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
                 out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+
         return out
 
 
 class BuiltinTransform(ClassTransform):
     """A builtin transform will simply always be imported, never fully dumped. """
+
+    def _pd_longrepr(self, formatting=True, marker=None):
+        out = self._pd_call.split('padl.')[-1]
+        if marker:
+            out += marker[1]
+        return out
 
     @property
     def _pd_full_dump(self):
@@ -2039,6 +2277,9 @@ class Identity(BuiltinTransform):
 
     def __call__(self, args):
         return args
+
+    def _pd_get_non_target_stage_idx(self):
+        return 0
 
 
 identity = Identity()
@@ -2211,17 +2452,63 @@ class _ItemGetter:
 
     :param samples: An object implementing __getitem__ and __len__.
     :param transform: Preprocessing transform.
+    :param entire_transform: :class:`Transform` which *transform* belongs to, i.e.,
+        :class:`Transform` whose preprocessing part is *transform*.
     """
 
-    def __init__(self, samples, transform):
+    def __init__(self, samples, transform, entire_transform):
         self.samples = samples
         self.transform = transform
+        self.entire_transform = entire_transform
 
     def __getitem__(self, item):
-        return self.transform(self.samples[item])
+        try:
+            return item, self.transform(self.samples[item])
+        except Exception as err:
+            is_entire_transform = isinstance(self.entire_transform.pd_forward, Identity) and \
+                                  isinstance(self.entire_transform.pd_postprocess, Identity)
+            self.entire_transform._pd_trace_error(
+                self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
+                [self.samples[item]]
+            )
+            raise err
 
     def __len__(self):
         return len(self.samples)
+
+
+class _SimpleGetter:
+    """A simple item getter.
+
+    :param samples: An object implementing __getitem__ and __len__.
+    """
+
+    def __init__(self, samples):
+        self.samples = samples
+
+    def __getitem__(self, item):
+        return [item], self.samples[item]
+
+    def __len__(self):
+        return len(self.samples)
+
+@dataclass
+class _TraceItem:
+    """Catch information of an Exception produced in a Transform call.
+
+    :param transform_str: string representation of a *Transform* that has produced an Exception.
+    :param code_position: line where the Transform that has produced the Exception was defined.
+    :param args: arguments input to the Transform.
+    :param transform: Transform that produced the Exception.
+    :param pd_mode: mode (*train*, *eval* or *infer*) of *transform*
+    :param error_position: item inside *transform* that has produced the Exception.
+    """
+    transform_str: str
+    code_position: str
+    args: Any
+    transform: Transform
+    pd_mode: str
+    error_position: int
 
 
 def fulldump(transform_or_module):
