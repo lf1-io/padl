@@ -308,3 +308,8 @@ class TestOtherModule:
         importdump(tim)
         dump = tim.wrap_transform()._pd_dumps()
         assert dump == read_dump('othermodule_import_wrapped')
+
+    def test_import_makelambda(self):
+        importdump(tim)
+        dump = tim.makelambda()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makelambda')
