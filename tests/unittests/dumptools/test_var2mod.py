@@ -15,3 +15,15 @@ class TestFindGlobals:
         tree = ast.parse(statement)
         res = var2mod.find_globals(tree)
         assert res == {('run', 0)}
+
+
+class TestImports:
+    def test_dots(self):
+        statement = (
+            'def f(x):\n'
+            '    o = x.y\n'
+            '    u = y.x\n'
+            '    return a.b.c(x)\n'
+        )
+        res = var2mod.find_globals(ast.parse(statement))
+        assert res == {('a.b.c', 0), ('y.x', 0)}

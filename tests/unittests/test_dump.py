@@ -1,6 +1,7 @@
 import pytest
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify, importdump, fulldump
+import padl.dumptools.var2mod
 from tests.material import transforms_in_module as tim
 
 
@@ -246,6 +247,16 @@ def test_multiline_init():
         b=2,
         c=3
     )  # no further testing, this should just not fail
+
+
+@transform
+def f_using_dotimport(x):
+    return padl.dumptools.var2mod.ast.parse(x)
+
+
+def test_dotimport():
+    dump = f_using_dotimport._pd_dumps()
+    assert dump == read_dump('dotimport')
 
 
 class TestOtherModule:
