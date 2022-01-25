@@ -249,6 +249,13 @@ def get_surrounding_block(source: str, lineno: int):
         else:
             break
         lineno_in_block += 1
+    # remove leading rows with more than *white* leading whitespace
+    while block:
+        next_white = _count_leading_whitespace(block[0])
+        if next_white is None or next_white == 0:
+            break
+        block.pop(0)
+        lineno_in_block -= 1
     while after:
         next_ = after.pop(0)
         next_white = _count_leading_whitespace(next_)
@@ -395,10 +402,11 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
 
 
 def _count_leading_whitespace(line: str) -> int:
-    """Count the number of spaces *line* starts with. """
+    """Count the number of spaces *line* starts with. If *line* is empty, return *None*."""
     i = 0
     for char in line:
         if char == ' ':
             i += 1
             continue
         return i
+    return None
