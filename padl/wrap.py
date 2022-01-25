@@ -46,7 +46,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
             # case transform(f)
             call = inspector.get_segment_from_frame(caller.frame, 'call')
             wrap_type = 'inline'
-        except RuntimeError:
+        except (RuntimeError, IndexError):
             # case transform(some_module).f
             try:
                 call = inspector.get_segment_from_frame(caller.frame, 'attribute')

@@ -657,22 +657,6 @@ def _topsort(graph: dict) -> List[set]:
     return levels
 
 
-def _sort(unscoped_graph):
-    top = _topsort({k: v.globals_ for k, v in unscoped_graph.items()})
-
-    def sortkey(x):
-        val = unscoped_graph[x]
-        try:
-            return _PRECEDENCE[val.ast_node.__class__](x[0], val)
-        except KeyError:
-            return 'zz' + x[0].lower()
-
-    res = []
-    for level in top:
-        res += sorted(level, key=sortkey)
-    return res
-
-
 @dataclass
 class CodeNode:
     """A node in a :class:`CodeGraph`.

@@ -26,7 +26,6 @@ from math import inf
 import sys
 from types import ModuleType
 from typing import List, Tuple
-from warnings import warn
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -73,11 +72,9 @@ class _ThingFinder(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         """Don't search class definitions (as that's another scope). """
-        pass
 
     def visit_FunctionDef(self, node):
         """Don't search function definitions (as that's another scope). """
-        pass
 
     def deparse(self) -> str:
         """Get the source snipped corresponding to the found node. """
