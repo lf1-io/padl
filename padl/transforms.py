@@ -850,7 +850,7 @@ class Transform:
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
         pre = self.pd_stages[0]
-        pre.pd_device = self.pd_device
+        pre.pd_to(self.pd_device)
         return pre
 
     @property
@@ -858,14 +858,14 @@ class Transform:
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
         forward = self.pd_stages[1]
-        forward.pd_device = self.pd_device
+        forward.pd_to(self.pd_device)
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
         post = self.pd_stages[2]
-        post.pd_device = self.pd_device
+        post.pd_to(self.pd_device)
         return post
 
     def pd_to(self, device: str) -> "Transform":
