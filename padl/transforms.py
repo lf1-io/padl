@@ -397,7 +397,7 @@ class Transform:
         nodes = []
 
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        start = CodeNode.from_source(start_source, scope)
+        start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
         nodes.append(start)
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
@@ -1102,14 +1102,14 @@ class FunctionTransform(AtomicTransform):
         source = f'from {self.__module__} import {self.__name__}'
 
         if self._wrap_type == 'inline':
-            node = CodeNode.from_source(source, scope)
+            node = CodeNode.from_source(source, scope, name=self.__name__)
             graph[ScopedName(self.__name__, scope, 0)] = node
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('transform', emptyscope, 0)] = \
-                CodeNode.from_source('from padl import transform', emptyscope)
+                CodeNode.from_source('from padl import transform', emptyscope, name='transform')
 
             start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
-            start = CodeNode.from_source(start_source, scope)
+            start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, scope, 0)] = start
             return {}
@@ -1118,7 +1118,7 @@ class FunctionTransform(AtomicTransform):
             source += f' as {name}'
         else:
             name = self.__name__
-        node = CodeNode.from_source(source, scope)
+        node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope, 0)] = node
         return {}
 
@@ -1225,13 +1225,13 @@ class ClassTransform(AtomicTransform):
         varname = self.pd_varname(instance_scope)
 
         import_source = f'from {self.__module__} import {varname}'
-        import_node = CodeNode.from_source(import_source, instance_scope)
+        import_node = CodeNode.from_source(import_source, instance_scope, name=varname)
 
         graph[ScopedName(varname, instance_scope, 0)] = import_node
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
-            start_node = CodeNode.from_source(start_source, instance_scope)
+            start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, instance_scope, 0)] = start_node
 
@@ -1250,7 +1250,8 @@ class ClassTransform(AtomicTransform):
 
         # import the class
         import_source = f'from {self.__class__.__module__} import {self.__class__.__name__}'
-        import_node = CodeNode.from_source(import_source, instance_scope)
+        import_node = CodeNode.from_source(import_source, instance_scope,
+                                           name=self.__class__.__name__)
         graph[ScopedName(self.__class__.__name__, instance_scope, 0)] = import_node
         nodes = [import_node]
 
@@ -1258,7 +1259,7 @@ class ClassTransform(AtomicTransform):
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         call_scope = symfinder.Scope.toplevel(inspector.caller_module())
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, call_scope)
+        start_node = CodeNode.from_source(start_source, call_scope, name=name or "_pd_dummy")
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
         nodes.append(start_node)
@@ -1276,7 +1277,7 @@ class ClassTransform(AtomicTransform):
 
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, call_scope)
+        start_node = CodeNode.from_source(start_source, call_scope, name=name or '_pd_dummy')
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
 
@@ -1560,7 +1561,7 @@ class Pipeline(Transform):
             source += f' as {name}'
         else:
             name = defined_as
-        node = CodeNode.from_source(source, scope)
+        node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope, 0)] = node
 
     def _pd_build_codegraph(self, graph=None, name=None):
@@ -1582,8 +1583,9 @@ class Pipeline(Transform):
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = CodeNode.from_source('import padl',
-                                                                            emptyscope)
+            graph[ScopedName('padl.group', emptyscope, 0)] = CodeNode.from_source('import padl',
+                                                                                  emptyscope,
+                                                                                  name='padl')
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:

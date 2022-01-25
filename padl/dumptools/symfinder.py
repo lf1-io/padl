@@ -606,6 +606,9 @@ class ScopedName:
     def __hash__(self):
         return hash((self.name, self.scope, self.n))
 
+    def __eq__(self, other):
+        return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+
 
 def find_in_scope(name: ScopedName):
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
@@ -623,22 +626,22 @@ def find_in_scope(name: ScopedName):
             if isinstance(res, int):
                 i = res
                 continue
-            source, node = res
+            source, node, name = res
             if getattr(node, '_globalscope', False):
                 scope = Scope.empty()
 
-            return (source, node), scope
+            return (source, node), scope, name
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
-    source, node = find(name.name, scope.module, i)
+    source, node, name = find(name.name, scope.module, i)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:
         scope = getattr(node, '_scope', scope.global_())
-    return (source, node), scope
+    return (source, node), scope, name
 
 
 def replace_star_imports(tree: ast.Module):
@@ -681,8 +684,10 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
             finder.visit(statement)
             if finder.found_something():
                 if i == 0:
-                    return finder.deparse(), finder.node()
+                    return finder.deparse(), finder.node(), var_name
                 i -= 1
+    if '.' in var_name:
+        return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
     if return_partial:
         return i
     raise NameNotFound(f'{var_name} not found.')
@@ -742,13 +747,13 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
             if isinstance(res, int):
                 i = res
                 continue
-            source, node = res
+            source, node, name = res
         except (NameNotFound, SyntaxError):
             continue
         break
     if source is None:
         raise NameNotFound(f'"{var_name}" not found.')
-    return source, node
+    return source, node, name
 
 
 def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:

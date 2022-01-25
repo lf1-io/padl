@@ -75,12 +75,14 @@ class Serializer:
              ScopedName(self.varname, self.scope):
                  CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
                           globals_={ScopedName(self.load_name, self.scope)},
-                          scope=self.scope),
+                          scope=self.scope,
+                          name=self.varname),
              ScopedName('pathlib', SCOPE):
                  CodeNode(source='import pathlib',
                           globals_=set(),
                           ast_node=ast.parse('import pathlib').body[0],
-                          scope=self.scope)}
+                          scope=self.scope,
+                          name='pathlib')}
         )
 
     @property
