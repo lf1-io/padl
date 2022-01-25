@@ -2747,7 +2747,7 @@ class Graph(Pipeline):
         self.edges[node_a][node_b] = (output_slice, input_slice)
         self.parents[node_b].append(node_a)
 
-    def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=0):
+    def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=None):
         """Connect node_a with a graph graph_b
         node_a -> input_node of graph_b -> ...
 
@@ -2765,6 +2765,7 @@ class Graph(Pipeline):
             if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
                 temp_output_slice = node_b_output_slice if temp_output_slice is None else temp_output_slice
                 temp_output_slice = None if temp_output_slice == parent_position else temp_output_slice
+                # import pdb; pdb.set_trace()
                 self.connect(node_a,
                              node_b,
                              output_slice=temp_output_slice,
@@ -3149,7 +3150,8 @@ class Parallel(Graph):
             if isinstance(transform, Graph):
                 self.connect_graph(self.input_node,
                                    transform,
-                                   output_slice=idx)
+                                   output_slice=idx,
+                                   parent_position=None)
                 out_nodes = transform.parents[transform.output_node]
                 for out_node in out_nodes:
                     self.connect(out_node,
