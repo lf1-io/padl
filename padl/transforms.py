@@ -2800,10 +2800,22 @@ class Graph(Pipeline):
         self.edges = temp_edges
         self.parents = temp_parents
 
-    @lru_cache()
+    @lru_cache
     def sorted_nodes(self):
         """Topologically sorted nodes"""
         return _topological_node_sort(self.input_node, self.edges, self.parents)
+
+    @lru_cache
+    def _set_output_formatter(self):
+        transforms = [node.transform for node in self.parents[self.output_node]]
+        self.pd_keys = self._pd_get_keys(transforms)
+        return self.pd_keys
+
+    def _pd_output_formatter(self, args):
+        keys = self._set_output_formatter()
+        if len(keys) == 1:
+            return args
+        return namedtuple('namedtuple', keys)(*args)
 
     def __call__(self, args):
         """Call Method for Graph
@@ -2813,7 +2825,7 @@ class Graph(Pipeline):
         In __ C __ X __ Out
           \__ D __ Y __/
 
-        In > C > D > X > Out
+        In > C > D > X > Y > Out
         """
         results = {self.input_node: args}
         for node in self.sorted_nodes()[1:]:
@@ -2821,7 +2833,8 @@ class Graph(Pipeline):
             results[node] = node.call_node(node_arg)
             # TODO: remove results that aren't needed any more
 
-        return results[self.output_node]
+        out = results[self.output_node]
+        return self._pd_output_formatter(out)
 
     def convert_to_networkx(self):
         networkx_graph = nx.DiGraph()
@@ -3128,8 +3141,6 @@ class Rollout(Graph):
                          self.output_node,
                          output_slice=node.pd_output_slice,
                          input_slice=self.output_node.pd_input_slice)
-        self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
 
 class Parallel(Graph):
@@ -3139,8 +3150,6 @@ class Parallel(Graph):
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-        self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
         for idx, transform in enumerate(self.transforms):
             if isinstance(transform, Parallel):
