@@ -1643,7 +1643,7 @@ class Pipeline(Transform):
         return graph
 
     def _pd_longrepr(self, formatting=True, marker=None):
-        between = f'\n{make_green(self.display_op, not formatting)}  \n'
+        between = f'\n{make_green(self.op, not formatting)}  \n'
         rows = [make_bold(f'{i}: ', not formatting) + t._pd_shortrepr(formatting)
                 for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
@@ -2322,7 +2322,7 @@ class Parallel(Pipeline):
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
-                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.display_op)}  \n'
+                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.op)}  \n'
 
         return out
 
@@ -2659,7 +2659,7 @@ class Node:
         return _copy
 
     def call_node(self, args):
-        return self.transform.pd_call_transform(args)
+        return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
 
 
 class Graph(Pipeline):
@@ -3066,6 +3066,8 @@ class Graph(Pipeline):
                                                            exclude_start_node=True,
                                                            )
             self._pd_postprocess = _build_transform_from_list(self._postprocess_list)
+
+        return None, (self._pd_preprocess, self._pd_forward, self._pd_postprocess), True
 
 
 class Compose(Graph):
