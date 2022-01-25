@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 import types
 from dataclasses import dataclass
 
-import padl
 
 try:
     from typing import Literal
@@ -27,9 +26,6 @@ except ImportError:
 from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, Any
 from warnings import warn
 from zipfile import ZipFile
-
-from IPython.display import Image
-import networkx as nx
 
 import numpy as np
 import torch
@@ -44,6 +40,9 @@ from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
+
+from IPython.display import Image
+import networkx as nx
 
 
 def _unpack_batch(args):
