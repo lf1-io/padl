@@ -122,6 +122,20 @@ class PolynomialClass(torch.nn.Module):
         return x**self.a + x**self.b
 
 
+def _check_if_identity_compose(transform):
+    """Check if given transform is Compose([Identity])
+
+    Essentially a wrapped Identity transform
+    """
+    return (
+        isinstance(transform, pd.Compose) and
+        len(transform) == 1 and
+        isinstance(transform[0], pd.Identity)
+    )
+
+
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -318,8 +332,10 @@ class TestParallel:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
-        assert isinstance(self.transform_4.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_1.pd_preprocess)
+        assert isinstance(self.transform_4.pd_preprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_4.pd_preprocess)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Parallel)

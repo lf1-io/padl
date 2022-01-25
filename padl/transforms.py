@@ -2643,7 +2643,9 @@ class Node:
 
     @property
     def name_id(self):
-        return self.name + ' ' + str(self.id)
+        if self.name is not None:
+            return self.name + ' ' + str(self.id)
+        return str(self.id)
 
     @classmethod
     def _generate_id(cls):
@@ -3184,6 +3186,8 @@ class Parallel(Graph):
 
 def _check_parallel(children):
     """Check if current dict passed is Parallel or not"""
+    if len(children) < 2:
+        return False
     output_slices = []
     for child, (output_slice, input_slice) in children.items():
         output_slices.append(output_slice)
@@ -3191,6 +3195,13 @@ def _check_parallel(children):
         return sorted(output_slices) == list(range(len(children)))
     except TypeError:
         return False
+
+
+def _check_rollout(children):
+    """Check if current dict passed is Rollout or not"""
+    if len(children) > 1:
+        return True
+    return False
 
 
 def _helper_convert_compose(edges_dict=None,
@@ -3212,13 +3223,17 @@ def _helper_convert_compose(edges_dict=None,
     # Multiple parents marks end of Compose
     continue_compose = len(parents_dict[child_node]) == 1
 
-    if current_type == Compose and continue_compose:
-        transform_list += list(children.keys())
-        nodes_left.remove(transform_list[-1])
+    if current_type == Compose:
+        if continue_compose:
+            transform_list += list(children.keys())
+            nodes_left.remove(transform_list[-1])
+        else:
+            return transform_list, meta_transform_list, nodes_left
     else:
         current_type = Compose
         transform_list = [current_type, current_node] if current_node != input_node else [current_type]
         nodes_left.remove(current_node)
+
         if continue_compose:
             transform_list += list(children.keys())
             nodes_left.remove(transform_list[-1])
@@ -3288,6 +3303,9 @@ def _helper_convert_to_operators(edges_dict=None,
 
     if _check_parallel(children):
         # PARALLEL
+        if current_node == input_node:
+            nodes_left.remove(current_node)
+
         transform_list = [Parallel]
         meta_transform_list.append(transform_list)
         for idx, child in enumerate(children):
@@ -3302,19 +3320,23 @@ def _helper_convert_to_operators(edges_dict=None,
                                                             )
         return transform_list, meta_transform_list, nodes_left
 
-    # ROLLOUT
-    transform_list = [Rollout]
-    meta_transform_list.append(transform_list)
-    for idx, child in enumerate(children):
-        _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
-                                                        parents_dict=parents_dict,
-                                                        current_node=child,
-                                                        current_type=Rollout,
-                                                        transform_list=None,
-                                                        meta_transform_list=transform_list,
-                                                        nodes_left=nodes_left,
-                                                        input_node=input_node,
-                                                        )
+    if _check_rollout(children):
+        # ROLLOUT
+        if current_node == input_node:
+            nodes_left.remove(current_node)
+
+        transform_list = [Rollout]
+        meta_transform_list.append(transform_list)
+        for idx, child in enumerate(children):
+            _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
+                                                            parents_dict=parents_dict,
+                                                            current_node=child,
+                                                            current_type=Rollout,
+                                                            transform_list=None,
+                                                            meta_transform_list=transform_list,
+                                                            nodes_left=nodes_left,
+                                                            input_node=input_node,
+                                                            )
     return transform_list, meta_transform_list, nodes_left
 
 
