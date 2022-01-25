@@ -2939,7 +2939,7 @@ class Graph(Pipeline):
             if isinstance(child.transform, Batchify):
                 batchify_found = True
                 if child not in batchify_node:
-                    batchify_node[child] = Node(padl.Identity() - 'batchify Marker')
+                    batchify_node[child] = Node(Identity() - 'batchify Marker')
                 preprocess_edges[current_node][batchify_node[child]] = self.edges[current_node][child]
                 preprocess_edges[batchify_node[child]][self.output_node] = (None, None)
             elif child == self.output_node and batchify_found:
@@ -2977,7 +2977,7 @@ class Graph(Pipeline):
             elif isinstance(child.transform, Unbatchify)
                 unbatchify_found = True
                 if child not in unbatchify_node:
-                    unbatchify_node[child] = Node(padl.Identity() - 'unbatch Marker')
+                    unbatchify_node[child] = Node(Identity() - 'unbatch Marker')
                 forward_edges[current_node][unbatchify_node[child]] = self.edges[current_node][child]
                 forward_edges[unbatchify_node[child]][self.output_node] = (None, None)
             elif child == self.output_node and unbatchify_found:
@@ -3026,7 +3026,7 @@ class Graph(Pipeline):
             self._forward_edges = forward_edges_dict
             build_splits += ['preprocess', 'forward']
         else:
-            self._pd_preprocess = Compose([padl.Identity() - 'Preprocess Identity'])
+            self._pd_preprocess = Compose([Identity() - 'Preprocess Identity'])
             self._preprocess_edges = self._pd_preprocess.edges
             self._preprocess_parents = self._pd_preprocess.parents
 
@@ -3037,7 +3037,7 @@ class Graph(Pipeline):
             self._postprocess_edges = postprocess_edges_dict
             build_splits += ['postprocess']
         else:
-            self._pd_postprocess = Compose([padl.Identity() - 'Postprocess Identity'])
+            self._pd_postprocess = Compose([Identity() - 'Postprocess Identity'])
             self._postprocess_edges = self._pd_postprocess.edges
             self._postprocess_parents = self._pd_postprocess.parents
 
