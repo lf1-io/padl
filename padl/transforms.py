@@ -2936,7 +2936,7 @@ class Graph(Pipeline):
         # import pdb;pdb.set_trace()
         for child in self.edges[current_node]:
             # import pdb;pdb.set_trace()
-            if child.transform == padl.batch:
+            if isinstance(child.transform, Batchify):
                 batchify_found = True
                 if child not in batchify_node:
                     batchify_node[child] = Node(padl.Identity() - 'batchify Marker')
@@ -2963,7 +2963,7 @@ class Graph(Pipeline):
         if forward_edges is None:
             forward_edges = defaultdict(dict)
         if current_node is None:
-            batchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.batch]
+            batchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Batchify)]
             for batch_node in batchify_nodes:
                 forward_edges[self.input_node][batch_node] = (None, None)
                 forward_edges, unbatchify_found = self._generate_forward_dict(batch_node, forward_edges,
@@ -2972,9 +2972,9 @@ class Graph(Pipeline):
             return forward_edges, unbatchify_found
 
         for child in self.edges[current_node]:
-            if child.transform == padl.batch:
+            if isinstance(child.transform, Batchify):
                 raise SyntaxError("Two batchify in same path is not allowed")
-            elif child.transform == padl.unbatch:
+            elif isinstance(child.transform, Unbatchify)
                 unbatchify_found = True
                 if child not in unbatchify_node:
                     unbatchify_node[child] = Node(padl.Identity() - 'unbatch Marker')
@@ -2996,14 +2996,14 @@ class Graph(Pipeline):
             postprocess_edges = defaultdict(dict)
 
         if current_node is None:
-            unbatchify_nodes = [n_ for n_ in self.edges if n_.transform == padl.unbatch]
+            unbatchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Unbatchify)]
             for unbatch_node in unbatchify_nodes:
                 postprocess_edges[self.input_node][unbatch_node] = (None, None)
                 postprocess_edges = self._generate_postprocess_dict(unbatch_node, postprocess_edges)
             return postprocess_edges
 
         for child in self.edges[current_node]:
-            if child.transform == padl.unbatch:
+            if isinstance(child.transform, Unbatchify):
                 raise SyntaxError("Two Unbatchify in same path is not allowed")
             else:
                 postprocess_edges[current_node][child] = self.edges[current_node][child]
