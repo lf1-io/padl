@@ -1,0 +1,4 @@
+from padl import transform
+
+
+_pd_main = transform(lambda x: x)

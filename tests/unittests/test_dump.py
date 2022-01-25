@@ -303,3 +303,13 @@ class TestOtherModule:
         fulldump(tim)
         dump = tim.makeclasstransform(1, 2, 3)._pd_dumps()
         assert dump == read_dump('othermodule_full_makeclasstransform')
+
+    def test_import_wrapped(self):
+        importdump(tim)
+        dump = tim.wrap_transform()._pd_dumps()
+        assert dump == read_dump('othermodule_import_wrapped')
+
+    def test_import_makelambda(self):
+        importdump(tim)
+        dump = tim.makelambda()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makelambda')

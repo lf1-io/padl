@@ -74,9 +74,11 @@ def c(one=1
 
 
 class TestGetStatement:
-    def test_simple(self):
+    def test_simple_1(self):
         statement, _ = inspector.get_statement(testcode_0, 2)
         assert statement == 'a = 1'
+
+    def test_simple_2(self):
         statement, _ = inspector.get_statement(testcode_0, 3)
         assert statement == 'b = 2'
 
@@ -108,8 +110,8 @@ class TestGetStatement:
 class TestGetSurroundingBlock:
     def test_hanging_arguments_1(self):
         block, l, r = inspector.get_surrounding_block(testcode_1, 7)
-        assert block.strip.startswith('"""')
+        assert block.strip().startswith('"""')
 
     def test_hanging_arguments_2(self):
-        block, l, r = inspector.get_surrounding_block(testcode_1, 10)
-        assert block.strip.startswith('"""')
+        block, l, r = inspector.get_surrounding_block(testcode_1, 12)
+        assert block.strip().startswith('"""')

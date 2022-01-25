@@ -850,7 +850,7 @@ class Transform:
     def pd_preprocess(self) -> "Transform":
         """The preprocessing part of the transform. The device must be propagated from self."""
         pre = self.pd_stages[0]
-        pre.pd_device = self.pd_device
+        pre.pd_to(self.pd_device)
         return pre
 
     @property
@@ -858,14 +858,14 @@ class Transform:
         """The forward part of the transform (that what's typically done on the GPU).
         The device must be propagated from self."""
         forward = self.pd_stages[1]
-        forward.pd_device = self.pd_device
+        forward.pd_to(self.pd_device)
         return forward
 
     @property
     def pd_postprocess(self) -> "Transform":
         """The postprocessing part of the transform. The device must be propagated from self."""
         post = self.pd_stages[2]
-        post.pd_device = self.pd_device
+        post.pd_to(self.pd_device)
         return post
 
     def pd_to(self, device: str) -> "Transform":
@@ -1075,24 +1075,45 @@ class FunctionTransform(AtomicTransform):
     :param pd_name: name of the transform
     :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
+    :param inline_wrap: True if the function was wrapped in-line.
     """
 
     def __init__(self, function: Callable, call_info: inspector.CallInfo,
                  pd_name: Optional[str] = None, call: Optional[str] = None,
-                 source: Optional[str] = None):
+                 source: Optional[str] = None, wrap_type: str = 'decorator'):
         if call is None:
             call = function.__name__
         super().__init__(call=call, call_info=call_info, pd_name=pd_name)
         self.function = function
         self._pd_number_of_inputs = None
         self._source = source
+        self._wrap_type = wrap_type
+
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
+        if not self._pd_full_dump and self._wrap_type == 'inline':
+            return f'transform({self.__name__})'
+        return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump:
+        if self._pd_full_dump or self._wrap_type in ('module', 'lambda'):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
         source = f'from {self.__module__} import {self.__name__}'
+
+        if self._wrap_type == 'inline':
+            node = CodeNode.from_source(source, scope)
+            graph[ScopedName(self.__name__, scope, 0)] = node
+            emptyscope = symfinder.Scope.empty()
+            graph[ScopedName('transform', emptyscope, 0)] = \
+                CodeNode.from_source('from padl import transform', emptyscope)
+
+            start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
+            start = CodeNode.from_source(start_source, scope)
+            if name is not None:
+                graph[ScopedName(name, scope, 0)] = start
+            return {}
+
         if name is not None:
             source += f' as {name}'
         else:
