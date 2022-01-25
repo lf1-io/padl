@@ -3128,6 +3128,8 @@ class Rollout(Graph):
                          self.output_node,
                          output_slice=node.pd_output_slice,
                          input_slice=self.output_node.pd_input_slice)
+        self.pd_keys = self._pd_get_keys(self.transforms)
+        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
 
 class Parallel(Graph):
@@ -3137,6 +3139,8 @@ class Parallel(Graph):
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
+        self.pd_keys = self._pd_get_keys(self.transforms)
+        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
 
         for idx, transform in enumerate(self.transforms):
             if isinstance(transform, Parallel):
@@ -3319,12 +3323,12 @@ def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_st
 
     meta_transform_list = []
     transform_list = []
-    current_node = start_node
 
     if not exclude_start_node:
         start_node = None
 
     while len(nodes_left) > 2:
+        current_node = nodes_left[0]
         transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
             edges_dict=edges_dict,
             parents_dict=parents_dict,
@@ -3335,7 +3339,6 @@ def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_st
             nodes_left=nodes_left,
             input_node=start_node,
         )
-        current_node = nodes_left[0]
 
     return meta_transform_list
 
@@ -3350,8 +3353,12 @@ def _build_transform_from_list(input_list):
 
     :param input_list: list of transforms
     """
+    if len(input_list) == 1 and not inspect.isclass(input_list[0]):
+        input_list = input_list[0]
+
     current_type = input_list[0]
     start_pos = 1
+
     if not inspect.isclass(current_type):
         current_type = Compose
         start_pos = 0
