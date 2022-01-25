@@ -613,7 +613,7 @@ def _topsort(graph: dict) -> List[set]:
     while graph:
         nextlevel, graph = _get_nodes_without_in_edges(graph)
         if graphlen == len(graph):  # graph didn't shrink
-            raise RuntimeError('Graph has a cycle.')
+            raise RuntimeError('Graph has a circle or dangling roots.')
         graphlen = len(graph)
         levels.append(nextlevel)
     return levels

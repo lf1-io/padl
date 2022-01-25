@@ -226,7 +226,7 @@ def _wrap_lambda(fun, ignore_scope=False):
 
     caller = inspector.CallInfo(ignore_scope=ignore_scope)
     inner = var2mod.Finder(ast.Lambda).get_source_segments(call)[0][0]
-    wrapper = FunctionTransform(fun, caller, call=call, source=inner)
+    wrapper = FunctionTransform(fun, caller, call=call, source=inner, wrap_type='lambda')
     functools.update_wrapper(wrapper, fun)
     return wrapper
 
