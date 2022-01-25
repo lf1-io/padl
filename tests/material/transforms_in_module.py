@@ -71,3 +71,7 @@ def makeclasstransform(a, b, c):
             return self.calculate(input_) + y(input_) + self.c(input_)
 
     return MyClassTransform(a, b, c)
+
+
+def wrap_transform():
+    return transform(k)

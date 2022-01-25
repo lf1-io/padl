@@ -40,17 +40,21 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
 
     if '@' in caller.code_context[0]:
         call = None
+        wrap_type = 'decorator'
     else:
         try:
             # case transform(f)
             call = inspector.get_segment_from_frame(caller.frame, 'call')
+            wrap_type = 'inline'
         except RuntimeError:
-            # case importer.np.transform
+            # case transform(some_module).f
             try:
                 call = inspector.get_segment_from_frame(caller.frame, 'attribute')
+                wrap_type = 'module'
             except RuntimeError:
                 # needed for python 3.7 support
                 call = None
+                wrap_type = 'decorator'
 
     # if this is the decorator case we drop one leven from the scope (this is the decorated
     # function itself)
@@ -60,7 +64,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     if call_info.function != '<module>' and not ignore_scope:
         inspector.trace_this(_set_local_varname, caller.frame, scope=call_info.scope)
 
-    wrapper = FunctionTransform(fun, call_info, call=call)
+    wrapper = FunctionTransform(fun, call_info, call=call, wrap_type=wrap_type)
 
     # Special checks
     if isinstance(fun, np.ufunc):
