@@ -465,7 +465,7 @@ class Transform:
 
         A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
         code defining the pd_name and a set of dependencies (other scoped names). The dependencies
-        can be understood as the edges_dict in the self.
+        can be understood as the edges_dict in the graph.
 
         A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
         representing an assignment of the transform's evaluable representation to a variable
@@ -678,7 +678,7 @@ class Transform:
         return self._pd_tinyrepr()
 
     def _pd_find_varname(self, scopedict: dict) -> Optional[str]:
-        """Find the pd_name of the variable name the transform was last assigned to.
+        """Find the name of the variable name the transform was last assigned to.
 
         :return: A string with the variable name or *None* if the transform has not been assigned
             to any variable.
