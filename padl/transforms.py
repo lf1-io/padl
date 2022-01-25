@@ -45,6 +45,9 @@ from IPython.display import Image
 import networkx as nx
 
 
+_pd_trace = []
+
+
 def _unpack_batch(args):
     """Convert an input in batch-form into a tuple of datapoints.
 
