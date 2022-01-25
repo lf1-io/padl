@@ -210,7 +210,7 @@ class Transform:
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
-        if any(module.__spec__.pd_name.startswith(mod)
+        if any(module.__spec__.name.startswith(mod)
                for mod in self._pd_external_full_dump_modules):
             return True
         return self._pd_external_full_dump
@@ -290,12 +290,12 @@ class Transform:
 
     @property
     def pd_name(self) -> Optional[str]:
-        """The "pd_name" of the transform.
+        """The "name" of the transform.
 
-        A transform can have a pd_name. This is optional, but helps when inspecting complex transforms.
+        A transform can have a name. This is optional, but helps when inspecting complex transforms.
         Good transform names indicate what the transform does.
 
-        If a transform does not have an explicitly set pd_name, the pd_name will default to the pd_name of
+        If a transform does not have an explicitly set name, the name will default to the name of
         the *last variable the transforms was assigned to*.
         """
         if not self._pd_name:
