@@ -2973,7 +2973,7 @@ class Graph(Pipeline):
         for child in self.edges[current_node]:
             if isinstance(child.transform, Batchify):
                 raise SyntaxError("Two batchify in same path is not allowed")
-            elif isinstance(child.transform, Unbatchify)
+            elif isinstance(child.transform, Unbatchify):
                 unbatchify_found = True
                 if child not in unbatchify_node:
                     unbatchify_node[child] = Node(Identity() - 'unbatch Marker')
