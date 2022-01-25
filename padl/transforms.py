@@ -2764,7 +2764,6 @@ class Graph(Pipeline):
             if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
                 temp_output_slice = node_b_output_slice if temp_output_slice is None else temp_output_slice
                 temp_output_slice = None if temp_output_slice == parent_position else temp_output_slice
-                # import pdb; pdb.set_trace()
                 self.connect(node_a,
                              node_b,
                              output_slice=temp_output_slice,
@@ -2932,9 +2931,7 @@ class Graph(Pipeline):
         if preprocess_edges is None:
             preprocess_edges = defaultdict(dict)
 
-        # import pdb;pdb.set_trace()
         for child in self.edges[current_node]:
-            # import pdb;pdb.set_trace()
             if isinstance(child.transform, Batchify):
                 batchify_found = True
                 if child not in batchify_node:
@@ -3209,7 +3206,6 @@ def _helper_convert_compose(edges_dict=None,
             nodes_left.remove(transform_list[-1])
 
         meta_transform_list.append(transform_list)
-    # import pdb; pdb.set_trace()
 
     if continue_compose:
         current_node = transform_list[-1]
@@ -3253,7 +3249,6 @@ def _helper_convert_to_operators(edges_dict=None,
     if meta_transform_list is None:
         meta_transform_list = []
     children = edges_dict[current_node]
-    # import pdb; pdb.set_trace()
     if len(children) == 0:
         return transform_list, meta_transform_list, nodes_left
 
