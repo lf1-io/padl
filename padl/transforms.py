@@ -464,7 +464,7 @@ class Transform:
         """Build a codegraph defining the transform.
 
         A codegraph's nodes are :class:`CodeNode` instances which contain a scoped name, a piece of
-        code defining the pd_name and a set of dependencies (other scoped names). The dependencies
+        code defining the name and a set of dependencies (other scoped names). The dependencies
         can be understood as the edges_dict in the graph.
 
         A transform's codegraph starts with a "start-node", which is a :class:`CodeNode`
@@ -2674,8 +2674,8 @@ class Graph(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        self.input_node = Node(Identity() - 'Input')  # potential overhead
-        self.output_node = Node(Identity() - 'Output')
+        self.input_node = Node(identity - 'Input')  # potential overhead
+        self.output_node = Node(identity - 'Output')
 
         self.networkx_graph = None  # ... later drop
 
@@ -2935,7 +2935,7 @@ class Graph(Pipeline):
             if isinstance(child.transform, Batchify):
                 batchify_found = True
                 if child not in batchify_node:
-                    batchify_node[child] = Node(Identity() - 'batchify Marker')
+                    batchify_node[child] = Node(identity - 'batchify Marker')
                 preprocess_edges[current_node][batchify_node[child]] = self.edges[current_node][child]
                 preprocess_edges[batchify_node[child]][self.output_node] = (None, None)
             elif child == self.output_node and batchify_found:
@@ -2973,7 +2973,7 @@ class Graph(Pipeline):
             elif isinstance(child.transform, Unbatchify):
                 unbatchify_found = True
                 if child not in unbatchify_node:
-                    unbatchify_node[child] = Node(Identity() - 'unbatch Marker')
+                    unbatchify_node[child] = Node(identity - 'unbatch Marker')
                 forward_edges[current_node][unbatchify_node[child]] = self.edges[current_node][child]
                 forward_edges[unbatchify_node[child]][self.output_node] = (None, None)
             elif child == self.output_node and unbatchify_found:
@@ -3022,7 +3022,7 @@ class Graph(Pipeline):
             self._forward_edges = forward_edges_dict
             build_splits += ['preprocess', 'forward']
         else:
-            self._pd_preprocess = Compose([Identity() - 'Preprocess Identity'])
+            self._pd_preprocess = Compose([identity - 'Preprocess Identity'])
             self._preprocess_edges = self._pd_preprocess.edges
             self._preprocess_parents = self._pd_preprocess.parents
 
@@ -3033,7 +3033,7 @@ class Graph(Pipeline):
             self._postprocess_edges = postprocess_edges_dict
             build_splits += ['postprocess']
         else:
-            self._pd_postprocess = Compose([Identity() - 'Postprocess Identity'])
+            self._pd_postprocess = Compose([identity - 'Postprocess Identity'])
             self._postprocess_edges = self._pd_postprocess.edges
             self._postprocess_parents = self._pd_postprocess.parents
 
