@@ -716,8 +716,8 @@ class CodeNode:
         """Build a `CodeNode` from a source string. """
         node = ast.parse(source).body[0]
         globals_ = {
-            ScopedName(var, scope, n)
-            for var, n in find_globals(node)
+            ScopedName(name.name, scope, name.n)
+            for name in find_globals(node)
         }
 
         return cls(

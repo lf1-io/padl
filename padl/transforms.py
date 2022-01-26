@@ -2,6 +2,7 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
+import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
@@ -168,10 +169,12 @@ class Transform:
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
-        if any(module.__spec__.name.startswith(mod)
-               for mod in self._pd_external_full_dump_modules):
+        if self._pd_is_full_dump_module(module.__spec__.name):
             return True
         return self._pd_external_full_dump
+
+    def _pd_is_full_dump_module(self, module_name):
+        return any(module_name.startswith(mod) for mod in self._pd_external_full_dump_modules)
 
     @staticmethod
     def _pd_merge_components(components):
@@ -507,7 +510,8 @@ class Transform:
                 continue
 
             # find how *next_name* came into being
-            next_codenode = find_codenode(next_name)
+            next_codenode = find_codenode(next_name, self._pd_external_full_dump_modules)
+
             graph[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
