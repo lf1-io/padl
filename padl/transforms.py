@@ -2473,9 +2473,9 @@ class _ItemGetter:
     >>> len(ig)
     3
     >>> ig[0]
-    2
+    (0, 2)
     >>> ig[1]
-    3
+    (1, 3)
 
     :param samples: An object implementing __getitem__ and __len__.
     :param transform: Preprocessing transform.
@@ -2483,10 +2483,13 @@ class _ItemGetter:
         :class:`Transform` whose preprocessing part is *transform*.
     """
 
-    def __init__(self, samples, transform, entire_transform):
+    def __init__(self, samples, transform, entire_transform=None):
         self.samples = samples
         self.transform = transform
-        self.entire_transform = entire_transform
+        if entire_transform is None:
+            self.entire_transform = self.transform
+        else:
+            self.entire_transform = entire_transform
 
     def __getitem__(self, item):
         try:

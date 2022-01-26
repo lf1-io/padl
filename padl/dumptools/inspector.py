@@ -198,18 +198,6 @@ def get_statement(source: str, lineno: int):
 def _get_statement_from_block(block: str, lineno_in_block: int):
     """Get statements at like *lineno_in_block* from a code block.
 
-    Example:
-
-    >>> block = \
-    ...: '''bla = 1
-    ...: hehe = 2
-    ...: x = X(1,
-    ...:       2,
-    ...:       3)
-    ...: '''
-    >>> _get_statement_from_block(block, 4)
-    'x = X(1,\n      2,\n      3)', 1)
-
     :param block: The code block to get the statements from.
     :param lineno_in_block: Line number which the statement must include. Counted from 1.
     :returns: A tuple of string with the found statements and and offset between the beginning of
