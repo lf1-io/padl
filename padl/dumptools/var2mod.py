@@ -592,17 +592,33 @@ def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: Scope
     True
     """
     result = set()
-    for var, n in variables:
-        if var == scoped_name.name:
-            result.add(ScopedName(var, scoped_name.scope, n + scoped_name.n))
+    for var in variables:
+        if var.scope is None:
+            scope = scoped_name.scope
         else:
-            result.add(ScopedName(var, scoped_name.scope, n))
+            scope = var.scope
+
+        if var.name == scoped_name.name:
+            result.add(ScopedName(var.name, scope, var.n + scoped_name.n))
+        else:
+            result.add(ScopedName(var.name, scope, var.n))
     return result
 
 
-def find_codenode(name: ScopedName):
+def find_codenode(name: ScopedName, full_dump_module_names=None):
     """Find the :class:`CodeNode` corresponding to a :class:`ScopedName` *name*. """
     (source, node), scope_of_next_var, found_name = find_in_scope(name)
+
+    module_name = None
+    if full_dump_module_names:
+        if isinstance(node, ast.Import):
+            module_name = node.names[0].name
+        if isinstance(node, ast.ImportFrom):
+            module_name = node.module
+    if module_name is not None:
+        if any(module_name.startswith(mod) for mod in full_dump_module_names):
+            return find_codenode(ScopedName(name.name, Scope.toplevel(module_name), name.n),
+                                 full_dump_module_names)
 
     # find dependencies
     globals_ = find_globals(node)
