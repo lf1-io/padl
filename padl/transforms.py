@@ -2936,71 +2936,81 @@ class Graph(Pipeline):
     def _generate_preprocess_dict(self,
                                   current_node,
                                   preprocess_edges=None,
-                                  batchify_node=None,
                                   batchify_found=False):
         """
 
         :param current_node:
         :param preprocess_edges:
-        :param batchify_node:
         :param batchify_found:
         :return:
         """
-        if batchify_node is None:
-            batchify_node = dict()
         if preprocess_edges is None:
             preprocess_edges = defaultdict(dict)
 
         for child in self.edges[current_node]:
             if isinstance(child.transform, Batchify):
                 batchify_found = True
-                if child not in batchify_node:
-                    batchify_node[child] = Node(identity - 'batchify Marker')
-                preprocess_edges[current_node][batchify_node[child]] = self.edges[current_node][child]
-                preprocess_edges[batchify_node[child]][self.output_node] = (None, None)
+                preprocess_edges[current_node][child] = self.edges[current_node][child]
+                preprocess_edges[child][self.output_node] = (None, None)
             elif child == self.output_node and batchify_found:
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
             else:
                 preprocess_edges[current_node][child] = self.edges[current_node][child]
                 preprocess_edges, batchify_found = self._generate_preprocess_dict(child,
                                                                                   preprocess_edges,
-                                                                                  batchify_node,
                                                                                   batchify_found)
         return preprocess_edges, batchify_found
 
     def _generate_forward_dict(self,
                                current_node=None,
                                forward_edges=None,
-                               unbatchify_node=None,
+                               batchify_node_dict=None,
+                               unbatchify_node_dict=None,
                                unbatchify_found=False,
                                ):
-        if unbatchify_node is None:
-            unbatchify_node = dict()
+        if batchify_node_dict is None:
+            batchify_node_dict = dict()
+        if unbatchify_node_dict is None:
+            unbatchify_node_dict = dict()
         if forward_edges is None:
             forward_edges = defaultdict(dict)
+
         if current_node is None:
             batchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Batchify)]
+
             for batch_node in batchify_nodes:
-                forward_edges[self.input_node][batch_node] = (None, None)
-                forward_edges, unbatchify_found = self._generate_forward_dict(batch_node, forward_edges,
-                                                                              unbatchify_node,
-                                                                              unbatchify_found)
+                if batch_node not in batchify_node_dict:
+                    batchify_node_dict[batch_node] = Node(identity - 'batchify Marker')
+                forward_edges[self.input_node][batchify_node_dict[batch_node]] = (None, None)
+                forward_edges, unbatchify_found = self._generate_forward_dict(current_node=batch_node,
+                                                                              forward_edges=forward_edges,
+                                                                              batchify_node_dict=batchify_node_dict,
+                                                                              unbatchify_node_dict=unbatchify_node_dict,
+                                                                              unbatchify_found=unbatchify_found)
             return forward_edges, unbatchify_found
+
+        if isinstance(current_node.transform, Batchify):
+            new_current_node = batchify_node_dict[current_node]
+        else:
+            new_current_node = current_node
 
         for child in self.edges[current_node]:
             if isinstance(child.transform, Batchify):
                 raise SyntaxError("Two batchify in same path is not allowed")
             elif isinstance(child.transform, Unbatchify):
                 unbatchify_found = True
-                if child not in unbatchify_node:
-                    unbatchify_node[child] = Node(identity - 'unbatch Marker')
-                forward_edges[current_node][unbatchify_node[child]] = self.edges[current_node][child]
-                forward_edges[unbatchify_node[child]][self.output_node] = (None, None)
+                if child not in unbatchify_node_dict:
+                    unbatchify_node_dict[child] = Node(identity - 'unbatch Marker')
+                forward_edges[new_current_node][unbatchify_node_dict[child]] = self.edges[current_node][child]
+                forward_edges[unbatchify_node_dict[child]][self.output_node] = (None, None)
             elif child == self.output_node and unbatchify_found:
                 raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify')
             else:
-                forward_edges[current_node][child] = self.edges[current_node][child]
-                forward_edges, unbatchify_found = self._generate_forward_dict(child, forward_edges, unbatchify_node,
+                forward_edges[new_current_node][child] = self.edges[current_node][child]
+                forward_edges, unbatchify_found = self._generate_forward_dict(current_node=child,
+                                                                              forward_edges=forward_edges,
+                                                                              batchify_node_dict=batchify_node_dict,
+                                                                              unbatchify_node_dict=unbatchify_node_dict,
                                                                               unbatchify_found=unbatchify_found)
         return forward_edges, unbatchify_found
 
