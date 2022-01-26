@@ -534,6 +534,8 @@ class _MethodFinder(ast.NodeVisitor):
         self.visit(node)
         return self.methods
 
+def _filter_builtins(names):
+    return {name for name in names if name.name not in builtins.__dict__}
 
 def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins: bool = True):
     """Find globals used below a ClassDef node. """
@@ -546,7 +548,7 @@ def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins: bool = True):
     for method in methods.values():
         globals_.update(_VarFinder().find(method).globals)
     if filter_builtins:
-        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
+        globals_ = _filter_builtins(globals_)
     return globals_
 
 
@@ -572,7 +574,7 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
         return _find_globals_in_classdef(node)
     globals_ = _VarFinder().find(node).globals
     if filter_builtins:
-        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
+        globals_ = _filter_builtins(globals_)
     return globals_
 
 
