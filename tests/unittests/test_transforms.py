@@ -338,12 +338,16 @@ class TestParallel:
                _check_if_identity_compose(self.transform_4.pd_preprocess)
 
     def test_pd_forward(self):
-        assert isinstance(self.transform_1.pd_forward, pd.Parallel)
-        assert isinstance(self.transform_4.pd_forward, pd.Compose)
+        assert isinstance(self.transform_1.pd_forward, pd.Parallel) or\
+               _check_if_identity_compose(self.transform_1.pd_forward)
+        assert isinstance(self.transform_4.pd_forward, pd.Compose) or \
+               _check_if_identity_compose(self.transform_4.pd_forward)
 
     def test_pd_postprocess(self):
-        assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_4.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_postprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_1.pd_postprocess)
+        assert isinstance(self.transform_4.pd_postprocess, pd.Identity) or \
+               _check_if_identity_compose(self.transform_1.pd_postprocess)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)

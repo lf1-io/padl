@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 import types
 from dataclasses import dataclass
 
-
 try:
     from typing import Literal
 except ImportError:
@@ -43,7 +42,6 @@ from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, m
 
 from IPython.display import Image
 import networkx as nx
-
 
 _pd_trace = []
 
@@ -643,7 +641,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle):
-        #pylint: disable=invalid-name
+        # pylint: disable=invalid-name
         p.text(self._pd_fullrepr() if not cycle else '...')
 
     def _pd_fullrepr(self, marker=None):
@@ -2317,8 +2315,8 @@ class Parallel(Pipeline):
         out = ''
         for i, t in enumerate(self.transforms):
             out += (
-                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold_(f'{i}: ') + t._pd_shortrepr()
+                    make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                    make_bold_(f'{i}: ') + t._pd_shortrepr()
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
@@ -2563,6 +2561,7 @@ class _SimpleGetter:
 
     def __len__(self):
         return len(self.samples)
+
 
 @dataclass
 class _TraceItem:
@@ -2813,6 +2812,9 @@ class Graph(Pipeline):
         self.pd_keys = self._pd_get_keys(transforms)
         return self.pd_keys
 
+    def _pd_format_output(self, x):
+        return self._pd_output_formatter(x)
+
     def _pd_output_formatter(self, args):
         keys = self._set_output_formatter()
         if len(keys) == 1:
@@ -3058,6 +3060,7 @@ class Graph(Pipeline):
         if 'preprocess' in build_splits:
             self._preprocess_parents = _generate_parents_dict_from_edge_dict(self._preprocess_edges)
             self._preprocess_list = _convert_to_structured_list(start_node=self.input_node,
+                                                                end_node=self.output_node,
                                                                 edges_dict=self._preprocess_edges,
                                                                 parents_dict=self._preprocess_parents,
                                                                 exclude_start_node=True,
@@ -3067,6 +3070,7 @@ class Graph(Pipeline):
         if 'forward' in build_splits:
             self._forward_parents = _generate_parents_dict_from_edge_dict(self._forward_edges)
             self._forward_list = _convert_to_structured_list(start_node=self.input_node,
+                                                             end_node=self.output_node,
                                                              edges_dict=self._forward_edges,
                                                              parents_dict=self._forward_parents,
                                                              exclude_start_node=True,
@@ -3076,10 +3080,11 @@ class Graph(Pipeline):
         if 'postprocess' in build_splits:
             self._postprocess_parents = _generate_parents_dict_from_edge_dict(self._postprocess_edges)
             self._postprocess_list = _convert_to_structured_list(start_node=self.input_node,
-                                                           edges_dict=self._postprocess_edges,
-                                                           parents_dict=self._postprocess_parents,
-                                                           exclude_start_node=True,
-                                                           )
+                                                                 end_node=self.output_node,
+                                                                 edges_dict=self._postprocess_edges,
+                                                                 parents_dict=self._postprocess_parents,
+                                                                 exclude_start_node=True,
+                                                                 )
             self._pd_postprocess = _build_transform_from_list(self._postprocess_list)
 
         return None, (self._pd_preprocess, self._pd_forward, self._pd_postprocess), True
@@ -3211,7 +3216,9 @@ def _helper_convert_compose(edges_dict=None,
                             transform_list=None,
                             meta_transform_list=None,
                             nodes_left=None,
-                            input_node=None):
+                            input_node=None,
+                            output_node=None,
+                            ):
     """Helper function to convert compose to list"""
     if transform_list is None:
         transform_list = []
@@ -3225,23 +3232,26 @@ def _helper_convert_compose(edges_dict=None,
 
     if current_type == Compose:
         if continue_compose:
-            transform_list += list(children.keys())
-            nodes_left.remove(transform_list[-1])
+            if child_node not in (input_node, output_node):
+                transform_list.append(child_node)
+            nodes_left.remove(child_node)
         else:
             return transform_list, meta_transform_list, nodes_left
     else:
         current_type = Compose
-        transform_list = [current_type, current_node] if current_node != input_node else [current_type]
+        transform_list = [current_type, current_node] if current_node not in (input_node, output_node) else [
+            current_type]
         nodes_left.remove(current_node)
 
         if continue_compose:
-            transform_list += list(children.keys())
-            nodes_left.remove(transform_list[-1])
+            if child_node not in (input_node, output_node):
+                transform_list.append(child_node)
+            nodes_left.remove(child_node)
 
         meta_transform_list.append(transform_list)
 
-    if continue_compose:
-        current_node = transform_list[-1]
+    if continue_compose and child_node not in (input_node, output_node):
+        current_node = child_node
         transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
             edges_dict,
             parents_dict,
@@ -3251,6 +3261,7 @@ def _helper_convert_compose(edges_dict=None,
             meta_transform_list,
             nodes_left=nodes_left,
             input_node=input_node,
+            output_node=output_node,
         )
 
     return transform_list, meta_transform_list, nodes_left
@@ -3264,6 +3275,7 @@ def _helper_convert_to_operators(edges_dict=None,
                                  meta_transform_list=None,
                                  nodes_left=None,
                                  input_node=None,
+                                 output_node=None,
                                  ):
     """Helper function to convert given edge_dict to operator list
 
@@ -3295,10 +3307,11 @@ def _helper_convert_to_operators(edges_dict=None,
             meta_transform_list=meta_transform_list,
             nodes_left=nodes_left,
             input_node=input_node,
+            output_node=output_node,
         )
         return transform_list, meta_transform_list, nodes_left
 
-    if current_type is None and current_node != input_node:
+    if current_type is None and current_node not in (input_node, output_node):
         meta_transform_list.append(current_node)
 
     if _check_parallel(children):
@@ -3317,6 +3330,7 @@ def _helper_convert_to_operators(edges_dict=None,
                                                             meta_transform_list=transform_list,
                                                             nodes_left=nodes_left,
                                                             input_node=input_node,
+                                                            output_node=output_node,
                                                             )
         return transform_list, meta_transform_list, nodes_left
 
@@ -3336,11 +3350,18 @@ def _helper_convert_to_operators(edges_dict=None,
                                                             meta_transform_list=transform_list,
                                                             nodes_left=nodes_left,
                                                             input_node=input_node,
+                                                            output_node=output_node,
                                                             )
     return transform_list, meta_transform_list, nodes_left
 
 
-def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_start_node=True):
+def _convert_to_structured_list(start_node,
+                                end_node,
+                                edges_dict,
+                                parents_dict,
+                                exclude_start_node=True,
+                                exclude_end_node=True,
+                                ):
     """Convert an edge_dict to list of operations
 
     :param start_node: node to start the conversion from
@@ -3357,8 +3378,10 @@ def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_st
 
     if not exclude_start_node:
         start_node = None
+    if not exclude_end_node:
+        end_node = None
 
-    while len(nodes_left) > 2:
+    while len(nodes_left) > 1:
         current_node = nodes_left[0]
         transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
             edges_dict=edges_dict,
@@ -3369,6 +3392,7 @@ def _convert_to_structured_list(start_node, edges_dict, parents_dict, exclude_st
             meta_transform_list=meta_transform_list,
             nodes_left=nodes_left,
             input_node=start_node,
+            output_node=end_node,
         )
 
     return meta_transform_list
