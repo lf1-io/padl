@@ -61,8 +61,8 @@ class Finder(ast.NodeVisitor):
 
 
 def _join_attr(node):
-    if hasattr(node, 'value') and isinstance(node.value, ast.Call):
-        return _join_attr(node.value.func)
+    if not isinstance(node, (ast.Attribute, ast.Name)):
+        raise TypeError()
     try:
         return [node.id]
     except AttributeError:
@@ -162,7 +162,12 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source('x')
         Vars(globals={('x', 0)}, locals=set())
         """
-        path = _join_attr(node)
+        try:
+            path = _join_attr(node)
+        except TypeError:
+            self.generic_visit(node)
+            return
+
         if self.in_locals(('.'.join(path), 0)):
             return
         self.globals.add(('.'.join(path), 0))
