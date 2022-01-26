@@ -315,6 +315,13 @@ class TestOtherModule:
         dump = tim.makeclasstransform(1, 2, 3)._pd_dumps()
         assert dump == read_dump('othermodule_full_makeclasstransform')
 
+    def test_full_makeclasstransform_with_constants(self):
+        fulldump(tim)
+        B = 2
+        C = 3
+        dump = tim.makeclasstransform(CONST, B, C)._pd_dumps()
+        write_dump(dump, 'othermodule_full_makeclasstransform_with_transforms')
+
     def test_import_wrapped(self):
         importdump(tim)
         dump = tim.wrap_transform()._pd_dumps()
