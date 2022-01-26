@@ -50,28 +50,39 @@ class CallInfo:
 
         if self.function == '<module>' or ignore_scope:
             return symfinder.Scope.toplevel(module)
-        try:
-            call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
-        except RuntimeError:
-            warn('Error determining call source.')
-            call_source = '__na()'
-        try:
-            definition_source = get_source(caller_frameinfo.filename)
-            fdef_lineno = caller_frameinfo.frame.f_lineno
-            calling_scope = symfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
-            scope = symfinder.Scope.from_source(definition_source, fdef_lineno,
-                                                call_source, module, drop_n,
-                                                calling_scope)
-            assert len(scope) <= 1, 'scope longer than 1 currently not supported'
-            return scope
-        except (SyntaxError, RuntimeError) as exc:
-            warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
-            return symfinder.Scope.toplevel(module)
+
+        return _get_scope_from_frame(caller_frameinfo.frame, drop_n)
 
     @property
     def module(self):
         """The calling module. """
         return self.scope.module
+
+
+def _get_scope_from_frame(frame, drop_n):
+    module = _module(frame)
+    try:
+        call_source = get_segment_from_frame(frame.f_back, 'call')
+    except (RuntimeError, FileNotFoundError, AttributeError):
+        return symfinder.Scope.toplevel(module)
+    try:
+        definition_source = get_source(frame.f_code.co_filename)
+    except FileNotFoundError:
+        return symfinder.Scope.toplevel(module)
+    try:
+        previous_frame = frame.f_back
+        if previous_frame is not None:
+            calling_scope = _get_scope_from_frame(previous_frame, 0)
+        else:
+            calling_scope = symfinder.Scope.empty()
+        scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
+                                            call_source, module, drop_n,
+                                            calling_scope)
+        assert len(scope) <= 1, 'scope longer than 1 currently not supported'
+        return scope
+    except (SyntaxError, RuntimeError) as exc:
+        warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
+        return symfinder.Scope.toplevel(module)
 
 
 def non_init_caller_frameinfo() -> inspect.FrameInfo:
