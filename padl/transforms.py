@@ -1299,7 +1299,7 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self) -> str:
         """The class source code. """
-        (body_msg, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
+        (body_msg, _), _, _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
                                                               self._pd_call_info.scope))
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
