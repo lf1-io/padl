@@ -339,7 +339,18 @@ class _AssignFinder(_NameFinder):
             source = self._result._source
         except AttributeError:
             source = self.source
-        return f'{self.var_name} = {ast_utils.get_source_segment(source, self._result.value)}'
+        return ast_utils.get_source_segment(source, self._result)
+
+
+class _SetAttribute(ast.NodeVisitor):
+    def __init__(self, attr, value):
+        self.attr = attr
+        self.value = value
+
+    def generic_visit(self, node):
+        setattr(node, self.attr, self.value)
+        super().generic_visit(node)
+
 
 
 class _CallFinder(_ThingFinder):
@@ -471,6 +482,8 @@ class Scope:
     @classmethod
     def toplevel(cls, module):
         """Create a top-level scope (i.e. module level, no nesting). """
+        if isinstance(module, str):
+            module = sys.modules[module]
         return cls(module, '', [])
 
     @classmethod
@@ -495,6 +508,9 @@ class Scope:
         if drop_n > 0:
             function_defs = function_defs[:-drop_n]
 
+        if not function_defs:
+            return cls.toplevel(module)
+
         # get call assignments for inner function
         # def f(a, b, c=3):
         #    ...
@@ -513,7 +529,7 @@ class Scope:
             src = f'{k} = {v}'
             assignment = ast.parse(src).body[0]
             assignment._source = src
-            # assignment._scope = calling_scope
+            _SetAttribute('_scope', calling_scope).visit(assignment.value)
             call_assignments.append(assignment)
 
         scopelist = []
