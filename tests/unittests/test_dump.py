@@ -320,7 +320,7 @@ class TestOtherModule:
         B = 2
         C = 3
         dump = tim.makeclasstransform(CONST, B, C)._pd_dumps()
-        write_dump(dump, 'othermodule_full_makeclasstransform_with_transforms')
+        assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms')
 
     def test_import_wrapped(self):
         importdump(tim)
