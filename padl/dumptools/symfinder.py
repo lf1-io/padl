@@ -343,6 +343,20 @@ class _AssignFinder(_NameFinder):
 
 
 class _SetAttribute(ast.NodeVisitor):
+    """Class for setting an attribute on all nodes in an ast tree.
+
+    This is being used in :meth:`Scope.from_source` to tag nodes with the scope they were found in.
+
+    Example:
+
+    >>> tree = ast.parse('a = f(0)')
+    >>> _SetAttribute('myattribute', True).visit(tree)
+    >>> tree.body[0].targets[0].myattribute
+    True
+    >>> tree.body[0].value.myattribute
+    True
+    """
+
     def __init__(self, attr, value):
         self.attr = attr
         self.value = value
