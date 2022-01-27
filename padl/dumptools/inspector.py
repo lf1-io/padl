@@ -69,20 +69,12 @@ def _get_scope_from_frame(frame, drop_n):
         definition_source = get_source(frame.f_code.co_filename)
     except FileNotFoundError:
         return symfinder.Scope.toplevel(module)
-    try:
-        previous_frame = frame.f_back
-        if previous_frame is not None:
-            calling_scope = _get_scope_from_frame(previous_frame, 0)
-        else:
-            calling_scope = symfinder.Scope.empty()
-        scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
-                                            call_source, module, drop_n,
-                                            calling_scope)
-        assert len(scope) <= 1, 'scope longer than 1 currently not supported'
-        return scope
-    except (SyntaxError, RuntimeError) as exc:
-        warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
-        return symfinder.Scope.toplevel(module)
+    calling_scope = _get_scope_from_frame(frame.f_back, 0)
+    scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
+                                        call_source, module, drop_n,
+                                        calling_scope)
+    assert len(scope) <= 1, 'scope longer than 1 currently not supported'
+    return scope
 
 
 def non_init_caller_frameinfo() -> inspect.FrameInfo:
