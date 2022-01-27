@@ -1,4 +1,5 @@
 import pytest
+import sys
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify, importdump, fulldump
 import padl.dumptools.var2mod
@@ -320,7 +321,11 @@ class TestOtherModule:
         B = 2
         C = 3
         dump = tim.makeclasstransform(CONST, B, C)._pd_dumps()
-        assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms')
+        if sys.version_info[1] <= 8:
+            assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms')
+        else:
+            # python >= 3.9 creates a slightly different dump (semantically the same)
+            assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms38')
 
     def test_import_wrapped(self):
         importdump(tim)
