@@ -402,7 +402,7 @@ class TestRollout:
             >> new_iden + new_iden
             >> plus
         )
-        assert str(test.pd_forward) == str(new_iden + new_iden >> plus)
+        assert str(test.pd_forward) == str(pd.identity >> new_iden + new_iden >> plus >> pd.identity)
 
     def test_output(self):
         in_ = 123
@@ -419,8 +419,10 @@ class TestRollout:
         assert out._fields == ('plus_one_0', 'plus_one_1', 'out_2')
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
-        assert isinstance(self.transform_6.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_1.pd_preprocess)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_6.pd_preprocess)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Rollout)
