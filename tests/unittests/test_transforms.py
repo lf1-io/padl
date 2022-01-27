@@ -881,6 +881,10 @@ class TestTorchModuleTransformWithJit:
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(torch.tensor(1)) == torch.tensor(2)
 
+        self.compose_1.pd_save(tmp_path / 'test.padl', True)
+        compose_1 = pd.load(tmp_path / 'test.padl')
+        assert compose_1.infer_apply(torch.tensor(0)) == torch.tensor(2)
+
     def test_methods(self):
         diff = set(dir(pd.TorchModuleTransform)) - set(dir(self.jit_1))
         assert len(diff) == 0
