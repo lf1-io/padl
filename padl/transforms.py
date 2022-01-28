@@ -3334,29 +3334,42 @@ def _helper_convert_to_operators(edges_dict=None,
 
     if _check_parallel(children):
         # PARALLEL
-        if current_node == input_node:
+        child = next(iter(children))
+        parents = parents_dict[child]
+        if current_node in nodes_left: nodes_left.remove(current_node)
+        if len(parents) > 1:
+            if child in nodes_left and all([parent not in nodes_left for parent in parents]):
+                if current_type != Compose:
+                    transform_list = [Compose, current_node]
+                    meta_transform_list.append(transform_list)
+
+                parallel_transform_list = [Parallel]
+                main_transform_list.append(parallel_transform_list)
+            else:
+                if current_type != Compose:
+                    transform_list = [Compose, current_node]
+                    meta_transform_list.append(transform_list)
+                return transform_list, meta_transform_list, nodes_left
+
+        elif current_node == input_node:
             parallel_transform_list = [Parallel]
             meta_transform_list.append(parallel_transform_list)
-        elif current_type != Compose: # CHECK if current_node is COMPOSE
-            transform_list = [Compose, current_node]
-            meta_transform_list.append(transform_list)
 
-            parallel_transform_list = [Parallel]
-            transform_list.append(parallel_transform_list)
         else:
-            transform_list = [Compose]
-            meta_transform_list.append(transform_list)
+            if current_type != Compose: # CHECK if current_node is COMPOSE
+                transform_list = [Compose, current_node]
+                meta_transform_list.append(transform_list)
 
-            parallel_transform_list = [Parallel]
-            transform_list.append(parallel_transform_list)
+                parallel_transform_list = [Parallel]
+                transform_list.append(parallel_transform_list)
+            else:
+                transform_list = [Compose]
+                meta_transform_list.append(transform_list)
 
-        if current_node in nodes_left: nodes_left.remove(current_node)
+                parallel_transform_list = [Parallel]
+                transform_list.append(parallel_transform_list)
 
         for idx, child in enumerate(children):
-            parents = parents_dict[child]
-            if len(parents) > 1:
-                parallel_transform_list = [Parallel]
-                meta_transform_list.append(parallel_transform_list)
 
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
@@ -3377,11 +3390,19 @@ def _helper_convert_to_operators(edges_dict=None,
         child = next(iter(children))
         parents = parents_dict[child]
 
-        if not all(parent in nodes_left for parent in parents):
-            if child in nodes_left:
+        if current_node in nodes_left: nodes_left.remove(current_node)
+        if len(parents) > 1:
+            if child in nodes_left and all([parent not in nodes_left for parent in parents]):
+                if current_type != Compose:
+                    transform_list = [Compose, current_node]
+                    meta_transform_list.append(transform_list)
+
                 rollout_transform_list = [Rollout]
                 main_transform_list.append(rollout_transform_list)
             else:
+                if current_type != Compose:
+                    transform_list = [Compose, current_node]
+                    meta_transform_list.append(transform_list)
                 return transform_list, meta_transform_list, nodes_left
 
         elif current_node == input_node:
@@ -3401,8 +3422,6 @@ def _helper_convert_to_operators(edges_dict=None,
 
                 rollout_transform_list = [Rollout]
                 transform_list.append(rollout_transform_list)
-
-        if current_node in nodes_left: nodes_left.remove(current_node)
 
         for idx, child in enumerate(children):
 
@@ -3463,7 +3482,6 @@ def _convert_to_structured_list(start_node,
             output_node=end_node,
             main_transform_list=meta_transform_list,
         )
-        # import pdb; pdb.set_trace()
 
     return meta_transform_list
 
