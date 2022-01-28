@@ -429,8 +429,10 @@ class TestRollout:
         assert isinstance(self.transform_6.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
-        assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_6.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_postprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_1.pd_preprocess)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Identity) or\
+               _check_if_identity_compose(self.transform_6.pd_preprocess)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
