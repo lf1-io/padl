@@ -2936,7 +2936,9 @@ class Graph(Pipeline):
     def _generate_preprocess_dict(self,
                                   current_node,
                                   preprocess_edges=None,
-                                  batchify_found=False):
+                                  batchify_found=False,
+                                  batchify_positions=None,
+                                  ):
         """
 
         :param current_node:
@@ -2946,6 +2948,8 @@ class Graph(Pipeline):
         """
         if preprocess_edges is None:
             preprocess_edges = defaultdict(dict)
+        if batchify_positions is None:
+            batchify_positions = dict()
 
         for child in self.edges[current_node]:
             if isinstance(child.transform, Batchify):
@@ -2956,10 +2960,12 @@ class Graph(Pipeline):
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
             else:
                 preprocess_edges[current_node][child] = self.edges[current_node][child]
-                preprocess_edges, batchify_found = self._generate_preprocess_dict(child,
-                                                                                  preprocess_edges,
-                                                                                  batchify_found)
-        return preprocess_edges, batchify_found
+                preprocess_edges, batchify_found, batchify_positions = self._generate_preprocess_dict(child,
+                                                                                                      preprocess_edges,
+                                                                                                      batchify_found,
+                                                                                                      batchify_positions
+                                                                                                      )
+        return preprocess_edges, batchify_found, batchify_positions
 
     def _generate_forward_dict(self,
                                current_node=None,
@@ -2967,6 +2973,8 @@ class Graph(Pipeline):
                                batchify_node_dict=None,
                                unbatchify_node_dict=None,
                                unbatchify_found=False,
+                               batchify_positions=None,
+                               unbatchify_positions=None,
                                ):
         if batchify_node_dict is None:
             batchify_node_dict = dict()
@@ -2980,14 +2988,20 @@ class Graph(Pipeline):
 
             for batch_node in batchify_nodes:
                 if batch_node not in batchify_node_dict:
-                    batchify_node_dict[batch_node] = Node(identity - 'batchify Marker')
-                forward_edges[self.input_node][batchify_node_dict[batch_node]] = (None, None)
-                forward_edges, unbatchify_found = self._generate_forward_dict(current_node=batch_node,
-                                                                              forward_edges=forward_edges,
-                                                                              batchify_node_dict=batchify_node_dict,
-                                                                              unbatchify_node_dict=unbatchify_node_dict,
-                                                                              unbatchify_found=unbatchify_found)
-            return forward_edges, unbatchify_found
+                    batchify_node_dict[batch_node] = Node(identity - 'batchify_marker')
+                if batchify_positions is not None:
+                    batchify_pos = batchify_positions[batch_node]
+                else:
+                    batchify_pos = None
+                forward_edges[self.input_node][batchify_node_dict[batch_node]] = (batchify_pos, None)
+                forward_edges, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+                    current_node=batch_node,
+                    forward_edges=forward_edges,
+                    batchify_node_dict=batchify_node_dict,
+                    unbatchify_node_dict=unbatchify_node_dict,
+                    unbatchify_found=unbatchify_found,
+                    batchify_positions=batchify_positions)
+            return forward_edges, unbatchify_found, unbatchify_positions
 
         if isinstance(current_node.transform, Batchify):
             new_current_node = batchify_node_dict[current_node]
@@ -3000,23 +3014,26 @@ class Graph(Pipeline):
             elif isinstance(child.transform, Unbatchify):
                 unbatchify_found = True
                 if child not in unbatchify_node_dict:
-                    unbatchify_node_dict[child] = Node(identity - 'unbatch Marker')
+                    unbatchify_node_dict[child] = Node(identity - 'unbatch_marker')
                 forward_edges[new_current_node][unbatchify_node_dict[child]] = self.edges[current_node][child]
                 forward_edges[unbatchify_node_dict[child]][self.output_node] = (None, None)
             elif child == self.output_node and unbatchify_found:
                 raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify')
             else:
                 forward_edges[new_current_node][child] = self.edges[current_node][child]
-                forward_edges, unbatchify_found = self._generate_forward_dict(current_node=child,
-                                                                              forward_edges=forward_edges,
-                                                                              batchify_node_dict=batchify_node_dict,
-                                                                              unbatchify_node_dict=unbatchify_node_dict,
-                                                                              unbatchify_found=unbatchify_found)
-        return forward_edges, unbatchify_found
+                forward_edges, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+                    current_node=child,
+                    forward_edges=forward_edges,
+                    batchify_node_dict=batchify_node_dict,
+                    unbatchify_node_dict=unbatchify_node_dict,
+                    unbatchify_found=unbatchify_found,
+                    unbatchify_positions=unbatchify_positions)
+        return forward_edges, unbatchify_found, unbatchify_positions
 
     def _generate_postprocess_dict(self,
                                    current_node=None,
                                    postprocess_edges=None,
+                                   unbatchify_positions=None,
                                    ):
         if postprocess_edges is None:
             postprocess_edges = defaultdict(dict)
@@ -3024,17 +3041,25 @@ class Graph(Pipeline):
         if current_node is None:
             unbatchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Unbatchify)]
             for unbatch_node in unbatchify_nodes:
-                postprocess_edges[self.input_node][unbatch_node] = (None, None)
-                postprocess_edges = self._generate_postprocess_dict(unbatch_node, postprocess_edges)
-            return postprocess_edges
+                if unbatchify_positions is None:
+                    unbatch_pos = unbatchify_positions[unbatch_node]
+                else:
+                    unbatch_pos = None
+                postprocess_edges[self.input_node][unbatch_node] = (unbatch_pos, None)
+                postprocess_edges = self._generate_postprocess_dict(current_node=unbatch_node,
+                                                                    postprocess_edges=postprocess_edges,
+                                                                    unbatchify_positions=unbatchify_positions)
+            return postprocess_edges, unbatchify_positions
 
         for child in self.edges[current_node]:
             if isinstance(child.transform, Unbatchify):
                 raise SyntaxError("Two Unbatchify in same path is not allowed")
             else:
                 postprocess_edges[current_node][child] = self.edges[current_node][child]
-                postprocess_edges = self._generate_postprocess_dict(child, postprocess_edges)
-        return postprocess_edges
+                postprocess_edges = self._generate_postprocess_dict(current_node=child,
+                                                                    postprocess_edges=postprocess_edges,
+                                                                    unbatchify_positions=unbatchify_positions)
+        return postprocess_edges, unbatchify_positions
 
     def _pd_splits(self, input_components=0):
         """Generate splits
@@ -3042,9 +3067,23 @@ class Graph(Pipeline):
         :param input_components:
         :return:
         """
-        preprocess_edges_dict, batchify_found = self._generate_preprocess_dict(self.input_node)
-        forward_edges_dict, unbatchify_found = self._generate_forward_dict()
-        postprocess_edges_dict = self._generate_postprocess_dict()
+        batchify_positions = None
+        unbatchify_positions = None
+
+        preprocess_edges_dict, batchify_found, batchify_positions = self._generate_preprocess_dict(self.input_node)
+        _preprocess_parents = _generate_parents_dict_from_edge_dict(preprocess_edges_dict)
+        if batchify_found:
+            batchify_positions = {batchify_node: idx for idx, batchify_node in enumerate(_preprocess_parents[self.output_node])}
+
+        forward_edges_dict, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+            batchify_positions=batchify_positions)
+        _forward_parents = _generate_parents_dict_from_edge_dict(forward_edges_dict)
+        if unbatchify_found:
+            unbatchify_positions = {unbatchify_node: idx for idx, unbatchify_node in enumerate(_forward_parents[self.output_node])}
+
+        postprocess_edges_dict, unbatchify_positions = self._generate_postprocess_dict(
+            unbatchify_positions=unbatchify_positions
+        )
 
         build_splits = []
         if batchify_found:
@@ -3356,7 +3395,7 @@ def _helper_convert_to_operators(edges_dict=None,
             meta_transform_list.append(parallel_transform_list)
 
         else:
-            if current_type != Compose: # CHECK if current_node is COMPOSE
+            if current_type != Compose:  # CHECK if current_node is COMPOSE
                 transform_list = [Compose, current_node]
                 meta_transform_list.append(transform_list)
 
@@ -3370,7 +3409,6 @@ def _helper_convert_to_operators(edges_dict=None,
                 transform_list.append(parallel_transform_list)
 
         for idx, child in enumerate(children):
-
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
                                                             current_node=child,
@@ -3424,7 +3462,6 @@ def _helper_convert_to_operators(edges_dict=None,
                 transform_list.append(rollout_transform_list)
 
         for idx, child in enumerate(children):
-
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
                                                             current_node=child,
