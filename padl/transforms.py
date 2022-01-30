@@ -2644,6 +2644,12 @@ class Node:
     def name_id(self):
         if self.name is not None:
             return self.name + ' ' + str(self.id)
+        if isinstance(self.transform, Batchify):
+            name = 'batchify '
+            return name+str(self.id)
+        if isinstance(self.transform, Unbatchify):
+            name = 'unbatchify '
+            return name+str(self.id)
         return str(self.id)
 
     @classmethod
@@ -2846,7 +2852,7 @@ class Graph(Pipeline):
             networkx_graph.add_node(parent.name_id, node=parent)
             for child in children_dict:
                 networkx_graph.add_node(child.name_id, node=child)
-                networkx_graph.add_edge(parent.name_id, child.name_id)
+                networkx_graph.add_edge(parent.name_id, child.name_id, label=self.edges[parent][child][0])
         self.networkx_graph = networkx_graph
 
     def draw(self):
@@ -2994,14 +3000,14 @@ class Graph(Pipeline):
                 else:
                     batchify_pos = None
                 forward_edges[self.input_node][batchify_node_dict[batch_node]] = (batchify_pos, None)
-                forward_edges, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+                forward_edges, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
                     current_node=batch_node,
                     forward_edges=forward_edges,
                     batchify_node_dict=batchify_node_dict,
                     unbatchify_node_dict=unbatchify_node_dict,
                     unbatchify_found=unbatchify_found,
                     batchify_positions=batchify_positions)
-            return forward_edges, unbatchify_found, unbatchify_positions
+            return forward_edges, unbatchify_found, unbatchify_node_dict
 
         if isinstance(current_node.transform, Batchify):
             new_current_node = batchify_node_dict[current_node]
@@ -3021,14 +3027,14 @@ class Graph(Pipeline):
                 raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify')
             else:
                 forward_edges[new_current_node][child] = self.edges[current_node][child]
-                forward_edges, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+                forward_edges, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
                     current_node=child,
                     forward_edges=forward_edges,
                     batchify_node_dict=batchify_node_dict,
                     unbatchify_node_dict=unbatchify_node_dict,
                     unbatchify_found=unbatchify_found,
                     unbatchify_positions=unbatchify_positions)
-        return forward_edges, unbatchify_found, unbatchify_positions
+        return forward_edges, unbatchify_found, unbatchify_node_dict
 
     def _generate_postprocess_dict(self,
                                    current_node=None,
@@ -3041,7 +3047,7 @@ class Graph(Pipeline):
         if current_node is None:
             unbatchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Unbatchify)]
             for unbatch_node in unbatchify_nodes:
-                if unbatchify_positions is None:
+                if unbatchify_positions is not None:
                     unbatch_pos = unbatchify_positions[unbatch_node]
                 else:
                     unbatch_pos = None
@@ -3049,7 +3055,7 @@ class Graph(Pipeline):
                 postprocess_edges = self._generate_postprocess_dict(current_node=unbatch_node,
                                                                     postprocess_edges=postprocess_edges,
                                                                     unbatchify_positions=unbatchify_positions)
-            return postprocess_edges, unbatchify_positions
+            return postprocess_edges
 
         for child in self.edges[current_node]:
             if isinstance(child.transform, Unbatchify):
@@ -3059,7 +3065,7 @@ class Graph(Pipeline):
                 postprocess_edges = self._generate_postprocess_dict(current_node=child,
                                                                     postprocess_edges=postprocess_edges,
                                                                     unbatchify_positions=unbatchify_positions)
-        return postprocess_edges, unbatchify_positions
+        return postprocess_edges
 
     def _pd_splits(self, input_components=0):
         """Generate splits
@@ -3075,13 +3081,15 @@ class Graph(Pipeline):
         if batchify_found:
             batchify_positions = {batchify_node: idx for idx, batchify_node in enumerate(_preprocess_parents[self.output_node])}
 
-        forward_edges_dict, unbatchify_found, unbatchify_positions = self._generate_forward_dict(
+        forward_edges_dict, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
             batchify_positions=batchify_positions)
         _forward_parents = _generate_parents_dict_from_edge_dict(forward_edges_dict)
-        if unbatchify_found:
-            unbatchify_positions = {unbatchify_node: idx for idx, unbatchify_node in enumerate(_forward_parents[self.output_node])}
 
-        postprocess_edges_dict, unbatchify_positions = self._generate_postprocess_dict(
+        if unbatchify_found:
+            unbatchify_positions = {unbatchify_node: idx for idx, unbatchify_node in enumerate(unbatchify_node_dict)}
+
+        # import pdb; pdb.set_trace()
+        postprocess_edges_dict = self._generate_postprocess_dict(
             unbatchify_positions=unbatchify_positions
         )
 
@@ -3408,7 +3416,7 @@ def _helper_convert_to_operators(edges_dict=None,
                 parallel_transform_list = [Parallel]
                 transform_list.append(parallel_transform_list)
 
-        for idx, child in enumerate(children):
+        for child in sorted(children, key=lambda node: children[node][0]) :
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
                                                             current_node=child,

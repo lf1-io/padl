@@ -122,18 +122,16 @@ class PolynomialClass(torch.nn.Module):
         return x**self.a + x**self.b
 
 
-def _check_if_identity_compose(transform):
+def _is_compose_instance(transform_, instance_type=pd.Identity):
     """Check if given transform is Compose([Identity])
 
     Essentially a wrapped Identity transform
     """
     return (
-        isinstance(transform, pd.Compose) and
-        len(transform) == 1 and
-        isinstance(transform[0], pd.Identity)
+        isinstance(transform_, pd.Compose) and
+        len(transform_) == 1 and
+        isinstance(transform_[0], instance_type)
     )
-
-
 
 
 def test_isinstance_of_namedtuple():
@@ -333,21 +331,21 @@ class TestParallel:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_1.pd_preprocess)
+               _is_compose_instance(self.transform_1.pd_preprocess)
         assert isinstance(self.transform_4.pd_preprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_4.pd_preprocess)
+               _is_compose_instance(self.transform_4.pd_preprocess)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Parallel) or\
-               _check_if_identity_compose(self.transform_1.pd_forward)
+               _is_compose_instance(self.transform_1.pd_forward)
         assert isinstance(self.transform_4.pd_forward, pd.Compose) or \
-               _check_if_identity_compose(self.transform_4.pd_forward)
+               _is_compose_instance(self.transform_4.pd_forward)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_1.pd_postprocess)
+               _is_compose_instance(self.transform_1.pd_postprocess)
         assert isinstance(self.transform_4.pd_postprocess, pd.Identity) or \
-               _check_if_identity_compose(self.transform_1.pd_postprocess)
+               _is_compose_instance(self.transform_1.pd_postprocess)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply((2, 3, 4)) == (3, 6, 8)
@@ -420,9 +418,9 @@ class TestRollout:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_1.pd_preprocess)
+               _is_compose_instance(self.transform_1.pd_preprocess)
         assert isinstance(self.transform_6.pd_preprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_6.pd_preprocess)
+               _is_compose_instance(self.transform_6.pd_preprocess)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Rollout)
@@ -430,9 +428,9 @@ class TestRollout:
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_1.pd_preprocess)
+               _is_compose_instance(self.transform_1.pd_preprocess)
         assert isinstance(self.transform_6.pd_postprocess, pd.Identity) or\
-               _check_if_identity_compose(self.transform_6.pd_preprocess)
+               _is_compose_instance(self.transform_6.pd_preprocess)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply(2) == (3, 4, 4)
@@ -483,7 +481,8 @@ class TestCompose:
         assert self.transform_4(1) == 4
 
     def test_pd_preprocess(self):
-        assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
+        assert isinstance(self.transform_1.pd_preprocess, pd.Identity) or\
+               _is_compose_instance(self.transform_1.pd_preprocess)
         assert isinstance(self.transform_5.pd_preprocess, pd.Compose)
 
     def test_pd_forward(self):
@@ -491,8 +490,9 @@ class TestCompose:
         assert isinstance(self.transform_5.pd_forward, pd.Compose)
 
     def test_pd_postprocess(self):
-        assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_5.pd_postprocess, pd.Unbatchify)
+        assert isinstance(self.transform_1.pd_postprocess, pd.Identity) or\
+               _is_compose_instance(self.transform_1.pd_postprocess)
+        assert _is_compose_instance(self.transform_5.pd_postprocess, pd.Unbatchify)
 
     def test_infer_apply(self):
         assert self.transform_4.infer_apply(1) == 4
@@ -622,8 +622,8 @@ class TestModel:
         assert isinstance(self.model_2.pd_preprocess, pd.Rollout)
         assert isinstance(self.model_4.pd_preprocess, pd.Compose)
         assert isinstance(self.model_5.pd_preprocess, pd.Map)
-        assert isinstance(self.model_6.pd_preprocess, pd.Batchify)
-        assert isinstance(self.model_7.pd_preprocess, pd.Compose)
+        assert _is_compose_instance(self.model_6.pd_preprocess, pd.Batchify)
+        assert isinstance(self.model_7.pd_preprocess, pd.Rollout)
 
     def test_pd_forward(self):
         assert isinstance(self.model_1.pd_forward, pd.Parallel)
@@ -637,7 +637,7 @@ class TestModel:
         assert isinstance(self.model_2.pd_postprocess, pd.Parallel)
         assert isinstance(self.model_4.pd_postprocess, pd.Compose)
         assert isinstance(self.model_5.pd_postprocess, pd.Map)
-        assert isinstance(self.model_6.pd_postprocess, pd.Identity)
+        assert _is_compose_instance(self.model_6.pd_postprocess, pd.Identity)
         assert isinstance(self.model_7.pd_postprocess, pd.Compose)
 
     def test_infer_apply(self):
@@ -690,6 +690,8 @@ class TestModel:
         t_preprocess = to_tensor >> batch
         t_forward = group((lin >> lin) + (lin >> lin) + (lin >> lin))
         t_postprocess = group((unbatch >> post) / (unbatch >> post) / (unbatch >> post))
+
+        all([torch.equal(o1, o2) for o1, o2 in zip(out1, out2)])
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(t.pd_forward) == str(t_forward)
         assert str(t.pd_postprocess) == str(t_postprocess)
