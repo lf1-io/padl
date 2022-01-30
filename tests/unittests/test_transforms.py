@@ -690,8 +690,6 @@ class TestModel:
         t_preprocess = to_tensor >> batch
         t_forward = group((lin >> lin) + (lin >> lin) + (lin >> lin))
         t_postprocess = group((unbatch >> post) / (unbatch >> post) / (unbatch >> post))
-
-        all([torch.equal(o1, o2) for o1, o2 in zip(out1, out2)])
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(t.pd_forward) == str(t_forward)
         assert str(t.pd_postprocess) == str(t_postprocess)
