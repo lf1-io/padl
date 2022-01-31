@@ -1846,7 +1846,7 @@ class Pipeline(Transform):
 
     def copy(self):
         """Return copy of this graph"""
-        copy_graph = copy(self.transforms)
+        copy_graph = copy(self)
         copy_graph.pd_output = _OutputSlicer(copy_graph)
         copy_graph.pd_input = _InputSlicer(copy_graph)
         return copy_graph
