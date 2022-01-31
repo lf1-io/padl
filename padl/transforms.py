@@ -1099,7 +1099,7 @@ class FunctionTransform(AtomicTransform):
         return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump or self._wrap_type in ('module', 'lambda'):
+        if self._pd_full_dump or self._wrap_type in ('module', 'lambda') or (not self._wrap_type == 'inline' and self._pd_call_info.scope.scopelist):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
@@ -1263,7 +1263,7 @@ class ClassTransform(AtomicTransform):
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         call_scope = symfinder.Scope.toplevel(inspector.caller_module())
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, call_scope, name=name or "_pd_dummy")
+        start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
         nodes.append(start_node)
@@ -1553,6 +1553,7 @@ class Pipeline(Transform):
         defined_as = self.pd_varname(self._pd_call_info.scope)
         return (
             self._pd_call_info.scope.module_name != inspector.caller_module().__name__
+            and not self._pd_call_info.scope.scopelist
             and defined_as is not None
         )
 
