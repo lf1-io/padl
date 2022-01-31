@@ -59,9 +59,15 @@ class CallInfo:
         return self.scope.module
 
 
+# exclude these modules from detailed scope analysis (as that slows testing down in python 3.7.)
+_EXCLUDED_MODULES = ['pytest', 'pluggy']
+
+
 def _get_scope_from_frame(frame, drop_n):
     """Get the :class:`~symfinder.Scope` from the frame object *frame*. """
     module = _module(frame)
+    if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
+        return symfinder.Scope.toplevel(module)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
     except (RuntimeError, FileNotFoundError, AttributeError):
