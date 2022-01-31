@@ -176,7 +176,7 @@
   <section id="id1">
 <h1>Debugging your Transforms<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
 <p>PADL provides a customized debugger to inspect and diagnose errors raised when applying a
-<a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Pipeline" title="padl.transforms.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>.</p>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <p>For using this functionality, call <code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_debug</span></code> after the execution failed, such as</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># train_apply, eval_apply or infer_apply that produced a RuntimeError</span>
 
@@ -186,7 +186,7 @@
 </pre></div>
 </div>
 <p>This way, we get a debugger where we can interact with the different parts of the
-<a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Pipeline" title="padl.transforms.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a> and inspect relevant information on each level.</p>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code> and inspect relevant information on each level.</p>
 <p>The debugger console has defined the following commands:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>* u(p): go one abstraction level up on the {class}`~padl.transforms.Pipeline`.
 * d(own): go one abstraction level down on the {class}`~padl.transforms.Pipeline`.
@@ -202,7 +202,7 @@
 check attributes, import packages…</p>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline"></a></h2>
-<p>Let <code class="docutils literal notranslate"><span class="pre">t</span></code> be the following <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Pipeline" title="padl.transforms.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>.</p>
+<p>Let <code class="docutils literal notranslate"><span class="pre">t</span></code> be the following <code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">batch</span>
 
@@ -222,7 +222,7 @@ layer. Calling <code class="xref py py-obj docutils literal notranslate"><span c
 input. When going down one level by entering <code class="docutils literal notranslate"><span class="pre">d</span></code> , the debugger switches to the
 {ref} stage <stages> that got the Exception (<em>preprocess</em>,
 <em>forward</em> or <em>postprocess</em>), and each level deeper moves recursively inside the element that failed
-until the <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.AtomicTransform" title="padl.transforms.AtomicTransform"><code class="xref py py-class docutils literal notranslate"><span class="pre">AtomicTransform</span></code></a> that failed is reached.</p>
+until the <code class="xref py py-class docutils literal notranslate"><span class="pre">AtomicTransform</span></code> that failed is reached.</p>
 <p>Below, some commands and statements are shown:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>&gt; i
 

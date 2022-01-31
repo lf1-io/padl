@@ -175,7 +175,7 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="saving">
 <h1>Saving<a class="headerlink" href="#saving" title="Permalink to this headline"></a></h1>
-<p>All PADL Transforms can be saved via <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a>. For that, simply do:</p>
+<p>All PADL Transforms can be saved via <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code>. For that, simply do:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span>
 
 <span class="p">[</span><span class="o">...</span><span class="p">]</span>
@@ -183,7 +183,7 @@
 <span class="n">save</span><span class="p">(</span><span class="n">my_pipeline</span><span class="p">,</span> <span class="s1">&#39;some/path.padl&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>To load a saved Transform use <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>:</p>
+<p>To load a saved Transform use <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
 
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;some/path.padl&#39;</span><span class="p">)</span>
@@ -294,7 +294,7 @@ that created it.</p>
 to initialize a Transform.</p>
 <p>Normally, saving <code class="code docutils literal notranslate"><span class="pre">word_index</span></code>, would store the python statements needed for creating the Transform, <em>including
 the data processing</em> in <code class="code docutils literal notranslate"><span class="pre">load_data</span></code>. As loading consists in executing those statements, this would mean that the data processing would be repeated each time the Transform is loaded.</p>
-<p>To prevent that, use <a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a>:</p>
+<p>To prevent that, use <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">value</span>
 
 <span class="p">[</span><span class="o">...</span><span class="p">]</span>
@@ -338,7 +338,7 @@ You can also add your own serializer:</p>
 <section id="custom-serializers">
 <h3>Custom serializers<a class="headerlink" href="#custom-serializers" title="Permalink to this headline"></a></h3>
 <p>You can save by value using your own serializer by defining two functions, one for saving, one for loading, and passing them to
-<a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a>.</p>
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code>.</p>
 <p>The <em>save</em> function expects two arguments, one for the value (<em>val</em>), one for the path (<em>path</em>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mysaver</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
     <span class="o">...</span>
@@ -346,7 +346,7 @@ You can also add your own serializer:</p>
 </div>
 <p>It is responsible for saving <em>val</em> at <em>path</em>.</p>
 <p>The <em>load</em> function expects one argument (<em>path</em>). It must load the value from there and return it.</p>
-<p>These functions are then passed to <a class="reference internal" href="../apidocs/padl.html#padl.value" title="padl.value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code></a> in a tuple as the second argument. The tuple
+<p>These functions are then passed to <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.value()</span></code> in a tuple as the second argument. The tuple
 has a third entry which defines a file suffix:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="n">save</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">suffix</span><span class="p">))</span>
 </pre></div>
@@ -441,7 +441,7 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
 <span class="n">_pd_main</span> <span class="o">=</span> <span class="n">a_transform</span>
 </pre></div>
 </div>
-<p>One can switch to a full dump of the transform using <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code></a>:</p>
+<p>One can switch to a full dump of the transform using <code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">fulldump</span>
 <span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
 
@@ -457,7 +457,7 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
 <span class="n">_pd_main</span> <span class="o">=</span> <span class="n">a_transform</span>
 </pre></div>
 </div>
-<p>Instead of using <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code></a> on a Transform, one can apply it to a package or module. This will enable full dump for all contained transforms.</p>
+<p>Instead of using <code class="xref py py-func docutils literal notranslate"><span class="pre">padl.fulldump()</span></code> on a Transform, one can apply it to a package or module. This will enable full dump for all contained transforms.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">save</span><span class="p">,</span> <span class="n">fulldump</span>
 <span class="kn">import</span> <span class="nn">some.module</span>
 <span class="kn">from</span> <span class="nn">some.module</span> <span class="kn">import</span> <span class="n">a_transform</span>
@@ -465,7 +465,7 @@ folder as <code class="docutils literal notranslate"><span class="pre">.pt</span
 <span class="n">fulldump</span><span class="p">(</span><span class="n">some</span><span class="o">.</span><span class="n">module</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>To reverse the effect of <a class="reference internal" href="../apidocs/padl.html#padl.fulldump" title="padl.fulldump"><code class="xref py py-func docutils literal notranslate"><span class="pre">fulldump()</span></code></a>, use <a class="reference internal" href="../apidocs/padl.html#padl.importdump" title="padl.importdump"><code class="xref py py-func docutils literal notranslate"><span class="pre">importdump()</span></code></a>.</p>
+<p>To reverse the effect of <code class="xref py py-func docutils literal notranslate"><span class="pre">fulldump()</span></code>, use <code class="xref py py-func docutils literal notranslate"><span class="pre">importdump()</span></code>.</p>
 </section>
 <section id="id2">
 <h2>What does not save<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
