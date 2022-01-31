@@ -1,0 +1,7 @@
+from tests.material.transforms_in_module import MyClassTransform
+
+
+a = 1
+b = 2
+c = 3
+_pd_main = MyClassTransform(a, b, c)
