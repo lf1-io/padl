@@ -336,3 +336,13 @@ class TestOtherModule:
         importdump(tim)
         dump = tim.makelambda()._pd_dumps()
         assert dump == read_dump('othermodule_import_makelambda')
+
+    def test_import_makefunction_squared(self):
+        importdump(tim)
+        dump = tim.makefunction_squared()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makefunction_squared')
+
+    def test_import_makeclass_squared(self):
+        importdump(tim)
+        dump = tim.makeclass_squared()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makeclass_squared')
