@@ -139,7 +139,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.graph.html"><code class="docutils literal notranslate"><span class="pre">padl.graph</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
@@ -179,11 +178,11 @@
 <p>Remember from <a class="reference internal" href="creating_transforms.html#creating-transforms"><span class="std std-ref">the section on creating Transforms</span></a> that <strong>PyTorch</strong> Modules can be converted into Transforms. PADL has built-in capabilities that make it convenient to work with them.</p>
 <section id="padl-automatically-saves-pytorch-state-dicts">
 <h2>PADL Automatically Saves PyTorch State-Dicts<a class="headerlink" href="#padl-automatically-saves-pytorch-state-dicts" title="Permalink to this headline"></a></h2>
-<p>When using <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code> to <a class="reference internal" href="saving.html#saving"><span class="std std-ref">save a Transform</span></a>, PADL automatically stores <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>s of the contained <strong>PyTorch</strong> layers along with the code. When loading with <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code>, these are used to initialize the layers’ parameters.</p>
+<p>When using <a class="reference internal" href="../apidocs/padl.html#padl.save" title="padl.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.save()</span></code></a> to <a class="reference internal" href="saving.html#saving"><span class="std std-ref">save a Transform</span></a>, PADL automatically stores <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>s of the contained <strong>PyTorch</strong> layers along with the code. When loading with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.load()</span></code></a>, these are used to initialize the layers’ parameters.</p>
 </section>
 <section id="devices">
 <span id="id1"></span><h2>Devices<a class="headerlink" href="#devices" title="Permalink to this headline"></a></h2>
-<p>Use <code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code> to send all <strong>PyTorch</strong> layers in a Transform to a device:</p>
+<p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_to" title="padl.transforms.Transform.pd_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_to()</span></code></a> to send all <strong>PyTorch</strong> layers in a Transform to a device:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_pipeline</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">preprocess</span>
     <span class="o">&gt;&gt;</span> <span class="n">batch</span>
@@ -197,11 +196,11 @@
 </section>
 <section id="accessing-layers-and-parameters">
 <h2>Accessing Layers and Parameters<a class="headerlink" href="#accessing-layers-and-parameters" title="Permalink to this headline"></a></h2>
-<p>All <strong>PyTorch</strong> layers in a Transform (this includes those nested within Pipelines) are accessible via <code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_layers()</span></code>:</p>
+<p>All <strong>PyTorch</strong> layers in a Transform (this includes those nested within Pipelines) are accessible via <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_layers" title="padl.transforms.Transform.pd_layers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_layers()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_pipeline</span><span class="o">.</span><span class="n">pd_layers</span><span class="p">())</span>
 </pre></div>
 </div>
-<p>Use <code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_parameters()</span></code> to iterate over all parameters in the Transform.
+<p>Use <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform.pd_parameters" title="padl.transforms.Transform.pd_parameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pd_parameters()</span></code></a> to iterate over all parameters in the Transform.
 This can be used to initialize a PyTorch optimizer and create a training loop:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">predict</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">preprocess</span>

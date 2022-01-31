@@ -139,7 +139,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.graph.html"><code class="docutils literal notranslate"><span class="pre">padl.graph</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
@@ -176,21 +175,21 @@
              
   <section id="id1">
 <h1>Creating Transforms<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
-<p>Everything that can be <em>called</em> in python can be converted into a <code class="xref py py-class docutils literal notranslate"><span class="pre">Transform</span></code>.
-For that, use the <code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code> wrapper.</p>
+<p>Everything that can be <em>called</em> in python can be converted into a <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Transform" title="padl.transforms.Transform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transform</span></code></a>.
+For that, use the <a class="reference internal" href="../apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> wrapper.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span>
 </pre></div>
 </div>
 <p id="convert-functions"><strong>Functions</strong> can be converted to transforms:</p>
 <ul>
-<li><p><em><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code>-decorated functions</em> are Transforms</p>
+<li><p><em><a class="reference internal" href="../apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a>-decorated functions</em> are Transforms</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
 <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>  <span class="c1"># this is a Transform</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
 </pre></div>
 </div>
 </li>
-<li><p><em><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code>-wrapped functions</em> are Transforms</p>
+<li><p><em><a class="reference internal" href="../apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a>-wrapped functions</em> are Transforms</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transform</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># this is a Transform</span>
 
 <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">log10</span>
@@ -201,7 +200,7 @@ For that, use the <code class="xref py py-func docutils literal notranslate"><sp
 </ul>
 <p><strong>Instances of classes</strong> can become transforms, too:</p>
 <ul>
-<li><p><em>Instances of <code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code>- decorated classes implementing <code class="xref py py-meth docutils literal notranslate"><span class="pre">__call__()</span></code></em> are Transforms</p>
+<li><p><em>Instances of <a class="reference internal" href="../apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a>- decorated classes implementing <code class="xref py py-meth docutils literal notranslate"><span class="pre">__call__()</span></code></em> are Transforms</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@transform</span>
 <span class="k">class</span> <span class="nc">MinusX</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>

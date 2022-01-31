@@ -139,7 +139,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.graph.html"><code class="docutils literal notranslate"><span class="pre">padl.graph</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../apidocs/padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
@@ -176,7 +175,7 @@
              
   <section id="combining-transforms-into-pipelines">
 <h1>Combining Transforms into Pipelines<a class="headerlink" href="#combining-transforms-into-pipelines" title="Permalink to this headline"></a></h1>
-<p>PADL provides functional operators, which allow to combine Transforms to create powerful <code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code> instances.</p>
+<p>PADL provides functional operators, which allow to combine Transforms to create powerful <a class="reference internal" href="../apidocs/padl.transforms.html#padl.transforms.Pipeline" title="padl.transforms.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a> instances.</p>
 <p>This is most useful for building deep learning pipelines on a <em>macro-level</em> - for instance combining different preprocessing steps and augmentation with a model forward pass. You can keep building the individual sub-components as you’re used to - with python and PyTorch.</p>
 <section id="compose">
 <span id="id1"></span><h2>Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code><a class="headerlink" href="#compose" title="Permalink to this headline"></a></h2>
@@ -226,7 +225,7 @@
 <span class="go">True</span>
 </pre></div>
 </div>
-<p>To group them, use <code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.group()</span></code>:</p>
+<p>To group them, use <a class="reference internal" href="../apidocs/padl.html#padl.group" title="padl.group"><code class="xref py py-meth docutils literal notranslate"><span class="pre">padl.group()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">group</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">t1</span> <span class="o">+</span> <span class="n">group</span><span class="p">(</span><span class="n">t2</span> <span class="o">+</span> <span class="n">t3</span><span class="p">))(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">t1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="p">(</span><span class="n">t2</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">t3</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
 <span class="go">True</span>
@@ -258,13 +257,13 @@
 </div>
 <p>This uses</p>
 <ul class="simple">
-<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code> to <a class="reference internal" href="creating_transforms.html#convert-functions"><span class="std std-ref">convert a lambda function</span></a> and <a class="reference internal" href="creating_transforms.html#convert-module"><span class="std std-ref">everything from the torchvision.transforms module</span></a> into a Transform</p></li>
-<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code> to <a class="reference internal" href="extras.html#if-in-mode"><span class="std std-ref">conditionally execute a step</span></a> only during training</p></li>
+<li><p><a class="reference internal" href="../apidocs/padl.html#padl.transform" title="padl.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> to <a class="reference internal" href="creating_transforms.html#convert-functions"><span class="std std-ref">convert a lambda function</span></a> and <a class="reference internal" href="creating_transforms.html#convert-module"><span class="std std-ref">everything from the torchvision.transforms module</span></a> into a Transform</p></li>
+<li><p><a class="reference internal" href="../apidocs/padl.html#padl.IfTrain" title="padl.IfTrain"><code class="xref py py-class docutils literal notranslate"><span class="pre">IfTrain</span></code></a> to <a class="reference internal" href="extras.html#if-in-mode"><span class="std std-ref">conditionally execute a step</span></a> only during training</p></li>
 </ul>
 </section>
 <section id="combining-pre-processing-model-forward-pass-and-post-processing">
 <h4>Combining pre-processing, model forward pass and post-processing<a class="headerlink" href="#combining-pre-processing-model-forward-pass-and-post-processing" title="Permalink to this headline"></a></h4>
-<p>You can use composition to combine pre-processing, model forward pass and post-processing in one transform using the special Transforms <code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code>:</p>
+<p>You can use composition to combine pre-processing, model forward pass and post-processing in one transform using the special Transforms <code class="xref py py-obj docutils literal notranslate"><span class="pre">batch</span></code> and <a class="reference internal" href="../apidocs/padl.html#padl.unbatch" title="padl.unbatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unbatch</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_classifier_transform</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">load_image</span>                 <span class="c1"># preprocessing ...</span>
     <span class="o">&gt;&gt;</span> <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()</span>   <span class="c1"># </span>
