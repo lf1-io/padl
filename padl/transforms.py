@@ -1995,12 +1995,25 @@ class Pipeline(Transform):
         return self._pd_output_formatter(out)
 
     def convert_to_networkx(self):
+        def _covert_slice_to_str(slc):
+            if slc is None:
+                return ''
+            if isinstance(slc, slice):
+                start = slc.start if slc.start is not None else ''
+                stop = slc.stop if slc.stop is not None else ''
+                step = slc.step if slc.step is not None else ''
+                return f'[{start}:{stop}:{step if step is not None else ""}]'
+            return f'[{slc}]'
+
         networkx_graph = nx.DiGraph()
         for parent, children_dict in self.edges.items():
             networkx_graph.add_node(parent.name_id, node=parent)
             for child in children_dict:
                 networkx_graph.add_node(child.name_id, node=child)
-                networkx_graph.add_edge(parent.name_id, child.name_id, label=self.edges[parent][child][0])
+                output_slice = _covert_slice_to_str(self.edges[parent][child][0])
+                networkx_graph.add_edge(parent.name_id,
+                                        child.name_id,
+                                        label= output_slice)
         self.networkx_graph = networkx_graph
 
     def draw(self):
@@ -2301,7 +2314,6 @@ class Compose(Pipeline):
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
-        # if transforms are duplicated make a copy.
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         current_nodes = [self.input_node]
@@ -2728,6 +2740,8 @@ def _helper_convert_compose(edges_dict=None,
 
     children = edges_dict[current_node]
     child_node = list(children.keys())[0]
+    output_slice = children[child_node][0]
+    input_slice = children[child_node][1]
 
     # Multiple parents marks end of Compose
     continue_compose = len(parents_dict[child_node]) == 1
@@ -2736,19 +2750,27 @@ def _helper_convert_compose(edges_dict=None,
         if continue_compose:
             if child_node not in (input_node, output_node):
                 transform_list.append(child_node)
+            elif output_slice is not None:
+                transform_list.append(Node(identity.pd_output[output_slice]))
             if child_node in nodes_left: nodes_left.remove(child_node)
         else:
             return transform_list, meta_transform_list, nodes_left
     else:
         current_type = Compose
-        transform_list = [current_type, current_node] if current_node not in (input_node, output_node) else [
-            current_type]
+        if current_node not in (input_node, output_node):
+            transform_list = [current_type, current_node]
+        elif output_slice is not None:
+            transform_list = [current_type, Node(identity.pd_output[output_slice])]
+        else:
+            transform_list = [current_type]
 
         if current_node in nodes_left: nodes_left.remove(current_node)
 
         if continue_compose:
             if child_node not in (input_node, output_node):
                 transform_list.append(child_node)
+            elif output_slice is not None:
+                transform_list.append(Node(identity.pd_output[output_slice]))
             if child_node in nodes_left: nodes_left.remove(child_node)
 
         meta_transform_list.append(transform_list)
@@ -2803,6 +2825,7 @@ def _helper_convert_to_operators(edges_dict=None,
         main_transform_list = []
 
     children = edges_dict[current_node]
+
     if len(children) == 0:
         return transform_list, meta_transform_list, nodes_left
 
@@ -2845,7 +2868,7 @@ def _helper_convert_to_operators(edges_dict=None,
             meta_transform_list.append(parallel_transform_list)
 
         else:
-            if current_type != Compose:  # CHECK if current_node is COMPOSE
+            if current_type != Compose:
                 transform_list = [Compose, current_node]
                 meta_transform_list.append(transform_list)
 
@@ -2858,7 +2881,7 @@ def _helper_convert_to_operators(edges_dict=None,
                 parallel_transform_list = [Parallel]
                 transform_list.append(parallel_transform_list)
 
-        for child in sorted(children, key=lambda node: children[node][0]) :
+        for child in sorted(children, key=lambda node: children[node][0]):
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
                                                             current_node=child,
@@ -2911,7 +2934,16 @@ def _helper_convert_to_operators(edges_dict=None,
                 rollout_transform_list = [Rollout]
                 transform_list.append(rollout_transform_list)
 
+        rollout_transform_list_main = rollout_transform_list
         for idx, child in enumerate(children):
+            output_slice = children[child][0]
+            input_slice = children[child][1]
+
+            if output_slice is not None:
+                temp_list = [Compose, Node(identity.pd_output[output_slice])]
+                rollout_transform_list_main.append(temp_list)
+                rollout_transform_list = temp_list
+
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,
                                                             current_node=child,

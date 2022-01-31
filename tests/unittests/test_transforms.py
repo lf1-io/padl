@@ -134,6 +134,10 @@ def _is_compose_instance(transform_, instance_type=pd.Identity):
     )
 
 
+def _is_tuple_of_tensors_equal(tup_a, tup_b):
+    return all([torch.equal(a, b) for a, b in zip(tup_a, tup_b)])
+
+
 def test_isinstance_of_namedtuple():
     tup = tuple([1, 2, 3])
 
@@ -690,9 +694,11 @@ class TestModel:
         t_preprocess = to_tensor >> batch
         t_forward = group((lin >> lin) + (lin >> lin) + (lin >> lin))
         t_postprocess = group((unbatch >> post) / (unbatch >> post) / (unbatch >> post))
-        assert str(t.pd_preprocess) == str(t_preprocess)
-        assert str(t.pd_forward) == str(t_forward)
-        assert str(t.pd_postprocess) == str(t_postprocess)
+
+        inp = torch.rand((1, 2))
+        assert torch.equal(t.pd_preprocess(inp), t_preprocess(inp))
+        assert torch.equal(t.pd_forward(inp), t_forward(inp))
+        assert t.pd_postprocess((inp, inp, inp)) == t_postprocess((inp, inp, inp))
 
     def test_pd_splits_compose_with_group(self, to_tensor, lin, post):
         t = (to_tensor >> batch
@@ -702,9 +708,11 @@ class TestModel:
         t_preprocess = to_tensor >> batch
         t_forward = group(group((lin >> lin) + (lin >> lin)) + (lin >> lin))
         t_postprocess = group(group((unbatch >> post) / (unbatch >> post)) / (unbatch >> post))
-        assert str(t.pd_preprocess) == str(t_preprocess)
-        assert str(t.pd_forward) == str(t_forward)
-        assert str(t.pd_postprocess) == str(t_postprocess)
+
+        inp = torch.rand((1, 2))
+        assert torch.equal(t.pd_preprocess(inp), t_preprocess(inp))
+        assert _is_tuple_of_tensors_equal(t.pd_forward(inp), t_forward(inp))
+        assert t.pd_postprocess((inp, inp, inp)) == t_postprocess((inp, inp, inp))
 
     def test_pd_splits_parallel(self, to_tensor, lin):
         t = (((to_tensor >> batch >> lin) + (to_tensor >> batch >> lin))
