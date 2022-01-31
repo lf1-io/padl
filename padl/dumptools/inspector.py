@@ -60,6 +60,7 @@ class CallInfo:
 
 
 def _get_scope_from_frame(frame, drop_n):
+    """Get the :class:`~symfinder.Scope` from the frame object *frame*. """
     module = _module(frame)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
