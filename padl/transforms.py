@@ -1524,7 +1524,7 @@ class Node:
 
     @property
     def name(self):
-        if self.transform.pd_name is None and isinstance(self.transform, Graph):
+        if self.transform.pd_name is None and isinstance(self.transform, Pipeline):
             return self.transform._name
         return self.transform.pd_name
 
@@ -1557,11 +1557,11 @@ class Node:
         return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
 
 
-class Graph(Transform):
-    """Graph: New Pipeline
+class Pipeline(Transform):
+    """Pipeline: New Pipeline
 
     * Nodes listed: Should Contain Nodes to do the operation
-    * Edges are to be connected and only contained in a Graph
+    * Edges are to be connected and only contained in a Pipeline
     Example:
     comp1 = A >> B >> C
     comp2 = comp1 >> X >> Y
@@ -1862,7 +1862,7 @@ class Graph(Transform):
         list_flat = []
 
         for transform in transform_list:
-            if isinstance(transform, Graph):
+            if isinstance(transform, Pipeline):
                 transform = transform.copy()
 
             if isinstance(transform, cls):
@@ -1978,7 +1978,7 @@ class Graph(Transform):
         return namedtuple('namedtuple', keys)(*args)
 
     def __call__(self, args):
-        """Call Method for Graph
+        """Call Method for Pipeline
 
         Apply Breadth-First transforms
 
@@ -2079,7 +2079,7 @@ class Graph(Transform):
             if not self._check_edge_compatibility(output_slice, input_slice, parent_position):
                 continue
             path_copy = path.copy()
-            if isinstance(out_node.transform, Graph):
+            if isinstance(out_node.transform, Pipeline):
                 path_copy.append(out_node.transform.input_node)
                 return_path.append(out_node.transform.list_all_paths(out_node.transform.input_node, path_copy))
             else:
@@ -2297,7 +2297,7 @@ class Graph(Transform):
         return None, (self._pd_preprocess, self._pd_forward, self._pd_postprocess), True
 
 
-class Compose(Graph):
+class Compose(Pipeline):
     op = '>>'
     _name = 'compose'
 
@@ -2309,7 +2309,7 @@ class Compose(Graph):
         current_nodes = [self.input_node]
 
         for transform in self.transforms:
-            if isinstance(transform, Graph):
+            if isinstance(transform, Pipeline):
                 for idx, node_a in enumerate(current_nodes):
                     self.connect_graph(node_a,
                                        transform,
@@ -2330,7 +2330,7 @@ class Compose(Graph):
             self.connect(node_a, self.output_node)
 
 
-class Rollout(Graph):
+class Rollout(Pipeline):
     op = '+'
     _name = 'rollout'
 
@@ -2339,7 +2339,7 @@ class Rollout(Graph):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for transform in self.transforms:
-            if isinstance(transform, Graph):
+            if isinstance(transform, Pipeline):
                 self.connect_graph(self.input_node, transform)
                 out_nodes = transform.parents[transform.output_node]
                 for out_node in out_nodes:
@@ -2357,7 +2357,7 @@ class Rollout(Graph):
                          input_slice=self.output_node.pd_input_slice)
 
 
-class Parallel(Graph):
+class Parallel(Pipeline):
     op = '/'
     _name = 'parallel'
 
@@ -2375,7 +2375,7 @@ class Parallel(Graph):
                 self.connect(out_node,
                              self.output_node)
                 continue
-            if isinstance(transform, Graph):
+            if isinstance(transform, Pipeline):
                 self.connect_graph(self.input_node,
                                    transform,
                                    output_slice=idx,
