@@ -1843,14 +1843,13 @@ class Pipeline(Transform):
             for i, s in enumerate(final_splits):
                 if not isinstance(s, Identity):
                     final_splits[i] = s - self._pd_name
+
     def copy(self):
         """Return copy of this graph"""
-        copy_graph = type(self)(self.transforms)
-        copy_graph._pd_name = self._pd_name
-        copy_graph._pd_group = self._pd_group
-        copy_graph._pd_varname = {}
+        copy_graph = copy(self.transforms)
         copy_graph.pd_output = _OutputSlicer(copy_graph)
         copy_graph.pd_input = _InputSlicer(copy_graph)
+
         return copy_graph
 
     @classmethod
