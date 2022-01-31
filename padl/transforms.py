@@ -1507,32 +1507,87 @@ class Map(Transform):
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
 
-class Pipeline(Transform):
-    """Abstract base class for Pipeline
+class Node:
+    """Node wrapper for transforms
 
-    :param transforms: List of sub-transforms.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
-    :param pd_name: Name of the Pipeline.
-    :param pd_group: If *True*, do not flatten this when used as child transform in a
-        :meth:`Pipeline`.
+    Nodes wrap a transform and can be connected in graph to form complex
+    graphs.
+    :param transform: Transform to wrap
     """
+    _id = 0
+
+    def __init__(self, transform: Transform):
+        self.id = self._generate_id()  # keep?
+        self.transform = transform
+        self.pd_input_slice = self.transform._pd_input_slice
+        self.pd_output_slice = self.transform._pd_output_slice
+
+    @property
+    def name(self):
+        if self.transform.pd_name is None and isinstance(self.transform, Graph):
+            return self.transform._name
+        return self.transform.pd_name
+
+    @property
+    def name_id(self):
+        if self.name is not None:
+            return self.name + ' ' + str(self.id)
+        if isinstance(self.transform, Batchify):
+            name = 'batchify '
+            return name+str(self.id)
+        if isinstance(self.transform, Unbatchify):
+            name = 'unbatchify '
+            return name+str(self.id)
+        return str(self.id)
+
+    @classmethod
+    def _generate_id(cls):
+        cls._id += 1
+        return cls._id
+
+    def __call__(self, args):  # should a node be callable?
+        """Call Method for Node"""
+        return self.call_node(args)
+
+    def copy(self):
+        _copy = type(self)(self.transform)
+        return _copy
+
+    def call_node(self, args):
+        return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
+
+
+class Graph(Transform):
+    """Graph: New Pipeline
+
+    * Nodes listed: Should Contain Nodes to do the operation
+    * Edges are to be connected and only contained in a Graph
+    Example:
+    comp1 = A >> B >> C
+    comp2 = comp1 >> X >> Y
+    the connection from `comp1 >> X` should not leak in comp1
+    """
+
     op = NotImplemented
     display_op = NotImplemented
 
-    def __init__(self, transforms, call_info=None, pd_name=None, pd_group=False):
-        super().__init__(call_info, pd_name)
-
-        self._pd_group = True if pd_name is not None else pd_group
+    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
+                 pd_name: Optional[str] = None, pd_group: bool = False):
+        super().__init__(call_info=call_info, pd_name=pd_name)
 
         transforms = self._flatten_list(transforms)
-        self.transforms: List[Transform] = transforms
+        self._pd_group = True if pd_name is not None else pd_group
 
-    def _pd_format_output(self, x):
-        try:
-            return self.transforms[-1]._pd_output_formatter(x)
-        except AttributeError:
-            return x
+        self.input_node = Node(identity - 'Input')  # potential overhead
+        self.output_node = Node(identity - 'Output')
+
+        self.networkx_graph = None  # ... later drop
+
+        self._pd_group = False
+        self.edges = defaultdict(dict)
+        self.parents = defaultdict(list)
+
+        self.transforms: List[Transform] = transforms
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1703,25 +1758,6 @@ class Pipeline(Transform):
 
         return self.pd_forward.pd_forward_device_check()
 
-    @classmethod
-    def _flatten_list(cls, transform_list: List[Transform]):
-        """Flatten *list_* such that members of *cls* are not nested.
-
-        :param transform_list: List of transforms.
-        """
-        list_flat = []
-
-        for transform in transform_list:
-            if isinstance(transform, cls):
-                if transform._pd_group:
-                    list_flat.append(transform)
-                else:
-                    list_flat += transform.transforms
-            else:
-                list_flat.append(transform)
-
-        return list_flat
-
     @property
     def _pd_direct_subtransforms(self):
         yield from self.transforms
@@ -1807,892 +1843,6 @@ class Pipeline(Transform):
             for i, s in enumerate(final_splits):
                 if not isinstance(s, Identity):
                     final_splits[i] = s - self._pd_name
-
-
-class Compose(Pipeline):
-    """Apply series of transforms on input.
-
-    Compose([t1, t2, t3])(x) = t3(t2(t1(x)))
-
-    :param transforms: List of transforms to compose.
-    :param call_info: A `CallInfo` object containing information about how the transform was
-        created (needed for saving).
-    :param pd_name: name of the Compose transform.
-    :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `Pipeline`.
-    :return: output from series of transforms
-    """
-    op = '>>'
-    display_op = '>>'
-
-    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
-                 pd_name: Optional[str] = None, pd_group: bool = False):
-        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-
-    def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
-                                                                          Tuple[Transform,
-                                                                                Transform,
-                                                                                Transform],
-                                                                          bool]:
-        """See the docstring of :meth:`Transform._pd_splits` for more details.
-
-        The composition of `transforms` splits into
-            - the composition of each sub-transform's preprocess
-            - the composition of each sub-transform's forward
-            - the composition of each sub-transform's postprocess
-
-        The *output_components* are computed by passing the *input_component* through all
-        sub-transforms.
-        """
-
-        splits = ([], [], [])
-
-        output_components = input_components
-        has_batchify = False
-        # for each sub-transform ...
-        for transform_ in self.transforms:
-            # ... see what comes out ...
-            output_components, sub_splits, sub_has_batchify = \
-                transform_._pd_splits(output_components)
-
-            has_batchify = has_batchify or sub_has_batchify
-
-            # ... and combine
-            # the preprocess split is the composition of the
-            # preprocess splits of all subtransforms
-            # (same for forward and postprocess)
-            for split, sub_split in zip(splits, sub_splits):
-                split.append(sub_split)
-
-        # .. some cleanup - remove identities ..
-        cleaned_splits = tuple(
-            [s for s in split if not isinstance(s, Identity)]
-            for split in splits
-        )
-
-        final_splits = []
-        for split in cleaned_splits:
-            if len(split) > 1:  # combine sub_splits
-                final_splits.append(Compose(split))
-            elif len(split) == 1:  # if it's just one, no need to combine
-                if isinstance(split[0], Compose):
-                    final_splits.append(group(split[0]))
-                else:
-                    final_splits.append(split[0])
-            else:  # if it's empty: identity
-                final_splits.append(identity)
-
-        self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
-
-    @staticmethod
-    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
-        if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
-            type_ = 'multi_2_multi'
-
-        elif i > 0 and cw == 1 and cw_m1 > 1:
-            type_ = 'multi_2_single'
-
-        elif cw == 1 or isinstance(t, Compose):
-            type_ = 'single_2_single'
-
-        else:
-            type_ = 'single_2_multi'
-
-        return type_
-
-    def _pd_longrepr(self, formatting=True, marker=None) -> str:  # TODO: make it respect the formatting
-        """Create a detailed formatted representation of the transform. For multi-line inputs
-        the lines are connected with arrows indicating data flow.
-        """
-        # pad the components of rows which are shorter than other parts in same column
-        rows = [
-            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
-            else [t._pd_shortrepr()]
-            for t in self.transforms
-        ]
-        children_widths = [[visible_len(x) for x in row] for row in rows]
-        # get maximum widths in "columns"
-        children_widths_matrix = np.zeros((len(self.transforms),
-                                           max([len(x) for x in children_widths])))
-        for i, cw in enumerate(children_widths):
-            children_widths_matrix[i, :len(cw)] = cw
-        max_widths = np.max(children_widths_matrix, 0)
-
-        for i, r in enumerate(rows):
-            for j in range(len(rows[i])):
-                if len(rows[i][j]) < max_widths[j]:
-                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]))
-
-        for i, r in enumerate(rows):
-            if len(r) > 1:
-                rows[i] = f' {make_green(self.transforms[i].op)} '.join(r)
-            else:
-                rows[i] = r[0]
-        output = []
-        # iterate through rows and create arrows depending on numbers of components
-        for i, (r, t) in enumerate(zip(rows, self.transforms)):
-            widths = [0]
-            subarrows = []
-
-            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
-                                               children_widths[i], children_widths[i - 1])
-
-            # if subsequent rows have the same number of "children" transforms
-            if type_ == 'multi_2_multi':
-                for j, w in enumerate(children_widths[i]):
-                    subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
-                    widths.append(int(max_widths[j]))
-
-            # if previous row has multiple outputs and current row just one input
-            elif type_ == 'multi_2_single':
-                for j, w in enumerate(children_widths[i - 1]):
-                    subarrows.append(create_reverse_arrow(
-                        0, sum(widths) - j + j * 4,
-                           len(children_widths[i - 1]) - j + 1, j + 1
-                    ))
-                    widths.append(int(max_widths[j]))
-
-            # if previous has single output and current row has single input
-            elif type_ == 'single_2_single':
-                subarrows.append(create_arrow(0, 0, 0, 0))
-
-            # if previous row has one output and current row has multiple inputs
-            else:
-                assert type_ == 'single_2_multi'
-                for j, w in enumerate(children_widths[i]):
-                    if isinstance(t, Rollout):
-                        subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
-                                                      len(children_widths[i]) - j, j + 1))
-                    else:
-                        subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
-                                                      len(children_widths[i]) - j, j + 1))
-                    widths.append(int(max_widths[j]))
-
-            # add signature names to the arrows
-            tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
-                all_params = []
-                for tt in t.transforms:
-                    all_params.append(list(tt._pd_signature.keys()))
-                to_combine = [
-                    ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
-                    if len(params) > 1
-                    else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
-                    for k, params in enumerate(all_params)
-                ]
-                to_format = combine_multi_line_strings(to_combine)
-            else:
-                params = t._pd_signature
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
-                                                                                list(params)[0]
-            to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
-            to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
-
-            # combine the arrows
-            mark = combine_multi_line_strings(subarrows + [to_format])
-            mark = '\n'.join(['   ' + x for x in mark.split('\n')])
-            output.append(make_green(mark))
-            output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
-                                                                  marker[0] == i else ''))
-        return '\n'.join(output)
-
-    def __call__(self, args):
-        """Call method for Compose
-
-        :param args: Arguments to call with.
-        :return: Output from series of transforms.
-        """
-        _in_args = args
-        for i, transform_ in enumerate(self.transforms):
-            try:
-                args = transform_._pd_unpack_args_and_call(args)
-            except Exception as err:
-                self._pd_trace_error(i, _in_args)
-                raise err
-        return args
-
-    def _pd_get_non_target_stage_idx(self):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        Example:
-            t = prep >> batch >> forward_1
-
-            Let's suppose we get an error on `forward_1`, `forward_1` is the index 0 of
-            `t.pd_forward`, then the element that fails on `t` is
-            `t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = len(t.pd_preprocess) + 0 =
-                2 + 0 = 2
-        """
-        return 1 if self._pd_group else len(self)
-
-    def _pd_get_target_stage_idx(self, is_entire_transform: bool):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        Example:
-             t = prep >> batch >> forward_1 >> forward_2
-
-            Let's suppose we get an error on `forward_2`. `t.pd_forward` is
-            `t.pd_forward` = forward_1 >> forward_2`. `forward_2` is the index 1 of `t.pd_forward`,
-            then the element that fails on `t` is
-            2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
-
-        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
-            else *True*
-        """
-        return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
-
-    def _pd_get_error_idx(self, stage: str):
-        """Track the index where a :class:`Compose` fails from the index that got the Exception
-        on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
-
-        Examples:
-            t = t_1 >> t_2 >> batch >> t_3 >> t_4
-            then,
-            t.pd_forward = t_3 >> t_4.
-            If we know that :meth:`t.pd_forward` is failing on `t_4`, which is its element 1, then
-            `t` is failing on len(t.pd_preprocess) + 1.
-
-            t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
-            then,
-            t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
-            No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
-            len(t.pd_preprocess) + 0 = 3.
-        """
-        assert stage in ('forward', 'postprocess')
-        preprocess = self.pd_preprocess
-        forward = self.pd_forward
-        postprocess = self.pd_postprocess
-        preprocess_idx = preprocess._pd_get_non_target_stage_idx()
-
-        if stage == 'forward':
-            is_entire_transform = isinstance(preprocess, Identity) and \
-                                  isinstance(postprocess, Identity)
-            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
-
-        is_entire_transform = isinstance(preprocess, Identity) and \
-                              isinstance(forward, Identity)
-        return preprocess_idx + forward._pd_get_non_target_stage_idx() + \
-               postprocess._pd_get_target_stage_idx(is_entire_transform)
-
-
-class Rollout(Pipeline):
-    """Apply a list of transform to same input and get tuple output
-
-    Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
-
-    :param transforms: List of transforms to rollout.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
-    :param pd_name: Name of the transform.
-    :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `Pipeline`.
-    """
-    op = '+'
-    display_op = '+'
-
-    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
-                 pd_name: str = None, pd_group=False):
-        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-        self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
-
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform,
-                                                            Transform,
-                                                            Transform],
-                                                      bool]:
-        """See the docstring of :meth:`Transform._pd_splits` for more details.
-
-        A rollout splits into:
-            - the rollout of its sub-transform' first non-Identity split
-            - the parallel of its sub-transform' remaining splits
-
-        To see why the first non-Identity split is a rollout whereas the remaining splits are
-        parallel, note that the first non-Identity split splits the pipeline and it remains
-        split for the rest:
-
-            Case 1:     Case 2:     Case 3:
-            pre + pre   Identity    Identity
-            for / for   for + for   Identity
-            pos / pos   pos / pos   pos + pos
-
-        The *output_components* are the list of output components of the sub-transforms.
-        """
-        splits = ([], [], [])
-        output_components = []
-        has_batchify = False
-        for transform_ in self.transforms:
-            # pylint: disable=protected-access
-            sub_output_components, sub_splits, sub_has_batchify = \
-                transform_._pd_splits(input_components)
-            has_batchify = has_batchify or sub_has_batchify
-            output_components.append(sub_output_components)
-            for split, sub_split in zip(splits, sub_splits):
-                split.append(sub_split)
-
-        # only replace with identity if all Identity to preserve number of pipes
-
-        merged_components = self._pd_merge_components(input_components)
-        if not isinstance(merged_components, int):
-            merged_components = 0
-
-        cleaned_splits = []
-        for i, split in enumerate(splits):
-            if all(isinstance(s, Identity) for s in split):
-                if i != merged_components:
-                    cleaned_splits.append(identity)
-                else:
-                    cleaned_splits.append(split)
-            else:
-                cleaned_splits.append(split)
-
-        first_non_identity = \
-            [i for i, s in enumerate(cleaned_splits) if not isinstance(s, Identity)]
-        if len(first_non_identity) == 0:
-            # Catches scenario where all splits are Identities
-            first_non_identity = 0
-        else:
-            first_non_identity = first_non_identity[0]
-
-        final_splits = []
-        for i, s in enumerate(cleaned_splits):
-            if isinstance(s, list):
-                if i == first_non_identity:
-                    final_splits.append(Rollout(s))
-                else:
-                    final_splits.append(Parallel(s))
-            else:
-                final_splits.append(s)
-
-        res = []
-        for split in final_splits:
-            try:
-                res.append(group(split))
-            except AttributeError:
-                res.append(split)
-        final_splits = res
-
-        self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
-
-    def __call__(self, args):
-        """Call method for Rollout
-
-        :param args: Argument to call with
-        :return: namedtuple of outputs
-        """
-        out = []
-        for i, transform_ in enumerate(self.transforms):
-            try:
-                out.append(transform_._pd_unpack_args_and_call(args))
-            except Exception as err:
-                self._pd_trace_error(i, args)
-                raise err
-
-        if Transform.pd_mode is not None:
-            return tuple(out)
-        return self._pd_output_formatter(out)
-
-    def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        make_green_ = lambda x: make_green(x, not formatting)
-        make_bold_ = lambda x: make_bold(x, not formatting)
-        between = f'\n{make_green_("│ " + self.op)}  \n'
-        rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
-                + (marker[1] if marker and marker[0] == i else '')
-                for i, t in enumerate(self.transforms[:-1])]
-        rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
-                    + self.transforms[-1]._pd_shortrepr() +
-                    (marker[1] if marker and marker[0] == len(self.transforms) - 1 else ''))
-        return between.join(rows) + '\n'
-
-
-class Parallel(Pipeline):
-    """Apply transforms in parallel to a tuple of inputs and get tuple output
-
-    Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
-
-    :param transforms: List of transforms to parallelize.
-    :param call_info: A `CallInfo` object containing information about the how the transform was
-        created (needed for saving).
-    :param pd_name: Name of the transform.
-    :param pd_group: If *True*, do not flatten this when used as child transform in a
-        `Pipeline`.
-    """
-    op = '/'
-    display_op = '/'
-
-    def __init__(self, transforms, call_info=None, pd_name=None, pd_group=False):
-        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-        self.pd_keys = self._pd_get_keys(self.transforms)
-        self._pd_output_formatter = lambda x: namedtuple('namedtuple', self.pd_keys)(*x)
-
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform],
-                                                      bool]:
-        """See the docstring of :meth:`Transform._pd_splits` for more details.
-
-        A parallel splits into:
-            - the parallel of its sub-transforms' preprocess
-            - the parallel of its sub-transforms' forward
-            - the parallel of its sub-transforms' postprocess
-
-        The *output_components* are the list of output components of the sub-transforms.
-        """
-        splits = ([], [], [])
-        # we need one component info per sub-transform - if it's not a list that means
-        # all are the same - we make it a list
-        input_components_ = input_components
-        if not isinstance(input_components_, list):
-            input_components_ = [input_components for _ in range(len(self.transforms))]
-
-        # go through the sub-transforms ...
-        output_components = []
-        has_batchify = False
-        for transform_, input_component in zip(self.transforms, input_components_):
-            # and compute the sub-splits
-            sub_output_components, sub_splits, sub_has_batchify = \
-                transform_._pd_splits(input_component)
-            has_batchify = has_batchify or sub_has_batchify
-            output_components.append(sub_output_components)
-            for split, sub_split in zip(splits, sub_splits):
-                split.append(sub_split)
-
-        # only replace with identity if all Identity to preserve number of pipes
-        cleaned_splits = tuple(
-            identity if all(isinstance(s, Identity) for s in split) else split
-            for split in splits
-        )
-
-        final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
-
-        res = []
-        for split in final_splits:
-            try:
-                res.append(group(split))
-            except AttributeError:
-                res.append(split)
-        final_splits = res
-
-        self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
-
-    def __call__(self, args):
-        """Call method for Parallel
-
-        :param args: Argument to call with.
-        :return: Namedtuple of output.
-        """
-        out = []
-        for ind, transform_ in enumerate(self.transforms):
-            try:
-                out.append(transform_._pd_unpack_args_and_call(args[ind]))
-            except Exception as err:
-                self._pd_trace_error(ind, args)
-                raise err
-
-        if Transform.pd_mode is not None:
-            return tuple(out)
-        return self._pd_output_formatter(out)
-
-    def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        if not formatting:
-            make_green_ = lambda x: x
-            make_bold_ = lambda x: x
-        else:
-            make_green_ = make_green
-            make_bold_ = make_bold
-
-        def pipes(n):
-            return "│" * n
-
-        def spaces(n):
-            return " " * n
-
-        def horizontal(n):
-            return "─" * n
-
-        len_ = len(self.transforms)
-        out = ''
-        for i, t in enumerate(self.transforms):
-            out += (
-                    make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                    make_bold_(f'{i}: ') + t._pd_shortrepr()
-            )
-            out += marker[1] + '\n' if marker and marker[0] == i else '\n'
-            if i < len(self.transforms) - 1:
-                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.op)}  \n'
-
-        return out
-
-
-class BuiltinTransform(ClassTransform):
-    """A builtin transform will simply always be imported, never fully dumped. """
-
-    def _pd_longrepr(self, formatting=True, marker=None):
-        out = self._pd_call.split('padl.')[-1]
-        if marker:
-            out += marker[1]
-        return out
-
-    @property
-    def _pd_full_dump(self):
-        return False
-
-
-class Identity(BuiltinTransform):
-    """Do nothing. Just pass on."""
-
-    def __init__(self):
-        super().__init__()
-
-    def __call__(self, args):
-        return args
-
-    def _pd_get_non_target_stage_idx(self):
-        return 0
-
-
-identity = Identity()
-
-
-class Unbatchify(BuiltinTransform):
-    """Mark start of postprocessing.
-
-    Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
-
-    :param dim: Batching dimension.
-    :param cpu: If *True*, moves output to cpu after unbatchify.
-    """
-
-    def __init__(self, dim=0, cpu=True):
-        super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
-        self.dim = dim
-        self.cpu = cpu
-
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform],
-                                                      bool]:
-        """See the docstring of :meth:`Transform._pd_splits` for more details.
-
-        Unbatchify has empty preprocess and forward splits and puts the component-number
-        to 2 ("un-batchified").
-        """
-        # put the output component to 2 ("un-batchified")
-        return 2, (identity, identity, self), False
-
-    def __call__(self, args):
-        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
-                                               'or train_apply instead of calling the transform '
-                                               'directly.')
-
-        if Transform.pd_mode != 'infer':
-            return _move_to_device(args, 'cpu') if self.cpu else args
-        if isinstance(args, tuple):
-            return tuple([self(x) for x in args])
-        if isinstance(args, list):
-            return [self(x) for x in args]
-        if isinstance(args, torch.Tensor):
-            args = args.squeeze(self.dim)
-            return args.to('cpu') if self.cpu else args
-
-        raise TypeError('only tensors and tuples of tensors recursively supported...')
-
-
-class Batchify(BuiltinTransform):
-    """Mark end of preprocessing.
-
-    Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
-    recursively, tuples thereof. Batchify also moves the input tensors to device specified
-    for the transform.
-
-    :param dim: Batching dimension.
-    """
-
-    def __init__(self, dim=0):
-        super().__init__(arguments=OrderedDict([('dim', dim)]))
-        self.dim = dim
-
-    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
-                                                      Tuple[Transform, Transform, Transform],
-                                                      bool]:
-        """See the docstring of :meth:`Transform._pd_splits` for more details.
-
-        Batchify has empty pre-batchified and postprocess splits and puts the component-number
-        to 1 ("batchified").
-        """
-        # ensure that all inputs are "fresh"
-        assert self._pd_merge_components(input_components) == 0, 'double batchify'
-        # put the output component to 1 ("batchified")
-        return 1, (self, identity, identity), True
-
-    def __call__(self, args):
-        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
-                                               'or train_apply instead of calling the transform '
-                                               'directly.')
-
-        if Transform.pd_mode != 'infer':
-            return args
-        if isinstance(args, (tuple, list)):
-            return tuple([self(x) for x in args])
-        if isinstance(args, dict):
-            return {k: self(args[k]) for k in args}
-        if isinstance(args, torch.Tensor):
-            return args.unsqueeze(self.dim)
-        if isinstance(args, (float, int)):
-            # pylint: disable=not-callable
-            return torch.tensor([args])
-        raise TypeError('only tensors and tuples of tensors recursively supported...')
-
-
-def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
-         compress: bool = False):
-    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
-    *compress* == True.
-
-    The folder's name should end with '.padl'. If no extension is given, it will be added
-    automatically.
-
-    If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
-    will raise a FileExistsError.
-    """
-    if compress:
-        transform.pd_zip_save(path, force_overwrite)
-    else:
-        transform.pd_save(path, force_overwrite)
-
-
-def load(path):
-    """Load a transform (as saved with padl.save) from *path*. """
-    if Path(path).is_file():
-        return _zip_load(path)
-    path = Path(path)
-    with open(path / 'transform.py') as f:
-        source = f.read()
-    module = types.ModuleType('lfload')
-    module.__dict__.update({
-        '_pd_source': source,
-        '_pd_module': module,
-        '__file__': str(path / 'transform.py')
-    })
-    code = compile(source, path / 'transform.py', 'exec')
-    exec(code, module.__dict__)
-    # pylint: disable=no-member,protected-access
-    transform = module._pd_main
-    for i, subtrans in enumerate(transform._pd_all_transforms()):
-        subtrans.pd_post_load(path, i)
-    return transform
-
-
-def _zip_load(path: Union[Path, str]):
-    """Load a transform from a compressed '.padl' file. """
-    # we can't use TemporaryDirectory with a context because the files need to exist when
-    # using / saving again
-    dirname = TemporaryDirectory('.padl').name
-    with ZipFile(path, 'r') as zipf:
-        zipf.extractall(dirname)
-        return load(dirname)
-
-
-def group(transform: Union[Rollout, Parallel]):
-    """Group transforms. This prevents them from being flattened when used
-
-    Example:
-
-    When writing a Rollout as `(a + (b + c))`, this is automatically flattened to `(a + b + c)`
-    - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to `a`, `b`,
-    `c` respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
-    2-tuple whose first item will be passed to `a` and whose second item will be passed to `b + c`.
-    """
-    return transform.grouped()
-
-
-class _ItemGetter:
-    """A simple item getter. Takes *samples* and applies *transform* to it.
-
-    Example:
-
-    >>> from padl import transform
-    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
-    >>> len(ig)
-    3
-    >>> ig[0]
-    2
-    >>> ig[1]
-    3
-
-    :param samples: An object implementing __getitem__ and __len__.
-    :param transform: Preprocessing transform.
-    :param entire_transform: :class:`Transform` which *transform* belongs to, i.e.,
-        :class:`Transform` whose preprocessing part is *transform*.
-    """
-
-    def __init__(self, samples, transform, entire_transform):
-        self.samples = samples
-        self.transform = transform
-        self.entire_transform = entire_transform
-
-    def __getitem__(self, item):
-        try:
-            return item, self.transform(self.samples[item])
-        except Exception as err:
-            is_entire_transform = isinstance(self.entire_transform.pd_forward, Identity) and \
-                                  isinstance(self.entire_transform.pd_postprocess, Identity)
-            self.entire_transform._pd_trace_error(
-                self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
-                [self.samples[item]]
-            )
-            raise err
-
-    def __len__(self):
-        return len(self.samples)
-
-
-class _SimpleGetter:
-    """A simple item getter.
-
-    :param samples: An object implementing __getitem__ and __len__.
-    """
-
-    def __init__(self, samples):
-        self.samples = samples
-
-    def __getitem__(self, item):
-        return [item], self.samples[item]
-
-    def __len__(self):
-        return len(self.samples)
-
-
-@dataclass
-class _TraceItem:
-    """Catch information of an Exception produced in a Transform call.
-
-    :param transform_str: string representation of a *Transform* that has produced an Exception.
-    :param code_position: line where the Transform that has produced the Exception was defined.
-    :param args: arguments input to the Transform.
-    :param transform: Transform that produced the Exception.
-    :param pd_mode: mode (*train*, *eval* or *infer*) of *transform*
-    :param error_position: item inside *transform* that has produced the Exception.
-    """
-    transform_str: str
-    code_position: str
-    args: Any
-    transform: Transform
-    pd_mode: str
-    error_position: int
-
-
-def fulldump(transform_or_module):
-    """Switch a Transform or module or package to the "fulldump" mode.
-
-    This means that the Transform or any Transform from that module or package will be fully dumped
-    instead of just dumping the statement importing it.
-
-    :param transform_or_module: A Transform, module or package for which to enable full dump. Can
-        also be a string. In that case, will enable full dump for the module or package with
-        matching name.
-    """
-    if isinstance(transform_or_module, types.ModuleType):
-        transform_or_module = transform_or_module.__spec__.name
-    if isinstance(transform_or_module, str):
-        Transform._pd_external_full_dump_modules.add(transform_or_module)
-        return None
-    assert isinstance(transform_or_module, Transform)
-    t_copy = copy(transform_or_module)
-    t_copy._pd_external_full_dump = True
-    return t_copy
-
-
-def importdump(transform_or_module):
-    """Disable full dump (see :func:`padl.transforms.fulldump` for more). """
-    if isinstance(transform_or_module, types.ModuleType):
-        transform_or_module = transform_or_module.__spec__.name
-    if isinstance(transform_or_module, str):
-        try:
-            Transform._pd_external_full_dump_modules.remove(transform_or_module)
-        except KeyError:
-            pass
-        return None
-    assert isinstance(transform_or_module, Transform)
-    t_copy = copy(transform_or_module)
-    t_copy._pd_external_full_dump = False
-    return t_copy
-
-
-class Node:
-    """Node wrapper for transforms
-
-    Nodes wrap a transform and can be connected in graph to form complex
-    graphs.
-    :param transform: Transform to wrap
-    """
-    _id = 0
-
-    def __init__(self, transform: Transform):
-        self.id = self._generate_id()  # keep?
-        self.transform = transform
-        self.pd_input_slice = self.transform._pd_input_slice
-        self.pd_output_slice = self.transform._pd_output_slice
-
-    @property
-    def name(self):
-        if self.transform.pd_name is None and isinstance(self.transform, Graph):
-            return self.transform._name
-        return self.transform.pd_name
-
-    @property
-    def name_id(self):
-        if self.name is not None:
-            return self.name + ' ' + str(self.id)
-        if isinstance(self.transform, Batchify):
-            name = 'batchify '
-            return name+str(self.id)
-        if isinstance(self.transform, Unbatchify):
-            name = 'unbatchify '
-            return name+str(self.id)
-        return str(self.id)
-
-    @classmethod
-    def _generate_id(cls):
-        cls._id += 1
-        return cls._id
-
-    def __call__(self, args):  # should a node be callable?
-        """Call Method for Node"""
-        return self.call_node(args)
-
-    def copy(self):
-        _copy = type(self)(self.transform)
-        return _copy
-
-    def call_node(self, args):
-        return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
-
-
-class Graph(Pipeline):
-    """Graph: New Pipeline
-
-    * Nodes listed: Should Contain Nodes to do the operation
-    * Edges are to be connected and only contained in a Graph
-    Example:
-    comp1 = A >> B >> C
-    comp2 = comp1 >> X >> Y
-    the connection from `comp1 >> X` should not leak in comp1
-    """
-
-    def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
-                 pd_name: Optional[str] = None, pd_group: bool = False):
-        super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
-
-        self.input_node = Node(identity - 'Input')  # potential overhead
-        self.output_node = Node(identity - 'Output')
-
-        self.networkx_graph = None  # ... later drop
-
-        self._pd_group = False
-        self.edges = defaultdict(dict)
-        self.parents = defaultdict(list)
-
     def copy(self):
         """Return copy of this graph"""
         copy_graph = type(self)(self.transforms)
@@ -3244,6 +2394,300 @@ class Parallel(Graph):
                          self.output_node,
                          output_slice=node.pd_output_slice,
                          input_slice=self.output_node.pd_input_slice)
+
+
+class BuiltinTransform(ClassTransform):
+    """A builtin transform will simply always be imported, never fully dumped. """
+
+    def _pd_longrepr(self, formatting=True, marker=None):
+        out = self._pd_call.split('padl.')[-1]
+        if marker:
+            out += marker[1]
+        return out
+
+    @property
+    def _pd_full_dump(self):
+        return False
+
+
+class Identity(BuiltinTransform):
+    """Do nothing. Just pass on."""
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, args):
+        return args
+
+    def _pd_get_non_target_stage_idx(self):
+        return 0
+
+
+identity = Identity()
+
+
+class Unbatchify(BuiltinTransform):
+    """Mark start of postprocessing.
+
+    Unbatchify removes batch dimension (inverse of Batchify) and moves the input tensors to 'cpu'.
+
+    :param dim: Batching dimension.
+    :param cpu: If *True*, moves output to cpu after unbatchify.
+    """
+
+    def __init__(self, dim=0, cpu=True):
+        super().__init__(arguments=OrderedDict([('dim', dim), ('cpu', cpu)]))
+        self.dim = dim
+        self.cpu = cpu
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        Unbatchify has empty preprocess and forward splits and puts the component-number
+        to 2 ("un-batchified").
+        """
+        # put the output component to 2 ("un-batchified")
+        return 2, (identity, identity, self), False
+
+    def __call__(self, args):
+        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+                                               'or train_apply instead of calling the transform '
+                                               'directly.')
+
+        if Transform.pd_mode != 'infer':
+            return _move_to_device(args, 'cpu') if self.cpu else args
+        if isinstance(args, tuple):
+            return tuple([self(x) for x in args])
+        if isinstance(args, list):
+            return [self(x) for x in args]
+        if isinstance(args, torch.Tensor):
+            args = args.squeeze(self.dim)
+            return args.to('cpu') if self.cpu else args
+
+        raise TypeError('only tensors and tuples of tensors recursively supported...')
+
+
+class Batchify(BuiltinTransform):
+    """Mark end of preprocessing.
+
+    Batchify adds batch dimension at *dim*. During inference, this unsqueezes tensors and,
+    recursively, tuples thereof. Batchify also moves the input tensors to device specified
+    for the transform.
+
+    :param dim: Batching dimension.
+    """
+
+    def __init__(self, dim=0):
+        super().__init__(arguments=OrderedDict([('dim', dim)]))
+        self.dim = dim
+
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform, Transform, Transform],
+                                                      bool]:
+        """See the docstring of :meth:`Transform._pd_splits` for more details.
+
+        Batchify has empty pre-batchified and postprocess splits and puts the component-number
+        to 1 ("batchified").
+        """
+        # ensure that all inputs are "fresh"
+        assert self._pd_merge_components(input_components) == 0, 'double batchify'
+        # put the output component to 1 ("batchified")
+        return 1, (self, identity, identity), True
+
+    def __call__(self, args):
+        assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
+                                               'or train_apply instead of calling the transform '
+                                               'directly.')
+
+        if Transform.pd_mode != 'infer':
+            return args
+        if isinstance(args, (tuple, list)):
+            return tuple([self(x) for x in args])
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
+        if isinstance(args, torch.Tensor):
+            return args.unsqueeze(self.dim)
+        if isinstance(args, (float, int)):
+            # pylint: disable=not-callable
+            return torch.tensor([args])
+        raise TypeError('only tensors and tuples of tensors recursively supported...')
+
+
+def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
+         compress: bool = False):
+    """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
+    *compress* == True.
+
+    The folder's name should end with '.padl'. If no extension is given, it will be added
+    automatically.
+
+    If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
+    will raise a FileExistsError.
+    """
+    if compress:
+        transform.pd_zip_save(path, force_overwrite)
+    else:
+        transform.pd_save(path, force_overwrite)
+
+
+def load(path):
+    """Load a transform (as saved with padl.save) from *path*. """
+    if Path(path).is_file():
+        return _zip_load(path)
+    path = Path(path)
+    with open(path / 'transform.py') as f:
+        source = f.read()
+    module = types.ModuleType('lfload')
+    module.__dict__.update({
+        '_pd_source': source,
+        '_pd_module': module,
+        '__file__': str(path / 'transform.py')
+    })
+    code = compile(source, path / 'transform.py', 'exec')
+    exec(code, module.__dict__)
+    # pylint: disable=no-member,protected-access
+    transform = module._pd_main
+    for i, subtrans in enumerate(transform._pd_all_transforms()):
+        subtrans.pd_post_load(path, i)
+    return transform
+
+
+def _zip_load(path: Union[Path, str]):
+    """Load a transform from a compressed '.padl' file. """
+    # we can't use TemporaryDirectory with a context because the files need to exist when
+    # using / saving again
+    dirname = TemporaryDirectory('.padl').name
+    with ZipFile(path, 'r') as zipf:
+        zipf.extractall(dirname)
+        return load(dirname)
+
+
+def group(transform: Union[Rollout, Parallel]):
+    """Group transforms. This prevents them from being flattened when used
+
+    Example:
+
+    When writing a Rollout as `(a + (b + c))`, this is automatically flattened to `(a + b + c)`
+    - i.e. the resulting Rollout transform expects a 3-tuple whose inputs are passed to `a`, `b`,
+    `c` respectively. To prevent that, do (a + group(b + c)). The resulting Rollout will expect a
+    2-tuple whose first item will be passed to `a` and whose second item will be passed to `b + c`.
+    """
+    return transform.grouped()
+
+
+class _ItemGetter:
+    """A simple item getter. Takes *samples* and applies *transform* to it.
+
+    Example:
+
+    >>> from padl import transform
+    >>> ig = _ItemGetter([1, 2, 3], transform(lambda x: x + 1))
+    >>> len(ig)
+    3
+    >>> ig[0]
+    2
+    >>> ig[1]
+    3
+
+    :param samples: An object implementing __getitem__ and __len__.
+    :param transform: Preprocessing transform.
+    :param entire_transform: :class:`Transform` which *transform* belongs to, i.e.,
+        :class:`Transform` whose preprocessing part is *transform*.
+    """
+
+    def __init__(self, samples, transform, entire_transform):
+        self.samples = samples
+        self.transform = transform
+        self.entire_transform = entire_transform
+
+    def __getitem__(self, item):
+        try:
+            return item, self.transform(self.samples[item])
+        except Exception as err:
+            is_entire_transform = isinstance(self.entire_transform.pd_forward, Identity) and \
+                                  isinstance(self.entire_transform.pd_postprocess, Identity)
+            self.entire_transform._pd_trace_error(
+                self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
+                [self.samples[item]]
+            )
+            raise err
+
+    def __len__(self):
+        return len(self.samples)
+
+
+class _SimpleGetter:
+    """A simple item getter.
+
+    :param samples: An object implementing __getitem__ and __len__.
+    """
+
+    def __init__(self, samples):
+        self.samples = samples
+
+    def __getitem__(self, item):
+        return [item], self.samples[item]
+
+    def __len__(self):
+        return len(self.samples)
+
+
+@dataclass
+class _TraceItem:
+    """Catch information of an Exception produced in a Transform call.
+
+    :param transform_str: string representation of a *Transform* that has produced an Exception.
+    :param code_position: line where the Transform that has produced the Exception was defined.
+    :param args: arguments input to the Transform.
+    :param transform: Transform that produced the Exception.
+    :param pd_mode: mode (*train*, *eval* or *infer*) of *transform*
+    :param error_position: item inside *transform* that has produced the Exception.
+    """
+    transform_str: str
+    code_position: str
+    args: Any
+    transform: Transform
+    pd_mode: str
+    error_position: int
+
+
+def fulldump(transform_or_module):
+    """Switch a Transform or module or package to the "fulldump" mode.
+
+    This means that the Transform or any Transform from that module or package will be fully dumped
+    instead of just dumping the statement importing it.
+
+    :param transform_or_module: A Transform, module or package for which to enable full dump. Can
+        also be a string. In that case, will enable full dump for the module or package with
+        matching name.
+    """
+    if isinstance(transform_or_module, types.ModuleType):
+        transform_or_module = transform_or_module.__spec__.name
+    if isinstance(transform_or_module, str):
+        Transform._pd_external_full_dump_modules.add(transform_or_module)
+        return None
+    assert isinstance(transform_or_module, Transform)
+    t_copy = copy(transform_or_module)
+    t_copy._pd_external_full_dump = True
+    return t_copy
+
+
+def importdump(transform_or_module):
+    """Disable full dump (see :func:`padl.transforms.fulldump` for more). """
+    if isinstance(transform_or_module, types.ModuleType):
+        transform_or_module = transform_or_module.__spec__.name
+    if isinstance(transform_or_module, str):
+        try:
+            Transform._pd_external_full_dump_modules.remove(transform_or_module)
+        except KeyError:
+            pass
+        return None
+    assert isinstance(transform_or_module, Transform)
+    t_copy = copy(transform_or_module)
+    t_copy._pd_external_full_dump = False
+    return t_copy
 
 
 def _check_parallel(children):
