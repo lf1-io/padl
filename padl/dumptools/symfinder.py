@@ -828,4 +828,4 @@ def split_call(call_source):
                          last_arg_position.end_lineno - 1,
                          func_position.end_col_offset + 1,
                          last_arg_position.end_col_offset)
-    return call, args
+    return call, ', '.join(x.strip() for x in args.split(','))
