@@ -2943,6 +2943,8 @@ def _helper_convert_to_operators(edges_dict=None,
                 temp_list = [Compose, Node(identity.pd_output[output_slice])]
                 rollout_transform_list_main.append(temp_list)
                 rollout_transform_list = temp_list
+            else:
+                rollout_transform_list = rollout_transform_list_main
 
             _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
                                                             parents_dict=parents_dict,

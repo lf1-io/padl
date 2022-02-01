@@ -135,7 +135,14 @@ def _is_compose_instance(transform_, instance_type=pd.Identity):
 
 
 def _is_tuple_of_tensors_equal(tup_a, tup_b):
-    return all([torch.equal(a, b) for a, b in zip(tup_a, tup_b)])
+    for a, b in zip(tup_a, tup_b):
+        if isinstance(a, tuple) and isinstance(b, tuple):
+            boolean = _is_tuple_of_tensors_equal(a, b)
+        else:
+            boolean = torch.equal(a, b)
+        if not boolean:
+            return False
+    return True
 
 
 def test_isinstance_of_namedtuple():
@@ -735,10 +742,12 @@ class TestModel:
     def test_pd_splits_rollout(self, to_tensor, lin):
         t = ((to_tensor >> batch >> lin) / (to_tensor >> batch >> lin)
              + (to_tensor >> batch) / (to_tensor >> batch)
-        ) - 'name'
-        g = t + Identity()
-        t_preprocess = group(group(to_tensor / to_tensor) + group(to_tensor / to_tensor)) - 'name'
-        g_preprocess = group(t_preprocess + Identity())
+             ) - 'name'
+        g = t + (Identity() >> batch)
+
+        t_preprocess = group(group((to_tensor >> batch) / (to_tensor >> batch)) + group(
+            (to_tensor >> batch) / (to_tensor >> batch))) - 'name'
+        g_preprocess = group(t_preprocess + (Identity() >> batch))
         t_forward = group(group(lin / lin) / Identity()) - 'name'
         g_forward = group(t_forward / Identity())
 
@@ -748,11 +757,6 @@ class TestModel:
         assert _is_tuple_of_tensors_equal(g.pd_preprocess((inp, inp)), g_preprocess((inp, inp)))
         assert _is_tuple_of_tensors_equal(t.pd_forward((inp, inp, inp, inp)), t_forward((inp, inp, inp, inp)))
         assert _is_tuple_of_tensors_equal(g.pd_forward((inp, inp, inp, inp, inp)), g_forward((inp, inp, inp, inp, inp)))
-
-        assert str(t.pd_preprocess) == str(t_preprocess)
-        assert str(g.pd_preprocess) == str(g_preprocess)
-        assert str(t.pd_forward) == str(t_forward)
-        assert str(g.pd_forward) == str(g_forward)
 
 
 class TestFunctionTransform:
