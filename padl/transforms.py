@@ -1075,24 +1075,45 @@ class FunctionTransform(AtomicTransform):
     :param pd_name: name of the transform
     :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
+    :param inline_wrap: True if the function was wrapped in-line.
     """
 
     def __init__(self, function: Callable, call_info: inspector.CallInfo,
                  pd_name: Optional[str] = None, call: Optional[str] = None,
-                 source: Optional[str] = None):
+                 source: Optional[str] = None, wrap_type: str = 'decorator'):
         if call is None:
             call = function.__name__
         super().__init__(call=call, call_info=call_info, pd_name=pd_name)
         self.function = function
         self._pd_number_of_inputs = None
         self._source = source
+        self._wrap_type = wrap_type
+
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
+        if not self._pd_full_dump and self._wrap_type == 'inline':
+            return f'transform({self.__name__})'
+        return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump:
+        if self._pd_full_dump or self._wrap_type in ('module', 'lambda'):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
         source = f'from {self.__module__} import {self.__name__}'
+
+        if self._wrap_type == 'inline':
+            node = CodeNode.from_source(source, scope)
+            graph[ScopedName(self.__name__, scope, 0)] = node
+            emptyscope = symfinder.Scope.empty()
+            graph[ScopedName('transform', emptyscope, 0)] = \
+                CodeNode.from_source('from padl import transform', emptyscope)
+
+            start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
+            start = CodeNode.from_source(start_source, scope)
+            if name is not None:
+                graph[ScopedName(name, scope, 0)] = start
+            return {}
+
         if name is not None:
             source += f' as {name}'
         else:

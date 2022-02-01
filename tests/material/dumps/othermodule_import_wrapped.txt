@@ -1,0 +1,5 @@
+from padl import transform
+from tests.material.transforms_in_module import k
+
+
+_pd_main = transform(k)
