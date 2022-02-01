@@ -2152,11 +2152,10 @@ class Pipeline(Transform):
 
         if current_node is None:
             batchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Batchify)]
-
             for batch_node in batchify_nodes:
                 if batch_node not in batchify_node_dict:
                     batchify_node_dict[batch_node] = Node(identity - 'batchify_marker')
-                if batchify_positions is not None:
+                if batchify_positions is not None and len(batchify_nodes) > 1:
                     batchify_pos = batchify_positions[batch_node]
                 else:
                     batchify_pos = None
@@ -2208,7 +2207,7 @@ class Pipeline(Transform):
         if current_node is None:
             unbatchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Unbatchify)]
             for unbatch_node in unbatchify_nodes:
-                if unbatchify_positions is not None:
+                if unbatchify_positions is not None and len(unbatchify_nodes) > 1:
                     unbatch_pos = unbatchify_positions[unbatch_node]
                 else:
                     unbatch_pos = None
@@ -2381,8 +2380,9 @@ class Parallel(Pipeline):
                                    transform,
                                    output_slice=idx)
                 out_nodes = transform.parents[transform.output_node]
-                out_node = out_nodes[idx]
-                self.connect(out_node,
+                # out_node = out_nodes[idx]
+                for out_node in out_nodes:
+                    self.connect(out_node,
                              self.output_node)
                 continue
             if isinstance(transform, Pipeline):

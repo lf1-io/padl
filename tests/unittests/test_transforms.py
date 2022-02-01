@@ -697,7 +697,7 @@ class TestModel:
 
         inp = torch.rand((1, 2))
         assert torch.equal(t.pd_preprocess(inp), t_preprocess(inp))
-        assert torch.equal(t.pd_forward(inp), t_forward(inp))
+        assert _is_tuple_of_tensors_equal(t.pd_forward(inp), t_forward(inp))
         assert t.pd_postprocess((inp, inp, inp)) == t_postprocess((inp, inp, inp))
 
     def test_pd_splits_compose_with_group(self, to_tensor, lin, post):
@@ -717,17 +717,20 @@ class TestModel:
     def test_pd_splits_parallel(self, to_tensor, lin):
         t = (((to_tensor >> batch >> lin) + (to_tensor >> batch >> lin))
              / ((to_tensor >> batch) + (to_tensor >> batch))
-        ) - 'name'
-        g = t / Identity()
+             ) - 'name'
+        g = t / (Identity() >> batch)
         t_preprocess = group(group((to_tensor >> batch) + (to_tensor >> batch)) /
                              group((to_tensor >> batch) + (to_tensor >> batch)))
-        g_preprocess = group((t_preprocess - 'name') / Identity())
-        t_forward = group(group(lin / lin) / Identity())
+        g_preprocess = group((t_preprocess - 'name') / (Identity() >> batch))
+        t_forward = group(group(lin / lin) / Identity() / Identity())
         g_forward = group((t_forward - 'name') / Identity())
-        assert str(t.pd_preprocess) == str(t_preprocess)
-        assert str(g.pd_preprocess) == str(g_preprocess)
-        assert str(t.pd_forward) == str(t_forward)
-        assert str(g.pd_forward) == str(g_forward)
+
+        inp = torch.rand((1, 2))
+
+        assert _is_tuple_of_tensors_equal(t.pd_preprocess((inp, inp)), t_preprocess((inp, inp)))
+        assert _is_tuple_of_tensors_equal(g.pd_preprocess((inp, inp)), g_preprocess((inp, inp)))
+        assert _is_tuple_of_tensors_equal(t.pd_forward((inp, inp, inp, inp)), t_forward((inp, inp, inp, inp)))
+        assert _is_tuple_of_tensors_equal(g.pd_forward((inp, inp, inp, inp, inp)), g_forward((inp, inp, inp, inp, inp)))
 
     def test_pd_splits_rollout(self, to_tensor, lin):
         t = ((to_tensor >> batch >> lin) / (to_tensor >> batch >> lin)
@@ -738,6 +741,14 @@ class TestModel:
         g_preprocess = group(t_preprocess + Identity())
         t_forward = group(group(lin / lin) / Identity()) - 'name'
         g_forward = group(t_forward / Identity())
+
+        inp = torch.rand((1, 2))
+
+        assert _is_tuple_of_tensors_equal(t.pd_preprocess((inp, inp)), t_preprocess((inp, inp)))
+        assert _is_tuple_of_tensors_equal(g.pd_preprocess((inp, inp)), g_preprocess((inp, inp)))
+        assert _is_tuple_of_tensors_equal(t.pd_forward((inp, inp, inp, inp)), t_forward((inp, inp, inp, inp)))
+        assert _is_tuple_of_tensors_equal(g.pd_forward((inp, inp, inp, inp, inp)), g_forward((inp, inp, inp, inp, inp)))
+
         assert str(t.pd_preprocess) == str(t_preprocess)
         assert str(g.pd_preprocess) == str(g_preprocess)
         assert str(t.pd_forward) == str(t_forward)
