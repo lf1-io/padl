@@ -37,7 +37,7 @@ def get_source(filename: str, use_replace_cache: bool = True) -> str:
 
     if use_replace_cache and filename in replace_cache:
         return replace_cache[filename]
-        
+
     if filename in linecache.cache:
         # the ipython case
         return ''.join(linecache.cache[filename][2])
@@ -174,8 +174,11 @@ class ReplaceString(str):
     def cut(self, from_line: int, to_line: int, from_col: int, to_col: int):
         """Cut and return the resulting sub-`ReplaceString`. """
         lines = self.original.split('\n')[from_line: to_line + 1]
-        lines[0] = lines[0][from_col:]
-        lines[-1] = lines[-1][:to_col]
+        if len(lines) == 1:
+            lines[0] = lines[0][from_col:to_col]
+        else:
+            lines[0] = lines[0][from_col:]
+            lines[-1] = lines[-1][:to_col]
 
         new_from_line = self.from_line - from_line
         new_to_line = self.to_line - from_line
