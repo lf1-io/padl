@@ -295,9 +295,8 @@ def _replace(string, repl, from_line, to_line, from_col, to_col):
         middle = lines[from_line][:from_col] + repl + lines[from_line][to_col:]
         start = end = ''
     else:
-        start = lines[from_line][from_col:] + repl
-        middle = ''.join(lines[from_line+1:to_line])
-        end = lines[to_line][:to_col]
+        start = lines[from_line][:from_col]
+        middle = repl
+        end = lines[to_line][to_col:]
     after = ''.join(lines[to_line+1:])
-
     return before + start + middle + end + after
