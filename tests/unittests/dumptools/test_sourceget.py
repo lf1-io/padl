@@ -43,3 +43,8 @@ class TestReplace:
 
     def test_b(self):
         assert sourceget._replace(b, 'here', 0, 0, 4, 6) == b_r
+
+
+class TestCut:
+    def test_single_line(self):
+        assert sourceget.cut(a, 2, 2, 1, 4) == '123'
