@@ -1573,7 +1573,7 @@ class Node:
 
     def call_transform(self, args):
         """call the node's transform"""
-        return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
+        return self.transform._pd_unpack_args_and_call(args)
 
 
 class Pipeline(Transform):
