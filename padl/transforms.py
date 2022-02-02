@@ -2396,7 +2396,10 @@ class Compose(Pipeline):
                              input_slice=next_node.pd_input_slice)
             current_nodes = [next_node]
         for node_a in current_nodes:
-            self.connect(node_a, self.output_node)
+            self.connect(node_a,
+                         self.output_node,
+                         output_slice=node_a.pd_output_slice,
+                         )
 
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
@@ -3188,9 +3191,11 @@ def _helper_convert_to_operators(edges_dict: defaultdict = None,
     children = edges_dict[current_node]
 
     if len(children) == 0:
+        # if no children, reached output node, so exit
         return transform_list, meta_transform_list, nodes_left
 
     if len(children) == 1:
+        # if only 1 children, this is compose
         transform_list, meta_transform_list, nodes_left = _helper_convert_compose(
             edges_dict=edges_dict,
             parents_dict=parents_dict,
@@ -3206,6 +3211,7 @@ def _helper_convert_to_operators(edges_dict: defaultdict = None,
         return transform_list, meta_transform_list, nodes_left
 
     if _check_parallel(children):
+        # if not compose, check if it is parallel
         child = next(iter(children))
         parents = parents_dict[child]
         if current_node in nodes_left: nodes_left.remove(current_node)
@@ -3369,6 +3375,9 @@ def convert_to_structured_list(start_node: Node,
         end_node = None
     while len(nodes_left) > 1:
         current_node = nodes_left[0]
+        # meta_transform and main_transform are same list here,
+        # but as _helper_convert_to_operators works recursively
+        # main_transform keeps reference to outter most list
         transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
             edges_dict=edges_dict,
             parents_dict=parents_dict,
