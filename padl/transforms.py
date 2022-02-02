@@ -1871,7 +1871,7 @@ class Pipeline(Transform):
 
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
-        """Flatten *list_* such that members of *cls* are not nested.
+        """Flatten *transform_list* such that members of *cls* are not nested.
 
         :param transform_list: List of transforms.
         """
@@ -1925,13 +1925,13 @@ class Pipeline(Transform):
     def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=None):
         """Connect `node_a` with a graph `graph_b`
 
-        node_a -> input_node of graph_b -> ...
+        node_a -> input_node of graph_b ->
 
-        :param node_a:
-        :param graph_b:
-        :param output_slice:
-        :param input_slice:
-        :param parent_position:
+        :param node_a: node to connect graph `graph_b` to
+        :param graph_b: graph to connect to the node `node_a` to
+        :param output_slice: output_slice of `node_a`
+        :param input_slice: input_slice for `graph_b`
+        :param parent_position: position of `node_a` as parent of `graph_b`
         :return:
         """
 
@@ -1974,12 +1974,12 @@ class Pipeline(Transform):
         self.edges = temp_edges
         self.parents = temp_parents
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def sorted_nodes(self):
         """Topologically sorted nodes"""
         return _topological_node_sort(self.input_node, self.edges, self.parents)
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def _set_output_formatter(self):
         """Calculate the keys for namedtuple"""
         transforms = [node.transform for node in self.parents[self.output_node]]
@@ -2096,28 +2096,28 @@ class Pipeline(Transform):
                 return True
             return False
 
-    def list_all_paths(self, inp_node=None, path=None):
+    def list_all_paths(self, start_node: Node=None, path: list=None):
         """List all paths
 
-        :param inp_node:
-        :param path:
+        :param start_node: Node where the path will start
+        :param path: list of nodes in order that forms a path
         """
         # TODO: Decide if to remove this
         if path is None:
             path = []
-        if inp_node is None:
+        if start_node is None:
             path = [self.input_node]
-            inp_node = self.input_node
+            start_node = self.input_node
 
-        if len(self.edges[inp_node]) == 0:
+        if len(self.edges[start_node]) == 0:
             return path
 
         return_path = []
 
-        for idx, out_node in enumerate(self.edges[inp_node]):
-            parent_position = self.parents[out_node].index(inp_node)
+        for idx, out_node in enumerate(self.edges[start_node]):
+            parent_position = self.parents[out_node].index(start_node)
 
-            output_slice, input_slice = self.edges[inp_node][out_node]
+            output_slice, input_slice = self.edges[start_node][out_node]
             if not self._check_edge_compatibility(output_slice, input_slice, parent_position):
                 continue
             path_copy = path.copy()
