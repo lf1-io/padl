@@ -2297,7 +2297,6 @@ class Pipeline(Transform):
         if unbatchify_found:
             unbatchify_positions = {unbatchify_node: idx for idx, unbatchify_node in enumerate(unbatchify_node_dict)}
 
-        # import pdb; pdb.set_trace()
         postprocess_edges_dict = self._generate_postprocess_dict(
             unbatchify_positions=unbatchify_positions
         )
