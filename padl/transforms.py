@@ -2338,6 +2338,180 @@ class Compose(Pipeline):
         for node_a in current_nodes:
             self.connect(node_a, self.output_node)
 
+    @staticmethod
+    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
+        if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
+            type_ = 'multi_2_multi'
+
+        elif i > 0 and cw == 1 and cw_m1 > 1:
+            type_ = 'multi_2_single'
+
+        elif cw == 1 or isinstance(t, Compose):
+            type_ = 'single_2_single'
+
+        else:
+            type_ = 'single_2_multi'
+
+        return type_
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:  # TODO: make it respect the formatting
+        """Create a detailed formatted representation of the transform. For multi-line inputs
+        the lines are connected with arrows indicating data flow.
+        """
+        # pad the components of rows which are shorter than other parts in same column
+        rows = [
+            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
+            else [t._pd_shortrepr()]
+            for t in self.transforms
+        ]
+        children_widths = [[visible_len(x) for x in row] for row in rows]
+        # get maximum widths in "columns"
+        children_widths_matrix = np.zeros((len(self.transforms),
+                                           max([len(x) for x in children_widths])))
+        for i, cw in enumerate(children_widths):
+            children_widths_matrix[i, :len(cw)] = cw
+        max_widths = np.max(children_widths_matrix, 0)
+
+        for i, r in enumerate(rows):
+            for j in range(len(rows[i])):
+                if len(rows[i][j]) < max_widths[j]:
+                    rows[i][j] += ' ' * (int(max_widths[j]) - len(rows[i][j]))
+
+        for i, r in enumerate(rows):
+            if len(r) > 1:
+                rows[i] = f' {make_green(self.transforms[i].display_op)} '.join(r)
+            else:
+                rows[i] = r[0]
+        output = []
+        # iterate through rows and create arrows depending on numbers of components
+        for i, (r, t) in enumerate(zip(rows, self.transforms)):
+            widths = [0]
+            subarrows = []
+
+            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
+                                               children_widths[i], children_widths[i - 1])
+
+            # if subsequent rows have the same number of "children" transforms
+            if type_ == 'multi_2_multi':
+                for j, w in enumerate(children_widths[i]):
+                    subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
+                    widths.append(int(max_widths[j]))
+
+            # if previous row has multiple outputs and current row just one input
+            elif type_ == 'multi_2_single':
+                for j, w in enumerate(children_widths[i - 1]):
+                    subarrows.append(create_reverse_arrow(
+                        0, sum(widths) - j + j * 4,
+                        len(children_widths[i - 1]) - j + 1, j + 1
+                    ))
+                    widths.append(int(max_widths[j]))
+
+            # if previous has single output and current row has single input
+            elif type_ == 'single_2_single':
+                subarrows.append(create_arrow(0, 0, 0, 0))
+
+            # if previous row has one output and current row has multiple inputs
+            else:
+                assert type_ == 'single_2_multi'
+                for j, w in enumerate(children_widths[i]):
+                    if isinstance(t, Rollout):
+                        subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
+                                                      len(children_widths[i]) - j, j + 1))
+                    else:
+                        subarrows.append(create_arrow(j, sum(widths) - j + j * 3,
+                                                      len(children_widths[i]) - j, j + 1))
+                    widths.append(int(max_widths[j]))
+
+            # add signature names to the arrows
+            tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
+            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
+                all_params = []
+                for tt in t.transforms:
+                    all_params.append(list(tt._pd_signature.keys()))
+                to_combine = [
+                    ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
+                    if len(params) > 1
+                    else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
+                    for k, params in enumerate(all_params)
+                ]
+                to_format = combine_multi_line_strings(to_combine)
+            else:
+                params = t._pd_signature
+                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
+                    list(params)[0]
+            to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
+            to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
+
+            # combine the arrows
+            mark = combine_multi_line_strings(subarrows + [to_format])
+            mark = '\n'.join(['   ' + x for x in mark.split('\n')])
+            output.append(make_green(mark))
+            output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
+                                                                  marker[0] == i else ''))
+        return '\n'.join(output)
+
+    def _pd_get_non_target_stage_idx(self):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+            t = prep >> batch >> forward_1
+
+            Let's suppose we get an error on `forward_1`, `forward_1` is the index 0 of
+            `t.pd_forward`, then the element that fails on `t` is
+            `t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = len(t.pd_preprocess) + 0 =
+                2 + 0 = 2
+        """
+        return 1 if self._pd_group else len(self)
+
+    def _pd_get_target_stage_idx(self, is_entire_transform: bool):
+        """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        Example:
+             t = prep >> batch >> forward_1 >> forward_2
+
+            Let's suppose we get an error on `forward_2`. `t.pd_forward` is
+            `t.pd_forward` = forward_1 >> forward_2`. `forward_2` is the index 1 of `t.pd_forward`,
+            then the element that fails on `t` is
+            2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
+
+        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
+            else *True*
+        """
+        return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
+
+    def _pd_get_error_idx(self, stage: str):
+        """Track the index where a :class:`Compose` fails from the index that got the Exception
+        on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
+
+        Examples:
+            t = t_1 >> t_2 >> batch >> t_3 >> t_4
+            then,
+            t.pd_forward = t_3 >> t_4.
+            If we know that :meth:`t.pd_forward` is failing on `t_4`, which is its element 1, then
+            `t` is failing on len(t.pd_preprocess) + 1.
+
+            t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
+            then,
+            t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
+            No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
+            len(t.pd_preprocess) + 0 = 3.
+        """
+        assert stage in ('forward', 'postprocess')
+        preprocess = self.pd_preprocess
+        forward = self.pd_forward
+        postprocess = self.pd_postprocess
+        preprocess_idx = preprocess._pd_get_non_target_stage_idx()
+
+        if stage == 'forward':
+            is_entire_transform = isinstance(preprocess, Identity) and \
+                                  isinstance(postprocess, Identity)
+            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
+
+        is_entire_transform = isinstance(preprocess, Identity) and \
+                              isinstance(forward, Identity)
+        return preprocess_idx + forward._pd_get_non_target_stage_idx() + \
+               postprocess._pd_get_target_stage_idx(is_entire_transform)
+
 
 class Rollout(Pipeline):
     op = '+'
@@ -2364,6 +2538,18 @@ class Rollout(Pipeline):
                          self.output_node,
                          output_slice=node.pd_output_slice,
                          input_slice=self.output_node.pd_input_slice)
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        make_green_ = lambda x: make_green(x, not formatting)
+        make_bold_ = lambda x: make_bold(x, not formatting)
+        between = f'\n{make_green_("│ " + self.op)}  \n'
+        rows = [make_green_('├─▶ ') + make_bold_(f'{i}: ') + t._pd_shortrepr()
+                + (marker[1] if marker and marker[0] == i else '')
+                for i, t in enumerate(self.transforms[:-1])]
+        rows.append(make_green_('└─▶ ') + make_bold_(f'{len(self.transforms) - 1}: ')
+                    + self.transforms[-1]._pd_shortrepr() +
+                    (marker[1] if marker and marker[0] == len(self.transforms) - 1 else ''))
+        return between.join(rows) + '\n'
 
 
 class Parallel(Pipeline):
@@ -2404,6 +2590,35 @@ class Parallel(Pipeline):
                          self.output_node,
                          output_slice=node.pd_output_slice,
                          input_slice=self.output_node.pd_input_slice)
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        if not formatting:
+            make_green_ = lambda x: x
+            make_bold_ = lambda x: x
+        else:
+            make_green_ = make_green
+            make_bold_ = make_bold
+
+        def pipes(n):
+            return "│" * n
+
+        def spaces(n):
+            return " " * n
+
+        def horizontal(n):
+            return "─" * n
+        len_ = len(self.transforms)
+        out = ''
+        for i, t in enumerate(self.transforms):
+            out += (
+                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                make_bold_(f'{i}: ') + t._pd_shortrepr()
+            )
+            out += marker[1] + '\n' if marker and marker[0] == i else '\n'
+            if i < len(self.transforms) - 1:
+                out += f'{make_green_(pipes(len_ - i - 1) + spaces(i + 2) + self.op)}  \n'
+
+        return out
 
 
 class BuiltinTransform(ClassTransform):
