@@ -22,7 +22,7 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
-from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, Any
+from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Union, Any, Type
 from warnings import warn
 from zipfile import ZipFile
 
@@ -134,7 +134,13 @@ class _GeneratorWithLength:
 
 
 class _OutputSlicer:
-    """Helper class to store output slice"""
+    """Helper class to store output slice
+
+    transform.pd_output[0] will trigger this __getitem__
+    and connect the transform's 0th output with next transform
+
+    :param main_object: Transform
+    """
 
     def __init__(self, main_object):
         self.main_object = main_object
@@ -151,7 +157,13 @@ class _OutputSlicer:
 
 
 class _InputSlicer:
-    """Helper class to store input slice"""
+    """Helper class to store input slice
+
+    transform.pd_input[0] will trigger this __getitem__
+    and connect the previous transform's output to 0th arg for this transform
+
+    :param main_object: Transform
+    """
 
     def __init__(self, main_object):
         self.main_object = main_object
@@ -1524,52 +1536,58 @@ class Node:
 
     @property
     def name(self):
+        """Get name of the transform in this node"""
         if self.transform.pd_name is None and isinstance(self.transform, Pipeline):
             return self.transform._name
         return self.transform.pd_name
 
     @property
     def name_id(self):
+        """Get name of the transform concat with ID of this node
+        This is used as unique identifier for Node, which is useful for drawing.
+        """
         if self.name is not None:
             return self.name + ' ' + str(self.id)
         if isinstance(self.transform, Batchify):
             name = 'batchify '
-            return name+str(self.id)
+            return name + str(self.id)
         if isinstance(self.transform, Unbatchify):
             name = 'unbatchify '
-            return name+str(self.id)
+            return name + str(self.id)
         return str(self.id)
 
     @classmethod
     def _generate_id(cls):
+        """Generate id for the node"""
         cls._id += 1
         return cls._id
 
-    def __call__(self, args):  # should a node be callable?
+    def __call__(self, args):
         """Call Method for Node"""
-        return self.call_node(args)
+        return self.call_transform(args)
 
     def copy(self):
+        """Return copy of this node"""
         _copy = type(self)(self.transform)
         return _copy
 
-    def call_node(self, args):
+    def call_transform(self, args):
+        """call the node's transform"""
         return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
 
 
 class Pipeline(Transform):
-    """Pipeline: New Pipeline
+    """Abstract base class for Pipeline
 
-    * Nodes listed: Should Contain Nodes to do the operation
-    * Edges are to be connected and only contained in a Pipeline
-    Example:
-    comp1 = A >> B >> C
-    comp2 = comp1 >> X >> Y
-    the connection from `comp1 >> X` should not leak in comp1
-    """
+       :param transforms: List of sub-transforms.
+       :param call_info: A `CallInfo` object containing information about the how the transform was
+           created (needed for saving).
+       :param pd_name: Name of the Pipeline.
+       :param pd_group: If *True*, do not flatten this when used as child transform in a
+           :meth:`Pipeline`.
+       """
 
     op = NotImplemented
-    display_op = NotImplemented
 
     def __init__(self, transforms: Iterable[Transform], call_info: inspector.CallInfo = None,
                  pd_name: Optional[str] = None, pd_group: bool = False):
@@ -1845,7 +1863,7 @@ class Pipeline(Transform):
                     final_splits[i] = s - self._pd_name
 
     def copy(self):
-        """Return copy of this graph"""
+        """Return copy of this Pipeline"""
         copy_graph = copy(self)
         copy_graph.pd_output = _OutputSlicer(copy_graph)
         copy_graph.pd_input = _InputSlicer(copy_graph)
@@ -1905,7 +1923,8 @@ class Pipeline(Transform):
         self.parents[node_b].append(node_a)
 
     def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=None):
-        """Connect node_a with a graph graph_b
+        """Connect `node_a` with a graph `graph_b`
+
         node_a -> input_node of graph_b -> ...
 
         :param node_a:
@@ -1962,11 +1981,13 @@ class Pipeline(Transform):
 
     @lru_cache
     def _set_output_formatter(self):
+        """Calculate the keys for namedtuple"""
         transforms = [node.transform for node in self.parents[self.output_node]]
         self.pd_keys = self._pd_get_keys(transforms)
         return self.pd_keys
 
     def _pd_format_output(self, x):
+        """Return the formatted namedtuple of output"""
         return self._pd_output_formatter(x)
 
     def _pd_output_formatter(self, args):
@@ -1988,13 +2009,18 @@ class Pipeline(Transform):
         results = {self.input_node: args}
         for node in self.sorted_nodes()[1:]:
             node_arg = self._gather_args_for_node(node, results)
-            results[node] = node.call_node(node_arg)
+            results[node] = node.call_transform(node_arg)
             # TODO: remove results that aren't needed any more
 
         out = results[self.output_node]
         return self._pd_output_formatter(out)
 
     def convert_to_networkx(self):
+        """Convert Pipleline to Networkx graph
+
+        Useful for drawing
+        """
+
         def _covert_slice_to_str(slc):
             if slc is None:
                 return ''
@@ -2013,13 +2039,13 @@ class Pipeline(Transform):
                 output_slice = _covert_slice_to_str(self.edges[parent][child][0])
                 networkx_graph.add_edge(parent.name_id,
                                         child.name_id,
-                                        label= output_slice)
+                                        label=output_slice)
         self.networkx_graph = networkx_graph
 
     def draw(self):
-        """Draw the graph
+        """Draw the pipeline using pygraphviz
 
-        :return:
+        :return: Image
         """
         self.convert_to_networkx()
         dot = nx.nx_agraph.to_agraph(self.networkx_graph)
@@ -2028,11 +2054,15 @@ class Pipeline(Transform):
 
     @staticmethod
     def _check_edge_compatibility(output_slice, input_slice, parent_pos):
-        """Check if given edge detail gives a valid path
+        """Check if given edge data gives a valid path
 
-        :param output_slice:
-        :param input_slice:
-        :param parent_pos:
+        prev_node.pd_output[output_slice] -> curr_node.pd_input[input_slice]
+
+        (prev_node, second_prev_node) -> curr_node : -> parent_pos = 0
+
+        :param output_slice: output_slice of previous node
+        :param input_slice: input position of current node
+        :param parent_pos: position of parent in arg (useful when input_position not defined)
         :return:
         """
         # TODO: Check, TEST & Simplify
@@ -2072,6 +2102,7 @@ class Pipeline(Transform):
         :param inp_node:
         :param path:
         """
+        # TODO: Decide if to remove this
         if path is None:
             path = []
         if inp_node is None:
@@ -2101,17 +2132,17 @@ class Pipeline(Transform):
         return return_path
 
     def _generate_preprocess_dict(self,
-                                  current_node,
-                                  preprocess_edges=None,
-                                  batchify_found=False,
-                                  batchify_positions=None,
-                                  ):
-        """
+                                  current_node: Node,
+                                  preprocess_edges: defaultdict = None,
+                                  batchify_found: bool = False,
+                                  batchify_positions: list = None,
+                                  ) -> defaultdict:
+        """Generate edge dict for preprocess of this Pipeline
 
-        :param current_node:
-        :param preprocess_edges:
-        :param batchify_found:
-        :return:
+        :param current_node: Node to start the dict from
+        :param preprocess_edges: edge dictionary of preprocess being built
+        :param batchify_found: bool, if batchify exists or not
+        :return: dictionary of edges
         """
         if preprocess_edges is None:
             preprocess_edges = defaultdict(dict)
@@ -2135,14 +2166,24 @@ class Pipeline(Transform):
         return preprocess_edges, batchify_found, batchify_positions
 
     def _generate_forward_dict(self,
-                               current_node=None,
-                               forward_edges=None,
-                               batchify_node_dict=None,
-                               unbatchify_node_dict=None,
-                               unbatchify_found=False,
-                               batchify_positions=None,
-                               unbatchify_positions=None,
-                               ):
+                               current_node: Node = None,
+                               forward_edges: defaultdict = None,
+                               batchify_node_dict: dict = None,
+                               unbatchify_node_dict: dict = None,
+                               unbatchify_found: bool = False,
+                               batchify_positions: dict = None,
+                               unbatchify_positions: dict = None,
+                               ) -> defaultdict:
+        """Generate edge dict for forward of this Pipeline
+
+        :param current_node: Node to start the dict from
+        :param forward_edges: edge dictionary of forward being built
+        :param batchify_node_dict: dictionary of batchify_nodes to new batchify marker (identity) nodes
+        :param unbatchify_node_dict: dictionary of unbatchify_nodes to new unbatchify marker (identity) nodes
+        :param unbatchify_found: bool, if unbatchify exits or not
+        :param batchify_positions: position of connection of batchify to output node
+        :param unbatchify_positions: position of connection of unbatchify to output node
+        """
         if batchify_node_dict is None:
             batchify_node_dict = dict()
         if unbatchify_node_dict is None:
@@ -2201,6 +2242,12 @@ class Pipeline(Transform):
                                    postprocess_edges=None,
                                    unbatchify_positions=None,
                                    ):
+        """Generate edge dict for postprocess of this Pipeline
+
+        :param current_node: Node to start the dict from
+        :param postprocess_edges: edge dictionary of postprocess being built
+        :param unbatchify_positions: position of connection of unbatchify to output node
+        """
         if postprocess_edges is None:
             postprocess_edges = defaultdict(dict)
 
@@ -2228,18 +2275,20 @@ class Pipeline(Transform):
         return postprocess_edges
 
     def _pd_splits(self, input_components=0):
-        """Generate splits
+        """Generate splits (preprocess, forward, postprocess)
 
         :param input_components:
         :return:
         """
+        # TODO: Clean _pd_splits upstream to streamline output here
         batchify_positions = None
         unbatchify_positions = None
 
         preprocess_edges_dict, batchify_found, batchify_positions = self._generate_preprocess_dict(self.input_node)
         _preprocess_parents = _generate_parents_dict_from_edge_dict(preprocess_edges_dict)
         if batchify_found:
-            batchify_positions = {batchify_node: idx for idx, batchify_node in enumerate(_preprocess_parents[self.output_node])}
+            batchify_positions = {batchify_node: idx for idx, batchify_node in
+                                  enumerate(_preprocess_parents[self.output_node])}
 
         forward_edges_dict, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
             batchify_positions=batchify_positions)
@@ -2276,38 +2325,50 @@ class Pipeline(Transform):
 
         if 'preprocess' in build_splits:
             self._preprocess_parents = _generate_parents_dict_from_edge_dict(self._preprocess_edges)
-            self._preprocess_list = _convert_to_structured_list(start_node=self.input_node,
-                                                                end_node=self.output_node,
-                                                                edges_dict=self._preprocess_edges,
-                                                                parents_dict=self._preprocess_parents,
-                                                                exclude_start_node=True,
-                                                                )
-            self._pd_preprocess = _build_transform_from_list(self._preprocess_list)
+            self._preprocess_list = convert_to_structured_list(start_node=self.input_node,
+                                                               end_node=self.output_node,
+                                                               edges_dict=self._preprocess_edges,
+                                                               parents_dict=self._preprocess_parents,
+                                                               exclude_start_node=True,
+                                                               )
+            self._pd_preprocess = build_transform_from_list(self._preprocess_list)
 
         if 'forward' in build_splits:
             self._forward_parents = _generate_parents_dict_from_edge_dict(self._forward_edges)
-            self._forward_list = _convert_to_structured_list(start_node=self.input_node,
-                                                             end_node=self.output_node,
-                                                             edges_dict=self._forward_edges,
-                                                             parents_dict=self._forward_parents,
-                                                             exclude_start_node=True,
-                                                             )
-            self._pd_forward = _build_transform_from_list(self._forward_list)
+            self._forward_list = convert_to_structured_list(start_node=self.input_node,
+                                                            end_node=self.output_node,
+                                                            edges_dict=self._forward_edges,
+                                                            parents_dict=self._forward_parents,
+                                                            exclude_start_node=True,
+                                                            )
+            self._pd_forward = build_transform_from_list(self._forward_list)
 
         if 'postprocess' in build_splits:
             self._postprocess_parents = _generate_parents_dict_from_edge_dict(self._postprocess_edges)
-            self._postprocess_list = _convert_to_structured_list(start_node=self.input_node,
-                                                                 end_node=self.output_node,
-                                                                 edges_dict=self._postprocess_edges,
-                                                                 parents_dict=self._postprocess_parents,
-                                                                 exclude_start_node=True,
-                                                                 )
-            self._pd_postprocess = _build_transform_from_list(self._postprocess_list)
+            self._postprocess_list = convert_to_structured_list(start_node=self.input_node,
+                                                                end_node=self.output_node,
+                                                                edges_dict=self._postprocess_edges,
+                                                                parents_dict=self._postprocess_parents,
+                                                                exclude_start_node=True,
+                                                                )
+            self._pd_postprocess = build_transform_from_list(self._postprocess_list)
 
         return None, (self._pd_preprocess, self._pd_forward, self._pd_postprocess), True
 
 
 class Compose(Pipeline):
+    """Apply series of transforms on input.
+
+    Compose([t1, t2, t3])(x) = t3(t2(t1(x)))
+
+    :param transforms: List of transforms to compose.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
+    :param pd_name: name of the Compose transform.
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `Pipeline`.
+    :return: output from series of transforms
+    """
     op = '>>'
     _name = 'compose'
 
@@ -2379,7 +2440,7 @@ class Compose(Pipeline):
 
         for i, r in enumerate(rows):
             if len(r) > 1:
-                rows[i] = f' {make_green(self.transforms[i].display_op)} '.join(r)
+                rows[i] = f' {make_green(self.transforms[i].op)} '.join(r)
             else:
                 rows[i] = r[0]
         output = []
@@ -2402,7 +2463,7 @@ class Compose(Pipeline):
                 for j, w in enumerate(children_widths[i - 1]):
                     subarrows.append(create_reverse_arrow(
                         0, sum(widths) - j + j * 4,
-                        len(children_widths[i - 1]) - j + 1, j + 1
+                           len(children_widths[i - 1]) - j + 1, j + 1
                     ))
                     widths.append(int(max_widths[j]))
 
@@ -2438,7 +2499,7 @@ class Compose(Pipeline):
             else:
                 params = t._pd_signature
                 to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
-                    list(params)[0]
+                                                                                list(params)[0]
             to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
             to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
 
@@ -2514,6 +2575,17 @@ class Compose(Pipeline):
 
 
 class Rollout(Pipeline):
+    """Apply a list of transform to same input and get tuple output
+
+    Rollout([t1, t2, ...])(x) := (t1(x), t2(x), ...)
+
+    :param transforms: List of transforms to rollout.
+    :param call_info: A `CallInfo` object containing information about the how the transform was
+        created (needed for saving).
+    :param pd_name: Name of the transform.
+    :param pd_group: If *True*, do not flatten this when used as child transform in a
+        `Pipeline`.
+    """
     op = '+'
     _name = 'rollout'
 
@@ -2553,6 +2625,17 @@ class Rollout(Pipeline):
 
 
 class Parallel(Pipeline):
+    """Apply transforms in parallel to a tuple of inputs and get tuple output
+
+   Parallel([f1, f2, ...])((x1, x2, ..)) := (f1(x1), f2(x2), ...)
+
+   :param transforms: List of transforms to parallelize.
+   :param call_info: A `CallInfo` object containing information about the how the transform was
+       created (needed for saving).
+   :param pd_name: Name of the transform.
+   :param pd_group: If *True*, do not flatten this when used as child transform in a
+       `Pipeline`.
+   """
     op = '/'
     _name = 'parallel'
 
@@ -2569,7 +2652,7 @@ class Parallel(Pipeline):
                 # out_node = out_nodes[idx]
                 for out_node in out_nodes:
                     self.connect(out_node,
-                             self.output_node)
+                                 self.output_node)
                 continue
             if isinstance(transform, Pipeline):
                 self.connect_graph(self.input_node,
@@ -2607,12 +2690,13 @@ class Parallel(Pipeline):
 
         def horizontal(n):
             return "─" * n
+
         len_ = len(self.transforms)
         out = ''
         for i, t in enumerate(self.transforms):
             out += (
-                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold_(f'{i}: ') + t._pd_shortrepr()
+                    make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                    make_bold_(f'{i}: ') + t._pd_shortrepr()
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
@@ -2915,8 +2999,15 @@ def importdump(transform_or_module):
     return t_copy
 
 
-def _check_parallel(children):
-    """Check if current dict passed is Parallel or not"""
+def _check_parallel(children: dict) -> bool:
+    """Check if children dict passed is Parallel or not
+
+    :param children: dictionary of edges in format -
+        {
+            child: (output_slice, input_slice),
+            ...
+        }
+    """
     if len(children) < 2:
         return False
     output_slices = []
@@ -2929,24 +3020,62 @@ def _check_parallel(children):
 
 
 def _check_rollout(children):
-    """Check if current dict passed is Rollout or not"""
+    """Check if children dict passed is rollout or not
+
+    :param children: dictionary of edges in format -
+        {
+            child: (output_slice, input_slice),
+            ...
+        }
+    """
     if len(children) > 1:
         return True
     return False
 
 
-def _helper_convert_compose(edges_dict=None,
-                            parents_dict=None,
-                            current_node=None,
-                            current_type=None,
-                            transform_list=None,
-                            meta_transform_list=None,
-                            nodes_left=None,
-                            input_node=None,
-                            output_node=None,
-                            main_transform_list=None,
+def _helper_convert_compose(edges_dict: defaultdict = None,
+                            parents_dict: defaultdict = None,
+                            current_node: Node = None,
+                            current_type: Type[Pipeline] = None,
+                            transform_list: list = None,
+                            meta_transform_list: list = None,
+                            main_transform_list: list = None,
+                            nodes_left: list = None,
+                            input_node: Node = None,
+                            output_node: Node = None,
                             ):
-    """Helper function to convert compose to list"""
+    """Helper function to convert compose to list
+
+    Take the edge dictionary for a given node `current node`
+    and covert this to structured list of format:
+    t = (
+        a
+        >> b / c
+        >> f + g
+    )
+    Would convert to:
+
+    t_structured_list = [
+        [
+            Compose,
+            a,
+            [Parallel, b, c],
+            [Rollout, f, g],
+        ]
+    ]
+
+    :param edges_dict: edges dictionary
+    :param parents_dict: parent dictionary for nodes
+    :param current_node: start node
+    :param current_type: type currently being built (None/Compose/Rollout/Parallel)
+    :param transform_list: list of current transforms being built
+    :param meta_transform_list: list of transforms one level higher
+    :param main_transform_list: outermost list of transforms
+    :param nodes_left: list of nodes left in Pipeline to be added to list
+    :param input_node: input node of Pipeline
+    :param output_node: output node of Pipeline
+    :return:
+    """
     if transform_list is None:
         transform_list = []
     if meta_transform_list is None:
@@ -3008,29 +3137,47 @@ def _helper_convert_compose(edges_dict=None,
     return transform_list, meta_transform_list, nodes_left
 
 
-def _helper_convert_to_operators(edges_dict=None,
-                                 parents_dict=None,
-                                 current_node=None,
-                                 current_type=None,
-                                 transform_list=None,
-                                 meta_transform_list=None,
-                                 nodes_left=None,
-                                 input_node=None,
-                                 output_node=None,
+def _helper_convert_to_operators(edges_dict: defaultdict = None,
+                                 parents_dict: defaultdict = None,
+                                 current_node: Node = None,
+                                 current_type: Type[Pipeline] = None,
+                                 transform_list: list = None,
+                                 meta_transform_list: list = None,
                                  main_transform_list=None,
+                                 nodes_left: list = None,
+                                 input_node: Node = None,
+                                 output_node: Node = None,
                                  ):
-    """Helper function to convert given edge_dict to operator list
+    """Helper function to convert Pipeline to Padl operations (+, /, >>)
 
-    :param edges_dict:
-    :param parents_dict:
-    :param current_node:
-    :param current_type:
-    :param transform_list:
-    :param meta_transform_list:
-    :param nodes_left:
-    :param input_node:
-    :param main_transform_list: Main list of transform -- same as meta transform except
-                                when writing secondary transforms (transforms inside transforms)
+    Take the edge dictionary for a given node `current node`
+    and covert this to structured list of format:
+    t = (
+        a
+        >> b / c
+        >> f + g
+    )
+    Would convert to:
+
+    t_structured_list = [
+        [
+            Compose,
+            a,
+            [Parallel, b, c],
+            [Rollout, f, g],
+        ]
+    ]
+
+    :param edges_dict: edges dictionary
+    :param parents_dict: parent dictionary for nodes
+    :param current_node: start node
+    :param current_type: type currently being built (None/Compose/Rollout/Parallel)
+    :param transform_list: list of current transforms being built
+    :param meta_transform_list: list of transforms one level higher
+    :param main_transform_list: outermost list of transforms
+    :param nodes_left: list of nodes left in Pipeline to be added to list
+    :param input_node: input node of Pipeline
+    :param output_node: output node of Pipeline
     :return:
     """
     if transform_list is None:
@@ -3060,7 +3207,6 @@ def _helper_convert_to_operators(edges_dict=None,
         return transform_list, meta_transform_list, nodes_left
 
     if _check_parallel(children):
-        # PARALLEL
         child = next(iter(children))
         parents = parents_dict[child]
         if current_node in nodes_left: nodes_left.remove(current_node)
@@ -3111,8 +3257,6 @@ def _helper_convert_to_operators(edges_dict=None,
         return transform_list, meta_transform_list, nodes_left
 
     if _check_rollout(children):
-        # ROLLOUT
-
         child = next(iter(children))
         parents = parents_dict[child]
 
@@ -3179,19 +3323,39 @@ def _helper_convert_to_operators(edges_dict=None,
     return transform_list, meta_transform_list, nodes_left
 
 
-def _convert_to_structured_list(start_node,
-                                end_node,
-                                edges_dict,
-                                parents_dict,
-                                exclude_start_node=True,
-                                exclude_end_node=True,
-                                ):
-    """Convert an edge_dict to list of operations
+def convert_to_structured_list(start_node: Node,
+                               end_node: Node,
+                               edges_dict: defaultdict,
+                               parents_dict: defaultdict,
+                               exclude_start_node: bool = True,
+                               exclude_end_node: bool = True,
+                               ):
+    """Convert Pipeline to Padl operations (+, /, >>)
+
+    Take the edge dictionary for a given node `current node`
+    and covert this to structured list of format:
+    t = (
+        a
+        >> b / c
+        >> f + g
+    )
+    Would convert to:
+
+    t_structured_list = [
+        [
+            Compose,
+            a,
+            [Parallel, b, c],
+            [Rollout, f, g],
+        ]
+    ]
 
     :param start_node: node to start the conversion from
+    :param end_node: node to end the conversion
     :param edge_dict: dict of edges_dict of nodes
     :param parents_dict: dict of parents of nodes
     :param exclude_start_node: True if start_node is not to be included
+    :param exclude_end_node: True if end_node is not to be included
     :return: list of operations
     """
 
@@ -3222,20 +3386,36 @@ def _convert_to_structured_list(start_node,
     return meta_transform_list
 
 
-def _build_transform_from_list(input_list):
-    """Build transforms from a list
+def build_transform_from_list(structured_list: list) -> Pipeline:
+    """Build transforms from a structured list
 
-    input_list can have following elements:
+    Takes:
+    structured_list = [
+        [
+            Compose,
+            a,
+            [Parallel, b, c],
+            [Rollout, f, g],
+        ]
+    ]
+    to build:
+    (
+        a
+        >> b / c
+        >> f + g
+    )
+
+    `structured_list` can have following elements:
     1. transforms
     2. list starting with Class (Compose/Rollout/Parallel) and contains transforms
         e.g. [Compose, t1, t2, t3]
 
-    :param input_list: list of transforms
+    :param structured_list: list of transforms
     """
-    if len(input_list) == 1 and not inspect.isclass(input_list[0]):
-        input_list = input_list[0]
+    if len(structured_list) == 1 and not inspect.isclass(structured_list[0]):
+        structured_list = structured_list[0]
 
-    current_type = input_list[0]
+    current_type = structured_list[0]
     start_pos = 1
 
     if not inspect.isclass(current_type):
@@ -3243,16 +3423,21 @@ def _build_transform_from_list(input_list):
         start_pos = 0
 
     transform_list = []
-    for l_ in input_list[start_pos:]:
+    for l_ in structured_list[start_pos:]:
         if isinstance(l_, list):
-            transform_list.append(_build_transform_from_list(l_))
+            transform_list.append(build_transform_from_list(l_))
         else:
             transform_list.append(l_.transform)
     return current_type(transform_list)
 
 
 def _generate_parents_dict_from_edge_dict(edge_dict):
-    """Generate parents dict
+    """Generate parents dict from edge dict
+
+    `edge_dict` is dictionary of that maps a node to next nodes that given
+    node is connected to.
+
+    `parent_dict` is dictionary of nodes with their previous (parent) nodes
 
     :param edge_dict: dict of edges_dict for nodes
     :return:
@@ -3264,8 +3449,16 @@ def _generate_parents_dict_from_edge_dict(edge_dict):
     return parents
 
 
-def _topological_node_sort(start_node, edges_dict, parents_dict):
+def _topological_node_sort(start_node: Node,
+                           edges_dict: defaultdict,
+                           parents_dict: defaultdict):
     """Sort nodes topologically (BFS)
+
+         In __ C __ X __ Out
+          \__ D __ Y __/
+
+    sorted nodes:
+        In > C > D > X > Y > Out
 
     :param start_node: Node to start the search with
     :param edges_dict: dict of edges_dict for nodes
