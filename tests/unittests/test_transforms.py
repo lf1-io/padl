@@ -135,6 +135,15 @@ def _is_compose_instance(transform_, instance_type=pd.Identity):
 
 
 def _is_tuple_of_tensors_equal(tup_a, tup_b):
+    """Check if give tuple of tensors are equal
+
+    tuple of tensors can be tuple of tuple of tensors and so on
+    (tensor1, (tensor2, tensor3))
+
+    :param tup_a: tuple of tensors
+    :param tup_b: tuple of tensors
+    :return: bool
+    """
     for a, b in zip(tup_a, tup_b):
         if isinstance(a, tuple) and isinstance(b, tuple):
             boolean = _is_tuple_of_tensors_equal(a, b)
