@@ -591,6 +591,7 @@ class Transform:
 
     def _pd_trace_error(self, position: int, arg):
         """Add some error description to :obj:`pd_trace`. """
+        print(position, arg)
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             _pd_trace.append(_TraceItem(str_, self._pd_process_traceback(), arg,
@@ -1996,6 +1997,29 @@ class Pipeline(Transform):
             return args
         return namedtuple('namedtuple', keys)(*args)
 
+    def _find_transform_position(self, node: Node):
+        """Find the position of given node in terms of transforms
+        t = (
+            a + b
+            >> c + d
+        )
+
+        if node for d is given, then 1 is returned
+
+        :param node: Position for node to find
+        """
+        node_pos = self.sorted_nodes().index(node) - 1
+        current_pos = 0
+        for i, transform in enumerate(self.transforms):
+            if isinstance(transform, Pipeline):
+                transform_len = len(transform)
+            else:
+                transform_len = 1
+            current_pos += transform_len
+            if node_pos < current_pos:
+                break
+        return i
+
     def __call__(self, args):
         """Call Method for Pipeline
 
@@ -2009,7 +2033,12 @@ class Pipeline(Transform):
         results = {self.input_node: args}
         for node in self.sorted_nodes()[1:]:
             node_arg = self._gather_args_for_node(node, results)
-            results[node] = node.call_transform(node_arg)
+            try:
+                results[node] = node.call_transform(node_arg)
+            except Exception as err:
+                indx = self._find_transform_position(node)
+                self._pd_trace_error(indx, args)
+                raise err
             # TODO: remove results that aren't needed any more
 
         out = results[self.output_node]
