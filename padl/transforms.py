@@ -1366,7 +1366,7 @@ class TorchModuleTransform(ClassTransform):
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
-        self.load_state_dict(torch.load(checkpoint_path))
+        self.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
 
     def _pd_longrepr(self, marker=None) -> str:
         out = torch.nn.Module.__repr__(self)
