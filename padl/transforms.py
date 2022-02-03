@@ -2060,13 +2060,23 @@ class Pipeline(Transform):
 
         (prev_node, second_prev_node) -> curr_node : -> parent_pos = 0
 
+        Example incompatible edge:
+        For a transform built like:
+            A -> B + C -> D / F
+
+        Here, B -> F is incompatible edge. So, is C -> D
+        So Valid paths are:
+            [A, B, D] , [A, C, F]
+
         :param output_slice: output_slice of previous node
         :param input_slice: input position of current node
         :param parent_pos: position of parent in arg (useful when input_position not defined)
         :return:
         """
+
         # TODO: Check, TEST & Simplify
         input_slice = input_slice if input_slice is not None else parent_pos
+        # if no input_slice, edge compatible
         if input_slice is None:
             return True
         if isinstance(input_slice, slice):
@@ -2092,11 +2102,11 @@ class Pipeline(Transform):
                 return True
             return False
         else:
-            if len(set(input_slice).intersection(set(input_slice))) > 0:
+            if len(set(input_slice).intersection(set(output_slice))) > 0:
                 return True
             return False
 
-    def list_all_paths(self, start_node: Node=None, path: list=None):
+    def list_all_paths(self, start_node: Node = None, path: list = None):
         """List all paths
 
         :param start_node: Node where the path will start

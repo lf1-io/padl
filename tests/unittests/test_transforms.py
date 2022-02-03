@@ -1039,22 +1039,22 @@ class TestComposeWithComments:
 
 class TestAssertNoDoubleBatch:
     def test_double_1(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(SyntaxError):
             t = plus_one >> batch >> batch
             t.pd_forward
 
     def test_double_2(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(SyntaxError):
             t = plus_one >> plus_one + batch >> plus_one >> batch >> plus_one
             t.pd_forward
 
     def test_double_3(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(SyntaxError):
             t = plus_one >> plus_one + batch >> plus_one >> batch + plus_one >> plus_one
             t.pd_forward
 
     def test_double_4(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(SyntaxError):
             t = plus_one >> plus_one / batch >> batch + plus_one >> plus_one
             t.pd_forward
 
