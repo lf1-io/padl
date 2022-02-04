@@ -1518,7 +1518,6 @@ class Map(Transform):
             return f'~{varname}'
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
-
 class Node:
     """Node wrapper for transforms
 

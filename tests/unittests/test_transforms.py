@@ -249,7 +249,7 @@ class TestMap:
         request.cls.transform_4 = transform(lambda x: [x, x, x]) >> ~plus_one
         request.cls.transform_5 = Batchify() >> ~plus_one
         request.cls.transform_6 = (
-            Batchify() / Identity()
+            Batchify() / (Identity() >> Batchify())
             >> ~plus_one
         )
 
@@ -263,21 +263,21 @@ class TestMap:
 
     def test_pd_preprocess(self):
         assert isinstance(self.transform_1.pd_preprocess, pd.Identity)
-        assert isinstance(self.transform_2.pd_preprocess, pd.Identity)
-        assert isinstance(self.transform_5.pd_preprocess, pd.Batchify)
-        assert isinstance(self.transform_6.pd_preprocess, pd.Compose)
+        assert _is_compose_instance(self.transform_2.pd_preprocess)
+        assert _is_compose_instance(self.transform_5.pd_preprocess, pd.Batchify)
+        assert isinstance(self.transform_6.pd_preprocess, pd.Parallel)
 
     def test_pd_forward(self):
         assert isinstance(self.transform_1.pd_forward, pd.Map)
         assert isinstance(self.transform_2.pd_forward, pd.Parallel)
-        assert isinstance(self.transform_5.pd_forward, pd.Map)
-        assert isinstance(self.transform_6.pd_forward, pd.Parallel)
+        assert str(self.transform_5.pd_forward) == str(pd.identity >> ~plus_one)
+        assert isinstance(self.transform_6.pd_forward[0], pd.Parallel)
 
     def test_pd_postprocess(self):
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_2.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_5.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_6.pd_postprocess, pd.Parallel)
+        assert _is_compose_instance(self.transform_2.pd_postprocess, pd.Identity)
+        assert _is_compose_instance(self.transform_5.pd_postprocess, pd.Identity)
+        assert _is_compose_instance(self.transform_6.pd_postprocess, pd.Identity)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == (3, 4, 5)
