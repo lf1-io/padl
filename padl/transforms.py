@@ -591,7 +591,6 @@ class Transform:
 
     def _pd_trace_error(self, position: int, arg):
         """Add some error description to :obj:`pd_trace`. """
-        print(position, arg)
         try:
             str_ = self._pd_fullrepr(marker=(position, '\033[31m  <---- error here \033[0m'))
             _pd_trace.append(_TraceItem(str_, self._pd_process_traceback(), arg,
@@ -2607,7 +2606,7 @@ class Compose(Pipeline):
         if stage == 'forward':
             is_entire_transform = isinstance(preprocess, Identity) and \
                                   isinstance(postprocess, Identity)
-            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
+            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform) - 1
 
         is_entire_transform = isinstance(preprocess, Identity) and \
                               isinstance(forward, Identity)
