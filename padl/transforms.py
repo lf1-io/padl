@@ -40,8 +40,7 @@ from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
 
-from IPython.display import Image
-import networkx as nx
+from padl._graph import _Edge, _Graph, _Node, _connect_graphs
 
 _pd_trace = []
 
@@ -133,53 +132,6 @@ class _GeneratorWithLength:
         return self.length
 
 
-class _OutputSlicer:
-    """Helper class to store output slice
-
-    transform.pd_output[0] will trigger this __getitem__
-    and connect the transform's 0th output with next transform
-
-    :param main_object: Transform
-    """
-
-    def __init__(self, main_object):
-        self.main_object = main_object
-
-    def __getitem__(self, item):
-        named_copy = copy(self.main_object)
-        named_copy._pd_name = self.main_object._pd_name
-        named_copy._pd_group = True
-        named_copy._pd_varname = {}
-        named_copy.pd_output = _OutputSlicer(named_copy)
-        named_copy.pd_input = _InputSlicer(named_copy)
-        named_copy._pd_output_slice = item
-        return named_copy
-
-
-class _InputSlicer:
-    """Helper class to store input slice
-
-    transform.pd_input[0] will trigger this __getitem__
-    and connect the previous transform's output to 0th arg for this transform
-
-    :param main_object: Transform
-    """
-
-    def __init__(self, main_object):
-        self.main_object = main_object
-
-    def __getitem__(self, item):
-        named_copy = copy(self.main_object)
-        named_copy._pd_name = self.main_object._pd_name
-        named_copy._pd_group = True
-        named_copy._pd_varname = {}
-        named_copy.pd_output = _OutputSlicer(named_copy)
-        named_copy.pd_input = _InputSlicer(named_copy)
-        named_copy._pd_input_slice = item
-
-        return named_copy
-
-
 Mode = Literal['infer', 'eval', 'train']
 Stage = Literal['preprocess', 'forward', 'postprocess']
 
@@ -204,10 +156,6 @@ class Transform:
         self._pd_device = 'cpu'
         self._pd_traceback = traceback.extract_stack()
         self._pd_external_full_dump = False
-        self._pd_output_slice = None
-        self._pd_input_slice = None
-        self.pd_output = _OutputSlicer(self)
-        self.pd_input = _InputSlicer(self)
 
     @property
     def _pd_full_dump_relevant_module(self):
@@ -349,8 +297,6 @@ class Transform:
         named_copy._pd_name = name
         named_copy._pd_group = True
         named_copy._pd_varname = {}
-        named_copy.pd_output = _OutputSlicer(named_copy)
-        named_copy.pd_input = _InputSlicer(named_copy)
         return named_copy
 
     def __invert__(self) -> "Map":
@@ -725,10 +671,9 @@ class Transform:
         return self._pd_varname[scope]
 
     def pd_forward_device_check(self) -> bool:
-        """Check if all transform in forward are in correct device
+        """Check if all transform in forward are on the correct device.
 
-        All transforms in forward need to be in same device as specified for
-        the whole Pipeline.
+        All transforms in forward need to be on the same device as specified for the whole Pipeline.
         """
         pd_device = self.pd_device
         for layer in self.pd_forward.pd_layers:
@@ -741,7 +686,7 @@ class Transform:
         return True
 
     def _pd_unpack_argument(self, arg) -> bool:
-        """Return *True* if to arguments should be unpacked, else *False*"""
+        """Return *True* if to arguments should be unpacked, else *False*."""
         signature_count = 0
         if not isinstance(arg, (list, tuple)):
             return False
@@ -1519,7 +1464,7 @@ class Map(Transform):
         return f'~{self.transform._pd_evaluable_repr(indent)}'
 
 
-class Node:
+class _TransformNode(_Node):
     """Node wrapper for transforms
 
     Nodes wrap a transform and can be connected in graph to form complex
@@ -1529,51 +1474,15 @@ class Node:
     _id = 0
 
     def __init__(self, transform: Transform):
-        self.id = self._generate_id()  # keep?
+        super().__init__()
         self.transform = transform
-        self.pd_input_slice = self.transform._pd_input_slice
-        self.pd_output_slice = self.transform._pd_output_slice
 
-    @property
-    def name(self):
-        """Get name of the transform in this node"""
-        if self.transform.pd_name is None and isinstance(self.transform, Pipeline):
-            return self.transform._name
-        return self.transform.pd_name
+    def __repr__(self):
+        """Get the name of the transform concatenated with the ID of this node.
 
-    @property
-    def name_id(self):
-        """Get name of the transform concat with ID of this node
         This is used as unique identifier for Node, which is useful for drawing.
         """
-        if self.name is not None:
-            return self.name + ' ' + str(self.id)
-        if isinstance(self.transform, Batchify):
-            name = 'batchify '
-            return name + str(self.id)
-        if isinstance(self.transform, Unbatchify):
-            name = 'unbatchify '
-            return name + str(self.id)
-        return str(self.id)
-
-    @classmethod
-    def _generate_id(cls):
-        """Generate id for the node"""
-        cls._id += 1
-        return cls._id
-
-    def __call__(self, args):
-        """Call Method for Node"""
-        return self.call_transform(args)
-
-    def copy(self):
-        """Return copy of this node"""
-        _copy = type(self)(self.transform)
-        return _copy
-
-    def call_transform(self, args):
-        """call the node's transform"""
-        return self.transform.pd_call_in_mode(args, mode='infer', ignore_grad=True)
+        return f'{self.transform._pd_tinyrepr()} {self.id}'
 
 
 class Pipeline(Transform):
@@ -1596,14 +1505,9 @@ class Pipeline(Transform):
         transforms = self._flatten_list(transforms)
         self._pd_group = True if pd_name is not None else pd_group
 
-        self.input_node = Node(identity - 'Input')  # potential overhead
-        self.output_node = Node(identity - 'Output')
-
-        self.networkx_graph = None  # ... later drop
+        self._graph = _Graph()
 
         self._pd_group = False
-        self.edges = defaultdict(dict)
-        self.parents = defaultdict(list)
 
         self.transforms: List[Transform] = transforms
 
@@ -1617,8 +1521,6 @@ class Pipeline(Transform):
         named_copy._pd_name = name
         named_copy._pd_group = True
         named_copy._pd_varname = {}
-        named_copy.pd_output = _OutputSlicer(named_copy)
-        named_copy.pd_input = _InputSlicer(named_copy)
         return named_copy
 
     def __getitem__(self, item: Union[int, slice, str]) -> Transform:
@@ -1862,13 +1764,6 @@ class Pipeline(Transform):
                 if not isinstance(s, Identity):
                     final_splits[i] = s - self._pd_name
 
-    def copy(self):
-        """Return copy of this Pipeline"""
-        copy_graph = copy(self)
-        copy_graph.pd_output = _OutputSlicer(copy_graph)
-        copy_graph.pd_input = _InputSlicer(copy_graph)
-        return copy_graph
-
     @classmethod
     def _flatten_list(cls, transform_list: List[Transform]):
         """Flatten *transform_list* such that members of *cls* are not nested.
@@ -1878,9 +1773,6 @@ class Pipeline(Transform):
         list_flat = []
 
         for transform in transform_list:
-            if isinstance(transform, Pipeline):
-                transform = transform.copy()
-
             if isinstance(transform, cls):
                 if transform._pd_group:
                     list_flat.append(transform)
@@ -1891,112 +1783,27 @@ class Pipeline(Transform):
 
         return list_flat
 
-    def _gather_args_for_node(self, node: Node, inputs: dict):
-        """Gather args to call node.transform
-
-        This gathers all the args and arranges with according to the
-        input_slice order.
-        """
-        gathered_args = [None for _ in self.parents[node]]
-
-        for idx, parent_node in enumerate(self.parents[node]):
-            output_slice, input_slice = self.edges[parent_node][node]
-            arg = inputs[parent_node]
-            if output_slice is not None:
-                arg = arg[output_slice]
-            # TODO: make sure there is always input_slice and non overlapping input_slice
-            if input_slice is not None:
-                gathered_args[input_slice] = arg
-            else:
-                gathered_args[idx] = arg
-
-        if len(gathered_args) == 1:
-            return gathered_args[0]
-        return tuple(gathered_args)
-
-    def connect(self, node_a, node_b, output_slice=None, input_slice=None):
-        """Connect node_a with node_b
-
-        node_a -> node_b
-        """
-        self.edges[node_a][node_b] = (output_slice, input_slice)
-        self.parents[node_b].append(node_a)
-
-    def connect_graph(self, node_a, graph_b, output_slice=None, input_slice=None, parent_position=None):
-        """Connect `node_a` with a graph `graph_b`
-
-        node_a -> input_node of graph_b ->
-
-        :param node_a: node to connect graph `graph_b` to
-        :param graph_b: graph to connect to the node `node_a` to
-        :param output_slice: output_slice of `node_a`
-        :param input_slice: input_slice for `graph_b`
-        :param parent_position: position of `node_a` as parent of `graph_b`
-        :return:
-        """
-
-        for node_b in graph_b.edges[graph_b.input_node]:
-            temp_output_slice = output_slice
-            node_b_output_slice, input_slice = graph_b.edges[graph_b.input_node][node_b]
-            if self._check_edge_compatibility(node_b_output_slice, input_slice, parent_position):
-                temp_output_slice = node_b_output_slice if temp_output_slice is None else temp_output_slice
-                temp_output_slice = None if temp_output_slice == parent_position else temp_output_slice
-                self.connect(node_a,
-                             node_b,
-                             output_slice=temp_output_slice,
-                             input_slice=input_slice,
-                             )
-
-        temp_edges = defaultdict(dict)
-        temp_parents = defaultdict(list)
-
-        for parent, children in graph_b.edges.items():
-            if parent in (graph_b.input_node, graph_b.output_node):
-                continue
-            for child in children:
-                if child not in (graph_b.input_node, graph_b.output_node):
-                    temp_edges[parent][child] = graph_b.edges[parent][child]
-        for parent, children in self.edges.items():
-            for child in children:
-                temp_edges[parent][child] = self.edges[parent][child]
-
-        for child, parents in graph_b.parents.items():
-            if child in (graph_b.input_node, graph_b.output_node):
-                continue
-            for parent in parents:
-                if parent in (graph_b.input_node, graph_b.output_node):
-                    continue
-                temp_parents[child].append(parent)
-        for child, parents in self.parents.items():
-            for parent in parents:
-                temp_parents[child].append(parent)
-
-        self.edges = temp_edges
-        self.parents = temp_parents
-
     @lru_cache(maxsize=128)
     def sorted_nodes(self):
         """Topologically sorted nodes"""
-        return _topological_node_sort(self.input_node, self.edges, self.parents)
+        return self._graph.sorted()
 
     @lru_cache(maxsize=128)
     def _set_output_formatter(self):
         """Calculate the keys for namedtuple"""
-        transforms = [node.transform for node in self.parents[self.output_node]]
-        self.pd_keys = self._pd_get_keys(transforms)
-        return self.pd_keys
+        return self._pd_get_keys([node.transform for node in self._graph.out_nodes])
 
-    def _pd_format_output(self, x):
+    def _pd_format_output(self, x):  # A: check again
         """Return the formatted namedtuple of output"""
         return self._pd_output_formatter(x)
 
-    def _pd_output_formatter(self, args):
+    def _pd_output_formatter(self, args):  # A: check again
         keys = self._set_output_formatter()
         if len(keys) == 1:
             return args
         return namedtuple('namedtuple', keys)(*args)
 
-    def _find_transform_position(self, node: Node):
+    def _find_transform_position(self, node: _Node):  # A: check again
         """Find the position of given node in terms of transforms
         t = (
             a + b
@@ -2019,6 +1826,25 @@ class Pipeline(Transform):
                 break
         return i
 
+    def _gather_args_for_node(self, node: _TransformNode, inputs: dict):
+        """Gather args to call node.transform
+
+        This gathers all the args and arranges with according to the
+        input_slice order.
+        """
+        gathered_args = [None for _ in self._graph.parents(node)]
+
+        for parent_node in self._graph.parents(node):
+            edge = self._graph.edges[parent_node][node]
+            arg = inputs[parent_node]
+            if edge.out is not None and len(self._graph.parents(node)) > 1:
+                arg = arg[edge.out]
+            gathered_args[edge.in_] = arg
+
+        if len(gathered_args) == 1:  # A: remove?
+            return gathered_args[0]
+        return tuple(gathered_args)
+
     def __call__(self, args):
         """Call Method for Pipeline
 
@@ -2029,288 +1855,92 @@ class Pipeline(Transform):
 
         In > C > D > X > Y > Out
         """
-        results = {self.input_node: args}
-        for node in self.sorted_nodes()[1:]:
+        results = {self._graph.input_node: args}
+        nodes = self.sorted_nodes()
+        for node in nodes[1:-1]:
             node_arg = self._gather_args_for_node(node, results)
             try:
-                results[node] = node.call_transform(node_arg)
+                results[node] = node.transform._pd_unpack_args_and_call(node_arg)
             except Exception as err:
                 indx = self._find_transform_position(node)
                 self._pd_trace_error(indx, args)
                 raise err
             # TODO: remove results that aren't needed any more
 
-        out = results[self.output_node]
+        out = self._gather_args_for_node(self._graph.output_node, results)
         return self._pd_output_formatter(out)
 
-    def convert_to_networkx(self):
-        """Convert Pipleline to Networkx graph
+    def _generate_pre_batch_graph(self) -> _Graph:
+        pre_batch_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        Useful for drawing
-        """
+        todo = {self._graph.input_node}
+        post_batch_start_nodes = set()
+        i = 0
 
-        def _covert_slice_to_str(slc):
-            if slc is None:
-                return ''
-            if isinstance(slc, slice):
-                start = slc.start if slc.start is not None else ''
-                stop = slc.stop if slc.stop is not None else ''
-                step = slc.step if slc.step is not None else ''
-                return f'[{start}:{stop}:{step if step is not None else ""}]'
-            return f'[{slc}]'
-
-        networkx_graph = nx.DiGraph()
-        for parent, children_dict in self.edges.items():
-            networkx_graph.add_node(parent.name_id, node=parent)
-            for child in children_dict:
-                networkx_graph.add_node(child.name_id, node=child)
-                output_slice = _covert_slice_to_str(self.edges[parent][child][0])
-                networkx_graph.add_edge(parent.name_id,
-                                        child.name_id,
-                                        label=output_slice)
-        self.networkx_graph = networkx_graph
-
-    def draw(self):
-        """Draw the pipeline using pygraphviz
-
-        :return: Image
-        """
-        self.convert_to_networkx()
-        dot = nx.nx_agraph.to_agraph(self.networkx_graph)
-        dot.layout('dot')
-        return Image(dot.draw(format='png', prog='dot'))
-
-    @staticmethod
-    def _check_edge_compatibility(output_slice, input_slice, parent_pos):
-        """Check if given edge data gives a valid path
-
-        prev_node.pd_output[output_slice] -> curr_node.pd_input[input_slice]
-
-        (prev_node, second_prev_node) -> curr_node : -> parent_pos = 0
-
-        Example incompatible edge:
-        For a transform built like:
-            A -> B + C -> D / F
-
-        Here, B -> F is incompatible edge. So, is C -> D
-        So Valid paths are:
-            [A, B, D] , [A, C, F]
-
-        :param output_slice: output_slice of previous node
-        :param input_slice: input position of current node
-        :param parent_pos: position of parent in arg (useful when input_position not defined)
-        :return:
-        """
-
-        # TODO: Check, TEST & Simplify
-        input_slice = input_slice if input_slice is not None else parent_pos
-        # if no input_slice, edge compatible
-        if input_slice is None:
-            return True
-        if isinstance(input_slice, slice):
-            if input_slice.stop is None:
-                return True
-            input_slice = range(input_slice.stop)[input_slice]
-        if output_slice is None:
-            return True
-        elif isinstance(output_slice, slice):
-            if output_slice.stop is None:
-                return True
-            output_slice = range(output_slice.stop)[output_slice]
-        if isinstance(input_slice, int) and isinstance(output_slice, list):
-            if input_slice in output_slice:
-                return True
-            return False
-        elif isinstance(input_slice, list) and isinstance(output_slice, int):
-            if output_slice in input_slice:
-                return True
-            return False
-        elif isinstance(input_slice, int) and isinstance(output_slice, int):
-            if input_slice == output_slice:
-                return True
-            return False
-        else:
-            if len(set(input_slice).intersection(set(output_slice))) > 0:
-                return True
-            return False
-
-    def list_all_paths(self, start_node: Node = None, path: list = None):
-        """List all paths
-
-        :param start_node: Node where the path will start
-        :param path: list of nodes in order that forms a path
-        """
-        # TODO: Decide if to remove this
-        if path is None:
-            path = []
-        if start_node is None:
-            path = [self.input_node]
-            start_node = self.input_node
-
-        if len(self.edges[start_node]) == 0:
-            return path
-
-        return_path = []
-
-        for idx, out_node in enumerate(self.edges[start_node]):
-            parent_position = self.parents[out_node].index(start_node)
-
-            output_slice, input_slice = self.edges[start_node][out_node]
-            if not self._check_edge_compatibility(output_slice, input_slice, parent_position):
-                continue
-            path_copy = path.copy()
-            if isinstance(out_node.transform, Pipeline):
-                path_copy.append(out_node.transform.input_node)
-                return_path.append(out_node.transform.list_all_paths(out_node.transform.input_node, path_copy))
-            else:
-                path_copy.append(out_node)
-                return_path.append(self.list_all_paths(out_node, path_copy))
-        if len(return_path) == 1:
-            return return_path[0]
-        return return_path
-
-    def _generate_preprocess_dict(self,
-                                  current_node: Node,
-                                  preprocess_edges: defaultdict = None,
-                                  batchify_found: bool = False,
-                                  batchify_positions: list = None,
-                                  ) -> defaultdict:
-        """Generate edge dict for preprocess of this Pipeline
-
-        :param current_node: Node to start the dict from
-        :param preprocess_edges: edge dictionary of preprocess being built
-        :param batchify_found: bool, if batchify exists or not
-        :return: dictionary of edges
-        """
-        if preprocess_edges is None:
-            preprocess_edges = defaultdict(dict)
-        if batchify_positions is None:
-            batchify_positions = dict()
-
-        for child in self.edges[current_node]:
-            if isinstance(child.transform, Batchify):
-                batchify_found = True
-                preprocess_edges[current_node][child] = self.edges[current_node][child]
-                preprocess_edges[child][self.output_node] = (None, None)
-            elif child == self.output_node and batchify_found:
+        while todo:
+            next_ = todo.pop()
+            if next_ == self._graph.output_node and post_batch_start_nodes:
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
+            if isinstance(getattr(next_, 'transform', None), Batchify):
+                pre_batch_graph.edges[next_][self._graph.output_node] = (None, i)  # change to other output node
+                post_batch_start_nodes.update({(i, n) for n in self._graph.children(next_)})
+                i += 1
             else:
-                preprocess_edges[current_node][child] = self.edges[current_node][child]
-                preprocess_edges, batchify_found, batchify_positions = self._generate_preprocess_dict(child,
-                                                                                                      preprocess_edges,
-                                                                                                      batchify_found,
-                                                                                                      batchify_positions
-                                                                                                      )
-        return preprocess_edges, batchify_found, batchify_positions
+                pre_batch_graph.edges[next_] = self._graph.edges[next_]
+                todo.update(self._graph.children(next_))
 
-    def _generate_forward_dict(self,
-                               current_node: Node = None,
-                               forward_edges: defaultdict = None,
-                               batchify_node_dict: dict = None,
-                               unbatchify_node_dict: dict = None,
-                               unbatchify_found: bool = False,
-                               batchify_positions: dict = None,
-                               unbatchify_positions: dict = None,
-                               ) -> defaultdict:
-        """Generate edge dict for forward of this Pipeline
+        pre_batch_graph.replace_in_out()
+        return pre_batch_graph, post_batch_start_nodes
 
-        :param current_node: Node to start the dict from
-        :param forward_edges: edge dictionary of forward being built
-        :param batchify_node_dict: dictionary of batchify_nodes to new batchify marker (identity) nodes
-        :param unbatchify_node_dict: dictionary of unbatchify_nodes to new unbatchify marker (identity) nodes
-        :param unbatchify_found: bool, if unbatchify exits or not
-        :param batchify_positions: position of connection of batchify to output node
-        :param unbatchify_positions: position of connection of unbatchify to output node
-        """
-        if batchify_node_dict is None:
-            batchify_node_dict = dict()
-        if unbatchify_node_dict is None:
-            unbatchify_node_dict = dict()
-        if forward_edges is None:
-            forward_edges = defaultdict(dict)
+    def _generate_post_batch_graph(self, start_nodes) -> _Graph:
+        pre_unbatch_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        if current_node is None:
-            batchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Batchify)]
-            for batch_node in batchify_nodes:
-                if batch_node not in batchify_node_dict:
-                    batchify_node_dict[batch_node] = Node(identity - 'batchify_marker')
-                if batchify_positions is not None and len(batchify_nodes) > 1:
-                    batchify_pos = batchify_positions[batch_node]
-                else:
-                    batchify_pos = None
-                forward_edges[self.input_node][batchify_node_dict[batch_node]] = (batchify_pos, None)
-                forward_edges, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
-                    current_node=batch_node,
-                    forward_edges=forward_edges,
-                    batchify_node_dict=batchify_node_dict,
-                    unbatchify_node_dict=unbatchify_node_dict,
-                    unbatchify_found=unbatchify_found,
-                    batchify_positions=batchify_positions)
-            return forward_edges, unbatchify_found, unbatchify_node_dict
+        todo = set()
+        postprocess_start_nodes = set()
 
-        if isinstance(current_node.transform, Batchify):
-            new_current_node = batchify_node_dict[current_node]
-        else:
-            new_current_node = current_node
+        for i, node in start_nodes:
+            pre_unbatch_graph.connect(pre_unbatch_graph.input_node, node, _Edge(i, 0))
+            todo.add(node)
 
-        for child in self.edges[current_node]:
-            if isinstance(child.transform, Batchify):
-                raise SyntaxError("Two batchify in same path is not allowed")
-            elif isinstance(child.transform, Unbatchify):
-                unbatchify_found = True
-                if child not in unbatchify_node_dict:
-                    unbatchify_node_dict[child] = Node(identity - 'unbatch_marker')
-                forward_edges[new_current_node][unbatchify_node_dict[child]] = self.edges[current_node][child]
-                forward_edges[unbatchify_node_dict[child]][self.output_node] = (None, None)
-            elif child == self.output_node and unbatchify_found:
-                raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify')
+        i = 0
+
+        while todo:
+            next_ = todo.pop()
+            if isinstance(getattr(next_, 'transform', None), Batchify):
+                raise SyntaxError('Double batchify.')
+            if next_ == self._graph.output_node and postprocess_start_nodes:
+                raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify.')
+            if isinstance(getattr(next_, 'transform', None), Unbatchify):
+                pre_unbatch_graph.edges[next_][self._graph.output_node] = (None, i)  # change to other output node
+                postprocess_start_nodes.update({(i, n) for n in self._graph.children(next_)})
+                i += 1
             else:
-                forward_edges[new_current_node][child] = self.edges[current_node][child]
-                forward_edges, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
-                    current_node=child,
-                    forward_edges=forward_edges,
-                    batchify_node_dict=batchify_node_dict,
-                    unbatchify_node_dict=unbatchify_node_dict,
-                    unbatchify_found=unbatchify_found,
-                    unbatchify_positions=unbatchify_positions)
-        return forward_edges, unbatchify_found, unbatchify_node_dict
+                pre_unbatch_graph.edges[next_] = self._graph.edges[next_]
+                todo.update(self._graph.children(next_))
 
-    def _generate_postprocess_dict(self,
-                                   current_node=None,
-                                   postprocess_edges=None,
-                                   unbatchify_positions=None,
-                                   ):
-        """Generate edge dict for postprocess of this Pipeline
+        pre_unbatch_graph.replace_in_out()
+        return pre_unbatch_graph, postprocess_start_nodes
 
-        :param current_node: Node to start the dict from
-        :param postprocess_edges: edge dictionary of postprocess being built
-        :param unbatchify_positions: position of connection of unbatchify to output node
-        """
-        if postprocess_edges is None:
-            postprocess_edges = defaultdict(dict)
+    def _generate_postprocess_graph(self, start_nodes) -> _Graph:
+        postprocess_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        if current_node is None:
-            unbatchify_nodes = [n_ for n_ in self.edges if isinstance(n_.transform, Unbatchify)]
-            for unbatch_node in unbatchify_nodes:
-                if unbatchify_positions is not None and len(unbatchify_nodes) > 1:
-                    unbatch_pos = unbatchify_positions[unbatch_node]
-                else:
-                    unbatch_pos = None
-                postprocess_edges[self.input_node][unbatch_node] = (unbatch_pos, None)
-                postprocess_edges = self._generate_postprocess_dict(current_node=unbatch_node,
-                                                                    postprocess_edges=postprocess_edges,
-                                                                    unbatchify_positions=unbatchify_positions)
-            return postprocess_edges
+        todo = set()
 
-        for child in self.edges[current_node]:
-            if isinstance(child.transform, Unbatchify):
-                raise SyntaxError("Two Unbatchify in same path is not allowed")
-            else:
-                postprocess_edges[current_node][child] = self.edges[current_node][child]
-                postprocess_edges = self._generate_postprocess_dict(current_node=child,
-                                                                    postprocess_edges=postprocess_edges,
-                                                                    unbatchify_positions=unbatchify_positions)
-        return postprocess_edges
+        for i, node in start_nodes:
+            postprocess_graph.connect(postprocess_graph.input_node, node, _Edge(i, 0))
+            todo.add(node)
+
+        while todo:
+            next_ = todo.pop()
+            if isinstance(getattr(next_, 'transform', None), Batchify):
+                raise SyntaxError('Double batchify.')
+            if isinstance(getattr(next_, 'transform', None), Unbatchify):
+                raise SyntaxError('Double unbatchify.')
+            postprocess_graph.edges[next_] = self._graph.edges[next_]
+            todo.update(self._graph.children(next_))
+
+        postprocess_graph.replace_in_out()
+        return postprocess_graph
 
     def _pd_splits(self, input_components=0):
         """Generate splits (preprocess, forward, postprocess)
@@ -2318,79 +1948,23 @@ class Pipeline(Transform):
         :param input_components:
         :return:
         """
-        # TODO: Clean _pd_splits upstream to streamline output here
-        batchify_positions = None
-        unbatchify_positions = None
+        pre_batch_graph, post_batch_start_nodes = self._generate_pre_batch_graph()
+        post_batch_graph, postprocess_start_nodes = \
+            self._generate_post_batch_graph(post_batch_start_nodes)
+        postprocess_graph = self._generate_postprocess_graph(postprocess_start_nodes)
 
-        preprocess_edges_dict, batchify_found, batchify_positions = self._generate_preprocess_dict(self.input_node)
-        _preprocess_parents = _generate_parents_dict_from_edge_dict(preprocess_edges_dict)
-        if batchify_found:
-            batchify_positions = {batchify_node: idx for idx, batchify_node in
-                                  enumerate(_preprocess_parents[self.output_node])}
+        pre_batch = _graph_to_pipeline(pre_batch_graph)
+        post_batch = _graph_to_pipeline(post_batch_graph)
+        postprocess = _graph_to_pipeline(postprocess_graph)
 
-        forward_edges_dict, unbatchify_found, unbatchify_node_dict = self._generate_forward_dict(
-            batchify_positions=batchify_positions)
-        _forward_parents = _generate_parents_dict_from_edge_dict(forward_edges_dict)
-
-        if unbatchify_found:
-            unbatchify_positions = {unbatchify_node: idx for idx, unbatchify_node in enumerate(unbatchify_node_dict)}
-
-        postprocess_edges_dict = self._generate_postprocess_dict(
-            unbatchify_positions=unbatchify_positions
-        )
-
-        build_splits = []
-        if batchify_found:
-            self._preprocess_edges = preprocess_edges_dict
-            self._forward_edges = forward_edges_dict
-            build_splits += ['preprocess', 'forward']
+        if not post_batch_start_nodes:
+            split = 0
+        elif not postprocess_start_nodes:
+            split = 1
         else:
-            self._pd_preprocess = Compose([identity - 'Preprocess Identity'])
-            self._preprocess_edges = self._pd_preprocess.edges
-            self._preprocess_parents = self._pd_preprocess.parents
+            split = 2
 
-            self._forward_edges = preprocess_edges_dict
-            build_splits += ['forward']
-
-        if len(postprocess_edges_dict) > 0:
-            self._postprocess_edges = postprocess_edges_dict
-            build_splits += ['postprocess']
-        else:
-            self._pd_postprocess = Compose([identity - 'Postprocess Identity'])
-            self._postprocess_edges = self._pd_postprocess.edges
-            self._postprocess_parents = self._pd_postprocess.parents
-
-        if 'preprocess' in build_splits:
-            self._preprocess_parents = _generate_parents_dict_from_edge_dict(self._preprocess_edges)
-            self._preprocess_list = convert_to_structured_list(start_node=self.input_node,
-                                                               end_node=self.output_node,
-                                                               edges_dict=self._preprocess_edges,
-                                                               parents_dict=self._preprocess_parents,
-                                                               exclude_start_node=True,
-                                                               )
-            self._pd_preprocess = build_transform_from_list(self._preprocess_list)
-
-        if 'forward' in build_splits:
-            self._forward_parents = _generate_parents_dict_from_edge_dict(self._forward_edges)
-            self._forward_list = convert_to_structured_list(start_node=self.input_node,
-                                                            end_node=self.output_node,
-                                                            edges_dict=self._forward_edges,
-                                                            parents_dict=self._forward_parents,
-                                                            exclude_start_node=True,
-                                                            )
-            self._pd_forward = build_transform_from_list(self._forward_list)
-
-        if 'postprocess' in build_splits:
-            self._postprocess_parents = _generate_parents_dict_from_edge_dict(self._postprocess_edges)
-            self._postprocess_list = convert_to_structured_list(start_node=self.input_node,
-                                                                end_node=self.output_node,
-                                                                edges_dict=self._postprocess_edges,
-                                                                parents_dict=self._postprocess_parents,
-                                                                exclude_start_node=True,
-                                                                )
-            self._pd_postprocess = build_transform_from_list(self._postprocess_list)
-
-        return None, (self._pd_preprocess, self._pd_forward, self._pd_postprocess), True
+        return split, (pre_batch, post_batch, postprocess), bool(post_batch_start_nodes)
 
 
 class Compose(Pipeline):
@@ -2413,47 +1987,34 @@ class Compose(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        current_nodes = [self.input_node]
+        self._graph.connect(self._graph.input_node, self._graph.output_node, _Edge(None, 0))
 
         for transform in self.transforms:
-            if isinstance(transform, Pipeline):
-                for idx, node_a in enumerate(current_nodes):
-                    self.connect_graph(node_a,
-                                       transform,
-                                       parent_position=idx if len(current_nodes) > 1 else None,
-                                       output_slice=None,
-                                       input_slice=None)
-                current_nodes = transform.parents[transform.output_node]
-                continue
+            self._append(transform)
 
-            next_node = Node(transform)
-            for node_a in current_nodes:
-                self.connect(node_a,
-                             next_node,
-                             output_slice=node_a.pd_output_slice,
-                             input_slice=next_node.pd_input_slice)
-            current_nodes = [next_node]
-        for node_a in current_nodes:
-            self.connect(node_a,
-                         self.output_node,
-                         output_slice=node_a.pd_output_slice,
-                         )
+    def _append(self, other: Transform):
+        if isinstance(other, Pipeline):
+            self._graph = _connect_graphs(self._graph, other._graph)
+            return
+
+        other_node = _TransformNode(other)
+
+        for onode in self._graph.out_nodes:
+            edge = self._graph.edges[onode].pop(self._graph.output_node)
+            self._graph.connect(onode, other_node, edge)
+
+        self._graph.connect(other_node, self._graph.output_node, _Edge(None, 0))
+        self._graph.update_parents()
 
     @staticmethod
-    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
+    def _classify_nodetype(i, t, t_m1, cw, cw_m1):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
-            type_ = 'multi_2_multi'
-
-        elif i > 0 and cw == 1 and cw_m1 > 1:
-            type_ = 'multi_2_single'
-
-        elif cw == 1 or isinstance(t, Compose):
-            type_ = 'single_2_single'
-
-        else:
-            type_ = 'single_2_multi'
-
-        return type_
+            return 'multi_2_multi'
+        if i > 0 and cw == 1 and cw_m1 > 1:
+            return 'multi_2_single'
+        if cw == 1 or isinstance(t, Compose):
+            return 'single_2_single'
+        return 'single_2_multi'
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:  # TODO: make it respect the formatting
         """Create a detailed formatted representation of the transform. For multi-line inputs
@@ -2489,8 +2050,8 @@ class Compose(Pipeline):
             widths = [0]
             subarrows = []
 
-            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
-                                               children_widths[i], children_widths[i - 1])
+            type_ = self._classify_nodetype(i, t, self.transforms[i - 1],
+                                            children_widths[i], children_widths[i - 1])
 
             # if subsequent rows have the same number of "children" transforms
             if type_ == 'multi_2_multi':
@@ -2633,23 +2194,14 @@ class Rollout(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        for transform in self.transforms:
-            if isinstance(transform, Pipeline):
-                self.connect_graph(self.input_node, transform)
-                out_nodes = transform.parents[transform.output_node]
-                for out_node in out_nodes:
-                    self.connect(out_node,
-                                 self.output_node)
-                continue
-            node = Node(transform)
-            self.connect(self.input_node,
-                         node,
-                         output_slice=self.input_node.pd_output_slice,
-                         input_slice=node.pd_input_slice)
-            self.connect(node,
-                         self.output_node,
-                         output_slice=node.pd_output_slice,
-                         input_slice=self.output_node.pd_input_slice)
+        for idx, transform in enumerate(self.transforms):
+            if isinstance(transform, Pipeline):  # A: change to getattr?
+                graph_to_insert = transform._graph
+            else:
+                graph_to_insert = _trivial_transform_graph(transform, None, idx)
+            self._graph.insert_graph(self._graph.input_node,
+                                     graph_to_insert,
+                                     self._graph.output_node)
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         make_green_ = lambda x: make_green(x, not formatting)
@@ -2662,6 +2214,14 @@ class Rollout(Pipeline):
                     + self.transforms[-1]._pd_shortrepr() +
                     (marker[1] if marker and marker[0] == len(self.transforms) - 1 else ''))
         return between.join(rows) + '\n'
+
+
+def _trivial_transform_graph(transform, slice_from_input, output_position):
+    node = _TransformNode(transform)
+    graph = _Graph()
+    graph.connect(graph.input_node, node, _Edge(slice_from_input, 0))
+    graph.connect(node, graph.output_node, _Edge(None, output_position))
+    return graph
 
 
 class Parallel(Pipeline):
@@ -2684,35 +2244,13 @@ class Parallel(Pipeline):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
         for idx, transform in enumerate(self.transforms):
-            if isinstance(transform, Parallel):
-                self.connect_graph(self.input_node,
-                                   transform,
-                                   output_slice=idx)
-                out_nodes = transform.parents[transform.output_node]
-                # out_node = out_nodes[idx]
-                for out_node in out_nodes:
-                    self.connect(out_node,
-                                 self.output_node)
-                continue
-            if isinstance(transform, Pipeline):
-                self.connect_graph(self.input_node,
-                                   transform,
-                                   output_slice=idx,
-                                   parent_position=None)
-                out_nodes = transform.parents[transform.output_node]
-                for out_node in out_nodes:
-                    self.connect(out_node,
-                                 self.output_node)
-                continue
-            node = Node(transform)
-            self.connect(self.input_node,
-                         node,
-                         output_slice=idx,
-                         input_slice=node.pd_input_slice)
-            self.connect(node,
-                         self.output_node,
-                         output_slice=node.pd_output_slice,
-                         input_slice=self.output_node.pd_input_slice)
+            if isinstance(transform, Pipeline):  # A: change to getattr?
+                graph_to_insert = transform._graph
+            else:
+                graph_to_insert = _trivial_transform_graph(transform, idx, idx)
+            self._graph.insert_graph(self._graph.input_node,
+                                     graph_to_insert,
+                                     self._graph.output_node)
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         if not formatting:
@@ -2895,6 +2433,7 @@ def load(path):
         '__file__': str(path / 'transform.py')
     })
     code = compile(source, path / 'transform.py', 'exec')
+    # pylint: disable=exec-used
     exec(code, module.__dict__)
     # pylint: disable=no-member,protected-access
     transform = module._pd_main
@@ -3039,482 +2578,84 @@ def importdump(transform_or_module):
     return t_copy
 
 
-def _check_parallel(children: dict) -> bool:
-    """Check if children dict passed is Parallel or not
+def _determine_layer_type(graph, layer):
+    """Find out what kind of Pipeline *layer* should be.
 
-    :param children: dictionary of edges in format -
-        {
-            child: (output_slice, input_slice),
-            ...
-        }
+    It can be Parallel or Rollout.
     """
-    if len(children) < 2:
-        return False
-    output_slices = []
-    for child, (output_slice, input_slice) in children.items():
-        output_slices.append(output_slice)
-    try:
-        return sorted(output_slices) == list(range(len(children)))
-    except TypeError:
-        return False
-
-
-def _check_rollout(children):
-    """Check if children dict passed is rollout or not
-
-    :param children: dictionary of edges in format -
-        {
-            child: (output_slice, input_slice),
-            ...
-        }
-    """
-    if len(children) > 1:
-        return True
-    return False
-
-
-def _helper_convert_compose(edges_dict: defaultdict = None,
-                            parents_dict: defaultdict = None,
-                            current_node: Node = None,
-                            current_type: Type[Pipeline] = None,
-                            transform_list: list = None,
-                            meta_transform_list: list = None,
-                            main_transform_list: list = None,
-                            nodes_left: list = None,
-                            input_node: Node = None,
-                            output_node: Node = None,
-                            ):
-    """Helper function to convert compose to list
-
-    Take the edge dictionary for a given node `current node`
-    and covert this to structured list of format:
-    t = (
-        a
-        >> b / c
-        >> f + g
-    )
-    Would convert to:
-
-    t_structured_list = [
-        [
-            Compose,
-            a,
-            [Parallel, b, c],
-            [Rollout, f, g],
-        ]
+    in_slices = [
+        edge.out
+        for node in layer
+        for edge in graph.in_edges(node).values()
     ]
+    # it's a Parallel if all nodes take *one* element from the input
+    if all(isinstance(in_slice, int) for in_slice in in_slices):
+        return Parallel
+    # it's a Rollout if all nodes take all elements from the input
+    if all(in_slice is None for in_slice in in_slices):
+        return Rollout
 
-    :param edges_dict: edges dictionary
-    :param parents_dict: parent dictionary for nodes
-    :param current_node: start node
-    :param current_type: type currently being built (None/Compose/Rollout/Parallel)
-    :param transform_list: list of current transforms being built
-    :param meta_transform_list: list of transforms one level higher
-    :param main_transform_list: outermost list of transforms
-    :param nodes_left: list of nodes left in Pipeline to be added to list
-    :param input_node: input node of Pipeline
-    :param output_node: output node of Pipeline
+    raise ValueError('Can\'t determine type')
+
+
+def _clean_compose(transforms):
+    """Compose *transforms* in a clean way.
+
+    - remove superflous identities
+    - if the list contains only one transform, return that instead of composing
+    """
+    transforms = [t for t in transforms if not isinstance(t, Identity)]
+    if len(transforms) == 1:
+        return transforms[0]
+    if len(transforms) == 0:
+        return identity
+    return Compose(transforms)
+
+
+def _get_next_section(graph, layer, len_last):
+    """Get the next "section" (Rollout, Parallel or single Transform) in a pipeline.
+
+    :param graph: The graph that's being converted.
+    :param layer: The layer (list of nodes) the section starts with.
     :return:
     """
-    if transform_list is None:
-        transform_list = []
-    if meta_transform_list is None:
-        meta_transform_list = []
-        main_transform_list = []
+    # the layer has only one node: that's the next section, continue with that node's children
+    if len(layer) == 1:
+        return layer[0].transform, graph.children(layer[0])
 
-    children = edges_dict[current_node]
-    child_node = list(children.keys())[0]
-    output_slice = children[child_node][0]
-    input_slice = children[child_node][1]
+    # the layer has more that one node: the next section is a Rollout or a Parallel!
+    # find out which of the two
+    layer_type = _determine_layer_type(graph, layer)
 
-    # Multiple parents marks end of Compose
-    continue_compose = len(parents_dict[child_node]) == 1
+    # collect the nodes that make up the branches of the Rollout / Parallel
+    branches = []
+    stopper = None
+    for node in layer:
+        branch, stopper = _graph_to_compose(graph, [node], len_last)
+        branches.append(branch)
 
-    if current_type == Compose:
-        if continue_compose:
-            if child_node not in (input_node, output_node):
-                transform_list.append(child_node)
-            elif output_slice is not None:
-                transform_list.append(Node(identity.pd_output[output_slice]))
-            if child_node in nodes_left: nodes_left.remove(child_node)
-        else:
-            return transform_list, meta_transform_list, nodes_left
-    else:
-        current_type = Compose
-        if current_node not in (input_node, output_node):
-            transform_list = [current_type, current_node]
-        elif output_slice is not None:
-            transform_list = [current_type, Node(identity.pd_output[output_slice])]
-        else:
-            transform_list = [current_type]
-
-        if current_node in nodes_left: nodes_left.remove(current_node)
-
-        if continue_compose:
-            if child_node not in (input_node, output_node):
-                transform_list.append(child_node)
-            elif output_slice is not None:
-                transform_list.append(Node(identity.pd_output[output_slice]))
-            if child_node in nodes_left: nodes_left.remove(child_node)
-
-        meta_transform_list.append(transform_list)
-
-    if continue_compose and child_node not in (input_node, output_node):
-        current_node = child_node
-        transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
-            edges_dict,
-            parents_dict,
-            current_node,
-            current_type,
-            transform_list,
-            meta_transform_list,
-            nodes_left=nodes_left,
-            input_node=input_node,
-            output_node=output_node,
-            main_transform_list=main_transform_list,
-        )
-
-    return transform_list, meta_transform_list, nodes_left
+    return layer_type(branches), stopper
 
 
-def _helper_convert_to_operators(edges_dict: defaultdict = None,
-                                 parents_dict: defaultdict = None,
-                                 current_node: Node = None,
-                                 current_type: Type[Pipeline] = None,
-                                 transform_list: list = None,
-                                 meta_transform_list: list = None,
-                                 main_transform_list=None,
-                                 nodes_left: list = None,
-                                 input_node: Node = None,
-                                 output_node: Node = None,
-                                 ):
-    """Helper function to convert Pipeline to Padl operations (+, /, >>)
+def _graph_to_compose(graph, next_layer=None, len_before=1):
+    if next_layer is None:
+        next_layer = graph.in_nodes
+    pipe = []
+    stopper = None
+    while next_layer:
+        # found a node with more parents than the size of the last layer
+        # this means the branch is finished
+        if not isinstance(next_layer[0], _TransformNode):
+            assert len(next_layer) == 1
+            break
+        if len(graph.parents(next_layer[0])) > len_before:
+            stopper = next_layer
+            break
+        len_before, len_here = len(next_layer), len_before
+        next_section, next_layer = _get_next_section(graph, next_layer, len_here)
+        pipe.append(next_section)
 
-    Take the edge dictionary for a given node `current node`
-    and covert this to structured list of format:
-    t = (
-        a
-        >> b / c
-        >> f + g
-    )
-    Would convert to:
+    return _clean_compose(pipe), stopper
 
-    t_structured_list = [
-        [
-            Compose,
-            a,
-            [Parallel, b, c],
-            [Rollout, f, g],
-        ]
-    ]
-
-    :param edges_dict: edges dictionary
-    :param parents_dict: parent dictionary for nodes
-    :param current_node: start node
-    :param current_type: type currently being built (None/Compose/Rollout/Parallel)
-    :param transform_list: list of current transforms being built
-    :param meta_transform_list: list of transforms one level higher
-    :param main_transform_list: outermost list of transforms
-    :param nodes_left: list of nodes left in Pipeline to be added to list
-    :param input_node: input node of Pipeline
-    :param output_node: output node of Pipeline
-    :return:
-    """
-    if transform_list is None:
-        transform_list = []
-    if meta_transform_list is None:
-        meta_transform_list = []
-        main_transform_list = []
-
-    children = edges_dict[current_node]
-
-    if len(children) == 0:
-        # if no children, reached output node, so exit
-        return transform_list, meta_transform_list, nodes_left
-
-    if len(children) == 1:
-        # if only 1 children, this is compose
-        transform_list, meta_transform_list, nodes_left = _helper_convert_compose(
-            edges_dict=edges_dict,
-            parents_dict=parents_dict,
-            current_node=current_node,
-            current_type=current_type,
-            transform_list=transform_list,
-            meta_transform_list=meta_transform_list,
-            nodes_left=nodes_left,
-            input_node=input_node,
-            output_node=output_node,
-            main_transform_list=main_transform_list,
-        )
-        return transform_list, meta_transform_list, nodes_left
-
-    if _check_parallel(children):
-        # if not compose, check if it is parallel
-        child = next(iter(children))
-        parents = parents_dict[child]
-        if current_node in nodes_left: nodes_left.remove(current_node)
-        if len(parents) > 1:
-            if child in nodes_left and all([parent not in nodes_left for parent in parents]):
-                if current_type != Compose:
-                    transform_list = [Compose, current_node]
-                    meta_transform_list.append(transform_list)
-
-                parallel_transform_list = [Parallel]
-                main_transform_list.append(parallel_transform_list)
-            else:
-                if current_type != Compose:
-                    transform_list = [Compose, current_node]
-                    meta_transform_list.append(transform_list)
-                return transform_list, meta_transform_list, nodes_left
-
-        elif current_node == input_node:
-            parallel_transform_list = [Parallel]
-            meta_transform_list.append(parallel_transform_list)
-
-        else:
-            if current_type != Compose:
-                transform_list = [Compose, current_node]
-                meta_transform_list.append(transform_list)
-
-                parallel_transform_list = [Parallel]
-                transform_list.append(parallel_transform_list)
-            else:
-                transform_list = [Compose]
-                meta_transform_list.append(transform_list)
-
-                parallel_transform_list = [Parallel]
-                transform_list.append(parallel_transform_list)
-
-        for child in sorted(children, key=lambda node: children[node][0]):
-            _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
-                                                            parents_dict=parents_dict,
-                                                            current_node=child,
-                                                            current_type=Parallel,
-                                                            transform_list=None,
-                                                            meta_transform_list=parallel_transform_list,
-                                                            nodes_left=nodes_left,
-                                                            input_node=input_node,
-                                                            output_node=output_node,
-                                                            main_transform_list=main_transform_list,
-                                                            )
-        return transform_list, meta_transform_list, nodes_left
-
-    if _check_rollout(children):
-        child = next(iter(children))
-        parents = parents_dict[child]
-
-        if current_node in nodes_left: nodes_left.remove(current_node)
-        if len(parents) > 1:
-            if child in nodes_left and all([parent not in nodes_left for parent in parents]):
-                if current_type != Compose:
-                    transform_list = [Compose, current_node]
-                    meta_transform_list.append(transform_list)
-
-                rollout_transform_list = [Rollout]
-                main_transform_list.append(rollout_transform_list)
-            else:
-                if current_type != Compose:
-                    transform_list = [Compose, current_node]
-                    meta_transform_list.append(transform_list)
-                return transform_list, meta_transform_list, nodes_left
-
-        elif current_node == input_node:
-            rollout_transform_list = [Rollout]
-            meta_transform_list.append(rollout_transform_list)
-
-        else:
-            if current_type != Compose:  # CHECK if current_node is COMPOSE
-                transform_list = [Compose, current_node]
-                meta_transform_list.append(transform_list)
-
-                rollout_transform_list = [Rollout]
-                transform_list.append(rollout_transform_list)
-            else:
-                transform_list = [Compose]
-                meta_transform_list.append(transform_list)
-
-                rollout_transform_list = [Rollout]
-                transform_list.append(rollout_transform_list)
-
-        rollout_transform_list_main = rollout_transform_list
-        for idx, child in enumerate(children):
-            output_slice = children[child][0]
-            input_slice = children[child][1]
-
-            if output_slice is not None:
-                temp_list = [Compose, Node(identity.pd_output[output_slice])]
-                rollout_transform_list_main.append(temp_list)
-                rollout_transform_list = temp_list
-            else:
-                rollout_transform_list = rollout_transform_list_main
-
-            _, _, nodes_left = _helper_convert_to_operators(edges_dict=edges_dict,
-                                                            parents_dict=parents_dict,
-                                                            current_node=child,
-                                                            current_type=Rollout,
-                                                            transform_list=None,
-                                                            meta_transform_list=rollout_transform_list,
-                                                            nodes_left=nodes_left,
-                                                            input_node=input_node,
-                                                            output_node=output_node,
-                                                            main_transform_list=main_transform_list,
-                                                            )
-        return transform_list, meta_transform_list, nodes_left
-
-    if current_node not in (input_node, output_node):
-        meta_transform_list.append(current_node)
-    return transform_list, meta_transform_list, nodes_left
-
-
-def convert_to_structured_list(start_node: Node,
-                               end_node: Node,
-                               edges_dict: defaultdict,
-                               parents_dict: defaultdict,
-                               exclude_start_node: bool = True,
-                               exclude_end_node: bool = True,
-                               ):
-    """Convert Pipeline to Padl operations (+, /, >>)
-
-    Take the edge dictionary for a given node `current node`
-    and covert this to structured list of format:
-    t = (
-        a
-        >> b / c
-        >> f + g
-    )
-    Would convert to:
-
-    t_structured_list = [
-        [
-            Compose,
-            a,
-            [Parallel, b, c],
-            [Rollout, f, g],
-        ]
-    ]
-
-    :param start_node: node to start the conversion from
-    :param end_node: node to end the conversion
-    :param edge_dict: dict of edges_dict of nodes
-    :param parents_dict: dict of parents of nodes
-    :param exclude_start_node: True if start_node is not to be included
-    :param exclude_end_node: True if end_node is not to be included
-    :return: list of operations
-    """
-
-    nodes_left = _topological_node_sort(start_node, edges_dict, parents_dict)
-
-    meta_transform_list = []
-    transform_list = []
-
-    if not exclude_start_node:
-        start_node = None
-    if not exclude_end_node:
-        end_node = None
-    while len(nodes_left) > 1:
-        current_node = nodes_left[0]
-        # meta_transform and main_transform are same list here,
-        # but as _helper_convert_to_operators works recursively
-        # main_transform keeps reference to outter most list
-        transform_list, meta_transform_list, nodes_left = _helper_convert_to_operators(
-            edges_dict=edges_dict,
-            parents_dict=parents_dict,
-            current_node=current_node,
-            current_type=None,
-            transform_list=transform_list,
-            meta_transform_list=meta_transform_list,
-            nodes_left=nodes_left,
-            input_node=start_node,
-            output_node=end_node,
-            main_transform_list=meta_transform_list,
-        )
-
-    return meta_transform_list
-
-
-def build_transform_from_list(structured_list: list) -> Pipeline:
-    """Build transforms from a structured list
-
-    Takes:
-    structured_list = [
-        [
-            Compose,
-            a,
-            [Parallel, b, c],
-            [Rollout, f, g],
-        ]
-    ]
-    to build:
-    (
-        a
-        >> b / c
-        >> f + g
-    )
-
-    `structured_list` can have following elements:
-    1. transforms
-    2. list starting with Class (Compose/Rollout/Parallel) and contains transforms
-        e.g. [Compose, t1, t2, t3]
-
-    :param structured_list: list of transforms
-    """
-    if len(structured_list) == 1 and not inspect.isclass(structured_list[0]):
-        structured_list = structured_list[0]
-
-    current_type = structured_list[0]
-    start_pos = 1
-
-    if not inspect.isclass(current_type):
-        current_type = Compose
-        start_pos = 0
-
-    transform_list = []
-    for l_ in structured_list[start_pos:]:
-        if isinstance(l_, list):
-            transform_list.append(build_transform_from_list(l_))
-        else:
-            transform_list.append(l_.transform)
-    return current_type(transform_list)
-
-
-def _generate_parents_dict_from_edge_dict(edge_dict):
-    """Generate parents dict from edge dict
-
-    `edge_dict` is dictionary of that maps a node to next nodes that given
-    node is connected to.
-
-    `parent_dict` is dictionary of nodes with their previous (parent) nodes
-
-    :param edge_dict: dict of edges_dict for nodes
-    :return:
-    """
-    parents = defaultdict(list)
-    for parent, children in edge_dict.items():
-        for child in children:
-            parents[child].append(parent)
-    return parents
-
-
-def _topological_node_sort(start_node: Node,
-                           edges_dict: defaultdict,
-                           parents_dict: defaultdict):
-    """Sort nodes topologically (BFS)
-
-         In __ C __ X __ Out
-          \__ D __ Y __/
-
-    sorted nodes:
-        In > C > D > X > Y > Out
-
-    :param start_node: Node to start the search with
-    :param edges_dict: dict of edges_dict for nodes
-    :param parents_dict: dict of parents for nodes
-    :return: sorted list of nodes
-    """
-    queue = [start_node]
-    sorted_ = []
-    while queue:
-        node = queue.pop(0)
-        sorted_.append(node)
-        queue += [child for child in edges_dict[node].keys() if all(p in sorted_ for p in parents_dict[child])]
-    return sorted_
+def _graph_to_pipeline(graph):
+    return _graph_to_compose(graph)[0]
