@@ -45,6 +45,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#try-out-padl-in-colab-notebooks">Try out PADL in Colab notebooks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#resources">Resources</a></li>
 </ul>
 </li>
@@ -174,8 +175,7 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
-<p><strong>Pipeline abstractions for deep learning</strong></p>
-<hr class="docutils" />
+<p><strong>Pipeline Abstractions for Deep Learning</strong></p>
 <p><strong>PADL</strong>:</p>
 <ul class="simple">
 <li><p>is a pipeline builder for <strong>PyTorch</strong>.</p></li>
@@ -214,6 +214,14 @@ can be slower in <strong>3.7</strong>.</p>
 <span class="n">my_pipeline</span> <span class="o">=</span> <span class="n">prepare</span> <span class="o">&gt;&gt;</span> <span class="n">batch</span> <span class="o">&gt;&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">unbatch</span> <span class="o">&gt;&gt;</span> <span class="n">post</span>
 </pre></div>
 </div>
+</section>
+<section id="try-out-padl-in-colab-notebooks">
+<h3>Try out PADL in Colab notebooks<a class="headerlink" href="#try-out-padl-in-colab-notebooks" title="Permalink to this headline"></a></h3>
+<ol class="simple">
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8">MNIST</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb">Simple NLP example</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb">Sentiment Analysis - NLP</a></p></li>
+</ol>
 </section>
 <section id="resources">
 <h3>Resources<a class="headerlink" href="#resources" title="Permalink to this headline"></a></h3>
