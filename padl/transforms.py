@@ -624,7 +624,7 @@ class Transform:
 
     def _pd_shortrepr(self, formatting=True, max_width=None) -> str:
         """A short string representation of the transform.
-        :param max_width:
+        :param max_width: maximum width for the string representation
         """
         return self._pd_title(max_width=max_width)
 
