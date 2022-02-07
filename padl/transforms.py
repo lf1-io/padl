@@ -1413,7 +1413,7 @@ class Map(Transform):
                  pd_name: Optional[str] = None):
         super().__init__(call_info, pd_name)
 
-        self.transform = transform
+        self.transform: Transform = transform
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
                                                       Tuple[Transform,
@@ -1471,8 +1471,20 @@ class Map(Transform):
         return tuple([self.transform._pd_unpack_args_and_call(arg) for arg in args])
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        str_ = '~ ' + self.transform._pd_shortrepr(formatting)
+        inner = self.transform._pd_shortrepr(formatting)
+        if isinstance(self.transform, Pipeline):
+            inner = f'( {inner} )'
+        str_ = '~ ' + inner
         return str_ + marker[1] if marker else str_
+
+    def _pd_shortrepr(self, formatting=True, marker=None):
+        return self._pd_longrepr(formatting, marker)
+
+    def _pd_tinyrepr(self, formatting=True):
+        return f'~ {self.transform._pd_tinyrepr(formatting)}'
+
+    def _pd_title(self, max_width=None):
+        return f'Map of {self.transform._pd_title(max_width)}'
 
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
