@@ -528,7 +528,7 @@ class Transform:
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
-    def _pd_get_error_idx(self):
+    def _pd_get_error_idx(self, stage: str):
         """Get what element of a :class:`padl.transforms.Transform` is failing if an Exception is
         produced during an execution.
 
@@ -600,7 +600,7 @@ class Transform:
         return self._pd_shortrepr(formatting=False)
 
     def _repr_pretty_(self, p, cycle):
-        #pylint: disable=invalid-name
+        # pylint: disable=invalid-name
         p.text(self._pd_fullrepr() if not cycle else '...')
 
     def _pd_fullrepr(self, marker=None):
@@ -627,6 +627,7 @@ class Transform:
         return self._pd_tinyrepr(formatting)
 
     def _pd_shortrepr(self, formatting=True, max_width=None) -> str:
+        # pylint: disable=unused-argument
         """A short string representation of the transform.
         :param max_width: maximum width for the string representation
         """
@@ -676,10 +677,10 @@ class Transform:
         return self._pd_varname[scope]
 
     def pd_forward_device_check(self) -> bool:
-        """Check if all transform in forward are in correct device
+        """Check if all Transforms in the "forward" part are on the correct device.
 
-        All transforms in forward need to be in same device as specified for
-        the whole Pipeline.
+        All transforms in the "forward" part of a Pipeline need to be on the same device as
+        specified for the whole Pipeline.
         """
         pd_device = self.pd_device
         for layer in self.pd_forward.pd_layers:
@@ -692,13 +693,13 @@ class Transform:
         return True
 
     def _pd_unpack_argument(self, arg) -> bool:
-        """Return *True* if to arguments should be unpacked, else *False*"""
+        """Return *True* if to arguments should be unpacked, else *False*."""
         signature_count = 0
         if not isinstance(arg, (list, tuple)):
             return False
 
-        if hasattr(self, '_pd_number_of_inputs') and self._pd_number_of_inputs is not None:
-            return self._pd_number_of_inputs > 1
+        if getattr(self, '_pd_number_of_inputs', None) is not None:
+            return self._pd_number_of_inputs > 1  # pylint: disable=no-member
 
         try:
             parameters = self._pd_signature.values()
@@ -728,9 +729,9 @@ class Transform:
     def pd_call_in_mode(self, arg, mode: Mode, ignore_grad=False):
         """Call the transform, with possibility to pass multiple arguments.
 
-        :param arg: argument to call the transform with
+        :param arg: Argument to call the transform with.
         :param mode: The mode ("infer", "eval", "train") to perform the call with.
-        :param ignore_grad: If *True* gradient settings are ignored
+        :param ignore_grad: If *True* gradient settings are ignored.
         :return: Whatever the transform returns.
         """
         no_grad = mode in ('eval', 'infer') and not ignore_grad
@@ -750,7 +751,7 @@ class Transform:
                         layer.eval()
 
         if no_grad:
-            grad_before = torch.is_grad_enabled()
+            grad_before = torch.is_grad_enabled()  # pylint: disable=no-member
             torch.set_grad_enabled(False)
 
         try:
@@ -775,6 +776,7 @@ class Transform:
         return inspect.signature(self).parameters
 
     def _pd_format_output(self, x):
+        # pylint: disable=no-self-use
         return x
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
@@ -806,7 +808,7 @@ class Transform:
             self.pd_forward_device_check()
 
         if use_preprocess:
-            loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
+            loader = self._pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
             loader = _SimpleGetter(args)
 
@@ -827,7 +829,7 @@ class Transform:
                     output = _unpack_batch(output)
                     if use_post:
                         try:
-                            output = [post.pd_call_in_mode(x, mode, ignore_grad=True) \
+                            output = [post.pd_call_in_mode(x, mode, ignore_grad=True)
                                       for x in output]
                         except Exception as err:
                             self._pd_trace_error(self._pd_get_error_idx('postprocess'),
@@ -848,7 +850,7 @@ class Transform:
 
     @property
     def pd_device(self) -> str:
-        """Return the device ("cpu" / "cuda") the transform is on."""
+        """Return the device ("cpu" / "cuda") the Transform is on."""
         return self._pd_device
 
     @pd_device.setter
@@ -857,14 +859,17 @@ class Transform:
 
     @property
     def pd_preprocess(self) -> "Transform":
-        """The preprocessing part of the transform. The device must be propagated from self."""
+        """The preprocessing part of the Transform.
+
+        The device must be propagated from self."""
         pre = self.pd_stages[0]
         pre.pd_to(self.pd_device)
         return pre
 
     @property
     def pd_forward(self) -> "Transform":
-        """The forward part of the transform (that what's typically done on the GPU).
+        """The forward part of the Transform (that what's typically done on the GPU).
+
         The device must be propagated from self."""
         forward = self.pd_stages[1]
         forward.pd_to(self.pd_device)
@@ -872,7 +877,9 @@ class Transform:
 
     @property
     def pd_postprocess(self) -> "Transform":
-        """The postprocessing part of the transform. The device must be propagated from self."""
+        """The postprocessing part of the Transform.
+
+        The device must be propagated from self."""
         post = self.pd_stages[2]
         post.pd_to(self.pd_device)
         return post
@@ -890,7 +897,7 @@ class Transform:
     @property
     @lru_cache(maxsize=128)
     def pd_layers(self) -> List[torch.nn.Module]:
-        """Get a list with all pytorch layers in the transform (including layers in sub-transforms).
+        """Get a list with all pytorch layers in the Transform (including layers in sub-transforms).
         """
         layers = []
         for subtrans in self._pd_all_transforms():
@@ -903,12 +910,12 @@ class Transform:
         for layer in self.pd_layers:
             yield from layer.parameters()
 
-    def pd_get_loader(self, args, preprocess, mode, **kwargs) -> DataLoader:
-        """Get a pytorch data loader.
+    def _pd_get_loader(self, args, preprocess: 'Transform', mode: str, **kwargs) -> DataLoader:
+        """Get a pytorch data loader applying *preprocess* to *args*.
 
         :param args: A sequence of datapoints.
-        :param preprocess: preprocessing step
-        :param mode: mode
+        :param preprocess: Preprocessing Transform.
+        :param mode: PADL mode to call the preprocess Transform in.
         :param kwargs: Keyword arguments passed to the data loader (see the pytorch
             `DataLoader` documentation for details).
         """
@@ -925,7 +932,7 @@ class Transform:
         )
 
     def infer_apply(self, inputs):
-        """Call transform within the infer context.
+        """Call the Transform within the infer context.
 
         This expects a single argument and returns a single output.
 
@@ -1031,6 +1038,8 @@ class AtomicTransform(Transform):
     def _pd_get_non_target_stage_idx(self):
         """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
+        This is used for the debugger.
+
         Example:
             t = forward_1 >> unbatch >> post
 
@@ -1038,12 +1047,16 @@ class AtomicTransform(Transform):
             `t.pd_postprocess`, then the element that fails on `t` is
             t.pd_forward._pd_get_non_target_stage_idx() + 1 = 1 + 1 = 2
         """
+        # pylint: disable=no-self-use
         return 1
 
     def _pd_get_target_stage_idx(self, is_entire_transform=None):
         """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
-        Example:
+        This is used for the debugger.
+
+        Example::
+
             t = prep >> batch >> forward_1
             Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
             `t.pd_forward`, then the element that fails on `t` is
@@ -1052,6 +1065,7 @@ class AtomicTransform(Transform):
         :param is_entire_transform: *False* if *self* is not a part of a larger :class:`Transform`,
             else *True*
         """
+        # pylint: disable=no-self-use
         return 0
 
     def _pd_get_error_idx(self, stage: str):
@@ -1104,7 +1118,9 @@ class FunctionTransform(AtomicTransform):
         return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump or self._wrap_type in ('module', 'lambda') or (not self._wrap_type == 'inline' and self._pd_call_info.scope.scopelist):
+        if (self._pd_full_dump
+                or self._wrap_type in ('module', 'lambda')
+                or (self._wrap_type != 'inline' and self._pd_call_info.scope.scopelist)):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
@@ -1143,6 +1159,7 @@ class FunctionTransform(AtomicTransform):
     @property
     @lru_cache(maxsize=128)
     def _pd_signature(self) -> List[str]:
+        """The function's signature. """
         if self._pd_number_of_inputs is None:
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
@@ -1200,6 +1217,11 @@ class FunctionTransform(AtomicTransform):
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
 
+    def __name__(self):
+        """(For completeness. A FunctionTransform gets its :meth:`__name__` when it's being wrapped
+        (see :func:`~padl.wrap._wrap_function`)"""
+        raise NotImplementedError()
+
 
 class ClassTransform(AtomicTransform):
     """Class Transform.
@@ -1240,7 +1262,9 @@ class ClassTransform(AtomicTransform):
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
-            start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
+            start_node = CodeNode.from_source(start_source,
+                                              instance_scope,
+                                              name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, instance_scope, 0)] = start_node
 
@@ -1305,19 +1329,23 @@ class ClassTransform(AtomicTransform):
     def source(self) -> str:
         """The class source code. """
         (body_msg, _), _, _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
-                                                              self._pd_call_info.scope))
+                                                                 self._pd_call_info.scope))
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
             return body_msg
 
     def _split_call(self):
+        """Split class initialization call from its arguments.
+
+        :return: A tuple of class name and arguments.
+        """
         return symfinder.split_call(self._pd_call)
 
     def _formatted_args(self, max_width=None) -> str:
         """Format the object's init arguments for printing. """
-        if self._pd_arguments is None:
-            return '-?-'
+        if self._pd_arguments is None:  # fall back
+            return self._split_call()[1]
 
         args_list = []
         for key, value in self._pd_arguments.items():
@@ -1341,7 +1369,7 @@ class ClassTransform(AtomicTransform):
                 break
         return ', '.join(max_args_list)
 
-    def _pd_longrepr(self, marker=None) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         try:
             str_ = self.source.split('\n')[:30]
             if marker:
@@ -1358,6 +1386,7 @@ class ClassTransform(AtomicTransform):
 
 
 class TorchModuleTransform(ClassTransform):
+    # pylint: disable=no-member
     """Transform class for use with `torch.nn.Module`."""
 
     @property
@@ -1387,7 +1416,7 @@ class TorchModuleTransform(ClassTransform):
         print('loading torch module from', checkpoint_path)
         self.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
 
-    def _pd_longrepr(self, marker=None) -> str:
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
         out = torch.nn.Module.__repr__(self)
         if marker:
             return out + marker[1]
@@ -1432,7 +1461,8 @@ class Map(Transform):
         # if *input_components* is an integer rather than a list ...
         if isinstance(input_components, int):
             # ... get output_components and splits from the contained transform
-            output_components, splits, has_batchify = self.transform._pd_splits(input_components)
+            output_components, splits, has_batchify = \
+                self.transform._pd_splits(input_components)
             return (
                 # output_components is whatever the sub-transform does to it
                 output_components,
@@ -1477,8 +1507,8 @@ class Map(Transform):
         str_ = '~ ' + inner
         return str_ + marker[1] if marker else str_
 
-    def _pd_shortrepr(self, formatting=True, marker=None):
-        return self._pd_longrepr(formatting, marker)
+    def _pd_shortrepr(self, formatting=True, max_width=None):
+        return self._pd_longrepr(formatting, marker=None)[:max_width]
 
     def _pd_tinyrepr(self, formatting=True):
         return f'~ {self.transform._pd_tinyrepr(formatting)}'
@@ -1649,7 +1679,7 @@ class Pipeline(Transform):
             result = f'group({result})'
         return result
 
-    def _pd_tinyrepr(self, formatting=True, max_width=None) -> str:
+    def _pd_tinyrepr(self, formatting=True) -> str:
         rep = f'..{make_green(self.op, not formatting)}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
@@ -1754,7 +1784,10 @@ class Pipeline(Transform):
         return deduped_keys
 
     def _pd_get_non_target_stage_idx(self):
+        # pylint: disable=no-self-use
         """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        This is used for the debugger.
 
         Example:
             t = ((prep_1 >> batch) + (prep_2 >> batch)) >> forward_1
@@ -1765,7 +1798,10 @@ class Pipeline(Transform):
         return 1
 
     def _pd_get_target_stage_idx(self, is_entire_transform=None):
+        # pylint: disable=no-self-use
         """Return an integer to track where a :class:`Compose` which failed got the Exception.
+
+        This is used for the debugger.
 
         Example:
             t = prep >> batch >> (forward_1 + forward_2)
@@ -1776,12 +1812,13 @@ class Pipeline(Transform):
         :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
             else *True*
         """
-
         return 0
 
     def _pd_get_error_idx(self, stage: str):
         """Track the index where a :class:`Pipeline` fails from the one that got the Exception on
         :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
+
+        This is used for the debugger.
 
         Example:
             t = (t_11 >> batch >> t_12) + (t_21 >> batch >> t_22)
@@ -1796,9 +1833,9 @@ class Pipeline(Transform):
     def _add_name_to_splits(self, final_splits):
         """Add name to split-transforms. """
         if self._pd_name is not None:
-            for i, s in enumerate(final_splits):
-                if not isinstance(s, Identity):
-                    final_splits[i] = s - self._pd_name
+            for i, split in enumerate(final_splits):
+                if not isinstance(split, Identity):
+                    final_splits[i] = split - self._pd_name
 
 
 class Compose(Pipeline):
@@ -1821,11 +1858,11 @@ class Compose(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-    def _pd_splits(self, input_components=0, has_batchify=False) -> Tuple[Union[int, List],
-                                                                          Tuple[Transform,
-                                                                                Transform,
-                                                                                Transform],
-                                                                          bool]:
+    def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
+                                                      Tuple[Transform,
+                                                            Transform,
+                                                            Transform],
+                                                      bool]:
         """See the docstring of :meth:`Transform._pd_splits` for more details.
 
         The composition of `transforms` splits into
@@ -1997,7 +2034,7 @@ class Compose(Pipeline):
         return '\n'.join(output)
 
     def __call__(self, args):
-        """Call method for Compose
+        """Call method for Compose.
 
         :param args: Arguments to call with.
         :return: Output from series of transforms.
@@ -2027,6 +2064,8 @@ class Compose(Pipeline):
     def _pd_get_target_stage_idx(self, is_entire_transform: bool):
         """Return an integer to track where a :class:`Compose` which failed got the Exception.
 
+        This is used for the debugger.
+
         Example:
              t = prep >> batch >> forward_1 >> forward_2
 
@@ -2043,6 +2082,8 @@ class Compose(Pipeline):
     def _pd_get_error_idx(self, stage: str):
         """Track the index where a :class:`Compose` fails from the index that got the Exception
         on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
+
+        This is used for the debugger.
 
         Examples:
             t = t_1 >> t_2 >> batch >> t_3 >> t_4
@@ -2175,10 +2216,10 @@ class Rollout(Pipeline):
         return output_components, final_splits, has_batchify
 
     def __call__(self, args):
-        """Call method for Rollout
+        """Call method for Rollout.
 
-        :param args: Argument to call with
-        :return: namedtuple of outputs
+        :param args: Argument to call with.
+        :return: `namedtuple` of outputs.
         """
         out = []
         for i, transform_ in enumerate(self.transforms):
@@ -2473,6 +2514,7 @@ def load(path):
         '__file__': str(path / 'transform.py')
     })
     code = compile(source, path/'transform.py', 'exec')
+    # pylint: disable=exec-used
     exec(code, module.__dict__)
     # pylint: disable=no-member,protected-access
     transform = module._pd_main
