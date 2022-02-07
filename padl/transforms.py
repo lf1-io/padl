@@ -2,6 +2,7 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
+import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
@@ -169,10 +170,12 @@ class Transform:
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
-        if any(module.__spec__.name.startswith(mod)
-               for mod in self._pd_external_full_dump_modules):
+        if self._pd_is_full_dump_module(module.__spec__.name):
             return True
         return self._pd_external_full_dump
+
+    def _pd_is_full_dump_module(self, module_name):
+        return any(module_name.startswith(mod) for mod in self._pd_external_full_dump_modules)
 
     @staticmethod
     def _pd_merge_components(components):
@@ -398,7 +401,7 @@ class Transform:
         nodes = []
 
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        start = CodeNode.from_source(start_source, scope)
+        start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
         nodes.append(start)
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
@@ -508,7 +511,8 @@ class Transform:
                 continue
 
             # find how *next_name* came into being
-            next_codenode = find_codenode(next_name)
+            next_codenode = find_codenode(next_name, self._pd_external_full_dump_modules)
+
             graph[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
@@ -1100,21 +1104,21 @@ class FunctionTransform(AtomicTransform):
         return self._pd_call
 
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if self._pd_full_dump or self._wrap_type in ('module', 'lambda'):
+        if self._pd_full_dump or self._wrap_type in ('module', 'lambda') or (not self._wrap_type == 'inline' and self._pd_call_info.scope.scopelist):
             return super()._pd_codegraph_add_startnodes(graph, name)
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
         source = f'from {self.__module__} import {self.__name__}'
 
         if self._wrap_type == 'inline':
-            node = CodeNode.from_source(source, scope)
+            node = CodeNode.from_source(source, scope, name=self.__name__)
             graph[ScopedName(self.__name__, scope, 0)] = node
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('transform', emptyscope, 0)] = \
-                CodeNode.from_source('from padl import transform', emptyscope)
+                CodeNode.from_source('from padl import transform', emptyscope, name='transform')
 
             start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
-            start = CodeNode.from_source(start_source, scope)
+            start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, scope, 0)] = start
             return {}
@@ -1123,7 +1127,7 @@ class FunctionTransform(AtomicTransform):
             source += f' as {name}'
         else:
             name = self.__name__
-        node = CodeNode.from_source(source, scope)
+        node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope, 0)] = node
         return {}
 
@@ -1230,13 +1234,13 @@ class ClassTransform(AtomicTransform):
         varname = self.pd_varname(instance_scope)
 
         import_source = f'from {self.__module__} import {varname}'
-        import_node = CodeNode.from_source(import_source, instance_scope)
+        import_node = CodeNode.from_source(import_source, instance_scope, name=varname)
 
         graph[ScopedName(varname, instance_scope, 0)] = import_node
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
-            start_node = CodeNode.from_source(start_source, instance_scope)
+            start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, instance_scope, 0)] = start_node
 
@@ -1255,7 +1259,8 @@ class ClassTransform(AtomicTransform):
 
         # import the class
         import_source = f'from {self.__class__.__module__} import {self.__class__.__name__}'
-        import_node = CodeNode.from_source(import_source, instance_scope)
+        import_node = CodeNode.from_source(import_source, instance_scope,
+                                           name=self.__class__.__name__)
         graph[ScopedName(self.__class__.__name__, instance_scope, 0)] = import_node
         nodes = [import_node]
 
@@ -1263,7 +1268,7 @@ class ClassTransform(AtomicTransform):
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         call_scope = symfinder.Scope.toplevel(inspector.caller_module())
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, call_scope)
+        start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
         nodes.append(start_node)
@@ -1281,7 +1286,7 @@ class ClassTransform(AtomicTransform):
 
         call = self.__class__.__name__ + f'({self._split_call()[1]})'
         start_source = f'{name or "_pd_dummy"} = {call}'
-        start_node = CodeNode.from_source(start_source, call_scope)
+        start_node = CodeNode.from_source(start_source, call_scope, name=name or '_pd_dummy')
         if name is not None:
             graph[ScopedName(name, call_scope, 0)] = start_node
 
@@ -1299,7 +1304,7 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self) -> str:
         """The class source code. """
-        (body_msg, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
+        (body_msg, _), _, _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
                                                               self._pd_call_info.scope))
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
@@ -1380,7 +1385,7 @@ class TorchModuleTransform(ClassTransform):
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
-        self.load_state_dict(torch.load(checkpoint_path))
+        self.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
 
     def _pd_longrepr(self, marker=None) -> str:
         out = torch.nn.Module.__repr__(self)
@@ -1567,6 +1572,7 @@ class Pipeline(Transform):
         defined_as = self.pd_varname(self._pd_call_info.scope)
         return (
             self._pd_call_info.scope.module_name != inspector.caller_module().__name__
+            and not self._pd_call_info.scope.scopelist
             and defined_as is not None
         )
 
@@ -1579,7 +1585,7 @@ class Pipeline(Transform):
             source += f' as {name}'
         else:
             name = defined_as
-        node = CodeNode.from_source(source, scope)
+        node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope, 0)] = node
 
     def _pd_build_codegraph(self, graph=None, name=None):
@@ -1601,8 +1607,9 @@ class Pipeline(Transform):
 
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl', emptyscope, 0)] = CodeNode.from_source('import padl',
-                                                                            emptyscope)
+            graph[ScopedName('padl.group', emptyscope, 0)] = CodeNode.from_source('import padl',
+                                                                                  emptyscope,
+                                                                                  name='padl')
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
@@ -2495,9 +2502,9 @@ class _ItemGetter:
     >>> len(ig)
     3
     >>> ig[0]
-    2
+    (0, 2)
     >>> ig[1]
-    3
+    (1, 3)
 
     :param samples: An object implementing __getitem__ and __len__.
     :param transform: Preprocessing transform.
@@ -2505,10 +2512,13 @@ class _ItemGetter:
         :class:`Transform` whose preprocessing part is *transform*.
     """
 
-    def __init__(self, samples, transform, entire_transform):
+    def __init__(self, samples, transform, entire_transform=None):
         self.samples = samples
         self.transform = transform
-        self.entire_transform = entire_transform
+        if entire_transform is None:
+            self.entire_transform = self.transform
+        else:
+            self.entire_transform = entire_transform
 
     def __getitem__(self, item):
         try:

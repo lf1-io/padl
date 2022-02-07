@@ -1,0 +1,10 @@
+import padl.dumptools.var2mod
+from padl import transform
+
+
+@transform
+def f_using_dotimport(x):
+    return padl.dumptools.var2mod.ast.parse(x)
+
+
+_pd_main = f_using_dotimport

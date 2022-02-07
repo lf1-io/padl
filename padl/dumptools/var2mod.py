@@ -48,7 +48,7 @@ class Finder(ast.NodeVisitor):
         Example:
 
         >>> Finder(ast.Name).get_source_segments('x(y)')
-        [('x', (1, 1, 0, 1)), ('y', (1, 1, 2, 3))]
+        [('x', Position(lineno=1, end_lineno=1, col_offset=0, end_col_offset=1)), ('y', Position(lineno=1, end_lineno=1, col_offset=2, end_col_offset=3))]
         """
         nodes = self.find(ast.parse(source))
         return [
@@ -58,6 +58,15 @@ class Finder(ast.NodeVisitor):
             )
             for node in nodes
         ]
+
+
+def _join_attr(node):
+    if not isinstance(node, (ast.Attribute, ast.Name)):
+        raise TypeError()
+    try:
+        return [node.id]
+    except AttributeError:
+        return _join_attr(node.value) + [node.attr]
 
 
 Vars = namedtuple('Vars', 'globals locals')
@@ -77,9 +86,13 @@ class _VarFinder(ast.NodeVisitor):
     ...     z = np.array(x + b)
     ...     return str(z)
     ... '''
-    >>> _VarFinder().find_in_source(source) == Vars(globals={('str', 0), ('np', 0), ('a', 0),
-    ...                                                      ('b', 0)},
-    ...                                             locals={('x', 0), ('z', 0), ('y', 0)})
+    >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0),
+    ...                                                      ScopedName('np.array', None, 0),
+    ...                                                      ScopedName('a', None, 0),
+    ...                                                      ScopedName('b', None, 0)},
+    ...                                             locals={ScopedName('x', None, 0),
+    ...                                                     ScopedName('z', None, 0),
+    ...                                                     ScopedName('y', None, 0)})
     True
     """
 
@@ -118,18 +131,22 @@ class _VarFinder(ast.NodeVisitor):
         ...     z = np.array(x + b)
         ...     return str(z)
         ... '''
-        >>> _VarFinder().find_in_source(source) == Vars(globals={('str', 0), ('np', 0), ('a', 0),
-        ...                                                      ('b', 0)},
-        ...                                             locals={('x', 0), ('z', 0), ('y', 0)})
+        >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0),
+        ...                                                      ScopedName('np.array', None, 0),
+        ...                                                      ScopedName('a', None, 0),
+        ...                                                      ScopedName('b', None, 0)},
+        ...                                             locals={ScopedName('x', None, 0),
+        ...                                                     ScopedName('z', None, 0),
+        ...                                                     ScopedName('y', None, 0)})
         True
         """
         posonlyargs = getattr(node.args, 'posonlyargs', [])
         for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
-            self.locals.add((arg.arg, 0))
+            self.locals.add(ScopedName(arg.arg, None, 0))
         if node.args.vararg is not None:
-            self.locals.add((node.args.vararg.arg, 0))
+            self.locals.add(ScopedName(node.args.vararg.arg, None, 0))
         if node.args.kwarg is not None:
-            self.locals.add((node.args.kwarg.arg, 0))
+            self.locals.add(ScopedName(node.args.kwarg.arg, None, 0))
         for n in ast.iter_child_nodes(node):
             self.visit(n)
         return Vars(self.globals, self.locals)
@@ -140,10 +157,45 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x')
-        Vars(globals={('x', 0)}, locals=set())
+        Vars(globals={ScopedName(name='x', scope=None, n=0)}, locals=set())
         """
-        if (node.id, 0) not in self.locals:
-            self.globals.add((node.id, 0))
+        scope = getattr(node, '_scope', None)
+        name = ScopedName(node.id, scope, 0)
+        if not self.in_locals(name):
+            self.globals.add(name)
+
+    def visit_Attribute(self, node):
+        """Names - Every `Name`'s id is a global unless it's a local.
+
+        Example:
+
+        >>> _VarFinder().find_in_source('x')
+        Vars(globals={ScopedName(name='x', scope=None, n=0)}, locals=set())
+        """
+        try:
+            path = _join_attr(node)
+        except TypeError:
+            self.generic_visit(node)
+            return
+
+        scope = getattr(node, '_scope', None)
+        name = ScopedName('.'.join(path), scope, 0)
+        if self.in_locals(name):
+            return
+        self.globals.add(name)
+
+    def in_locals(self, name):
+        if name in self.locals:
+            return True
+        if '.' not in name.name:
+            return False
+
+        path = name.name.split('.')
+        for i in range(len(path), 0, -1):
+            subname = '.'.join(path[:i])
+            if ScopedName(subname, name.scope, 0) in self.locals:
+                return True
+        return False
 
     def visit_withitem(self, node):
         """With statements - The "as ..." of a with statement is a local.
@@ -155,11 +207,11 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={('open', 0)}, locals={('f', 0)})
+        Vars(globals={ScopedName(name='open', scope=None, n=0)}, locals={ScopedName(name='f', scope=None, n=0)})
         """
         self.visit(node.context_expr)
         if node.optional_vars is not None:
-            self.locals.add((node.optional_vars.id, 0))
+            self.locals.add(ScopedName(node.optional_vars.id, None, 0))
 
     def visit_Assign(self, node):
         """Assignments - Their targets are locals, their values are globals.
@@ -167,7 +219,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x = y')
-        Vars(globals={('y', 0)}, locals={('x', 0)})
+        Vars(globals={ScopedName(name='y', scope=None, n=0)}, locals={ScopedName(name='x', scope=None, n=0)})
         """
         # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
         targets = set()
@@ -178,20 +230,23 @@ class _VarFinder(ast.NodeVisitor):
             # exclude assignment to attribute ('x.y = a')
             if isinstance(target, ast.Attribute):
                 continue
+            scope = getattr(target, '_scope', None)
             targets.update(
-                {(x.id, 0) for x in Finder(ast.Name).find(target)}
+                {ScopedName(x.id, scope, 0) for x in Finder(ast.Name).find(target)}
             )
         # find globals in RHS
-        sub_globals = find_globals(node.value) - self.locals
+        sub_globals = {name for name in find_globals(node.value) if not self.in_locals(name)}
         sub_dependencies = set()
         # if a variable on the RHS is one of the targets, increase its counter
-        for name, i in sub_globals:
-            if (name, i) in targets:
-                sub_dependencies.add((name, i + 1))
+        for name in sub_globals:
+            if self.in_locals(name):
+                continue
+            if name in targets:
+                sub_dependencies.add(ScopedName(name.name, name.scope, name.n + 1))
             else:
-                sub_dependencies.add((name, i))
+                sub_dependencies.add(name)
         self.locals.update(targets)
-        self.globals.update(sub_dependencies - self.locals)
+        self.globals.update(sub_dependencies)
 
     def visit_For(self, node):
         """For loops - Looped over items are locals.
@@ -203,9 +258,10 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={('range', 0)}, locals={('x', 0)})
+        Vars(globals={ScopedName(name='range', scope=None, n=0)}, locals={ScopedName(name='x', scope=None, n=0)})
         """
-        self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
+        self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
+                            for x in Finder(ast.Name).find(node.target)])
         for child in node.body:
             self.visit(child)
         self.visit(node.iter)
@@ -220,9 +276,10 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={('l', 0)}, locals={('a', 0)})
+        Vars(globals={ScopedName(name='l.pop', scope=None, n=0)}, locals={ScopedName(name='a', scope=None, n=0)})
         """
-        self.locals.update([(x.id, 0) for x in Finder(ast.Name).find(node.target)])
+        self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
+                            for x in Finder(ast.Name).find(node.target)])
         self.visit(node.value)
 
     def visit_comprehension(self, node):
@@ -230,8 +287,9 @@ class _VarFinder(ast.NodeVisitor):
         targets = set()
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
-                targets.add((name.id, 0))
-        all_ = set((x.id, 0) for x in Finder(ast.Name).find(node))
+                targets.add(ScopedName(name.id, getattr(name, '_scope', None), 0))
+        all_ = set(ScopedName(x.id, getattr(x, '_scope', None), 0)
+                   for x in Finder(ast.Name).find(node))
         self.globals.update(all_ - targets - self.locals)
 
     def visit_DictComp(self, node):
@@ -240,7 +298,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('{k: v for k, v in foo}')
-        Vars(globals={('foo', 0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
         self.visit_comprehension(node)
 
@@ -250,7 +308,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('[x for x in foo]')
-        Vars(globals={('foo', 0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
         self.visit_comprehension(node)
 
@@ -260,7 +318,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('{x for x in foo}')
-        Vars(globals={('foo', 0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
         self.visit_comprehension(node)
 
@@ -270,7 +328,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('(x for x in foo)')
-        Vars(globals={('foo', 0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
         self.visit_comprehension(node)
 
@@ -280,23 +338,27 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> vars = _VarFinder().find_in_source('lambda x, y: x + y + foo')
-        >>> vars == Vars(globals={('foo', 0)}, locals={('x', 0), ('y', 0)})
+        >>> vars == Vars(globals={ScopedName('foo', None, 0)}, locals={ScopedName('x', None, 0),
+        ...                                                            ScopedName('y', None, 0)})
         True
         """
+        scope = getattr(node, '_scope', None)
         posonlyargs = getattr(node.args, 'posonlyargs', [])
         for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
-            self.locals.add((arg.arg, 0))
+            self.locals.add(ScopedName(arg.arg, scope, 0))
         self.visit(node.body)
 
     def visit_FunctionDef(self, node):
         """Function definitions. """
-        self.locals.add((node.name, 0))
+        scope = getattr(node, '_scope', None)
+        self.locals.add(ScopedName(node.name, scope, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
     def visit_ClassDef(self, node):
         """Class definitions. """
-        self.locals.add((node.name, 0))
+        scope = getattr(node, '_scope', None)
+        self.locals.add(ScopedName(node.name, scope, 0))
         inner_globals = find_globals(node)
         self.globals.update(inner_globals - self.locals)
 
@@ -306,15 +368,16 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('import foo')
-        Vars(globals=set(), locals={('foo', 0)})
+        Vars(globals=set(), locals={ScopedName(name='foo', scope=None, n=0)})
         >>> _VarFinder().find_in_source('import foo as bar')
-        Vars(globals=set(), locals={('bar', 0)})
+        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0)})
         """
+        scope = getattr(node, '_scope', None)
         for name in node.names:
             if name.asname is None:
-                self.locals.add((name.name, 0))
+                self.locals.add(ScopedName(name.name, scope, 0))
             else:
-                self.locals.add((name.asname, 0))
+                self.locals.add(ScopedName(name.asname, scope, 0))
 
     def visit_ImportFrom(self, node):
         """Import-from statements.
@@ -322,15 +385,16 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('from foo import bar')
-        Vars(globals=set(), locals={('bar', 0)})
+        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0)})
         >>> _VarFinder().find_in_source('from foo import bar as baz')
-        Vars(globals=set(), locals={('baz', 0)})
+        Vars(globals=set(), locals={ScopedName(name='baz', scope=None, n=0)})
         """
+        scope = getattr(node, '_scope', None)
         for name in node.names:
             if name.asname is None:
-                self.locals.add((name.name, 0))
+                self.locals.add(ScopedName(name.name, scope, 0))
             else:
-                self.locals.add((name.asname, 0))
+                self.locals.add(ScopedName(name.asname, scope, 0))
 
 
 class _Renamer(ast.NodeTransformer):
@@ -394,7 +458,7 @@ class _Renamer(ast.NodeTransformer):
             name = node.name
         if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in {x[0] for x in globals_}:
+            if self.from_ not in {x.name for x in globals_}:
                 return node
         return ast.FunctionDef(**{**node.__dict__,
                                   'args': rename(node.args, self.from_, self.to,
@@ -422,7 +486,7 @@ class _Renamer(ast.NodeTransformer):
             name = node.name
         if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in {x[0] for x in globals_}:
+            if self.from_ not in {x.name for x in globals_}:
                 return node
         return ast.ClassDef(**{**node.__dict__,
                                'body': rename(node.body, self.from_, self.to,
@@ -440,7 +504,7 @@ def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
     """
     if not rename_locals:
         globals_ = find_globals(tree)
-        if from_ not in {x[0] for x in globals_}:
+        if from_ not in {x.name for x in globals_}:
             return tree
     if isinstance(tree, Iterable) and not isinstance(tree, str):
         return [rename(x, from_, to, rename_locals) for x in tree]
@@ -480,7 +544,10 @@ class _MethodFinder(ast.NodeVisitor):
         return self.methods
 
 
-def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins=True):
+def _filter_builtins(names):
+    return {name for name in names if name.name not in builtins.__dict__}
+
+def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins: bool = True):
     """Find globals used below a ClassDef node. """
     methods = _MethodFinder().find(node)
     # globals used in class body
@@ -491,7 +558,7 @@ def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins=True):
     for method in methods.values():
         globals_.update(_VarFinder().find(method).globals)
     if filter_builtins:
-        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
+        globals_ = _filter_builtins(globals_)
     return globals_
 
 
@@ -507,52 +574,71 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     ...     return str(z)
     ... '''
     >>> node = ast.parse(source).body[0]
-    >>> find_globals(node) == {('a', 0), ('b', 0), ('np', 0)}
+    >>> find_globals(node) == {ScopedName('a', None, 0), ScopedName('b', None, 0),
+    ...                        ScopedName('np.array', None, 0)}
     True
 
     :param node: AST node to search in.
-    :param filter_builtins:
+    :param filter_builtins: If *True*, filter out builtins.
     """
     if isinstance(node, ast.ClassDef):
         return _find_globals_in_classdef(node)
     globals_ = _VarFinder().find(node).globals
     if filter_builtins:
-        globals_ = {(x, i) for x, i in globals_ if x not in builtins.__dict__}
+        globals_ = _filter_builtins(globals_)
     return globals_
 
 
-def increment_same_name_var(variables: List[Tuple[str, int]], scoped_name: ScopedName):
+def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName):
     """Go through *variables* and increment the the counter for those with the same name as
     *scoped_name* by *scoped_name.n*.
 
     Example:
 
     >>> import padl as somemodule
-    >>> out = increment_same_name_var({('a', 1), ('b', 2)}, ScopedName('b', somemodule, 2))
+    >>> out = increment_same_name_var({ScopedName('a', None, 1), ScopedName('b', None, 2)},
+    ...                               ScopedName('b', somemodule, 2))
     >>> isinstance(out, set)
     True
     >>> {(x.name, x.n) for x in out} == {('a', 1), ('b', 4)}
     True
     """
     result = set()
-    for var, n in variables:
-        if var == scoped_name.name:
-            result.add(ScopedName(var, scoped_name.scope, n + scoped_name.n))
+    for var in variables:
+        if var.scope is None:
+            scope = scoped_name.scope
         else:
-            result.add(ScopedName(var, scoped_name.scope, n))
+            scope = var.scope
+
+        if var.name == scoped_name.name:
+            result.add(ScopedName(var.name, scope, var.n + scoped_name.n))
+        else:
+            result.add(ScopedName(var.name, scope, var.n))
     return result
 
 
-def find_codenode(name: ScopedName):
+def find_codenode(name: ScopedName, full_dump_module_names=None):
     """Find the :class:`CodeNode` corresponding to a :class:`ScopedName` *name*. """
-    (source, node), scope_of_next_var = find_in_scope(name)
+    (source, node), scope_of_next_var, found_name = find_in_scope(name)
+
+    module_name = None
+    if full_dump_module_names:
+        if isinstance(node, ast.Import):
+            module_name = node.names[0].name
+        if isinstance(node, ast.ImportFrom):
+            module_name = node.module
+    if module_name is not None:
+        if any(module_name.startswith(mod) for mod in full_dump_module_names):
+            return find_codenode(ScopedName(name.name, Scope.toplevel(module_name), name.n),
+                                 full_dump_module_names)
 
     # find dependencies
     globals_ = find_globals(node)
     next_name = ScopedName(name.name, scope_of_next_var, name.n)
     globals_ = increment_same_name_var(globals_, next_name)
 
-    return CodeNode(source=source, globals_=globals_, ast_node=node, scope=scope_of_next_var)
+    return CodeNode(source=source, globals_=globals_, ast_node=node, scope=scope_of_next_var,
+                    name=found_name, n=name.n)
 
 
 def _get_nodes_without_in_edges(graph):
@@ -619,6 +705,51 @@ def _topsort(graph: dict) -> List[set]:
     return levels
 
 
+@dataclass
+class CodeNode:
+    """A node in a :class:`CodeGraph`.
+
+    A `CodeNode` has
+
+    - a *source*: The source code represented by the `CodeNode`.
+    - a set of *globals_*: Names the node depends on.
+    - (optionally) a *scope*: The module and function scope the `CodeNode` lives in.
+    - (optionally) an *ast_node*: An `ast.AST` object representing the code.
+    """
+    source: str
+    globals_: set
+    name: str
+    scope: Optional[Scope] = None
+    ast_node: Optional[ast.AST] = None
+    n: int = 0
+
+    @classmethod
+    def from_source(cls, source, scope, name):
+        """Build a `CodeNode` from a source string. """
+        node = ast.parse(source).body[0]
+        globals_ = {
+            ScopedName(name.name, scope, name.n)
+            for name in find_globals(node)
+        }
+
+        return cls(
+            source=source,
+            ast_node=node,
+            globals_=globals_,
+            scope=scope,
+            name=name
+        )
+
+    def __hash__(self):
+        return hash((self.name, self.scope, self.n))
+
+    def __eq__(self, other):
+        return (
+            (self.name, self.scope, self.n)
+            == (other.name, other.scope, other.n)
+        )
+
+
 def _sort(unscoped_graph):
     top = _topsort({k: v.globals_ for k, v in unscoped_graph.items()})
 
@@ -635,46 +766,17 @@ def _sort(unscoped_graph):
     return res
 
 
-@dataclass
-class CodeNode:
-    """A node in a :class:`CodeGraph`.
-
-    A `CodeNode` has
-
-    - a *source*: The source code represented by the `CodeNode`.
-    - a set of *globals_*: Names the node depends on.
-    - (optionally) a *scope*: The module and function scope the `CodeNode` lives in.
-    - (optionally) an *ast_node*: An `ast.AST` object representing the code.
-    """
-    source: str
-    globals_: set
-    scope: Optional[Scope] = None
-    ast_node: Optional[ast.AST] = None
-
-    @classmethod
-    def from_source(cls, source, scope):
-        """Build a `CodeNode` from a source string. """
-        node = ast.parse(source).body[0]
-        globals_ = {
-            ScopedName(var, scope, n)
-            for var, n in find_globals(node)
-        }
-
-        return cls(
-            source=source,
-            ast_node=node,
-            globals_=globals_,
-            scope=scope
-        )
-
-
 def _dumps_unscoped(unscoped_graph):
     """Dump an unscoped (see :meth:`CodeGraph.unscope`) :class:`CodeGraph` to a python source
     string. """
     sorted_ = _sort(unscoped_graph)
     res = ''
+    done = set()
     for i, name in enumerate(sorted_):
         here = unscoped_graph[name]
+        if here in done:
+            continue
+        done.add(here)
         res += here.source
         if i < len(sorted_) - 1:
             next_ = unscoped_graph[sorted_[i + 1]]
@@ -733,6 +835,7 @@ class CodeGraph(dict):
         for k, v in self.items():
             changed = False
             k_unscoped = unscope(k.name, k.scope)
+            v_unscoped = unscope(v.name, k.scope)
             changed = changed or k_unscoped != k.name
             code = v.source
             tree = ast.parse(code)
@@ -745,7 +848,8 @@ class CodeGraph(dict):
                 vars_.add((var_unscoped, var.n))
             if changed:
                 code = unparse(tree).strip('\n')
-            res[k_unscoped, k.n] = CodeNode(code, vars_, ast_node=v.ast_node)
+            res[k_unscoped, k.n] = CodeNode(code, vars_, ast_node=v.ast_node, name=v_unscoped,
+                                            n=v.n)
         return res
 
     def dumps(self):

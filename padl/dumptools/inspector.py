@@ -50,28 +50,38 @@ class CallInfo:
 
         if self.function == '<module>' or ignore_scope:
             return symfinder.Scope.toplevel(module)
-        try:
-            call_source = get_segment_from_frame(caller_frameinfo.frame.f_back, 'call')
-        except RuntimeError:
-            warn('Error determining call source.')
-            call_source = '__na()'
-        try:
-            definition_source = get_source(caller_frameinfo.filename)
-            fdef_lineno = caller_frameinfo.frame.f_lineno
-            calling_scope = symfinder.Scope.toplevel(_module(caller_frameinfo.frame.f_back))
-            scope = symfinder.Scope.from_source(definition_source, fdef_lineno,
-                                                call_source, module, drop_n,
-                                                calling_scope)
-            assert len(scope) <= 1, 'scope longer than 1 currently not supported'
-            return scope
-        except (SyntaxError, RuntimeError) as exc:
-            warn(f'Error determining scope, using top level: {exc}')  # TODO: fix this
-            return symfinder.Scope.toplevel(module)
+
+        return _get_scope_from_frame(caller_frameinfo.frame, drop_n)
 
     @property
     def module(self):
         """The calling module. """
         return self.scope.module
+
+
+# exclude these modules from detailed scope analysis (as that slows testing down in python 3.7.)
+_EXCLUDED_MODULES = ['pytest', 'pluggy']
+
+
+def _get_scope_from_frame(frame, drop_n):
+    """Get the :class:`~symfinder.Scope` from the frame object *frame*. """
+    module = _module(frame)
+    if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
+        return symfinder.Scope.toplevel(module)
+    try:
+        call_source = get_segment_from_frame(frame.f_back, 'call')
+    except (RuntimeError, FileNotFoundError, AttributeError):
+        return symfinder.Scope.toplevel(module)
+    try:
+        definition_source = get_source(frame.f_code.co_filename)
+    except FileNotFoundError:
+        return symfinder.Scope.toplevel(module)
+    calling_scope = _get_scope_from_frame(frame.f_back, 0)
+    scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
+                                        call_source, module, drop_n,
+                                        calling_scope)
+    assert len(scope) <= 1, 'scope longer than 1 currently not supported'
+    return scope
 
 
 def non_init_caller_frameinfo() -> inspect.FrameInfo:
@@ -186,18 +196,6 @@ def get_statement(source: str, lineno: int):
 
 def _get_statement_from_block(block: str, lineno_in_block: int):
     """Get statements at like *lineno_in_block* from a code block.
-
-    Example:
-
-    >>> block = \
-    ...: '''bla = 1
-    ...: hehe = 2
-    ...: x = X(1,
-    ...:       2,
-    ...:       3)
-    ...: '''
-    >>> _get_statement_from_block(block, 4)
-    'x = X(1,\n      2,\n      3)', 1)
 
     :param block: The code block to get the statements from.
     :param lineno_in_block: Line number which the statement must include. Counted from 1.

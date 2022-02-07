@@ -1,0 +1,38 @@
+from padl import transform
+
+
+B = 2
+C = 3
+tests_material_transforms_in_module_CONST = 123
+tests_unittests_test_dump_test_full_makeclasstransform_with_constants_CONST = 1
+
+
+def k(y):
+    return y
+
+
+a = tests_unittests_test_dump_test_full_makeclasstransform_with_constants_CONST
+b = B
+c = C
+
+
+@transform
+def y(y):
+    return tests_material_transforms_in_module_CONST + k(y)
+
+
+@transform
+class MyClassTransform:
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def calculate(self, input_):
+        return self.a * self.b + input_
+
+    def __call__(self, input_):
+        return self.calculate(input_) + y(input_) + self.c(input_)
+
+
+_pd_main = MyClassTransform(a, b, c)

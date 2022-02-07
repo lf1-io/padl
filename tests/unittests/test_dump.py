@@ -1,6 +1,8 @@
 import pytest
+import sys
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify, importdump, fulldump
+import padl.dumptools.var2mod
 from tests.material import transforms_in_module as tim
 
 
@@ -248,6 +250,16 @@ def test_multiline_init():
     )  # no further testing, this should just not fail
 
 
+@transform
+def f_using_dotimport(x):
+    return padl.dumptools.var2mod.ast.parse(x)
+
+
+def test_dotimport():
+    dump = f_using_dotimport._pd_dumps()
+    assert dump == read_dump('dotimport')
+
+
 class TestOtherModule:
     def test_import_function(self):
         importdump(tim)
@@ -304,6 +316,17 @@ class TestOtherModule:
         dump = tim.makeclasstransform(1, 2, 3)._pd_dumps()
         assert dump == read_dump('othermodule_full_makeclasstransform')
 
+    def test_full_makeclasstransform_with_constants(self):
+        fulldump(tim)
+        B = 2
+        C = 3
+        dump = tim.makeclasstransform(CONST, B, C)._pd_dumps()
+        if sys.version_info[1] <= 8:
+            assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms')
+        else:
+            # python >= 3.9 creates a slightly different dump (semantically the same)
+            assert dump == read_dump('othermodule_full_makeclasstransform_with_transforms38')
+
     def test_import_wrapped(self):
         importdump(tim)
         dump = tim.wrap_transform()._pd_dumps()
@@ -313,3 +336,13 @@ class TestOtherModule:
         importdump(tim)
         dump = tim.makelambda()._pd_dumps()
         assert dump == read_dump('othermodule_import_makelambda')
+
+    def test_import_makefunction_squared(self):
+        importdump(tim)
+        dump = tim.makefunction_squared()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makefunction_squared')
+
+    def test_import_makeclass_squared(self):
+        importdump(tim)
+        dump = tim.makeclass_squared()._pd_dumps()
+        assert dump == read_dump('othermodule_import_makeclass_squared')

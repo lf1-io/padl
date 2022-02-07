@@ -19,7 +19,6 @@ from padl.transforms import (
 
 import re
 
-
 def _set_local_varname(frame, event, _args, scope):
     if event == 'return':
         for k, v in frame.f_locals.items():
@@ -38,7 +37,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     """
     caller = inspect.stack()[2]
 
-    if '@' in caller.code_context[0]:
+    if '@' in caller.code_context[0] or caller.code_context[0].startswith('def'):
         call = None
         wrap_type = 'decorator'
     else:
@@ -46,7 +45,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
             # case transform(f)
             call = inspector.get_segment_from_frame(caller.frame, 'call')
             wrap_type = 'inline'
-        except RuntimeError:
+        except (RuntimeError, IndexError):
             # case transform(some_module).f
             try:
                 call = inspector.get_segment_from_frame(caller.frame, 'attribute')

@@ -26,7 +26,6 @@ from math import inf
 import sys
 from types import ModuleType
 from typing import List, Tuple
-from warnings import warn
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -73,11 +72,9 @@ class _ThingFinder(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         """Don't search class definitions (as that's another scope). """
-        pass
 
     def visit_FunctionDef(self, node):
         """Don't search function definitions (as that's another scope). """
-        pass
 
     def deparse(self) -> str:
         """Get the source snipped corresponding to the found node. """
@@ -342,7 +339,31 @@ class _AssignFinder(_NameFinder):
             source = self._result._source
         except AttributeError:
             source = self.source
-        return f'{self.var_name} = {ast_utils.get_source_segment(source, self._result.value)}'
+        return ast_utils.get_source_segment(source, self._result)
+
+
+class _SetAttribute(ast.NodeVisitor):
+    """Class for setting an attribute on all nodes in an ast tree.
+
+    This is being used in :meth:`Scope.from_source` to tag nodes with the scope they were found in.
+
+    Example:
+
+    >>> tree = ast.parse('a = f(0)')
+    >>> _SetAttribute('myattribute', True).visit(tree)
+    >>> tree.body[0].targets[0].myattribute
+    True
+    >>> tree.body[0].value.myattribute
+    True
+    """
+
+    def __init__(self, attr, value):
+        self.attr = attr
+        self.value = value
+
+    def generic_visit(self, node):
+        setattr(node, self.attr, self.value)
+        super().generic_visit(node)
 
 
 class _CallFinder(_ThingFinder):
@@ -474,6 +495,8 @@ class Scope:
     @classmethod
     def toplevel(cls, module):
         """Create a top-level scope (i.e. module level, no nesting). """
+        if isinstance(module, str):
+            module = sys.modules[module]
         return cls(module, '', [])
 
     @classmethod
@@ -498,6 +521,9 @@ class Scope:
         if drop_n > 0:
             function_defs = function_defs[:-drop_n]
 
+        if not function_defs:
+            return cls.toplevel(module)
+
         # get call assignments for inner function
         # def f(a, b, c=3):
         #    ...
@@ -516,7 +542,7 @@ class Scope:
             src = f'{k} = {v}'
             assignment = ast.parse(src).body[0]
             assignment._source = src
-            # assignment._scope = calling_scope
+            _SetAttribute('_scope', calling_scope).visit(assignment.value)
             call_assignments.append(assignment)
 
         scopelist = []
@@ -606,13 +632,15 @@ class ScopedName:
     def __hash__(self):
         return hash((self.name, self.scope, self.n))
 
+    def __eq__(self, other):
+        return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+
 
 def find_in_scope(name: ScopedName):
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     scope *scope*.
 
-    :param var_name: Name of the variable to look for.
-    :param scope: Scope to search.
+    :param scope: Name (with scope) of the variable to look for.
     """
     scope = name.scope
     i = name.n
@@ -623,22 +651,22 @@ def find_in_scope(name: ScopedName):
             if isinstance(res, int):
                 i = res
                 continue
-            source, node = res
+            source, node, name = res
             if getattr(node, '_globalscope', False):
                 scope = Scope.empty()
 
-            return (source, node), scope
+            return (source, node), scope, name
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{name.name} not found in function hierarchy.')
-    source, node = find(name.name, scope.module, i)
+    source, node, name = find(name.name, scope.module, i)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:
         scope = getattr(node, '_scope', scope.global_())
-    return (source, node), scope
+    return (source, node), scope, name
 
 
 def replace_star_imports(tree: ast.Module):
@@ -681,8 +709,10 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
             finder.visit(statement)
             if finder.found_something():
                 if i == 0:
-                    return finder.deparse(), finder.node()
+                    return finder.deparse(), finder.node(), var_name
                 i -= 1
+    if '.' in var_name:
+        return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
     if return_partial:
         return i
     raise NameNotFound(f'{var_name} not found.')
@@ -742,13 +772,13 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
             if isinstance(res, int):
                 i = res
                 continue
-            source, node = res
+            source, node, name = res
         except (NameNotFound, SyntaxError):
             continue
         break
     if source is None:
         raise NameNotFound(f'"{var_name}" not found.')
-    return source, node
+    return source, node, name
 
 
 def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
@@ -796,4 +826,4 @@ def split_call(call_source):
                          last_arg_position.end_lineno - 1,
                          func_position.end_col_offset + 1,
                          last_arg_position.end_col_offset)
-    return call, args
+    return call, ', '.join(x.strip() for x in args.split(','))

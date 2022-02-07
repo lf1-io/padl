@@ -73,6 +73,14 @@ def makeclasstransform(a, b, c):
     return MyClassTransform(a, b, c)
 
 
+def makefunction_squared():
+    return makefunction()
+
+
+def makeclass_squared():
+    return makeclasstransform(1, 2, 3)
+
+
 def wrap_transform():
     return transform(k)
 
