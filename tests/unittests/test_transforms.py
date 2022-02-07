@@ -842,6 +842,53 @@ class TestTorchModuleTransform:
         assert t1.infer_apply(1) == 2
 
 
+class TestTorchModuleTransformWithJit:
+    @pytest.fixture(autouse=True, scope='class')
+    def init(self, request):
+        # transform wrapped around torch.jit.script
+        request.cls.jit_1 = transform(torch.jit.script(PolynomialClass(2, 3)))
+        request.cls.compose_1 = transform(lambda x: x + 1) >> batch >> self.jit_1
+
+    def test_type(self):
+        assert isinstance(self.jit_1, pd.Transform)
+        assert isinstance(self.compose_1, pd.Transform)
+
+    def test_output(self):
+        assert self.jit_1(torch.tensor(1)) == torch.tensor(2)
+
+    def test_infer_apply(self):
+        assert self.jit_1.infer_apply(torch.tensor(1)) == torch.tensor(2)
+        assert self.compose_1.infer_apply(torch.tensor(0)) == torch.tensor(2)
+
+    def test_eval_apply(self):
+        assert list(self.jit_1.eval_apply(torch.tensor([1])))[0] == torch.tensor([2])
+        assert list(self.compose_1.eval_apply(torch.tensor([0])))[0] == torch.tensor([2])
+
+    def test_device(self):
+        self.jit_1.pd_to('cpu')
+        device = next(self.jit_1.pd_layers[0].parameters()).device.type
+        assert device == 'cpu'
+
+    def test_pd_layers(self):
+        assert len(self.jit_1.pd_layers) > 0
+
+    def test_pd_parameters(self):
+        assert len(list(self.jit_1.pd_parameters())) == 2
+
+    def test_save_and_load(self, tmp_path):
+        self.jit_1.pd_save(tmp_path / 'test.padl')
+        t1 = pd.load(tmp_path / 'test.padl')
+        assert t1.infer_apply(torch.tensor(1)) == torch.tensor(2)
+
+        self.compose_1.pd_save(tmp_path / 'test.padl', True)
+        compose_1 = pd.load(tmp_path / 'test.padl')
+        assert compose_1.infer_apply(torch.tensor(0)) == torch.tensor(2)
+
+    def test_methods(self):
+        diff = set(dir(pd.TorchModuleTransform)) - set(dir(self.jit_1))
+        assert len(diff) == 0
+
+
 class TestClassInstance:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
