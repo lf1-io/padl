@@ -1477,8 +1477,8 @@ class Map(Transform):
         str_ = '~ ' + inner
         return str_ + marker[1] if marker else str_
 
-    def _pd_shortrepr(self, formatting=True, marker=None):
-        return self._pd_longrepr(formatting, marker)
+    def _pd_shortrepr(self, formatting=True, max_width=None):
+        return self._pd_longrepr(formatting, marker=None)[:max_width]
 
     def _pd_tinyrepr(self, formatting=True):
         return f'~ {self.transform._pd_tinyrepr(formatting)}'
