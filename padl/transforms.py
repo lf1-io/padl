@@ -1326,10 +1326,12 @@ class ClassTransform(AtomicTransform):
             return ', '.join(args_list)
 
         max_args_list = []
+        max_width -= 3
         for args in args_list:
             max_args_list += [args]
             if visible_len(', '.join(max_args_list)) > max_width:
                 max_args_list.pop(-1)
+                max_args_list.append('...')
                 break
         return ', '.join(max_args_list)
 
