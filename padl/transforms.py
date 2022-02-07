@@ -40,6 +40,7 @@ from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, m
 
 
 _pd_trace = []
+MAX_WIDTH_FOR_PRINT = 110
 
 
 def _unpack_batch(args):
@@ -1883,7 +1884,7 @@ class Compose(Pipeline):
             else 1
             for t in self.transforms
         ])
-        max_width = int(110/max_children_number)
+        max_width = int(MAX_WIDTH_FOR_PRINT/max_children_number)
         # pad the components of rows which are shorter than other parts in same column
         rows = [
             [s._pd_parensrepr(max_width=max_width) for s in t.transforms] if hasattr(t, 'transforms')
