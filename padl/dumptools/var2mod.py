@@ -543,6 +543,7 @@ class _MethodFinder(ast.NodeVisitor):
         self.visit(node)
         return self.methods
 
+
 def _filter_builtins(names):
     return {name for name in names if name.name not in builtins.__dict__}
 

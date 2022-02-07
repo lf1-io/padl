@@ -366,7 +366,6 @@ class _SetAttribute(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-
 class _CallFinder(_ThingFinder):
     """Class for finding a *call* in an AST tree.
 
@@ -641,8 +640,7 @@ def find_in_scope(name: ScopedName):
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     scope *scope*.
 
-    :param var_name: Name of the variable to look for.
-    :param scope: Scope to search.
+    :param scope: Name (with scope) of the variable to look for.
     """
     scope = name.scope
     i = name.n
