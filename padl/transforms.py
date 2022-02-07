@@ -2513,6 +2513,7 @@ class _SimpleGetter:
     def __len__(self):
         return len(self.samples)
 
+
 @dataclass
 class _TraceItem:
     """Catch information of an Exception produced in a Transform call.

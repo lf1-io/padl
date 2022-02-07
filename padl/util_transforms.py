@@ -1,5 +1,6 @@
 """Extra useful Transforms. """
 
+from textwrap import indent
 from collections import OrderedDict
 from typing import Optional, Union, List, Tuple
 
@@ -38,6 +39,14 @@ class IfInMode(ClassTransform):
         self.if_ = if_
         self.else_ = else_
         self.target_mode = target_mode
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        if_repr = f'if pd_mode == {self.target_mode}:\n\n' + indent(
+            self.if_._pd_longrepr(marker=None), '   ')
+        else_repr = f'\n\nelse:\n\n' + indent(self.else_._pd_longrepr(marker=None), '   ')
+        if marker:
+            return marker[1] + '\n\n' + if_repr + else_repr
+        return if_repr + else_repr
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
@@ -117,7 +126,7 @@ class Try(ClassTransform):
     :param catch_transform: Transform to fall back on.
     :param exceptions: Catch conditions.
     :param else_transform: Transform to carry on the `else` clause of the `try` statement.
-    :param finally_transform: Transform to carry on on the `finally` clause of the `try` statement.
+    :param finally_transform: Transform to carry on the `finally` clause of the `try` statement.
     :param pd_name: The Transform's name.
     """
 
@@ -168,6 +177,27 @@ class Try(ClassTransform):
         )
 
         return input_components_reduced, final_splits, False
+
+    def _repr_exceptions(self):
+        return '(' + ', '.join([exc.__name__ for exc in self.exceptions]) + ')'
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        tr_repr = f'try:\n\n' + indent(self.transform._pd_longrepr(marker=None), '   ')
+        catch_tr_repr = f'\n\nexcept ' + self._repr_exceptions() + ':\n\n' + indent(
+            self.catch_transform._pd_longrepr(marker=None), '   ')
+        if isinstance(self.else_transform, Identity):
+            else_tr_repr = ''
+        else:
+            else_tr_repr = f'\n\nelse:\n\n' + indent(
+                self.else_transform._pd_longrepr(marker=None), '   ')
+        if isinstance(self.finally_transform, Identity):
+            finally_repr = ''
+        else:
+            finally_repr = f'\n\nfinally:\n\n' + indent(
+                self.finally_transform._pd_longrepr(marker=None), '   ')
+        if marker:
+            return marker[1] + '\n\n' + tr_repr + catch_tr_repr + else_tr_repr + finally_repr
+        return tr_repr + catch_tr_repr + else_tr_repr + finally_repr
 
     def __call__(self, args):
         try:
