@@ -42,10 +42,10 @@ def _maketrans(attr, getitem=False):
             out = self._pd_shortrepr()
             return out + marker[1] if marker else out
 
-        def _pd_shortrepr(self, formatting=True):
+        def _pd_shortrepr(self, formatting=True, max_width=None):
             return f'{attr}({self._formatted_args()})'
 
-        def _pd_tinyrepr(self, formatting=True):
+        def _pd_tinyrepr(self, formatting=True, max_width=None):
             return self.pd_name or attr
 
     return T

@@ -612,23 +612,27 @@ class Transform:
         """A line string representation of the transform."""
         raise NotImplementedError
 
-    def _pd_parensrepr(self, formatting=True) -> str:
-        short = self._pd_shortrepr(formatting)
-        if len(short) < 50:
+    def _pd_parensrepr(self, formatting=True, max_width=None) -> str:
+        short = self._pd_shortrepr(formatting, max_width=max_width)
+        max_width = 50 if max_width is None else max_width
+        if len(short) < max_width:
             if len(getattr(self, 'transforms', [])) > 1:
                 short = f"{make_green('[', not formatting)}{short}{make_green(']', not formatting)}"
             return short
         return self._pd_tinyrepr(formatting)
 
-    def _pd_shortrepr(self, formatting=True) -> str:
-        """A short string representation of the transform."""
-        return self._pd_title()
+    def _pd_shortrepr(self, formatting=True, max_width=None) -> str:
+        """A short string representation of the transform.
+        :param max_width:
+        """
+        return self._pd_title(max_width=max_width)
 
     def _pd_tinyrepr(self, formatting=True) -> str:
-        """A tiny string representation of the transform."""
+        """A tiny string representation of the transform.
+        """
         return self.pd_name or f'<anonymous {self.__class__.__name__}>'
 
-    def _pd_title(self) -> str:
+    def _pd_title(self, max_width=None) -> str:
         """A title for the transform."""
         return self._pd_tinyrepr()
 
@@ -1008,7 +1012,7 @@ class AtomicTransform(Transform):
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
         return self._pd_call
 
-    def _pd_title(self) -> str:
+    def _pd_title(self, max_width=None) -> str:
         return self._pd_call
 
     @property
@@ -1147,12 +1151,12 @@ class FunctionTransform(AtomicTransform):
         except TypeError:
             return self._pd_call + marker[1] + '\n' if marker else self._pd_call
 
-    def _pd_shortrepr(self, formatting=True) -> str:
+    def _pd_shortrepr(self, formatting=True, max_width=None) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
             return self._pd_longrepr(formatting)
         return super()._pd_shortrepr(formatting)
 
-    def _pd_title(self) -> str:
+    def _pd_title(self, max_width=None) -> str:
         return self.function.__name__
 
     @property
@@ -1304,7 +1308,7 @@ class ClassTransform(AtomicTransform):
     def _split_call(self):
         return symfinder.split_call(self._pd_call)
 
-    def _formatted_args(self) -> str:
+    def _formatted_args(self, max_width=None) -> str:
         """Format the object's init arguments for printing. """
         if self._pd_arguments is None:
             return '-?-'
@@ -1317,6 +1321,15 @@ class ClassTransform(AtomicTransform):
                 args_list += [f'{subkey}={format_argument(val)}' for subkey, val in value.items()]
             else:
                 args_list.append(f'{key}={format_argument(value)}')
+
+        if max_width is None:
+            return ', '.join(args_list)
+
+        formatted_args = ''
+        for args in args_list:
+            if len(formatted_args+args)+3 > max_width:
+                break
+            formatted_args += [args]
         return ', '.join(args_list)
 
     def _pd_longrepr(self, marker=None) -> str:
@@ -1328,9 +1341,11 @@ class ClassTransform(AtomicTransform):
         except symfinder.NameNotFound:
             return self._pd_call + marker[1] if marker else self._pd_call
 
-    def _pd_title(self) -> str:
+    def _pd_title(self, max_width=None) -> str:
         title = type(self).__name__
-        return title + '(' + self._formatted_args() + ')'
+        if max_width is not None:
+            max_width -= len(title)
+        return title + '(' + self._formatted_args(max_width=max_width) + ')'
 
 
 class TorchModuleTransform(ClassTransform):
@@ -1598,7 +1613,7 @@ class Pipeline(Transform):
                 for i, t in enumerate(self.transforms)]
         return between.join(rows) + '\n'
 
-    def _pd_shortrepr(self, formatting=True):
+    def _pd_shortrepr(self, formatting=True, max_width=None):
         def subrepr(transform):
             short = transform._pd_shortrepr(formatting)
             if len(short) < 20:
@@ -1611,13 +1626,15 @@ class Pipeline(Transform):
             result = f'group({result})'
         return result
 
-    def _pd_tinyrepr(self, formatting=True) -> str:
+    def _pd_tinyrepr(self, formatting=True, max_width=None) -> str:
         rep = f'..{make_green(self.op, not formatting)}..'
         if self.pd_name:
             rep = f'{self.pd_name}: {rep}'
         return f'{make_green("[", not formatting)}{rep}{make_green("]", not formatting)}'
 
-    def _pd_title(self):
+    def _pd_title(self, max_width=None):
+        if max_width is not None:
+            return self.__class__.__name__[:max_width]
         return self.__class__.__name__
 
     def pd_to(self, device: str):
@@ -1857,10 +1874,17 @@ class Compose(Pipeline):
         """Create a detailed formatted representation of the transform. For multi-line inputs
         the lines are connected with arrows indicating data flow.
         """
+        # Get maximum number of children in a single row
+        max_children_number = max([
+            sum([1 for s in t.transforms]) if hasattr(t, 'transforms')
+            else 1
+            for t in self.transforms
+        ])
+        max_width = int(110/max_children_number)
         # pad the components of rows which are shorter than other parts in same column
         rows = [
-            [s._pd_parensrepr() for s in t.transforms] if hasattr(t, 'transforms')
-            else [t._pd_shortrepr()]
+            [s._pd_parensrepr(max_width=max_width) for s in t.transforms] if hasattr(t, 'transforms')
+            else [t._pd_shortrepr(max_width=max_width)]
             for t in self.transforms
         ]
         children_widths = [[visible_len(x) for x in row] for row in rows]
@@ -2266,8 +2290,8 @@ class Parallel(Pipeline):
         out = ''
         for i, t in enumerate(self.transforms):
             out += (
-                make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
-                make_bold_(f'{i}: ') + t._pd_shortrepr()
+                    make_green_(pipes(len_ - i - 1) + '└' + horizontal(i + 1) + '▶ ') +
+                    make_bold_(f'{i}: ') + t._pd_shortrepr()
             )
             out += marker[1] + '\n' if marker and marker[0] == i else '\n'
             if i < len(self.transforms) - 1:
