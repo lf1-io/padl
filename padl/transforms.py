@@ -1325,12 +1325,13 @@ class ClassTransform(AtomicTransform):
         if max_width is None:
             return ', '.join(args_list)
 
-        formatted_args = ''
+        max_args_list = []
         for args in args_list:
-            if len(formatted_args+args)+3 > max_width:
+            max_args_list += [args]
+            if visible_len(', '.join(max_args_list)) > max_width:
+                max_args_list.pop(-1)
                 break
-            formatted_args += [args]
-        return ', '.join(args_list)
+        return ', '.join(max_args_list)
 
     def _pd_longrepr(self, marker=None) -> str:
         try:
@@ -1344,7 +1345,7 @@ class ClassTransform(AtomicTransform):
     def _pd_title(self, max_width=None) -> str:
         title = type(self).__name__
         if max_width is not None:
-            max_width -= len(title)
+            max_width -= visible_len(title)
         return title + '(' + self._formatted_args(max_width=max_width) + ')'
 
 
