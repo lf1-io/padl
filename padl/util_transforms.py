@@ -41,7 +41,7 @@ class IfInMode(ClassTransform):
         self.target_mode = target_mode
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        if_repr = f'if pd_mode == {self.target_mode}:\n\n' + indent(
+        if_repr = f'if pd_mode == "{self.target_mode}":\n\n' + indent(
             self.if_._pd_longrepr(marker=None), '   ')
         else_repr = f'\n\nelse:\n\n' + indent(self.else_._pd_longrepr(marker=None), '   ')
         if marker:
