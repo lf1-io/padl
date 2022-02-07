@@ -14,6 +14,16 @@ class _Edge:
     out: Any
     in_: Any
 
+    def __str__(self):
+        def fmt(x):
+            if x is None:
+                return ':'
+            return x
+        return f'{fmt(self.out)} - {fmt(self.in_)}'
+
+    def __lt__(self, other):
+        return self.out is None or self.out < other.out
+
 
 class _Node:
     _id = 0
@@ -74,7 +84,7 @@ class _Graph:
                 self._parents[child].add(node)
 
     def children(self, edge):
-        return list(self.edges[edge])
+        return sorted(self.edges[edge], key=self.edges[edge].get)
 
     def parents(self, edge):
         return self._parents[edge]
@@ -163,26 +173,15 @@ class _Graph:
 
         Useful for drawing
         """
-
-        def _covert_slice_to_str(slc):
-            if slc is None:
-                return ''
-            if isinstance(slc, slice):
-                start = slc.start if slc.start is not None else ''
-                stop = slc.stop if slc.stop is not None else ''
-                step = slc.step if slc.step is not None else ''
-                return f'[{start}:{stop}:{step if step is not None else ""}]'
-            return f'[{slc}]'
-
         networkx_graph = nx.DiGraph()
         for parent, children_dict in self.edges.items():
             networkx_graph.add_node(str(parent), node=parent)
             for child in children_dict:
                 networkx_graph.add_node(str(child), node=child)
-                output_slice = _covert_slice_to_str(self.edges[parent][child].out)
+                edge = self.edges[parent][child]
                 networkx_graph.add_edge(str(parent),
                                         str(child),
-                                        label=output_slice)
+                                        label=str(edge))
         self.networkx_graph = networkx_graph
 
     def draw(self):  # A: remove?
@@ -205,15 +204,16 @@ def _connect_graphs(from_graph, to_graph):
     new_graph.edges.update(from_graph.edges)
     new_graph.edges.update(to_graph.edges)
 
+    out_in = None if len(from_graph.out_nodes) == 1 else 0
+
     for out_node in from_graph.out_nodes:
         out_edge = new_graph.edges[out_node][from_graph.output_node]
         for in_node in to_graph.in_nodes:
             in_edge = to_graph.edges[to_graph.input_node][in_node]
-            if len(from_graph.out_nodes) == 1 or in_edge.out is None:
-                new_graph.connect(out_node, in_node, _Edge(in_edge.out, 0))
-                continue
-            if in_edge.out == out_edge.in_:
-                new_graph.connect(out_node, in_node, _Edge(None, 0))
+            if out_edge.in_ is None or in_edge.out is None:
+                new_graph.connect(out_node, in_node, _Edge(in_edge.out, out_in))
+            elif in_edge.out == out_edge.in_:
+                new_graph.connect(out_node, in_node, _Edge(None, None))
         # remove connections to old output node
         del new_graph.edges[out_node][from_graph.output_node]
 

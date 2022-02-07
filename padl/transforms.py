@@ -1502,14 +1502,9 @@ class Pipeline(Transform):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(call_info=call_info, pd_name=pd_name)
 
-        transforms = self._flatten_list(transforms)
+        self.transforms = self._flatten_list(transforms)
         self._pd_group = True if pd_name is not None else pd_group
-
         self._graph = _Graph()
-
-        self._pd_group = False
-
-        self.transforms: List[Transform] = transforms
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -1791,7 +1786,8 @@ class Pipeline(Transform):
     @lru_cache(maxsize=128)
     def _set_output_formatter(self):
         """Calculate the keys for namedtuple"""
-        return self._pd_get_keys([node.transform for node in self._graph.out_nodes])
+        return self._pd_get_keys([node.transform
+                                  for node, _ in sorted(self._graph.out_nodes_and_edges(), key=lambda x: x[1].in_)])
 
     def _pd_format_output(self, x):  # A: check again
         """Return the formatted namedtuple of output"""
@@ -1837,11 +1833,11 @@ class Pipeline(Transform):
         for parent_node in self._graph.parents(node):
             edge = self._graph.edges[parent_node][node]
             arg = inputs[parent_node]
-            if edge.out is not None and len(self._graph.parents(node)) > 1:
+            if edge.out is not None:
                 arg = arg[edge.out]
-            gathered_args[edge.in_] = arg
+            gathered_args[edge.in_ or 0] = arg
 
-        if len(gathered_args) == 1:  # A: remove?
+        if len(gathered_args) == 1:
             return gathered_args[0]
         return tuple(gathered_args)
 
@@ -1873,74 +1869,90 @@ class Pipeline(Transform):
     def _generate_pre_batch_graph(self) -> _Graph:
         pre_batch_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        todo = {self._graph.input_node}
-        post_batch_start_nodes = set()
+        todo = [self._graph.input_node]
+        post_batch_start_nodes = []
         i = 0
+        done = set()
 
         while todo:
-            next_ = todo.pop()
+            next_ = todo.pop(0)
+            if next_ in done:
+                continue
+            done.add(next_)
             if next_ == self._graph.output_node and post_batch_start_nodes:
                 raise SyntaxError('If a path has batchify, all paths must contain batchify')
             if isinstance(getattr(next_, 'transform', None), Batchify):
-                pre_batch_graph.edges[next_][self._graph.output_node] = (None, i)  # change to other output node
-                post_batch_start_nodes.update({(i, n) for n in self._graph.children(next_)})
+                pre_batch_graph.edges[next_][self._graph.output_node] = _Edge(None, i)
+                post_batch_start_nodes.append(next_)
                 i += 1
             else:
                 pre_batch_graph.edges[next_] = self._graph.edges[next_]
-                todo.update(self._graph.children(next_))
+                todo += self._graph.children(next_)
 
-        pre_batch_graph.replace_in_out()
-        return pre_batch_graph, post_batch_start_nodes
+        return pre_batch_graph.copy(), post_batch_start_nodes
 
     def _generate_post_batch_graph(self, start_nodes) -> _Graph:
         pre_unbatch_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        todo = set()
-        postprocess_start_nodes = set()
+        todo = start_nodes[:]
+        postprocess_start_nodes = []
 
-        for i, node in start_nodes:
-            pre_unbatch_graph.connect(pre_unbatch_graph.input_node, node, _Edge(i, 0))
-            todo.add(node)
+        if len(start_nodes) == 1:
+            pre_unbatch_graph.connect(pre_unbatch_graph.input_node, start_nodes[0], _Edge(None, None))
+        else:
+            for i, node in enumerate(start_nodes):
+                pre_unbatch_graph.connect(pre_unbatch_graph.input_node, node, _Edge(i, None))
 
         i = 0
+        done = set()
 
         while todo:
-            next_ = todo.pop()
-            if isinstance(getattr(next_, 'transform', None), Batchify):
+            next_ = todo.pop(0)
+            if next_ in done:
+                continue
+            done.add(next_)
+            if isinstance(getattr(next_, 'transform', None), Batchify) and next_ not in start_nodes:
                 raise SyntaxError('Double batchify.')
             if next_ == self._graph.output_node and postprocess_start_nodes:
                 raise SyntaxError('If a path has unbatchify, all paths must contain unbatchify.')
             if isinstance(getattr(next_, 'transform', None), Unbatchify):
-                pre_unbatch_graph.edges[next_][self._graph.output_node] = (None, i)  # change to other output node
-                postprocess_start_nodes.update({(i, n) for n in self._graph.children(next_)})
+                pre_unbatch_graph.edges[next_][self._graph.output_node] = _Edge(None, i)
+                postprocess_start_nodes.append(next_)
                 i += 1
             else:
                 pre_unbatch_graph.edges[next_] = self._graph.edges[next_]
-                todo.update(self._graph.children(next_))
+                todo += self._graph.children(next_)
 
-        pre_unbatch_graph.replace_in_out()
+        pre_unbatch_graph.update_parents()
+
+        memo = {}
+        pre_unbatch_graph = pre_unbatch_graph.copy(memo)
+        for node in start_nodes:
+            memo[node].transform = identity
+        for node in postprocess_start_nodes:
+            memo[node].transform = identity
+
         return pre_unbatch_graph, postprocess_start_nodes
 
     def _generate_postprocess_graph(self, start_nodes) -> _Graph:
         postprocess_graph = _Graph({}, self._graph.input_node, self._graph.output_node)
 
-        todo = set()
+        todo = start_nodes[:]
 
-        for i, node in start_nodes:
+        for i, node in enumerate(start_nodes):
             postprocess_graph.connect(postprocess_graph.input_node, node, _Edge(i, 0))
-            todo.add(node)
 
         while todo:
             next_ = todo.pop()
             if isinstance(getattr(next_, 'transform', None), Batchify):
                 raise SyntaxError('Double batchify.')
-            if isinstance(getattr(next_, 'transform', None), Unbatchify):
+            if isinstance(getattr(next_, 'transform', None), Unbatchify) and next_ not in start_nodes:
                 raise SyntaxError('Double unbatchify.')
             postprocess_graph.edges[next_] = self._graph.edges[next_]
-            todo.update(self._graph.children(next_))
+            todo += self._graph.children(next_)
 
-        postprocess_graph.replace_in_out()
-        return postprocess_graph
+        postprocess_graph.update_parents()
+        return postprocess_graph.copy()
 
     def _pd_splits(self, input_components=0):
         """Generate splits (preprocess, forward, postprocess)
@@ -1987,7 +1999,7 @@ class Compose(Pipeline):
                  pd_name: Optional[str] = None, pd_group: bool = False):
         super().__init__(transforms, call_info=call_info, pd_name=pd_name, pd_group=pd_group)
 
-        self._graph.connect(self._graph.input_node, self._graph.output_node, _Edge(None, 0))
+        self._graph.connect(self._graph.input_node, self._graph.output_node, _Edge(None, None))
 
         for transform in self.transforms:
             self._append(transform)
@@ -2001,9 +2013,11 @@ class Compose(Pipeline):
 
         for onode in self._graph.out_nodes:
             edge = self._graph.edges[onode].pop(self._graph.output_node)
+            if len(self._graph.out_nodes) == 1:
+                edge.in_ = None
             self._graph.connect(onode, other_node, edge)
 
-        self._graph.connect(other_node, self._graph.output_node, _Edge(None, 0))
+        self._graph.connect(other_node, self._graph.output_node, _Edge(None, None))
         self._graph.update_parents()
 
     @staticmethod
@@ -2196,7 +2210,8 @@ class Rollout(Pipeline):
 
         for idx, transform in enumerate(self.transforms):
             if isinstance(transform, Pipeline):  # A: change to getattr?
-                graph_to_insert = transform._graph
+                graph_to_insert = _clean_compose(identity >> transform >> identity)._graph
+                graph_to_insert.edges[list(graph_to_insert.out_nodes)[0]][graph_to_insert.output_node].in_ = idx
             else:
                 graph_to_insert = _trivial_transform_graph(transform, None, idx)
             self._graph.insert_graph(self._graph.input_node,
@@ -2219,7 +2234,7 @@ class Rollout(Pipeline):
 def _trivial_transform_graph(transform, slice_from_input, output_position):
     node = _TransformNode(transform)
     graph = _Graph()
-    graph.connect(graph.input_node, node, _Edge(slice_from_input, 0))
+    graph.connect(graph.input_node, node, _Edge(slice_from_input, None))
     graph.connect(node, graph.output_node, _Edge(None, output_position))
     return graph
 
@@ -2245,7 +2260,9 @@ class Parallel(Pipeline):
 
         for idx, transform in enumerate(self.transforms):
             if isinstance(transform, Pipeline):  # A: change to getattr?
-                graph_to_insert = transform._graph
+                graph_to_insert = _clean_compose(identity >> transform >> identity)._graph
+                graph_to_insert.edges[graph_to_insert.input_node][graph_to_insert.in_nodes[0]].out = idx
+                graph_to_insert.edges[list(graph_to_insert.out_nodes)[0]][graph_to_insert.output_node].in_ = idx
             else:
                 graph_to_insert = _trivial_transform_graph(transform, idx, idx)
             self._graph.insert_graph(self._graph.input_node,
@@ -2604,12 +2621,17 @@ def _clean_compose(transforms):
     - remove superflous identities
     - if the list contains only one transform, return that instead of composing
     """
-    transforms = [t for t in transforms if not isinstance(t, Identity)]
-    if len(transforms) == 1:
-        return transforms[0]
-    if len(transforms) == 0:
+    # transforms = [t for t in transforms if not isinstance(t, Identity)]
+    cleaned = []
+    for i, t in enumerate(transforms):
+        if i < len(transforms) - 1 and isinstance(t, Identity) and not isinstance(transforms[i + 1], Pipeline):
+            continue
+        cleaned.append(t)
+    if len(cleaned) == 1:
+        return cleaned[0]
+    if len(cleaned) == 0:
         return identity
-    return Compose(transforms)
+    return Compose(cleaned)
 
 
 def _get_next_section(graph, layer, len_last):
@@ -2628,11 +2650,11 @@ def _get_next_section(graph, layer, len_last):
     layer_type = _determine_layer_type(graph, layer)
 
     # collect the nodes that make up the branches of the Rollout / Parallel
-    branches = []
+    branches = [None for _ in layer]
     stopper = None
     for node in layer:
-        branch, stopper = _graph_to_compose(graph, [node], len_last)
-        branches.append(branch)
+        branch, stopper, ix = _graph_to_compose(graph, [node], len_last)
+        branches[ix] = branch
 
     return layer_type(branches), stopper
 
@@ -2642,20 +2664,25 @@ def _graph_to_compose(graph, next_layer=None, len_before=1):
         next_layer = graph.in_nodes
     pipe = []
     stopper = None
+    last_layer = None
+    ix = None
     while next_layer:
         # found a node with more parents than the size of the last layer
         # this means the branch is finished
+        if len(graph.parents(next_layer[0])) > len_before:
+            assert len_before == 1
+            stopper = next_layer
+            ix = graph.edges[last_layer[0]][next_layer[0]].in_
+            break
         if not isinstance(next_layer[0], _TransformNode):
             assert len(next_layer) == 1
             break
-        if len(graph.parents(next_layer[0])) > len_before:
-            stopper = next_layer
-            break
         len_before, len_here = len(next_layer), len_before
+        last_layer = next_layer
         next_section, next_layer = _get_next_section(graph, next_layer, len_here)
         pipe.append(next_section)
 
-    return _clean_compose(pipe), stopper
+    return _clean_compose(pipe), stopper, ix
 
 def _graph_to_pipeline(graph):
     return _graph_to_compose(graph)[0]
