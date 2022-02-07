@@ -5,7 +5,6 @@ from padl import transforms as pd, transform, Identity, batch, unbatch, group
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
 from collections import namedtuple
-from padl.exceptions import WrongDeviceError
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
