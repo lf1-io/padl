@@ -37,5 +37,6 @@ clean:
 
 version:
 	cp -r unstable $(VERSION)
-	-ln -sT $(VERSION) latest
+	-rm latest
+	-ln -s $(VERSION) latest
 	python gen_versions.py
