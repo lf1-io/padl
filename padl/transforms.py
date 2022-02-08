@@ -808,7 +808,7 @@ class Transform:
             self.pd_forward_device_check()
 
         if use_preprocess:
-            loader = self._pd_get_loader(args, preprocess, mode, **loader_kwargs)
+            loader = self.pd_get_loader(args, preprocess, mode, **loader_kwargs)
         else:
             loader = _SimpleGetter(args)
 
@@ -910,7 +910,7 @@ class Transform:
         for layer in self.pd_layers:
             yield from layer.parameters()
 
-    def _pd_get_loader(self, args, preprocess: 'Transform', mode: str, **kwargs) -> DataLoader:
+    def pd_get_loader(self, args, preprocess: 'Transform', mode: str, **kwargs) -> DataLoader:
         """Get a pytorch data loader applying *preprocess* to *args*.
 
         :param args: A sequence of datapoints.
