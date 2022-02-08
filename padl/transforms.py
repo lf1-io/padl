@@ -1098,7 +1098,8 @@ class FunctionTransform(AtomicTransform):
     :param pd_name: name of the transform
     :param call: The call string (defaults to the function's name).
     :param source: The source code (optional).
-    :param inline_wrap: True if the function was wrapped in-line.
+    :param wrap_type: One of {'module', 'lambda', 'decorator', 'inline'} - specifying how the was
+        function was wrapped.
     """
 
     def __init__(self, function: Callable, call_info: inspector.CallInfo,
