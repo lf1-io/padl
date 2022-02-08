@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>padl.dumptools.sourceget &mdash; PADL 0.1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="padl.dumptools.symfinder" href="padl.dumptools.symfinder.html" />
+    <link rel="prev" title="padl.dumptools.serialize" href="padl.dumptools.serialize.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html">
+            <img src="../_static/padl-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#getting-started">Getting Started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#installation">Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#your-first-padl-program">Your first PADL program</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#try-out-padl-in-colab-notebooks">Try out PADL in Colab notebooks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#resources">Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/transform.html"><em>Transforms</em> and <em>Pipelines</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/creating_transforms.html">Creating Transforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/combining_transforms.html">Combining Transforms into Pipelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#compose">Compose <code class="docutils literal notranslate"><span class="pre">&gt;&gt;</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#rollout">Rollout <code class="docutils literal notranslate"><span class="pre">+</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#parallel">Parallel <code class="docutils literal notranslate"><span class="pre">/</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#map">Map <code class="docutils literal notranslate"><span class="pre">~</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#grouping-transforms">Grouping Transforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/combining_transforms.html#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id2">Compose</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#building-pre-processing-pipelines">Building pre-processing pipelines</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#combining-pre-processing-model-forward-pass-and-post-processing">Combining pre-processing, model forward pass and post-processing</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id3">Rollout</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#extracting-items-from-a-dictionary">Extracting items from a dictionary</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#generating-different-versions-of-an-image">Generating different versions of an image</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id4">Parallel</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#pass-training-samples">Pass training samples</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../usage/combining_transforms.html#id5">Map</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="../usage/combining_transforms.html#example-convert-multiple-images-to-tensors">Example: convert multiple images to tensors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/stages.html">Stages: Preprocess, Forward and Postprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/apply.html">Applying Transforms to Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/saving.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/print_slice.html">Printing and Slicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/pytorch.html">Using PyTorch Modules with Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#padl-automatically-saves-pytorch-state-dicts">PADL Automatically Saves PyTorch State-Dicts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#devices">Devices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#accessing-layers-and-parameters">Accessing Layers and Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/pytorch.html#weight-sharing">Weight Sharing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/debugging_your_transforms.html">Debugging your Transforms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/debugging_your_transforms.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage/extras.html">Extras</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#the-same-utility">The <code class="xref py py-obj docutils literal notranslate"><span class="pre">same</span></code> Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#applying-transforms-depending-on-the-mode">Applying Transforms Depending on the Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../usage/extras.html#exception-handling">Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../usage.html#import-anything-you-need-from-padl">Import anything you need <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">padl</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced.html">Advanced Topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/saving.html">Saving</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#how-it-works">How it works</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-by-value">Saving by value</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#custom-serializers">Custom serializers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#id2">What does not save</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-the-targets-of-with-blocks">Variables defined as the targets of <code class="code docutils literal notranslate"><span class="pre">with</span></code> blocks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#variables-defined-as-targets-of-loops">Variables defined as targets of loops</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#mutated-objects">Mutated objects</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.version.html"><code class="docutils literal notranslate"><span class="pre">padl.version</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.wrap.html"><code class="docutils literal notranslate"><span class="pre">padl.wrap</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PADL</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../modules.html">API Documentation</a> &raquo;</li>
+      <li><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-padl.dumptools.sourceget">
+<span id="padl-dumptools-sourceget"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.sourceget</span></code><a class="headerlink" href="#module-padl.dumptools.sourceget" title="Permalink to this headline"></a></h1>
+<p>Module for getting source-code strings of various things (source files, modules, ipython cells).
+In addition, the module maintains a cache of source-strings in which the values can be modified.</p>
+<p>Use <cite>get_source</cite> to get source-strings given source filenames or ipython cell ids.
+<cite>get_module_source</cite> allows to get source of modules.</p>
+<p>Both will try to get the source-strings from the <cite>replace_cache</cite>, which can contain modified
+versions of the source-strings.</p>
+<p>To add a modified source-string to the <cite>replace_cache</cite>, use <cite>put_into_cache</cite>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceString">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">ReplaceString</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceString" title="Permalink to this definition"></a></dt>
+<dd><p>A string with a replaced section.</p>
+<p>Has an attribute <cite>original</cite> which gives the original string (pre-replacing).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>string</strong> – The original string.</p></li>
+<li><p><strong>repl</strong> – The string to insert at the specified location.</p></li>
+<li><p><strong>from_line</strong> – The first line to replace in.</p></li>
+<li><p><strong>to_line</strong> – The last line to replace in.</p></li>
+<li><p><strong>from_col</strong> – The first col on <em>from_line</em> to replace.</p></li>
+<li><p><strong>to_col</strong> – The last col on <em>to_line</em> to replace.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceString.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceString.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut and return the resulting sub-<cite>ReplaceString</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceStrings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">ReplaceStrings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rstrings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#padl.dumptools.sourceget.ReplaceString" title="padl.dumptools.sourceget.ReplaceString"><span class="pre">padl.dumptools.sourceget.ReplaceString</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceStrings" title="Permalink to this definition"></a></dt>
+<dd><p>A collection of replacestrings with different replacements in an original string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rstrings</strong> – A list of <cite>ReplaceString`s with the same `original</cite> and non-overlapping
+replace locations.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.ReplaceStrings.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.ReplaceStrings.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut and return the resulting sub-<cite>ReplaceStrings</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.cut">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.cut" title="Permalink to this definition"></a></dt>
+<dd><p>Cut a string (can be a normal <cite>str</cite>, a <cite>ReplaceString</cite> or a <cite>ReplaceStrings</cite>) and return the
+resulting substring.</p>
+<p>Example:</p>
+<blockquote>
+<div><p>Given a <em>string</em>,</p>
+<dl class="simple">
+<dt>“xxxxxxxxxxx</dt><dd><p>xxxxxAXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXBxxxx
+xxxx”</p>
+</dd>
+</dl>
+<p>, to cut a substring from <em>A</em> to <em>B</em>, give as <em>from_line</em> the line of <em>A</em> (1) and <em>to_line</em>
+the line of <em>B</em> (2). <em>from_col</em> determines the position of <em>A</em> within the line (5) and
+<em>to_col</em> determines the position of <em>B</em> (13).
+The result would be:</p>
+<dl class="simple">
+<dt>“AXXXXXXXXXXXXXXXXXXXX</dt><dd><p>XXXXXXXXXXXXXB”</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>If used with a <cite>ReplaceString</cite>, the result will be a <cite>ReplaceString</cite> with original and
+replacement at the expected positions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>string</strong> – The input string.</p></li>
+<li><p><strong>from_line</strong> – The first line to include.</p></li>
+<li><p><strong>to_line</strong> – The last line to include.</p></li>
+<li><p><strong>from_col</strong> – The first col on <em>from_line</em> to include.</p></li>
+<li><p><strong>to_col</strong> – The last col on <em>to_line</em> to include.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The cut-out string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.get_module_source">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">get_module_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_replace_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.get_module_source" title="Permalink to this definition"></a></dt>
+<dd><p>Get the source code of a module.</p>
+<p>If <em>use_replace_cache</em>, try getting the source from the “replace_cache”, which can contain
+explicit replacements of the original source strings.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.get_source">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">get_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_replace_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.get_source" title="Permalink to this definition"></a></dt>
+<dd><p>Get source from <em>filename</em>.</p>
+<p>The filename is as in the code object gotten from an <cite>inspect.frame</cite>,
+this can be “&lt;ipython input-…&gt;” in which case the source is taken from the ipython cache.</p>
+<p>If <em>use_replace_cache</em>, try getting the source from the “replace_cache”, which can contain
+explicit replacements of the original source strings.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.original">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">original</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.original" title="Permalink to this definition"></a></dt>
+<dd><p>Get either the original of a <cite>ReplaceString</cite> or a string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.sourceget.put_into_cache">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">put_into_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">loc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.put_into_cache" title="Permalink to this definition"></a></dt>
+<dd><p>Put a string into the “replace_cache”.</p>
+<p>Specify the original string, a replacing string and the insertion replacement.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">put_into_cache</span><span class="p">(</span><span class="s1">&#39;mykey&#39;</span><span class="p">,</span> <span class="s1">&#39;f(value(x))&#39;</span><span class="p">,</span> <span class="s1">&#39;CONSTANT&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">replace_cache</span><span class="p">[</span><span class="s1">&#39;mykey&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ReplaceStrings</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
+<span class="go">&#39;f(CONSTANT))&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">original</span>
+<span class="go">&#39;f(value(x))&#39;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – The key for the cache dict.</p></li>
+<li><p><strong>source</strong> – The source.</p></li>
+<li><p><strong>repl</strong> – The string new inserted / replaced part.</p></li>
+<li><p><strong>*loc</strong> – <p>The location where <em>repl</em> is to be inserted (give as <em>from_line</em>, <em>to_line</em>,
+<em>from_col</em>, <em>to_col</em>).</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="padl.dumptools.serialize.html" class="btn btn-neutral float-left" title="padl.dumptools.serialize" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.dumptools.symfinder.html" class="btn btn-neutral float-right" title="padl.dumptools.symfinder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, LF1 GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Read the Docs</span>
+      <span id='current-version'></span>
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl id='padl-versions' style="display: flex; flex-direction: column;">
+        <dt>Versions</dt>
+          <dd><a href=""></a></dd>
+      </dl>
+      <hr/>
+    </div>
+    <script>
+        console.log('script')
+        var pathName = window.location.pathname;
+        if (pathName.includes('docs')) {
+          var currentVersion = pathName.split('padl/docs/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/docs/')[0] + 'padl/docs/versions.json';
+        } else {
+          var currentVersion = pathName.split('padl/')[1].split('/')[0];
+          var versionsFile = pathName.split('padl/')[0] + 'padl/versions.json';
+        }
+        console.log('current version:' + currentVersion)
+        console.log('versions file: ' + versionsFile)
+        httpRequest = new XMLHttpRequest();
+        httpRequest.onreadystatechange = addVersions;
+        httpRequest.open('GET', versionsFile);
+        httpRequest.send();
+
+        document.getElementById('current-version')
+          .innerHTML = 'ver: ' + currentVersion;
+        var verList = document.getElementById('padl-versions');
+
+        function addVersions() {
+           console.log(httpRequest)
+          if (httpRequest.readyState === 4) {
+            var versions = JSON.parse(httpRequest.responseText);
+            versions.forEach((ver) => {
+                elem = document.createElement('dd');
+                if (ver == currentVersion) {
+                    elem.innerHTML = '<strong><a style="color: #27ae60;">' + ver + '</a></strong>';
+                }
+                else {
+                    elem.innerHTML = '<a href="/padl/'+ver+'">'+ver+'</a>';
+                }
+                verList.append(elem);
+            })
+          } else {
+          }
+        }
+    </script>
+  </div>
+<script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
