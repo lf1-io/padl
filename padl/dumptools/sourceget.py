@@ -10,6 +10,7 @@ versions of the source-strings.
 To add a modified source-string to the `replace_cache`, use `put_into_cache`.
 """
 
+from contextlib import suppress
 import inspect
 import linecache
 from types import ModuleType
@@ -58,6 +59,8 @@ def get_module_source(module: ModuleType, use_replace_cache: bool = True) -> str
             return replace_cache[module.__file__]
         except (KeyError, AttributeError):
             pass
+    with suppress(AttributeError):
+        return module._pd_source
     return inspect.getsource(module)
 
 
