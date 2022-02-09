@@ -7,6 +7,9 @@ import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
 from functools import lru_cache
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
+from importlib.util import module_from_spec
 import inspect
 from itertools import chain
 from pathlib import Path
@@ -166,7 +169,13 @@ class Transform:
         a different module. Else, only dump an import statement. """
         module = self._pd_full_dump_relevant_module
         # always fully dump Transforms from the module the dump was triggered in
-        if inspector.caller_module() == module or getattr(module, '__name__', '__main__') == '__main__':
+        if inspector.caller_module() == module:
+            return True
+        # always fully dump from __main__
+        if getattr(module, '__name__', '__main__') == '__main__':
+            return True
+        # always fully dump loaded transforms
+        if getattr(module, '_pd_full_dump', False):
             return True
         # fully dump all Transforms from packages or modules specified in
         # _pd_external_full_dump_modules
@@ -2508,10 +2517,18 @@ def load(path):
     path = Path(path)
     with open(path / 'transform.py') as f:
         source = f.read()
-    module = types.ModuleType('lfload')
+
+    class _EmptyLoader(Loader):
+        def create_module(self, spec):
+            return types.ModuleType(spec.name)
+
+    module_name = str(path).replace('/', '.').lstrip('.') + 'transform'
+    spec = ModuleSpec(module_name, _EmptyLoader())
+    module = module_from_spec(spec)
     module.__dict__.update({
         '_pd_source': source,
         '_pd_module': module,
+        '_pd_full_dump': True,
         '__file__': str(path / 'transform.py')
     })
     code = compile(source, path/'transform.py', 'exec')
