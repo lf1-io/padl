@@ -4,6 +4,7 @@ import torch
 from padl import transforms as pd, transform, Identity, batch, unbatch, group
 from padl.transforms import Batchify, Unbatchify
 from padl.dumptools.serialize import value
+import padl
 from collections import namedtuple
 
 GLOBAL_1 = 0
@@ -1027,3 +1028,8 @@ class TestTrace:
             assert _pd_trace[1].pd_mode == 'train'
             assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
             assert _pd_trace[2].error_position == 3
+
+
+def test_identity_compose_saves(tmp_path):
+    t = padl.identity >> padl.identity
+    t.pd_save(tmp_path / 'test')
