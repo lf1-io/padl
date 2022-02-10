@@ -930,7 +930,7 @@ class Transform:
             **kwargs
         )
 
-    def infer_apply(self, inputs):
+    def infer_apply(self, inputs=()):
         """Call the Transform within the infer context.
 
         This expects a single argument and returns a single output.
