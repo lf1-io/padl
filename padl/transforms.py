@@ -927,7 +927,6 @@ class Transform:
 
         return DataLoader(
             sequence,
-            worker_init_fn=lambda _: np.random.seed(),
             **kwargs
         )
 
@@ -2434,8 +2433,10 @@ class Unbatchify(BuiltinTransform):
         if isinstance(args, torch.Tensor):
             args = args.squeeze(self.dim)
             return args.to('cpu') if self.cpu else args
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
 
-        raise TypeError('only tensors and tuples of tensors recursively supported...')
+        raise TypeError('only tensors, dictionary and tuples of tensors recursively supported...')
 
 
 class Batchify(BuiltinTransform):
