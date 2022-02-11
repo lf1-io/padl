@@ -443,6 +443,10 @@ class TestCompose:
             >> times_two
             >> Unbatchify()
         )
+        request.cls.transform_6 = (
+            times_two
+            >> plus_one + plus_one
+        )
 
     def test_pprintt(self):
         self.transform_1._repr_pretty_(PrettyMock, False)
@@ -525,6 +529,7 @@ class TestCompose:
             self.transform_5['other_name']
         with pytest.raises(TypeError):
             self.transform_5[2.1]
+        assert isinstance(self.transform_6['plus_one'], pd.Transform)
 
 
 class TestModel:
