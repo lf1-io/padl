@@ -1248,6 +1248,13 @@ class ClassTransform(AtomicTransform):
             pd_name=pd_name
         )
 
+    def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
+        if not self._pd_full_dump and self._pd_call_info.scope.module_name == self.__class__.__module__:
+            repr_ = self.pd_varname(self._pd_call_info.scope)
+            if repr_ is not None:
+                return repr_
+        return super()._pd_evaluable_repr_inner(indent)
+
     @property
     def _pd_full_dump_relevant_module(self):
         return inspect.getmodule(self.__class__)
