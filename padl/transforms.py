@@ -1583,7 +1583,7 @@ class Pipeline(Transform):
             transform_.pd_to(self.pd_device)
             return transform_
         if isinstance(item, str):
-            for transform_ in self.transforms:
+            for transform_ in self._pd_all_transforms():
                 if transform_.pd_name == item:
                     return transform_
             raise ValueError(f"{item}: Transform with pd_name '{item}' not found")
