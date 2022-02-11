@@ -936,11 +936,10 @@ class Transform:
 
         return DataLoader(
             sequence,
-            worker_init_fn=lambda _: np.random.seed(),
             **kwargs
         )
 
-    def infer_apply(self, inputs):
+    def infer_apply(self, inputs=()):
         """Call the Transform within the infer context.
 
         This expects a single argument and returns a single output.
@@ -2450,8 +2449,10 @@ class Unbatchify(BuiltinTransform):
         if isinstance(args, torch.Tensor):
             args = args.squeeze(self.dim)
             return args.to('cpu') if self.cpu else args
+        if isinstance(args, dict):
+            return {k: self(args[k]) for k in args}
 
-        raise TypeError('only tensors and tuples of tensors recursively supported...')
+        raise TypeError('only tensors, dictionary and tuples of tensors recursively supported...')
 
 
 class Batchify(BuiltinTransform):
