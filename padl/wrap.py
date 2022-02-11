@@ -205,7 +205,12 @@ def _wrap_lambda(fun, ignore_scope=False):
         if not len(instrs) == len(target_instrs):
             continue
         for instr, target_instr in zip(instrs, target_instrs):
-            if (instr.opname, instr.argval) != (target_instr.opname, target_instr.argval):
+            if instr.argval != target_instr.argval:
+                break
+            same_opname = instr.opname == target_instr.opname
+            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
+            both_load = instr.opname in load_ops and target_instr.opname in load_ops
+            if not (same_opname or both_load):
                 break
         else:
             found = True
