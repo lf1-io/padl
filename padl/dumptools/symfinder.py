@@ -24,6 +24,7 @@ import ast
 from dataclasses import dataclass
 from math import inf
 import sys
+from textwrap import dedent
 from types import ModuleType
 from typing import List, Tuple
 
@@ -134,23 +135,14 @@ def _fix_indent(source):
     lines = source.lstrip().split('\n')
     res = []
     for line in lines:
-        if line.startswith('@'):
+        if line.startswith('@') or line.startswith('def ') or line.startswith('class '):
             res.append(line.lstrip())
         else:
-            res.append(line.lstrip())
             break
-    lines = res + lines[len(res):]
-    res = []
-    n_indent = None
-    for line in lines:
-        if not line.startswith(' '):
-            res.append(line)
-        else:
-            if n_indent is None:
-                n_indent = len(line) - len(line.lstrip(' '))
-            res.append(' ' * 4 + line[n_indent:])
-    return '\n'.join(res)
-
+    lines = lines[len(res):]
+    rest_dedented = dedent('\n'.join(lines))
+    res = res + ['    ' + line for line in rest_dedented.split('\n')]
+    return '\n'.join(line.rstrip() for line in res)
 
 
 class _ClassDefFinder(_NameFinder):
