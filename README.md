@@ -60,7 +60,7 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 1. [MNIST](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8)
 1. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
 1. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
-1. [DC-GAN - Fake News](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb)
+1. [DC-GAN - Image Generation](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb)
 
 ### Resources
 
