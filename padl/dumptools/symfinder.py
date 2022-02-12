@@ -132,6 +132,10 @@ class _FunctionDefFinder(_NameFinder):
 
 
 def _fix_indent(source):
+    """Fix the indentation of functions that are wrongly indented.
+
+    This can happen with :func:`ast_utils.get_source_segment`.
+    """
     lines = source.lstrip().split('\n')
     res = []
     for line in lines:
