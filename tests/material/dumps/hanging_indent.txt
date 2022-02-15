@@ -1,0 +1,10 @@
+from padl import transform
+
+
+@transform
+def hangin_indent(a=1,
+                  b=2):
+    return a, b
+
+
+_pd_main = hangin_indent

@@ -73,6 +73,27 @@ def c(one=1
 '''
 
 
+testcode_2 = '''
+def x(one=1,
+      two=2):
+    return one + two
+'''
+
+
+testcode_3 = '''
+def x(one=1,
+    two=2):
+    return one + two
+'''
+
+
+testcode_4 = '''
+def x(one=1,
+    two=2) -> int:
+    return one + two
+'''
+
+
 class TestGetStatement:
     def test_simple_1(self):
         statement, _ = inspector.get_statement(testcode_0, 2)
@@ -115,3 +136,15 @@ class TestGetSurroundingBlock:
     def test_hanging_arguments_2(self):
         block, l, r = inspector.get_surrounding_block(testcode_1, 12)
         assert block.strip().startswith('"""')
+
+    def test_hanging_arguments_3(self):
+        block, l, r = inspector.get_surrounding_block(testcode_2, 4)
+        assert block.strip().startswith('return')
+
+    def test_hanging_arguments_4(self):
+        block, l, r = inspector.get_surrounding_block(testcode_3, 4)
+        assert block.strip().startswith('return')
+
+    def test_hanging_arguments_5(self):
+        block, l, r = inspector.get_surrounding_block(testcode_4, 4)
+        assert block.strip().startswith('return')
