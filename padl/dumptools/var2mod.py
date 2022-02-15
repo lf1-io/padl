@@ -185,7 +185,10 @@ class _VarFinder(ast.NodeVisitor):
         self.globals.add(name)
 
     def in_locals(self, name):
-        if name in self.locals:
+        return self.in_ignoring_attributes(name, self.locals)
+
+    def in_ignoring_attributes(self, name, name_set):
+        if name in name_set:
             return True
         if '.' not in name.name:
             return False
@@ -193,7 +196,7 @@ class _VarFinder(ast.NodeVisitor):
         path = name.name.split('.')
         for i in range(len(path), 0, -1):
             subname = '.'.join(path[:i])
-            if ScopedName(subname, name.scope, 0) in self.locals:
+            if ScopedName(subname, name.scope, 0) in name_set:
                 return True
         return False
 
@@ -282,15 +285,17 @@ class _VarFinder(ast.NodeVisitor):
                             for x in Finder(ast.Name).find(node.target)])
         self.visit(node.value)
 
-    def visit_comprehension(self, node):
+    def handle_comprehension(self, node):
         """Comprehensions are a special case: Their targets should be ignored. """
         targets = set()
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
                 targets.add(ScopedName(name.id, getattr(name, '_scope', None), 0))
-        all_ = set(ScopedName(x.id, getattr(x, '_scope', None), 0)
-                   for x in Finder(ast.Name).find(node))
-        self.globals.update(all_ - targets - self.locals)
+        sub_globals = set.union(*[find_globals(n) for n in ast.iter_child_nodes(node)])
+        sub_globals = {n for n in sub_globals
+                       if not self.in_locals(n)
+                       and not self.in_ignoring_attributes(n, targets)}
+        self.globals.update(sub_globals)
 
     def visit_DictComp(self, node):
         """Dict comprehensions.
@@ -300,7 +305,7 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source('{k: v for k, v in foo}')
         Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
-        self.visit_comprehension(node)
+        self.handle_comprehension(node)
 
     def visit_ListComp(self, node):
         """List comprehensions.
@@ -310,7 +315,7 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source('[x for x in foo]')
         Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
-        self.visit_comprehension(node)
+        self.handle_comprehension(node)
 
     def visit_SetComp(self, node):
         """Set comprehensions.
@@ -320,7 +325,7 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source('{x for x in foo}')
         Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
-        self.visit_comprehension(node)
+        self.handle_comprehension(node)
 
     def visit_GeneratorExp(self, node):
         """Generator expressions.
@@ -330,7 +335,7 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source('(x for x in foo)')
         Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
         """
-        self.visit_comprehension(node)
+        self.handle_comprehension(node)
 
     def visit_Lambda(self, node):
         """Lambda expressions - Their arguments are locals.
@@ -353,14 +358,14 @@ class _VarFinder(ast.NodeVisitor):
         scope = getattr(node, '_scope', None)
         self.locals.add(ScopedName(node.name, scope, 0))
         inner_globals = find_globals(node)
-        self.globals.update(inner_globals - self.locals)
+        self.globals.update(v for v in inner_globals if not self.in_locals(v))
 
     def visit_ClassDef(self, node):
         """Class definitions. """
         scope = getattr(node, '_scope', None)
         self.locals.add(ScopedName(node.name, scope, 0))
         inner_globals = find_globals(node)
-        self.globals.update(inner_globals - self.locals)
+        self.globals.update(v for v in inner_globals if not self.in_locals(v))
 
     def visit_Import(self, node):
         """Import statements.

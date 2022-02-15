@@ -238,22 +238,30 @@ def get_surrounding_block(source: str, lineno: int):
         raise ValueError('Line is empty.')
     block = [lines[lineno-1][white:]]
     lineno_in_block = 1
+
+    # get all lines of the same block before *lineno*
     while before:
         next_ = before.pop(-1)
         next_white = _count_leading_whitespace(next_)
         starts_with_comment = next_.lstrip().startswith('#')
+        if next_.strip().endswith(':'):
+            break
         if next_white is None or next_white >= white or starts_with_comment:
             block = [next_[white:]] + block
         else:
             break
         lineno_in_block += 1
+
     # remove leading rows with more than *white* leading whitespace
+    # (e.g. hanging function arguments)
     while block:
         next_white = _count_leading_whitespace(block[0])
         if next_white is None or next_white == 0:
             break
         block.pop(0)
         lineno_in_block -= 1
+
+    # get all lines of the same block after *lineno*
     while after:
         next_ = after.pop(0)
         next_white = _count_leading_whitespace(next_)

@@ -58,8 +58,9 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 ```
 ### Try out PADL in Colab notebooks
 1. [MNIST](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8)
-2. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
-3. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
+1. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
+1. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
+1. [DC-GAN - Image Generation](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb)
 
 ### Resources
 
@@ -74,7 +75,6 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 Code of conduct: https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md
 
 If your interested in contributing to PADL please look at the current issues: https://github.com/lf1-io/padl/issues
-
 
 
 ## Licensing

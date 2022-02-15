@@ -74,6 +74,12 @@ def maketransform():
 
 
 @transform
+def hangin_indent(a=1,
+                  b=2):
+    return a, b
+
+
+@transform
 class MyClassTransform:
     def __init__(self, a, b, c):
         self.a = a
@@ -258,6 +264,11 @@ def f_using_dotimport(x):
 def test_dotimport():
     dump = f_using_dotimport._pd_dumps()
     assert dump == read_dump('dotimport')
+
+
+def test_dump_hanging_indent():
+    dump = hangin_indent._pd_dumps()
+    assert dump == read_dump('hanging_indent')
 
 
 class TestOtherModule:
