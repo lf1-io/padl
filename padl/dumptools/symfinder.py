@@ -141,11 +141,10 @@ def _fix_indent(source):
     for line in lines:
         if line.startswith('@'):
             res.append(line.lstrip())
-        elif line.lstrip().startswith('def ') or line.lstrip().startswith('class '):
+            continue
+        if line.lstrip().startswith('def ') or line.lstrip().startswith('class '):
             res.append(line.lstrip())
-            break
-        else:
-            break
+        break
     lines = lines[len(res):]
     rest_dedented = dedent('\n'.join(lines))
     res = res + ['    ' + line for line in rest_dedented.split('\n')]
