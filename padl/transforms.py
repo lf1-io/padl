@@ -212,10 +212,13 @@ class Transform:
     def pd_stages(self):
         """Get a tuple of the pre-process, forward, and post-process stages."""
         _, splits, has_batchify, has_unbatchify = self._pd_splits()
-        if has_batchify:
+        if has_batchify and has_unbatchify:
             preprocess, forward, postprocess = splits
+        elif has_batchify and not has_unbatchify:
+            preprocess, forward, postprocess = splits[0], splits[1], identity
         else:
-            preprocess, forward, postprocess = identity, splits[0], splits[2]
+            # case when no batchify and no unbatchify
+            preprocess, forward, postprocess = identity, splits[0], identity
         return preprocess, forward, postprocess
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
@@ -2449,7 +2452,8 @@ class Unbatchify(BuiltinTransform):
         to 2 ("un-batchified").
         """
         # ensure that all inputs are batchified.
-        assert self._pd_merge_components(input_components) == 1, 'double unbatchify'
+        assert self._pd_merge_components(input_components) == 1, \
+            'unbatchify used without batchify or double unbatchify'
         # put the output component to 2 ("un-batchified")
         return 2, (identity, identity, self), False, True
 
