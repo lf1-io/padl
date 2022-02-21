@@ -1032,7 +1032,6 @@ class TestTrace:
             assert _pd_trace[1].error_position == 1
             assert _pd_trace[1].pd_mode == 'train'
             assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
-            assert _pd_trace[2].error_position == 3
 
 
 def test_identity_compose_saves(tmp_path):
