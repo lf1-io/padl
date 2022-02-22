@@ -376,7 +376,9 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
                 argval = caller_frame.f_locals[target_instr.argval]
             else:
                 argval = target_instr.argval
-            if instr.argval != target_instr.argval and instr.argval != argval:
+            instr_argval = getattr(instr.argval, 'co_code', instr.argval)
+            target_argval = getattr(target_instr.argval, 'co_code', target_instr.argval)
+            if instr_argval not in (target_argval, argval):
                 break
             same_opname = instr.opname == target_instr.opname
             load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
