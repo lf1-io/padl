@@ -211,11 +211,14 @@ class Transform:
     @lru_cache(maxsize=128)
     def pd_stages(self):
         """Get a tuple of the pre-process, forward, and post-process stages."""
-        _, splits, has_batchify = self._pd_splits()
-        if has_batchify:
+        _, splits, has_batchify, has_unbatchify = self._pd_splits()
+        if has_batchify and has_unbatchify:
             preprocess, forward, postprocess = splits
+        elif has_batchify and not has_unbatchify:
+            preprocess, forward, postprocess = splits[0], splits[1], identity
         else:
-            preprocess, forward, postprocess = identity, splits[0], splits[2]
+            # case when no batchify and no unbatchify
+            preprocess, forward, postprocess = identity, splits[0], identity
         return preprocess, forward, postprocess
 
     def _pd_splits(self, input_components=0) -> Tuple[Union[int, List],
@@ -256,6 +259,7 @@ class Transform:
             component,
             # for the component the transform is in, return the transform, else Identity
             tuple(self if i == component else identity for i in range(3)),
+            False,
             False
         )
 
@@ -1430,7 +1434,7 @@ class Map(Transform):
         # if *input_components* is an integer rather than a list ...
         if isinstance(input_components, int):
             # ... get output_components and splits from the contained transform
-            output_components, splits, has_batchify = \
+            output_components, splits, has_batchify, has_unbatchify = \
                 self.transform._pd_splits(input_components)
             return (
                 # output_components is whatever the sub-transform does to it
@@ -1438,7 +1442,8 @@ class Map(Transform):
                 # the splits are the splits of the sub-transform, but mapped
                 tuple(Map(split) if not isinstance(split, Identity) else identity
                       for split in splits),
-                has_batchify
+                has_batchify,
+                has_unbatchify
             )
         assert isinstance(input_components, list)
 
@@ -1447,11 +1452,14 @@ class Map(Transform):
         splits = ([], [], [])
         output_components = []
         has_batchify = False
+        has_unbatchify = False
+
         for input_component in input_components:
             # for each input, we compute the *output_components* and the *splits* ...
-            sub_output_components, sub_splits, sub_has_batchify = \
+            sub_output_components, sub_splits, sub_has_batchify, sub_has_unbatchify = \
                 self.transform._pd_splits(input_component)
             has_batchify = has_batchify or sub_has_batchify
+            has_unbatchify = has_unbatchify or sub_has_unbatchify
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
                 split.append(sub_split)
@@ -1460,7 +1468,8 @@ class Map(Transform):
         return (
             output_components,
             tuple(Parallel(s) if s else identity for s in splits),
-            has_batchify
+            has_batchify,
+            has_unbatchify
         )
 
     def __call__(self, args: Iterable):
@@ -1800,14 +1809,16 @@ class Compose(Pipeline):
 
         output_components = input_components
         has_batchify = False
+        has_unbatchify = False
+
         # for each sub-transform ...
         for transform_ in self.transforms:
             # ... see what comes out ...
-            output_components, sub_splits, sub_has_batchify = \
+            output_components, sub_splits, sub_has_batchify, sub_has_unbatchify = \
                 transform_._pd_splits(output_components)
 
             has_batchify = has_batchify or sub_has_batchify
-
+            has_unbatchify = has_unbatchify or sub_has_unbatchify
             # ... and combine
             # the preprocess split is the composition of the
             # preprocess splits of all subtransforms
@@ -1834,7 +1845,7 @@ class Compose(Pipeline):
                 final_splits.append(identity)
 
         self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
+        return output_components, final_splits, has_batchify, has_unbatchify
 
     @staticmethod
     def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
@@ -2017,11 +2028,15 @@ class Rollout(Pipeline):
         splits = ([], [], [])
         output_components = []
         has_batchify = False
+        has_unbatchify = False
+
         for transform_ in self.transforms:
             # pylint: disable=protected-access
-            sub_output_components, sub_splits, sub_has_batchify = \
+            sub_output_components, sub_splits, sub_has_batchify, sub_has_unbatchify = \
                 transform_._pd_splits(input_components)
             has_batchify = has_batchify or sub_has_batchify
+            has_unbatchify = has_unbatchify or sub_has_unbatchify
+
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
                 split.append(sub_split)
@@ -2069,7 +2084,7 @@ class Rollout(Pipeline):
         final_splits = res
 
         self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
+        return output_components, final_splits, has_batchify, has_unbatchify
 
     def __call__(self, args):
         """Call method for Rollout.
@@ -2144,11 +2159,15 @@ class Parallel(Pipeline):
         # go through the sub-transforms ...
         output_components = []
         has_batchify = False
+        has_unbatchify = False
+
         for transform_, input_component in zip(self.transforms, input_components_):
             # and compute the sub-splits
-            sub_output_components, sub_splits, sub_has_batchify = \
+            sub_output_components, sub_splits, sub_has_batchify, sub_has_unbatchify = \
                 transform_._pd_splits(input_component)
             has_batchify = has_batchify or sub_has_batchify
+            has_unbatchify = has_unbatchify or sub_has_unbatchify
+
             output_components.append(sub_output_components)
             for split, sub_split in zip(splits, sub_splits):
                 split.append(sub_split)
@@ -2170,7 +2189,7 @@ class Parallel(Pipeline):
         final_splits = res
 
         self._add_name_to_splits(final_splits)
-        return output_components, final_splits, has_batchify
+        return output_components, final_splits, has_batchify, has_unbatchify
 
     def __call__(self, args):
         """Call method for Parallel
@@ -2269,8 +2288,11 @@ class Unbatchify(BuiltinTransform):
         Unbatchify has empty preprocess and forward splits and puts the component-number
         to 2 ("un-batchified").
         """
+        # ensure that all inputs are batchified.
+        assert self._pd_merge_components(input_components) == 1, \
+            'unbatchify used without batchify or double unbatchify'
         # put the output component to 2 ("un-batchified")
-        return 2, (identity, identity, self), False
+        return 2, (identity, identity, self), False, True
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
@@ -2317,7 +2339,7 @@ class Batchify(BuiltinTransform):
         # ensure that all inputs are "fresh"
         assert self._pd_merge_components(input_components) == 0, 'double batchify'
         # put the output component to 1 ("batchified")
-        return 1, (self, identity, identity), True
+        return 1, (self, identity, identity), True, False
 
     def __call__(self, args):
         assert Transform.pd_mode is not None, ('Mode is not set, use infer_apply, eval_apply '
