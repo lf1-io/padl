@@ -358,3 +358,9 @@ fabric.properties
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/python,intellij,vscode,pycharm
+
+# Deep Devs
+/.jd/
+.syncignore
+/templates/
+/jd.json
