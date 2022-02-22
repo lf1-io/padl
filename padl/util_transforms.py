@@ -59,9 +59,9 @@ class IfInMode(ClassTransform):
 
     def _pd_splits(self, input_components=0):
         # pylint: disable=protected-access
-        if_output_components, if_splits, if_has_batchify = \
+        if_output_components, if_splits, if_has_batchify, if_has_unbatchify = \
             self.if_._pd_splits(input_components)
-        else_output_components, else_splits, else_has_batchify = \
+        else_output_components, else_splits, else_has_batchify, else_has_unbatchify = \
             self.else_._pd_splits(input_components)
 
         if_output_components_reduced = self._pd_merge_components(if_output_components)
@@ -79,7 +79,8 @@ class IfInMode(ClassTransform):
             for if_split, else_split in zip(if_splits, else_splits)
         )
 
-        return if_output_components_reduced, final_splits, if_has_batchify or else_has_batchify
+        return if_output_components_reduced, final_splits, \
+               if_has_batchify or else_has_batchify, if_has_unbatchify or else_has_unbatchify
 
 
 class IfInfer(IfInMode):
@@ -139,7 +140,7 @@ class Try(ClassTransform):
                  pd_name: str = None):
 
         if not isinstance(exceptions, (tuple, list)):
-            exceptions = (exceptions, )
+            exceptions = (exceptions,)
         exceptions = tuple(exceptions)
         for exception in exceptions:
             assert issubclass(exception, Exception)
@@ -156,9 +157,9 @@ class Try(ClassTransform):
         self.finally_transform = finally_transform
 
     def _pd_splits(self, input_components=0):
-        try_output_components, _, _ = self.transform._pd_splits(input_components)
-        catch_output_components, _, _ = self.catch_transform._pd_splits(input_components)
-        else_output_components, _, _ = self.else_transform._pd_splits(input_components)
+        try_output_components, _, _, _ = self.transform._pd_splits(input_components)
+        catch_output_components, _, _, _ = self.catch_transform._pd_splits(input_components)
+        else_output_components, _, _, _ = self.else_transform._pd_splits(input_components)
 
         input_components_reduced = self._pd_merge_components(input_components)
         try_output_components_reduced = self._pd_merge_components(try_output_components)
@@ -167,7 +168,7 @@ class Try(ClassTransform):
         components = [try_output_components_reduced, catch_output_components_reduced,
                       else_output_components_reduced]
         assert all(isinstance(component, int) for component in components) \
-            and len(set(components)) == 1, \
+               and len(set(components)) == 1, \
             'Try Transform cannot contain transforms that have multiple stages.'
 
         final_splits = tuple(
@@ -176,7 +177,7 @@ class Try(ClassTransform):
             for i in range(3)
         )
 
-        return input_components_reduced, final_splits, False
+        return input_components_reduced, final_splits, False, False
 
     def _repr_exceptions(self):
         return '(' + ', '.join([exc.__name__ for exc in self.exceptions]) + ')'

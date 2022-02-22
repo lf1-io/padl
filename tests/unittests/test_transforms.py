@@ -220,6 +220,11 @@ class TestMap:
             Batchify() / Identity()
             >> ~plus_one
         )
+        request.cls.transform_7 = (
+                Batchify() / Identity()
+                >> ~plus_one
+                >> Unbatchify() / Identity()
+        )
 
     def test_pprintt(self):
         self.transform_1._repr_pretty_(PrettyMock, False)
@@ -245,7 +250,8 @@ class TestMap:
         assert isinstance(self.transform_1.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_2.pd_postprocess, pd.Identity)
         assert isinstance(self.transform_5.pd_postprocess, pd.Identity)
-        assert isinstance(self.transform_6.pd_postprocess, pd.Parallel)
+        assert isinstance(self.transform_6.pd_postprocess, pd.Identity)
+        assert isinstance(self.transform_7.pd_postprocess, pd.Compose)
 
     def test_infer_apply(self):
         assert self.transform_1.infer_apply([2, 3, 4]) == (3, 4, 5)
@@ -447,6 +453,35 @@ class TestCompose:
             times_two
             >> plus_one + plus_one
         )
+        request.cls.transform_7 = (
+                times_two
+                >> plus_one + plus_one
+                >> Identity() / Unbatchify()
+        )
+        request.cls.transform_8 = (
+                times_two
+                >> Unbatchify()
+        )
+        request.cls.transform_9 = (
+                times_two
+                >> Batchify()
+                >> Unbatchify()
+        )
+        request.cls.transform_10 = (
+            times_two
+            >> Batchify()
+            >> Unbatchify()
+            >> Unbatchify()
+        )
+
+    def test_unbatchify_position(self):
+        with pytest.raises(AssertionError):
+            self.transform_7.infer_apply(1)
+        with pytest.raises(AssertionError):
+            self.transform_8.infer_apply(1)
+        assert self.transform_9.infer_apply(1) == 2
+        with pytest.raises(AssertionError):
+            self.transform_10.infer_apply(1)
 
     def test_pprintt(self):
         self.transform_1._repr_pretty_(PrettyMock, False)

@@ -323,10 +323,16 @@ class _AssignFinder(_NameFinder):
                 self._result = node
                 return
 
+
+    def visit_AnnAssign(self, node):
+        if self._parse_target(node.target):
+            self._result = node
+            return
+
     def _parse_target(self, target):
         if isinstance(target, ast.Name) and target.id == self.var_name:
             return True
-        elif isinstance(target, ast.Tuple):
+        if isinstance(target, ast.Tuple):
             for sub_target in target.elts:
                 if self._parse_target(sub_target):
                     return True
