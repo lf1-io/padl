@@ -2568,7 +2568,6 @@ def load(path, **kwargs):
         '_pd_params': kwargs,
         '__file__': str(path / 'transform.py')
     })
-    module.__dict__.update()
 
     code = compile(source, path / 'transform.py', 'exec')
 
