@@ -2545,7 +2545,7 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
 def load(path, **kwargs):
     """Load a transform (as saved with padl.save) from *path*.
 
-    Use keyword arguments to override variables.
+    Use keyword arguments to override params (see :func:`padl.param`).
     """
     if Path(path).is_file():
         return _zip_load(path)
