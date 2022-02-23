@@ -116,6 +116,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#custom-serializers">Custom serializers</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
@@ -392,6 +393,31 @@ file suffix in this case.</p>
 </pre></div>
 </div>
 </section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline"></a></h2>
+<p>Using <a class="reference internal" href="../apidocs/padl.html#padl.param" title="padl.param"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.param()</span></code></a> one can specify parameters which can then be overridden when loading files.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">transform</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">load</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">param</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;add this much&#39;</span><span class="p">)</span>
+
+<span class="nd">@transform</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+  <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">f</span>
+
+<span class="n">save</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s1">&#39;f.padl&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When loading a Transform that uses a parameter, one can specify the value of the parameter as
+a keyword argument to <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.load()</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s1">&#39;f.padl&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">1001</span>
+</pre></div>
+</div>
+<p>Params usually have a default value. One can force the user to provide them with
+<code class="docutils literal notranslate"><span class="pre">use_default=False</span></code>.</p>
 </section>
 <section id="saving-pytorch-modules">
 <h2>Saving pytorch modules<a class="headerlink" href="#saving-pytorch-modules" title="Permalink to this headline"></a></h2>
