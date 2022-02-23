@@ -36,6 +36,8 @@ from padl.dumptools import symfinder, inspector
 from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
+from padl.dumptools.sourceget import replace
+from padl.dumptools.ast_utils import get_position
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
