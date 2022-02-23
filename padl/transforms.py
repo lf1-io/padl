@@ -2542,8 +2542,11 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         transform.pd_save(path, force_overwrite)
 
 
-def load(path):
-    """Load a transform (as saved with padl.save) from *path*. """
+def load(path, **kwargs):
+    """Load a transform (as saved with padl.save) from *path*.
+
+    Use keyword arguments to override variables.
+    """
     if Path(path).is_file():
         return _zip_load(path)
     path = Path(path)
@@ -2558,18 +2561,25 @@ def load(path):
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
     module.__dict__.update({
+        '_pd_is_padl_file': True,
         '_pd_source': source,
         '_pd_module': module,
         '_pd_full_dump': True,
+        '_pd_params': kwargs,
         '__file__': str(path / 'transform.py')
     })
-    code = compile(source, path/'transform.py', 'exec')
+    module.__dict__.update()
+
+    code = compile(source, path / 'transform.py', 'exec')
+
     # pylint: disable=exec-used
     exec(code, module.__dict__)
     # pylint: disable=no-member,protected-access
+
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
+
     return transform
 
 
