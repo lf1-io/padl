@@ -161,7 +161,7 @@ class ReplaceString(str):
 
     def __new__(cls, string: str, repl: str, from_line: int, to_line: int, from_col: int,
                 to_col: int):
-        replaced = _replace(string, repl, from_line, to_line, from_col, to_col)
+        replaced = replace(string, repl, from_line, to_line, from_col, to_col)
         return super().__new__(cls, replaced)
 
     def __init__(self, string: str, repl: str, from_line: int, to_line: int, from_col: int,
@@ -223,8 +223,8 @@ class ReplaceStrings(str):
         rstrings = sorted(rstrings, key=lambda x: (x.from_line, x.from_col), reverse=True)
         replaced = rstrings[0].original
         for rstring in rstrings:
-            replaced = _replace(replaced, rstring.repl, rstring.from_line, rstring.to_line,
-                                rstring.from_col, rstring.to_col)
+            replaced = replace(replaced, rstring.repl, rstring.from_line, rstring.to_line,
+                               rstring.from_col, rstring.to_col)
         return super().__new__(cls, replaced)
 
     def __init__(self, rstrings):
@@ -273,7 +273,7 @@ def _cut_string(string: str, from_line: int, to_line: int, from_col: int, to_col
     return '\n'.join(lines)
 
 
-def _replace(string, repl, from_line, to_line, from_col, to_col):
+def replace(string, repl, from_line, to_line, from_col, to_col):
     """Replace a substring in *string* with *repl*. """
     if from_line < 0 and to_line < 0:
         return string

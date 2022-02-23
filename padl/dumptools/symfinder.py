@@ -323,7 +323,6 @@ class _AssignFinder(_NameFinder):
                 self._result = node
                 return
 
-
     def visit_AnnAssign(self, node):
         if self._parse_target(node.target):
             self._result = node
