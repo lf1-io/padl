@@ -136,7 +136,15 @@ def value(val, serializer=None):
 
 
 def param(val, name, description=None, use_default=True):
-    """Helper function that marks things in the code that should be stored by value. """
+    """Helper function that marks things in the code are parameters.
+
+    Parameters can be overridden when loading. See also :func:`padl.load`.
+
+    :param val: The default value of the parameter / the value before saving.
+    :param name: The name of the parameter.
+    :param use_default: If True, will use *val* when loading without specifying a different value.
+    :returns: *val*
+    """
     caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
     if not use_default and val is not None:
         call, locs = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call', True)
