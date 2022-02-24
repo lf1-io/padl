@@ -475,10 +475,8 @@ class TestCompose:
         )
 
     def test_unbatchify_position(self):
-        with pytest.raises(AssertionError):
-            self.transform_7.infer_apply(1)
-        with pytest.raises(AssertionError):
-            self.transform_8.infer_apply(1)
+        assert self.transform_7.infer_apply(1) == (3, 3)
+        assert self.transform_8.infer_apply(1) == 2
         assert self.transform_9.infer_apply(1) == 2
         with pytest.raises(AssertionError):
             self.transform_10.infer_apply(1)

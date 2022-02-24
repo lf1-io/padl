@@ -2452,8 +2452,8 @@ class Unbatchify(BuiltinTransform):
         to 2 ("un-batchified").
         """
         # ensure that all inputs are batchified.
-        assert self._pd_merge_components(input_components) == 1, \
-            'unbatchify used without batchify or double unbatchify'
+        assert self._pd_merge_components(input_components) < 2, \
+            'double unbatchify'
         # put the output component to 2 ("un-batchified")
         return 2, (identity, identity, self), False, True
 
