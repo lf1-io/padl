@@ -1855,7 +1855,7 @@ class Compose(Pipeline):
         return output_components, final_splits, has_batchify, has_unbatchify
 
     @staticmethod
-    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
+    def _pd_classify_nodetype(i, t, cw, cw_m1):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
             type_ = 'multi_2_multi'
 
@@ -1915,8 +1915,7 @@ class Compose(Pipeline):
             else:
                 cw_prev = children_widths[i - 1]
 
-            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
-                                               children_widths[i], cw_prev)
+            type_ = self._pd_classify_nodetype(i, t, children_widths[i], cw_prev)
             # if subsequent rows have the same number of "children" transforms
             if type_ == 'multi_2_multi':
                 for j, w in enumerate(children_widths[i]):
