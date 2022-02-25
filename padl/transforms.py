@@ -1859,9 +1859,8 @@ class Compose(Pipeline):
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
             type_ = 'multi_2_multi'
 
-        elif i > 0 and cw == 1 and cw_m1 > 1:
+        elif i > 0 and len(cw) == 1 and len(cw_m1) > 1:
             type_ = 'multi_2_single'
-
         elif cw == 1 or isinstance(t, Compose):
             type_ = 'single_2_single'
 
@@ -1911,9 +1910,13 @@ class Compose(Pipeline):
             widths = [0]
             subarrows = []
 
-            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
-                                               children_widths[i], children_widths[i - 1])
+            if i == 0:
+                cw_prev = [1]
+            else:
+                cw_prev = children_widths[i - 1]
 
+            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
+                                               children_widths[i], cw_prev)
             # if subsequent rows have the same number of "children" transforms
             if type_ == 'multi_2_multi':
                 for j, w in enumerate(children_widths[i]):
