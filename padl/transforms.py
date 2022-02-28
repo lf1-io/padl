@@ -2561,7 +2561,7 @@ def load(path, **kwargs):
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
 
-    pd_found_params = []
+    pd_found_params = {}
     module.__dict__.update({
         '_pd_is_padl_file': True,
         '_pd_source': source,
@@ -2584,7 +2584,7 @@ def load(path, **kwargs):
                 'Available parameters:\n' +
                 '\n'.join(f'  {n} (default: {d})' if d is not None
                           else 'f'
-                          for n, d in pd_found_params)
+                          for n, d in pd_found_params.items())
             )
             raise ValueError(msg)
 
