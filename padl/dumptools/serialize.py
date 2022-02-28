@@ -136,7 +136,7 @@ def value(val, serializer=None):
 
 
 def param(val, name, description=None, use_default=True):
-    """Helper function that marks things in the code are parameters.
+    """Helper function for marking parameters.
 
     Parameters can be overridden when loading. See also :func:`padl.load`.
 
