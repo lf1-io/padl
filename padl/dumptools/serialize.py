@@ -158,6 +158,8 @@ def param(val, name, description=None, use_default=True):
     if not getattr(module, '_pd_is_padl_file', False):
         return val
 
+    module._pd_found_params.append((name, val))
+
     try:
         return module._pd_params[name]
     except KeyError as exc:

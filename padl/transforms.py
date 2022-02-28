@@ -2560,12 +2560,15 @@ def load(path, **kwargs):
     module_name = str(path).replace('/', '.').lstrip('.') + 'transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
+
+    pd_found_params = []
     module.__dict__.update({
         '_pd_is_padl_file': True,
         '_pd_source': source,
         '_pd_module': module,
         '_pd_full_dump': True,
         '_pd_params': kwargs,
+        '_pd_found_params': pd_found_params,
         '__file__': str(path / 'transform.py')
     })
 
@@ -2573,6 +2576,18 @@ def load(path, **kwargs):
 
     # pylint: disable=exec-used
     exec(code, module.__dict__)
+
+    for k in kwargs:
+        if k not in pd_found_params:
+            msg = (
+                f'Parameter {k} does not exist.\n\n' +
+                'Available parameters:\n' +
+                '\n'.join(f'  {n} (default: {d})' if d is not None
+                          else 'f'
+                          for n, d in pd_found_params)
+            )
+            raise ValueError(msg)
+
     # pylint: disable=no-member,protected-access
 
     transform = module._pd_main
