@@ -1095,3 +1095,13 @@ class TestParam:
             padl.load(tmp_path / 'test.padl')
         t_2 = padl.load(tmp_path / 'test.padl', x=2)
         assert t_2(1) == 3
+
+    def test_wrong_param(self, tmp_path):
+        x = padl.param(1, 'x')
+        t = SimpleClassTransform(x)
+        assert t(1) == 2
+        t.pd_save(tmp_path / 'test.padl')
+        with pytest.raises(ValueError):
+            padl.load(tmp_path / 'test.padl', y=1)
+        t_2 = padl.load(tmp_path / 'test.padl', x=2)
+        assert t_2(1) == 3
