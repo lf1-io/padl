@@ -266,13 +266,12 @@ x = param(1, name='x', description='add this much')
 
 @transform
 def f(y):
-  return x + f
+  return x + y
 
 save(f, 'f.padl')
 ```
 
-When loading a Transform that uses a parameter, one can specify the value of the parameter as
-a keyword argument to {func}`padl.load`:
+When loading a Transform that uses a parameter, one can specify the value of the parameter as a keyword argument to {func}`padl.load`:
 
 ```python
 >>> from padl import load
