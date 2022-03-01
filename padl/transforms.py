@@ -153,7 +153,9 @@ class Transform:
     def __init__(self, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
         if call_info is None:
-            call_info = inspector.CallInfo()
+            # if the call was from here (i.e. transform.py), ignore the scope
+            calling_module_name = inspector.non_init_caller_frameinfo().frame.f_globals['__name__']
+            call_info = inspector.CallInfo(ignore_scope=calling_module_name == __name__)
         self._pd_call_info = call_info
         self._pd_varname = {}
         self._pd_name = pd_name
