@@ -36,6 +36,8 @@ from padl.dumptools import symfinder, inspector
 from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
+from padl.dumptools.sourceget import replace
+from padl.dumptools.ast_utils import get_position
 
 from padl.dumptools.packagefinder import dump_packages_versions
 from padl.exceptions import WrongDeviceError
@@ -2377,8 +2379,11 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         transform.pd_save(path, force_overwrite)
 
 
-def load(path):
-    """Load a transform (as saved with padl.save) from *path*. """
+def load(path, **kwargs):
+    """Load a transform (as saved with padl.save) from *path*.
+
+    Use keyword arguments to override params (see :func:`padl.param`).
+    """
     if Path(path).is_file():
         return _zip_load(path)
     path = Path(path)
@@ -2392,19 +2397,40 @@ def load(path):
     module_name = str(path).replace('/', '.').lstrip('.') + 'transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
+
+    pd_found_params = {}
     module.__dict__.update({
+        '_pd_is_padl_file': True,
         '_pd_source': source,
         '_pd_module': module,
         '_pd_full_dump': True,
+        '_pd_params': kwargs,
+        '_pd_found_params': pd_found_params,
         '__file__': str(path / 'transform.py')
     })
-    code = compile(source, path/'transform.py', 'exec')
+
+    code = compile(source, path / 'transform.py', 'exec')
+
     # pylint: disable=exec-used
     exec(code, module.__dict__)
+
+    for k in kwargs:
+        if k not in pd_found_params:
+            msg = (
+                f'Parameter {k} does not exist.\n\n' +
+                'Available parameters:\n' +
+                '\n'.join(f'  {n} (default: {d})' if d is not None
+                          else 'f'
+                          for n, d in pd_found_params.items())
+            )
+            raise ValueError(msg)
+
     # pylint: disable=no-member,protected-access
+
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         subtrans.pd_post_load(path, i)
+
     return transform
 
 

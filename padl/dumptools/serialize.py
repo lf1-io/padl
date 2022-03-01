@@ -133,3 +133,43 @@ def value(val, serializer=None):
     sourceget.put_into_cache(caller_frameinfo.filename, sourceget.original(source),
                              _serialize(val, serializer=serializer), *locs)
     return val
+
+
+def param(val, name, description=None, use_default=True):
+    """Helper function for marking parameters.
+
+    Parameters can be overridden when loading. See also :func:`padl.load`.
+
+    :param val: The default value of the parameter / the value before saving.
+    :param name: The name of the parameter.
+    :param use_default: If True, will use *val* when loading without specifying a different value.
+    :returns: *val*
+    """
+    caller_frameinfo = inspector.outer_caller_frameinfo(__name__)
+    if not use_default and val is not None:
+        call, locs = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call', True)
+        source = sourceget.get_source(caller_frameinfo.filename)
+        call, args = symfinder.split_call(call)
+        args = 'None, ' + args.split(',', 1)[1]
+        sourceget.put_into_cache(caller_frameinfo.filename, sourceget.original(source),
+                                 f'{call}({args})', *locs)
+
+    module = inspector._module(caller_frameinfo.frame)
+    if not getattr(module, '_pd_is_padl_file', False):
+        return val
+
+    module._pd_found_params[name] = val
+
+    try:
+        return module._pd_params[name]
+    except KeyError as exc:
+        if val is None and not use_default:
+            raise ValueError(f'Unfilled parameter *{name}*. \n\n'
+                             'When loading a transform, '
+                             f'provide *{name}* as a keyword '
+                             f'argument: padl.load(..., {name}=...).'
+                             + (description is not None
+                             and f'\n\nDescription: "{description}"'
+                             or '')
+                             ) from exc
+        return val

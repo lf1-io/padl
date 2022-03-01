@@ -116,6 +116,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../advanced/saving.html#custom-serializers">Custom serializers</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#parameters">Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-pytorch-modules">Saving pytorch modules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#defining-transform-within-nested-scopes">Defining Transform within nested scopes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../advanced/saving.html#saving-transforms-from-other-modules">Saving Transforms from other modules</a></li>
@@ -746,8 +747,9 @@ matching name.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.transforms.load">
-<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.load" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.transforms.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.load" title="Permalink to this definition"></a></dt>
 <dd><p>Load a transform (as saved with padl.save) from <em>path</em>.</p>
+<p>Use keyword arguments to override params (see <a class="reference internal" href="padl.html#padl.param" title="padl.param"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.param()</span></code></a>).</p>
 </dd></dl>
 
 <dl class="py function">

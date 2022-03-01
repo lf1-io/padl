@@ -255,6 +255,34 @@ x = value(x, (mysaver, myloader))
 [...]
 ```
 
+## Parameters
+
+Using {func}`padl.param` one can specify parameters which can then be overridden when loading files.
+
+```python
+from padl import transform, param, load
+
+x = param(1, name='x', description='add this much')
+
+@transform
+def f(y):
+  return x + y
+
+save(f, 'f.padl')
+```
+
+When loading a Transform that uses a parameter, one can specify the value of the parameter as a keyword argument to {func}`padl.load`:
+
+```python
+>>> from padl import load
+>>> f = load('f.padl', x=1000)
+>>> f(1)
+1001
+```
+
+Params usually have a default value. One can force the user to provide them with
+`use_default=False`.
+
 ## Saving pytorch modules
 
 When saving, PADL automatically serializes pytorch model parameters and stores them in the `.padl`

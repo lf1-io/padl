@@ -781,6 +781,8 @@ def _dumps_unscoped(unscoped_graph):
         here = unscoped_graph[name]
         if here in done:
             continue
+        if not here.source.strip():
+            continue
         done.add(here)
         res += here.source
         if i < len(sorted_) - 1:
