@@ -475,10 +475,8 @@ class TestCompose:
         )
 
     def test_unbatchify_position(self):
-        with pytest.raises(AssertionError):
-            self.transform_7.infer_apply(1)
-        with pytest.raises(AssertionError):
-            self.transform_8.infer_apply(1)
+        assert self.transform_7.infer_apply(1) == (3, 3)
+        assert self.transform_8.infer_apply(1) == 2
         assert self.transform_9.infer_apply(1) == 2
         with pytest.raises(AssertionError):
             self.transform_10.infer_apply(1)
@@ -1067,7 +1065,6 @@ class TestTrace:
             assert _pd_trace[1].error_position == 1
             assert _pd_trace[1].pd_mode == 'train'
             assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
-            assert _pd_trace[2].error_position == 3
 
 
 def test_identity_compose_saves(tmp_path):
@@ -1111,3 +1108,4 @@ def test_device_check_in_init_works():
     from tests.material.transforms_in_module import DeviceCheckInInit
     t = SimpleClassTransform(1)
     DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
+

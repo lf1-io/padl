@@ -545,14 +545,6 @@ class Transform:
             break
         return f'{a_tb.filename} in {a_tb.name}\n----> {make_green(a_tb.lineno)}    {a_tb.line}'
 
-    def _pd_get_error_idx(self, stage: str):
-        """Get what element of a :class:`padl.transforms.Transform` is failing if an Exception is
-        produced during an execution.
-
-        Subclasses of :class:`padl.transforms.Transform` need to implement this method.
-        """
-        return NotImplemented
-
     def _pd_trace_error(self, position: int, arg):
         """Add some error description to :obj:`pd_trace`. """
         try:
@@ -838,8 +830,7 @@ class Transform:
                     try:
                         output = forward.pd_call_in_mode(batch, mode)
                     except Exception as err:
-                        self._pd_trace_error(self._pd_get_error_idx('forward'),
-                                             [args[i] for i in ix])
+                        self._pd_trace_error(None, [args[i] for i in ix])
                         raise err
 
                 if use_post or flatten:
@@ -849,8 +840,7 @@ class Transform:
                             output = [post.pd_call_in_mode(x, mode, ignore_grad=True)
                                       for x in output]
                         except Exception as err:
-                            self._pd_trace_error(self._pd_get_error_idx('postprocess'),
-                                                 [args[i] for i in ix])
+                            self._pd_trace_error(None, [args[i] for i in ix])
                             raise err
 
                     for out in output:
@@ -977,13 +967,13 @@ class Transform:
             try:
                 inputs = forward.pd_call_in_mode(inputs, mode='infer')
             except Exception as err:
-                self._pd_trace_error(self._pd_get_error_idx('forward'), in_args)
+                self._pd_trace_error(None, in_args)
                 raise err
         if use_post:
             try:
                 inputs = postprocess.pd_call_in_mode(inputs, mode='infer', ignore_grad=True)
             except Exception as err:
-                self._pd_trace_error(self._pd_get_error_idx('postprocess'), in_args)
+                self._pd_trace_error(None, in_args)
                 raise err
         return self._pd_format_output(inputs)
 
@@ -1050,43 +1040,6 @@ class AtomicTransform(Transform):
         for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
             if isinstance(v, Transform):
                 yield v
-
-    def _pd_get_non_target_stage_idx(self):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        This is used for the debugger.
-
-        Example:
-            t = forward_1 >> unbatch >> post
-
-            Let's suppose we get an error on `post`, `post` is the index 1 of
-            `t.pd_postprocess`, then the element that fails on `t` is
-            t.pd_forward._pd_get_non_target_stage_idx() + 1 = 1 + 1 = 2
-        """
-        # pylint: disable=no-self-use
-        return 1
-
-    def _pd_get_target_stage_idx(self, is_entire_transform=None):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        This is used for the debugger.
-
-        Example::
-
-            t = prep >> batch >> forward_1
-            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
-            `t.pd_forward`, then the element that fails on `t` is
-            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
-
-        :param is_entire_transform: *False* if *self* is not a part of a larger :class:`Transform`,
-            else *True*
-        """
-        # pylint: disable=no-self-use
-        return 0
-
-    def _pd_get_error_idx(self, stage: str):
-        assert stage in ('forward', 'postprocess')
-        return 0
 
 
 class FunctionTransform(AtomicTransform):
@@ -1812,53 +1765,6 @@ class Pipeline(Transform):
             deduped_keys.append(new_name)
         return deduped_keys
 
-    def _pd_get_non_target_stage_idx(self):
-        # pylint: disable=no-self-use
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        This is used for the debugger.
-
-        Example:
-            t = ((prep_1 >> batch) + (prep_2 >> batch)) >> forward_1
-            Let's suppose we get an error on `forward_1`. `forward_1` is the index 0 of
-            `t.pd_forward`, then the element that fails on `t` is
-            t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = 1 + 0 = 1
-        """
-        return 1
-
-    def _pd_get_target_stage_idx(self, is_entire_transform=None):
-        # pylint: disable=no-self-use
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        This is used for the debugger.
-
-        Example:
-            t = prep >> batch >> (forward_1 + forward_2)
-            Let's suppose we get an error on `(forward_1 + forward_2)`. `(forward_1 + forward_2)`
-            is the index 0 of `t.pd_forward`, then the element that fails on `t` is
-            2 + t.pd_forward._pd_get_stage_idx() = 2 + 0 = 2
-
-        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
-            else *True*
-        """
-        return 0
-
-    def _pd_get_error_idx(self, stage: str):
-        """Track the index where a :class:`Pipeline` fails from the one that got the Exception on
-        :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
-
-        This is used for the debugger.
-
-        Example:
-            t = (t_11 >> batch >> t_12) + (t_21 >> batch >> t_22)
-            then,
-            t.pd_forward = t_12 / t_22.
-            If we know that :meth:`t.pd_forward` is failing on `t_22`, which is its element 1,
-            the index of the :class:`Transform` that fails on `t` is the same.
-        """
-        assert stage in ('forward', 'postprocess')
-        return _pd_trace[-1].error_position
-
     def _add_name_to_splits(self, final_splits):
         """Add name to split-transforms. """
         if self._pd_name is not None:
@@ -2078,72 +1984,6 @@ class Compose(Pipeline):
                 self._pd_trace_error(i, _in_args)
                 raise err
         return args
-
-    def _pd_get_non_target_stage_idx(self):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        Example:
-            t = prep >> batch >> forward_1
-
-            Let's suppose we get an error on `forward_1`, `forward_1` is the index 0 of
-            `t.pd_forward`, then the element that fails on `t` is
-            `t.pd_preprocess._pd_get_non_target_stage_idx() + 0 = len(t.pd_preprocess) + 0 =
-                2 + 0 = 2
-        """
-        return 1 if self._pd_group else len(self)
-
-    def _pd_get_target_stage_idx(self, is_entire_transform: bool):
-        """Return an integer to track where a :class:`Compose` which failed got the Exception.
-
-        This is used for the debugger.
-
-        Example:
-             t = prep >> batch >> forward_1 >> forward_2
-
-            Let's suppose we get an error on `forward_2`. `t.pd_forward` is
-            `t.pd_forward` = forward_1 >> forward_2`. `forward_2` is the index 1 of `t.pd_forward`,
-            then the element that fails on `t` is
-            2 + t.pd_forward._pd_get_stage_idx() = 2 + 1 = 3
-
-        :param is_entire_transform: *False* if *self* is a part of a larger :class:`Transform`,
-            else *True*
-        """
-        return 0 if self._pd_group and not is_entire_transform else _pd_trace[-1].error_position
-
-    def _pd_get_error_idx(self, stage: str):
-        """Track the index where a :class:`Compose` fails from the index that got the Exception
-        on :meth:`self.pd_preprocess`, :meth:`self.pd_forward` or :meth:`self.pd_postprocess`.
-
-        This is used for the debugger.
-
-        Examples:
-            t = t_1 >> t_2 >> batch >> t_3 >> t_4
-            then,
-            t.pd_forward = t_3 >> t_4.
-            If we know that :meth:`t.pd_forward` is failing on `t_4`, which is its element 1, then
-            `t` is failing on len(t.pd_preprocess) + 1.
-
-            t = t_1 >> t_2 >> batch >> ((t_3 >> t_4) + (t_5 >> t_6))
-            then,
-            t.pd_forward = (t_3 >> t_4) + (t_5 >> t_6).
-            No matter what branch is failing on :meth:`t.pd_forward`, the error on `t` is on
-            len(t.pd_preprocess) + 0 = 3.
-        """
-        assert stage in ('forward', 'postprocess')
-        preprocess = self.pd_preprocess
-        forward = self.pd_forward
-        postprocess = self.pd_postprocess
-        preprocess_idx = preprocess._pd_get_non_target_stage_idx()
-
-        if stage == 'forward':
-            is_entire_transform = isinstance(preprocess, Identity) and \
-                                  isinstance(postprocess, Identity)
-            return preprocess_idx + forward._pd_get_target_stage_idx(is_entire_transform)
-
-        is_entire_transform = isinstance(preprocess, Identity) and \
-                              isinstance(forward, Identity)
-        return preprocess_idx + forward._pd_get_non_target_stage_idx() + \
-               postprocess._pd_get_target_stage_idx(is_entire_transform)
 
 
 class Rollout(Pipeline):
@@ -2426,9 +2266,6 @@ class Identity(BuiltinTransform):
     def __call__(self, args):
         return args
 
-    def _pd_get_non_target_stage_idx(self):
-        return 0
-
 
 identity = Identity()
 
@@ -2456,8 +2293,8 @@ class Unbatchify(BuiltinTransform):
         to 2 ("un-batchified").
         """
         # ensure that all inputs are batchified.
-        assert self._pd_merge_components(input_components) == 1, \
-            'unbatchify used without batchify or double unbatchify'
+        assert self._pd_merge_components(input_components) < 2, \
+            'double unbatchify'
         # put the output component to 2 ("un-batchified")
         return 2, (identity, identity, self), False, True
 
@@ -2654,12 +2491,7 @@ class _ItemGetter:
         try:
             return item, self.transform(self.samples[item])
         except Exception as err:
-            is_entire_transform = isinstance(self.entire_transform.pd_forward, Identity) and \
-                                  isinstance(self.entire_transform.pd_postprocess, Identity)
-            self.entire_transform._pd_trace_error(
-                self.entire_transform.pd_preprocess._pd_get_target_stage_idx(is_entire_transform),
-                [self.samples[item]]
-            )
+            self.entire_transform._pd_trace_error(None, [self.samples[item]])
             raise err
 
     def __len__(self):
