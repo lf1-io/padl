@@ -87,3 +87,10 @@ def wrap_transform():
 
 def makelambda():
     return transform(lambda x: x)
+
+
+@transform
+class DeviceCheckInInit:
+    def __init__(self, t):
+        self.t = t
+        self.t.pd_forward_device_check()

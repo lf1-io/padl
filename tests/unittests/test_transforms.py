@@ -1105,3 +1105,9 @@ class TestParam:
             padl.load(tmp_path / 'test.padl', y=1)
         t_2 = padl.load(tmp_path / 'test.padl', x=2)
         assert t_2(1) == 3
+
+
+def test_device_check_in_init_works():
+    from tests.material.transforms_in_module import DeviceCheckInInit
+    t = SimpleClassTransform(1)
+    DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
