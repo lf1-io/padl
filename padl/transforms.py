@@ -153,7 +153,9 @@ class Transform:
     def __init__(self, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
         if call_info is None:
-            call_info = inspector.CallInfo()
+            # if the call was from here (i.e. transform.py), ignore the scope
+            calling_module_name = inspector.non_init_caller_frameinfo().frame.f_globals['__name__']
+            call_info = inspector.CallInfo(ignore_scope=calling_module_name == __name__)
         self._pd_call_info = call_info
         self._pd_varname = {}
         self._pd_name = pd_name
@@ -1264,7 +1266,7 @@ class ClassTransform(AtomicTransform):
         nodes = [import_node]
 
         # make the call
-        call = self.__class__.__name__ + f'({self._split_call()[1]})'
+        call = self.__class__.__name__ + f'({self._pd_split_call()[1]})'
         call_scope = symfinder.Scope.toplevel(inspector.caller_module())
         start_source = f'{name or "_pd_dummy"} = {call}'
         start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
@@ -1283,7 +1285,7 @@ class ClassTransform(AtomicTransform):
         if class_scope == call_scope:
             return super()._pd_codegraph_add_startnodes(graph, name)
 
-        call = self.__class__.__name__ + f'({self._split_call()[1]})'
+        call = self.__class__.__name__ + f'({self._pd_split_call()[1]})'
         start_source = f'{name or "_pd_dummy"} = {call}'
         start_node = CodeNode.from_source(start_source, call_scope, name=name or '_pd_dummy')
         if name is not None:
@@ -1310,7 +1312,7 @@ class ClassTransform(AtomicTransform):
         except IndexError:
             return body_msg
 
-    def _split_call(self):
+    def _pd_split_call(self):
         """Split class initialization call from its arguments.
 
         :return: A tuple of class name and arguments.
@@ -1320,7 +1322,7 @@ class ClassTransform(AtomicTransform):
     def _formatted_args(self, max_width=None) -> str:
         """Format the object's init arguments for printing. """
         if self._pd_arguments is None:  # fall back
-            return self._split_call()[1]
+            return self._pd_split_call()[1]
 
         args_list = []
         for key, value in self._pd_arguments.items():

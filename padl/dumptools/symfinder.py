@@ -591,7 +591,7 @@ class Scope:
         return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
 
     def __repr__(self):
-        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist)}]'
+        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])}]'
 
     def __len__(self):
         return len(self.scopelist)
