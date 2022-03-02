@@ -36,9 +36,9 @@ def create_reverse_arrow(start_left: int, finish_right: int, n_initial_rows: int
 
     Example::
 
-        ____________|
-        |
-        v
+        ┌──────┘
+        │
+        ▼
     """
     initial = ''
     for _ in range(n_final_rows - 1):
@@ -95,9 +95,9 @@ def create_arrow(start_left: int, finish_right: int, n_initial_rows: int, n_fina
 
     Example::
 
-        ____________|
-        |
-        v
+        ┌──────┘
+        │
+        ▼
     """
     initial = ''
     for _ in range(n_initial_rows - 1):
