@@ -28,6 +28,7 @@ from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Uni
 from warnings import warn
 from zipfile import ZipFile
 
+import inspect
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -332,20 +333,33 @@ class Transform:
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
         """
+        opt = None
+        if hasattr(self, 'pd_save_options'):
+            opt = self._pd_process_options(self.pd_save_options)
+        # pd_pre_save requires default behaviour on receiving None
         try:
+            if 'options' in inspect.signature(self.pre_save).parameters:
+                return self.pre_save(path, i, options=opt)
             return self.pre_save(path, i)
         except AttributeError:
             pass
 
-    def pd_post_load(self, path: Path, i: int):
+    def pd_post_load(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform after loading.
 
         This normally does nothing. Override to implement custom serialization.
 
         :param path: The load path.
         :param i: Unique transform index, can be used to construct filenames.
+        :param options: Options dictionary (optional) to control saving behaviour, comes
+                        from attribute "self.pd_save_options"
         """
+        opt = None
+        if options is not None:
+            opt = self._pd_process_options(options)
         try:
+            if 'options' in inspect.signature(self.pre_save).parameters:
+                return self.post_load(path, i, options=opt)
             return self.post_load(path, i)
         except AttributeError:
             pass
@@ -377,6 +391,31 @@ class Transform:
                 for file in Path(dirname).glob('*'):
                     if file.is_file():
                         zipf.write(file, file.name)
+
+    @classmethod
+    def _pd_process_options(cls, options):
+        """
+        This helper finds a key in options which is either cls or is an
+        ancestor of cls, and is unique and minimal with respect to the ancestral
+        relation.
+        """
+        try:
+            return options[cls]
+        except KeyError:
+            pass
+        mro_check = sorted(
+            [(len(x.mro()), x) for x in options.keys() if issubclass(cls, x)],
+            key=lambda x: x[0]
+        )
+        if not mro_check:
+            return
+        # print not sure if this case would ever arise due to
+        # inbuilt error "Cannot create a consistent method resolution order (MRO) for bases"
+        if mro_check[1:] and mro_check[0][0] == mro_check[1][0]:
+            raise Exception(f'Couldn\'t find a clear option applying to {cls}'
+                            f'Found at least two candidates: {mro_check[0][1]} '
+                            f'and {mro_check[1][1]}')
+        return options[mro_check[0][1]]
 
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
@@ -590,7 +629,8 @@ class Transform:
         raise NotImplementedError
 
     def _pd_dumps(self, return_versions: bool = False,
-                  path: Optional[Path] = None) -> Union[str, Tuple[str, str]]:
+                  path: Optional[Path] = None,
+                  options: Optional[dict] = None) -> Union[str, Tuple[str, str]]:
         """Dump the transform as python code.
 
         :param return_versions: If *True* return a tuple of the code and a file listing
@@ -598,6 +638,8 @@ class Transform:
         :param path: Optional path to save at, might be required for serializer code snippets.
         """
         graph = self._pd_build_codegraph(name='_pd_main')
+        if options is not None:
+            graph.append
         Serializer.save_all(graph, path)
         code = graph.dumps()
         if return_versions:
@@ -1203,6 +1245,9 @@ class ClassTransform(AtomicTransform):
     :param arguments: ordered dictionary of initialization arguments to be used in printing
     """
 
+    def __init_subclass__(cls, *_args, **_kwargs):
+        cls._pd_class_call_info = inspector.CallInfo()
+
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
                  arguments: Optional[OrderedDict] = None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
@@ -1371,23 +1416,27 @@ class TorchModuleTransform(ClassTransform):
     def _pd_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def pre_save(self, path: Path, i: int):
+    def pre_save(self, path: Path, i: int, options: Optional[Any] = None):
         """Dump the model's parameters to a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
+        if isinstance(options, str) and options == 'no-save':
+            return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def post_load(self, path, i):
+    def post_load(self, path, i, options: Optional[Any] = None):
         """Load the model's parameters form a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
+        if isinstance(options, str) and options == 'no-save':
+            return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
@@ -2431,7 +2480,10 @@ def load(path, **kwargs):
 
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
-        subtrans.pd_post_load(path, i)
+        if hasattr(transform, 'pd_save_options'):
+            subtrans.pd_post_load(path, i, options=transform.pd_save_options)
+        else:
+            subtrans.pd_post_load(path, i)
 
     return transform
 
