@@ -62,6 +62,7 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 1. [Simple NLP example](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb)
 1. [Sentiment Analysis - NLP](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb)
 1. [DC-GAN - Image Generation](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb)
+1. [CLIP guided diffusion for face editing](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/05_diffuse_faces.ipynb)
 
 ### Resources
 
