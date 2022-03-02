@@ -66,13 +66,19 @@ _EXCLUDED_MODULES = ['pytest', 'pluggy']
 def _get_scope_from_frame(frame, drop_n):
     """Get the :class:`~symfinder.Scope` from the frame object *frame*. """
     module = _module(frame)
+    # don't dive deeper for excluded modules
     if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
         return symfinder.Scope.toplevel(module)
-    if module.__name__ == '__main__':
+    # don't dive deeper after
+    if module.__name__ == '__main__' and _module(frame.f_back) != module:
+        return symfinder.Scope.toplevel(module)
+    # don't dive deeper if not a call
+    if frame.f_code.co_name == '<module>':
+
         return symfinder.Scope.toplevel(module)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
-    except (RuntimeError, FileNotFoundError, AttributeError):
+    except (RuntimeError, FileNotFoundError, AttributeError, OSError):
         return symfinder.Scope.toplevel(module)
     try:
         definition_source = get_source(frame.f_code.co_filename)
@@ -340,7 +346,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     # the statement rather than the beginning, therefore we need to decrement it
     if segment_type == 'call':
         lines = original(full_source).split('\n')
-        while '(' not in lines[lineno - 1]:
+        while '(' not in lines[lineno - 1] and not lines[lineno - 1].startswith('@'):
             lineno -= 1
 
     source, offset = get_statement(original(full_source), lineno)
