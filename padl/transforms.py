@@ -1203,6 +1203,9 @@ class ClassTransform(AtomicTransform):
     :param arguments: ordered dictionary of initialization arguments to be used in printing
     """
 
+    def __init_subclass__(cls, *_args, **_kwargs):
+        cls._pd_class_call_info = inspector.CallInfo()
+
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
                  arguments: Optional[OrderedDict] = None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
