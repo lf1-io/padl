@@ -74,6 +74,7 @@ def _get_scope_from_frame(frame, drop_n):
         return symfinder.Scope.toplevel(module)
     # don't dive deeper if not a call
     if frame.f_code.co_name == '<module>':
+
         return symfinder.Scope.toplevel(module)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
