@@ -475,10 +475,8 @@ class TestCompose:
         )
 
     def test_unbatchify_position(self):
-        with pytest.raises(AssertionError):
-            self.transform_7.infer_apply(1)
-        with pytest.raises(AssertionError):
-            self.transform_8.infer_apply(1)
+        assert self.transform_7.infer_apply(1) == (3, 3)
+        assert self.transform_8.infer_apply(1) == 2
         assert self.transform_9.infer_apply(1) == 2
         with pytest.raises(AssertionError):
             self.transform_10.infer_apply(1)
@@ -1067,9 +1065,47 @@ class TestTrace:
             assert _pd_trace[1].error_position == 1
             assert _pd_trace[1].pd_mode == 'train'
             assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
-            assert _pd_trace[2].error_position == 3
 
 
 def test_identity_compose_saves(tmp_path):
     t = padl.identity >> padl.identity
     t.pd_save(tmp_path / 'test')
+
+
+class TestParam:
+    def test_param_works(self, tmp_path):
+        x = padl.param(1, 'x')
+        t = SimpleClassTransform(x)
+        assert t(1) == 2
+        t.pd_save(tmp_path / 'test.padl')
+        t_1 = padl.load(tmp_path / 'test.padl')
+        assert t_1(1) == 2
+        t_2 = padl.load(tmp_path / 'test.padl', x=2)
+        assert t_2(1) == 3
+
+    def test_no_default(self, tmp_path):
+        x = padl.param(1, 'x', use_default=False)
+        t = SimpleClassTransform(x)
+        assert t(1) == 2
+        t.pd_save(tmp_path / 'test.padl')
+        with pytest.raises(ValueError):
+            padl.load(tmp_path / 'test.padl')
+        t_2 = padl.load(tmp_path / 'test.padl', x=2)
+        assert t_2(1) == 3
+
+    def test_wrong_param(self, tmp_path):
+        x = padl.param(1, 'x')
+        t = SimpleClassTransform(x)
+        assert t(1) == 2
+        t.pd_save(tmp_path / 'test.padl')
+        with pytest.raises(ValueError):
+            padl.load(tmp_path / 'test.padl', y=1)
+        t_2 = padl.load(tmp_path / 'test.padl', x=2)
+        assert t_2(1) == 3
+
+
+def test_device_check_in_init_works():
+    from tests.material.transforms_in_module import DeviceCheckInInit
+    t = SimpleClassTransform(1)
+    DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
+

@@ -64,6 +64,7 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 1. [DC-GAN - Image Generation](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb)
 1. [CLIP guided diffusion for face editing](https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/05_diffuse_faces.ipynb)
 
+
 ### Resources
 
 - Read the documentation at <https://lf1-io.github.io/padl/>.
@@ -71,6 +72,8 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 - Post issues at <https://github.com/lf1-io/padl/issues>.
 
 
+## Dev Blog
+Read more about PADL in devloper blog at https://devblog.padl.ai/
 
 ## Contributing
 
