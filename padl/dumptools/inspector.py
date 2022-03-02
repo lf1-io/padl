@@ -77,7 +77,7 @@ def _get_scope_from_frame(frame, drop_n):
         return symfinder.Scope.toplevel(module)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
-    except (RuntimeError, FileNotFoundError, AttributeError):
+    except (RuntimeError, FileNotFoundError, AttributeError, OSError):
         return symfinder.Scope.toplevel(module)
     try:
         definition_source = get_source(frame.f_code.co_filename)
