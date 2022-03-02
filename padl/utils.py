@@ -4,6 +4,20 @@ from padl.dumptools import inspector
 from padl.print_utils import format_argument
 from padl.transforms import AtomicTransform
 from padl.transforms import _pd_trace
+from collections import defaultdict
+
+
+def _ancestry_graph(classes):
+    graph = []
+    for cls_ in classes:
+        for other in classes:
+            if other != cls_:
+                if issubclass(cls_, other):
+                    graph.append((cls_, other))
+    graph_dict = defaultdict(lambda: [])
+    for (n1, n2) in graph:
+        graph_dict[n1].append(n2)
+    return graph_dict, graph
 
 
 def _maketrans(attr, getitem=False):
