@@ -68,6 +68,8 @@ def _get_scope_from_frame(frame, drop_n):
     module = _module(frame)
     if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
         return symfinder.Scope.toplevel(module)
+    if module.__name__ == '__main__':
+        return symfinder.Scope.toplevel(module)
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
     except (RuntimeError, FileNotFoundError, AttributeError):
