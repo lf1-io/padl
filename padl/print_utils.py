@@ -10,6 +10,9 @@ def combine_multi_line_strings(strings: List[str]):
 
     :param strings: list of multi-line strings
     """
+    if len(strings) == 0:
+        return ''
+
     strings = [x.split('\n') for x in strings]
     length = max([len(x) for x in strings])
     lines = []
