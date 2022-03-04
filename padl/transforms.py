@@ -358,7 +358,7 @@ class Transform:
         if options is not None:
             opt = self._pd_process_options(options)
         try:
-            if 'options' in inspect.signature(self.pre_save).parameters:
+            if 'options' in inspect.signature(self.post_load).parameters:
                 return self.post_load(path, i, options=opt)
             return self.post_load(path, i)
         except AttributeError:
@@ -1417,26 +1417,42 @@ class TorchModuleTransform(ClassTransform):
     def _pd_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def pre_save(self, path: Path, i: int, options: Optional[Any] = None):
+    def pd_pre_save(self, path: Path, i: int, options: Optional[Any] = None):
         """Dump the model's parameters to a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
-        if isinstance(options, str) and options == 'no-save':
+        opt = None
+        if options is not None:
+            opt = self._pd_process_options(options)
+        # pd_pre_save requires default behaviour on receiving None
+        if hasattr(self, 'pre_save'):
+            if 'options' in inspect.signature(self.pre_save).parameters:
+                return self.pre_save(path, i, options=opt)
+            return self.pre_save(path, i)
+
+        if isinstance(opt, str) and opt == 'no-save':
             return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def post_load(self, path, i, options: Optional[Any] = None):
-        """Load the model's parameters form a save-folder.
+    def pd_post_load(self, path, i, options: Optional[Any] = None):
+        """Load the model's parameters from a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
-        if isinstance(options, str) and options == 'no-save':
+        opt = None
+        if options is not None:
+            opt = self._pd_process_options(options)
+        if hasattr(self, 'post_load'):
+            if 'options' in inspect.signature(self.post_load).parameters:
+                return self.post_load(path, i, options=opt)
+            return self.post_load(path, i)
+        if isinstance(opt, str) and opt == 'no-save':
             return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
