@@ -424,7 +424,7 @@ created (needed for saving).</p></li>
 <dd><p>Transform class for use with <cite>torch.nn.Module</cite>.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.TorchModuleTransform.post_load">
-<span class="sig-name descname"><span class="pre">post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.post_load" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.post_load" title="Permalink to this definition"></a></dt>
 <dd><p>Load the model’s parameters form a save-folder.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -438,7 +438,7 @@ created (needed for saving).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.TorchModuleTransform.pre_save">
-<span class="sig-name descname"><span class="pre">pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.pre_save" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pre_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.TorchModuleTransform.pre_save" title="Permalink to this definition"></a></dt>
 <dd><p>Dump the model’s parameters to a save-folder.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -576,7 +576,7 @@ the <em>last variable the transforms was assigned to</em>.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.pd_post_load">
-<span class="sig-name descname"><span class="pre">pd_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_post_load" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">pd_post_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.pd_post_load" title="Permalink to this definition"></a></dt>
 <dd><p>Method that is called on each transform after loading.</p>
 <p>This normally does nothing. Override to implement custom serialization.</p>
 <dl class="field-list simple">
@@ -584,6 +584,8 @@ the <em>last variable the transforms was assigned to</em>.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> – The load path.</p></li>
 <li><p><strong>i</strong> – Unique transform index, can be used to construct filenames.</p></li>
+<li><p><strong>options</strong> – Options dictionary (optional) to control saving behaviour, comes
+from attribute “self.pd_save_options”</p></li>
 </ul>
 </dd>
 </dl>
