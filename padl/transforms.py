@@ -633,8 +633,7 @@ class Transform:
         raise NotImplementedError
 
     def _pd_dumps(self, return_versions: bool = False,
-                  path: Optional[Path] = None,
-                  options: Optional[dict] = None) -> Union[str, Tuple[str, str]]:
+                  path: Optional[Path] = None) -> Union[str, Tuple[str, str]]:
         """Dump the transform as python code.
 
         :param return_versions: If *True* return a tuple of the code and a file listing
@@ -642,8 +641,6 @@ class Transform:
         :param path: Optional path to save at, might be required for serializer code snippets.
         """
         graph = self._pd_build_codegraph(name='_pd_main')
-        if options is not None:
-            graph.append
         Serializer.save_all(graph, path)
         code = graph.dumps()
         if return_versions:
