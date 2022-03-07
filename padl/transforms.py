@@ -332,6 +332,8 @@ class Transform:
 
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
         # pd_pre_save requires default behaviour on receiving None
         if hasattr(self, 'pre_save'):
@@ -1387,6 +1389,8 @@ class TorchModuleTransform(ClassTransform):
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
         # pd_pre_save requires default behaviour on receiving None
         if options is None:
@@ -1408,6 +1412,8 @@ class TorchModuleTransform(ClassTransform):
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
         if options is None:
             options = {}
