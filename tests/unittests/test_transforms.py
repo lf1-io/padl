@@ -173,26 +173,6 @@ class TestNamedTupleOutput:
                             self.transform_3.train_apply([1, 2, 3]))))
 
 
-def test__pd_process_options():
-    @transform
-    class A:
-        def __call__(self, x):
-            return x
-
-    class B(A):
-        ...
-
-    @transform
-    class C:
-        def __call__(self, x):
-            return x
-
-    options = {A: 1, B: 2, C: 3}
-    assert A()._pd_process_options(options) == 1
-    assert B()._pd_process_options(options) == 2
-    assert C()._pd_process_options(options) == 3
-
-
 class TestPADLCallTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
@@ -880,7 +860,7 @@ class TestTorchModuleTransform:
     def init(self, request):
         request.cls.transform_1 = Polynomial(2, 3)
         request.cls.transform_2 = \
-            Polynomial(2, 3, pd_save_options={torch.nn.Module: 'no-save'})
+            Polynomial(2, 3, pd_save_options={'torch.nn.Module': 'no-save'})
 
     def test_output(self):
         output = self.transform_1(1)

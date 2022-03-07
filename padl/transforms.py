@@ -333,16 +333,11 @@ class Transform:
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
         """
-        opt = None
-        if options is not None:
-            opt = self._pd_process_options(options)
         # pd_pre_save requires default behaviour on receiving None
-        try:
+        if hasattr(self, 'pre_save'):
             if 'options' in inspect.signature(self.pre_save).parameters:
-                return self.pre_save(path, i, options=opt)
+                return self.pre_save(path, i, options=options)
             return self.pre_save(path, i)
-        except AttributeError:
-            pass
 
     def pd_post_load(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform after loading.
@@ -354,15 +349,10 @@ class Transform:
         :param options: Options dictionary (optional) to control saving behaviour, comes
                         from attribute "self.pd_save_options"
         """
-        opt = None
-        if options is not None:
-            opt = self._pd_process_options(options)
-        try:
+        if hasattr(self, 'post_load'):
             if 'options' in inspect.signature(self.post_load).parameters:
-                return self.post_load(path, i, options=opt)
+                return self.post_load(path, i, options=options)
             return self.post_load(path, i)
-        except AttributeError:
-            pass
 
     def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a zip-file at *path*.
@@ -391,31 +381,6 @@ class Transform:
                 for file in Path(dirname).glob('*'):
                     if file.is_file():
                         zipf.write(file, file.name)
-
-    @classmethod
-    def _pd_process_options(cls, options):
-        """
-        This helper finds a key in options which is either cls or is an
-        ancestor of cls, and is unique and minimal with respect to the ancestral
-        relation.
-        """
-        try:
-            return options[cls]
-        except KeyError:
-            pass
-        mro_check = sorted(
-            [(len(x.mro()), x) for x in options.keys() if issubclass(cls, x)],
-            key=lambda x: x[0]
-        )
-        if not mro_check:
-            return
-        # print not sure if this case would ever arise due to
-        # inbuilt error "Cannot create a consistent method resolution order (MRO) for bases"
-        if mro_check[1:] and mro_check[0][0] == mro_check[1][0]:
-            raise Exception(f'Couldn\'t find a clear option applying to {cls}'
-                            f'Found at least two candidates: {mro_check[0][1]} '
-                            f'and {mro_check[1][1]}')
-        return options[mro_check[0][1]]
 
     def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a folder at *path*.
@@ -1423,16 +1388,15 @@ class TorchModuleTransform(ClassTransform):
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
-        opt = None
-        if options is not None:
-            opt = self._pd_process_options(options)
         # pd_pre_save requires default behaviour on receiving None
+        if options is None:
+            options = {}
         if hasattr(self, 'pre_save'):
             if 'options' in inspect.signature(self.pre_save).parameters:
-                return self.pre_save(path, i, options=opt)
+                return self.pre_save(path, i, options=options)
             return self.pre_save(path, i)
 
-        if isinstance(opt, str) and opt == 'no-save':
+        if options.get('torch.nn.Module') == 'no-save':
             return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
@@ -1445,14 +1409,13 @@ class TorchModuleTransform(ClassTransform):
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
         """
-        opt = None
-        if options is not None:
-            opt = self._pd_process_options(options)
+        if options is None:
+            options = {}
         if hasattr(self, 'post_load'):
             if 'options' in inspect.signature(self.post_load).parameters:
-                return self.post_load(path, i, options=opt)
+                return self.post_load(path, i, options=options)
             return self.post_load(path, i)
-        if isinstance(opt, str) and opt == 'no-save':
+        if options.get('torch.nn.Module') == 'no-save':
             return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
