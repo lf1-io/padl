@@ -1,11 +1,13 @@
+import os
 from collections import OrderedDict
 import pytest
 import torch
 from padl import transforms as pd, transform, Identity, batch, unbatch, group
-from padl.transforms import Batchify, Unbatchify
+from padl.transforms import Batchify, Unbatchify, TorchModuleTransform
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
+from padl.transforms import Transform
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
@@ -103,10 +105,12 @@ class ClassLookup:
 
 @transform
 class Polynomial(torch.nn.Module):
-    def __init__(self, a, b):
+    def __init__(self, a, b, pd_save_options=None):
         super().__init__()
         self.a = torch.nn.Parameter(torch.tensor(float(a)))
         self.b = torch.nn.Parameter(torch.tensor(float(b)))
+        if pd_save_options is not None:
+            self.pd_save_options = pd_save_options
 
     def forward(self, x):
         return x**self.a + x**self.b
@@ -855,6 +859,8 @@ class TestTorchModuleTransform:
     @pytest.fixture(autouse=True, scope='class')
     def init(self, request):
         request.cls.transform_1 = Polynomial(2, 3)
+        request.cls.transform_2 = \
+            Polynomial(2, 3, pd_save_options={'torch.nn.Module': 'no-save'})
 
     def test_output(self):
         output = self.transform_1(1)
@@ -879,6 +885,14 @@ class TestTorchModuleTransform:
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 2
+
+    def test_pd_save_with_options(self, tmp_path, capsys):
+        self.transform_2.pd_save(tmp_path / 'test.padl')
+        print(tmp_path / 'test.padl')
+        assert not os.path.exists((tmp_path / 'test.padl') / '0.pt')
+        pd.load(tmp_path / 'test.padl')
+        out, err = capsys.readouterr()
+        assert 'loading torch module from' not in out
 
 
 class TestTorchModuleTransformWithJit:

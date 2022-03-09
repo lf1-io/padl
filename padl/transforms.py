@@ -28,6 +28,7 @@ from typing import Callable, Iterable, Iterator, List, Optional, Set, Tuple, Uni
 from warnings import warn
 from zipfile import ZipFile
 
+import inspect
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -324,31 +325,36 @@ class Transform:
         """
         return Map(self)
 
-    def pd_pre_save(self, path: Path, i: int):
+    def pd_pre_save(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform before saving.
 
         This normally does nothing. Override to implement custom serialization.
 
         :param path: The save-folder path.
         :param i: Unique transform index, can be used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
-        try:
+        # pd_pre_save requires default behaviour on receiving None
+        if hasattr(self, 'pre_save'):
+            if 'options' in inspect.signature(self.pre_save).parameters:
+                return self.pre_save(path, i, options=options)
             return self.pre_save(path, i)
-        except AttributeError:
-            pass
 
-    def pd_post_load(self, path: Path, i: int):
+    def pd_post_load(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform after loading.
 
         This normally does nothing. Override to implement custom serialization.
 
         :param path: The load path.
         :param i: Unique transform index, can be used to construct filenames.
+        :param options: Options dictionary (optional) to control saving behaviour, comes
+                        from attribute "self.pd_save_options"
         """
-        try:
+        if hasattr(self, 'post_load'):
+            if 'options' in inspect.signature(self.post_load).parameters:
+                return self.post_load(path, i, options=options)
             return self.post_load(path, i)
-        except AttributeError:
-            pass
 
     def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a zip-file at *path*.
@@ -398,8 +404,12 @@ class Transform:
 
         path.mkdir()
 
+        options = None
+        if hasattr(self, 'pd_save_options'):
+            options = self.pd_save_options
+
         for i, subtrans in enumerate(self._pd_all_transforms()):
-            subtrans.pd_pre_save(path, i)
+            subtrans.pd_pre_save(path, i, options=options)
         code, versions = self._pd_dumps(True, path=path)
 
         with open(path / 'transform.py', 'w') as f:
@@ -1374,23 +1384,45 @@ class TorchModuleTransform(ClassTransform):
     def _pd_signature(self):
         return inspect.signature(self.forward).parameters
 
-    def pre_save(self, path: Path, i: int):
+    def pd_pre_save(self, path: Path, i: int, options: Optional[Any] = None):
         """Dump the model's parameters to a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
+        # pd_pre_save requires default behaviour on receiving None
+        if options is None:
+            options = {}
+        if hasattr(self, 'pre_save'):
+            if 'options' in inspect.signature(self.pre_save).parameters:
+                return self.pre_save(path, i, options=options)
+            return self.pre_save(path, i)
+
+        if options.get('torch.nn.Module') == 'no-save':
+            return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('saving torch module to', checkpoint_path)
         torch.save(self.state_dict(), checkpoint_path)
 
-    def post_load(self, path, i):
-        """Load the model's parameters form a save-folder.
+    def pd_post_load(self, path, i, options: Optional[Any] = None):
+        """Load the model's parameters from a save-folder.
 
         :param path: The save-folder path.
         :param i: Unique transform index, used to construct filenames.
+        :param options: Options dictionary to add fine-grained control to saving,
+                        comes from attribute `self.pd_save_options`
         """
+        if options is None:
+            options = {}
+        if hasattr(self, 'post_load'):
+            if 'options' in inspect.signature(self.post_load).parameters:
+                return self.post_load(path, i, options=options)
+            return self.post_load(path, i)
+        if options.get('torch.nn.Module') == 'no-save':
+            return
         path = Path(path)
         checkpoint_path = path / f'{i}.pt'
         print('loading torch module from', checkpoint_path)
@@ -2476,7 +2508,10 @@ def load(path, **kwargs):
 
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
-        subtrans.pd_post_load(path, i)
+        if hasattr(transform, 'pd_save_options'):
+            subtrans.pd_post_load(path, i, options=transform.pd_save_options)
+        else:
+            subtrans.pd_post_load(path, i)
 
     return transform
 
