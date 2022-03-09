@@ -16,8 +16,11 @@ in an AST tree of a source code.
 Finding names in code then corresponds to building the AST tree of the code and using the
 `_ThingFinder` subclasses to identify if and how the names were created.
 
-The main function to use is `find`, which will find a name in a module or the current ipython
+The main function to use is :func:`find`, which will find a name in a module or the current ipython
 history.
+
+This module also defines the :class:`Scope`, which represents the "location" of an python-thing,
+and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
 import ast
@@ -483,6 +486,21 @@ def _get_call_signature(source: str):
 class Scope:
     """A scope.
 
+    This determines the "location" of an object. A scope has a module and a list of functions.
+
+    For example, if the following were defined in a module "examplemodule"::
+
+        def f():
+            x = 1  # <-- here
+
+    the indicated location is in the scope *examplemodule.f*. The following::
+
+        def f():
+            def g():
+                x = 1  # <-- here
+
+    would have the scope *examplemodule.f.g*.
+
     Scope objects can be used to find names that are not defined globally in a module, but
     nested, for example within a function body.
 
@@ -520,6 +538,8 @@ class Scope:
         """
         tree = ast.parse(def_source)
         branch = _find_branch(tree, lineno, def_source)
+        if not branch:
+            branch = []
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
         if drop_n > 0:
             function_defs = function_defs[:-drop_n]
@@ -605,8 +625,8 @@ class Scope:
 
 @dataclass
 class ScopedName:
-    """A name with a scope and a counter. The "name" is the name of the item, the scope is its
-    :class:`Scope` and the counter counts the items with the same name, in the same scope,
+    """A name with a scope and a counter. The "name" is the name of the item, the scope
+    is its :class:`Scope` and the counter counts the items with the same name, in the same scope,
     from most recent on up.
 
     Example - the following::
@@ -639,17 +659,17 @@ class ScopedName:
         return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
 
 
-def find_in_scope(name: ScopedName):
-    """Find the piece of code that assigned a value to the variable with name *var_name* in the
-    scope *scope*.
+def find_in_scope(scoped_name: ScopedName):
+    """Find the piece of code that assigned a value to the variable with name
+    *scoped_name.name* in the scope *scoped_name.scope*.
 
-    :param scope: Name (with scope) of the variable to look for.
+    :param scoped_name: Name (with scope) of the variable to look for.
     """
-    scope = name.scope
-    i = name.n
+    scope = scoped_name.scope
+    i = scoped_name.n
     for _scopename, tree in scope.scopelist:
         try:
-            res = find_in_source(name.name, name.scope.def_source, tree=tree, i=i,
+            res = find_in_source(scoped_name.name, scoped_name.scope.def_source, tree=tree, i=i,
                                  return_partial=True)
             if isinstance(res, int):
                 i = res
@@ -663,8 +683,8 @@ def find_in_scope(name: ScopedName):
             scope = scope.up()
             continue
     if scope.module is None:
-        raise NameNotFound(f'{name.name} not found in function hierarchy.')
-    source, node, name = find(name.name, scope.module, i)
+        raise NameNotFound(f'{scoped_name.name} not found in function hierarchy.')
+    source, node, name = find(scoped_name.name, scope.module, i)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:

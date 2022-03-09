@@ -17,11 +17,18 @@ from padl.dumptools.sourceget import get_source, original, cut
 
 
 class CallInfo:
-    """Information about the calling context.
+    """Get information about the calling context.
 
     Contains the following information:
         - the function from which that call was made
         - the scope (see :class:`symfinder.Scope`)
+
+    Example:
+
+    >>> def f():
+    ...     return CallInfo('here')
+    >>> print(f().scope)
+    'Scope[__main__.f]'
 
     :param origin: Where to look for the call, can be
         - "nextmodule": use the first frame not in the module the object was created in
