@@ -1887,16 +1887,23 @@ class Compose(Pipeline):
         return output_components, final_splits, has_batchify, has_unbatchify
 
     @staticmethod
-    def _pd_classify_nodetype(i, t, t_m1, cw, cw_m1):
+    def _pd_classify_nodetype(i, t, cw, cw_m1):
+        """Classifies the node to the type of connection for printing.
+
+        :param i: index of current transform
+        :param t: single transform or list of transform in current step
+        :param cw: List containing the length of the strings associated to the transform `t`
+        :param cw_m1: List containing the length of the strings associated to the previous transform
+        :return:
+        """
         if i > 0 and isinstance(t, Parallel) and len(cw) == len(cw_m1):
             type_ = 'multi_2_multi'
-
-        elif i > 0 and cw == 1 and cw_m1 > 1:
+        elif len(cw) == len(cw_m1) and len(cw) > 1:
+            type_ = 'multi_2_single_2_multi'
+        elif i > 0 and len(cw) == 1 and len(cw_m1) > 1:
             type_ = 'multi_2_single'
-
         elif cw == 1 or isinstance(t, Compose):
             type_ = 'single_2_single'
-
         else:
             type_ = 'single_2_multi'
 
@@ -1942,32 +1949,46 @@ class Compose(Pipeline):
         for i, (r, t) in enumerate(zip(rows, self.transforms)):
             widths = [0]
             subarrows = []
+            mark = ''
 
-            type_ = self._pd_classify_nodetype(i, t, self.transforms[i - 1],
-                                               children_widths[i], children_widths[i - 1])
+            if i == 0:
+                cw_prev = [1]
+            else:
+                cw_prev = children_widths[i - 1]
+
+            type_ = self._pd_classify_nodetype(i, t, children_widths[i], cw_prev)
 
             # if subsequent rows have the same number of "children" transforms
-            if type_ == 'multi_2_multi':
+            if type_.startswith('multi_2_multi'):
                 for j, w in enumerate(children_widths[i]):
                     subarrows.append(create_arrow(sum(widths) - j + j * 4, 0, 0, 0))
                     widths.append(int(max_widths[j]))
 
             # if previous row has multiple outputs and current row just one input
-            elif type_ == 'multi_2_single':
+            elif type_.startswith('multi_2_single'):
+                assert i > 0, NotImplementedError('multi_2_single is not supported in first step ')
                 for j, w in enumerate(children_widths[i - 1]):
-                    subarrows.append(create_reverse_arrow(
-                        0, sum(widths) - j + j * 4,
-                        len(children_widths[i - 1]) - j + 1, j + 1
-                    ))
+                    if isinstance(self.transforms[i-1], Parallel):
+                        subarrows.append(create_reverse_arrow(
+                            j, sum(widths) + j * 2,
+                            len(children_widths[i - 1]) - j + 1, j + 1
+                        ))
+                    else:
+                        subarrows.append(create_reverse_arrow(
+                            0, sum(widths) - j + j * 4,
+                            len(children_widths[i - 1]) - j + 1, j + 1
+                        ))
                     widths.append(int(max_widths[j]))
 
             # if previous has single output and current row has single input
-            elif type_ == 'single_2_single':
+            elif type_.startswith('single_2_single'):
                 subarrows.append(create_arrow(0, 0, 0, 0))
 
-            # if previous row has one output and current row has multiple inputs
-            else:
-                assert type_ == 'single_2_multi'
+            mark += combine_multi_line_strings(subarrows)
+
+            if type_.endswith('single_2_multi'):
+                widths = [0]
+                subarrows = []
                 for j, w in enumerate(children_widths[i]):
                     if isinstance(t, Rollout):
                         subarrows.append(create_arrow(0, sum(widths) - j + j * 4,
@@ -1978,32 +1999,53 @@ class Compose(Pipeline):
                     widths.append(int(max_widths[j]))
 
             # add signature names to the arrows
-            tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
-            if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
-                all_params = []
-                for tt in t.transforms:
-                    all_params.append(list(tt._pd_signature.keys()))
-                to_combine = [
-                    ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
-                    if len(params) > 1
-                    else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
-                    for k, params in enumerate(all_params)
-                ]
-                to_format = combine_multi_line_strings(to_combine)
-            else:
-                params = t._pd_signature
-                to_format = '  ' + tuple_to_str(params) if len(params) > 1 else '  ' + \
-                    list(params)[0]
-            to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
-            to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
+            t_prev = self.transforms[i - 1] if i > 0 else None
+            to_format = self._pd_add_signature_names_to_arrow(t, t_prev, subarrows, widths)
 
             # combine the arrows
-            mark = combine_multi_line_strings(subarrows + [to_format])
+            if len(mark) > 1 and type_.endswith('single_2_multi'):
+                mark += '\n'
+                mark += combine_multi_line_strings(subarrows + [to_format])
+            else:
+                mark = combine_multi_line_strings(subarrows + [to_format])
+
             mark = '\n'.join(['   ' + x for x in mark.split('\n')])
             output.append(make_green(mark))
             output.append(make_bold(f'{i}: ') + r + (marker[1] if marker and
                                                                   marker[0] == i else ''))
         return '\n'.join(output)
+
+    @staticmethod
+    def _pd_add_signature_names_to_arrow(t, t_prev, subarrows, widths):
+        """Add arg signature to ascii row
+
+        :param t: Transform at the end of arrow
+        :param t_prev: Transforms at the start of arrow
+        :param subarrows: List of arrows from start Transform to End transform
+        :param widths: List of the lengths of the strings associated to the transform `t`
+        :return:
+        """
+
+        tuple_to_str = lambda x: '(' + ', '.join([str(y) for y in x]) + ')'
+        if (isinstance(t, Rollout) or isinstance(t, Parallel)) and not t._pd_name:
+            all_params = []
+            for tt in t.transforms:
+                all_params.append(list(tt._pd_signature.keys()))
+            to_combine = [
+                ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + tuple_to_str(params)
+                if len(params) > 1
+                else ' ' * (sum(widths[:k + 1]) + 3 * k + 2) + params[0]
+                for k, params in enumerate(all_params)
+            ]
+            to_format = combine_multi_line_strings(to_combine)
+        else:
+            arg_prespacing = len(subarrows) + 1 if isinstance(t_prev, Parallel) else 2
+            params = t._pd_signature
+            to_format = ' '*arg_prespacing + tuple_to_str(params) if len(params) > 1 else\
+                ' '*arg_prespacing + list(params)[0]
+        to_format_pad_length = max([len(x.split('\n')) for x in subarrows]) - 1
+        to_format = ''.join(['\n' for _ in range(to_format_pad_length)] + [to_format])
+        return to_format
 
     def __call__(self, args):
         """Call method for Compose.

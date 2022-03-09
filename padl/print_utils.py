@@ -10,6 +10,9 @@ def combine_multi_line_strings(strings: List[str]):
 
     :param strings: list of multi-line strings
     """
+    if len(strings) == 0:
+        return ''
+
     strings = [x.split('\n') for x in strings]
     length = max([len(x) for x in strings])
     lines = []
@@ -36,25 +39,29 @@ def create_reverse_arrow(start_left: int, finish_right: int, n_initial_rows: int
 
     Example::
 
-        ____________|
-        |
-        v
+        ┌──────────┘     │
+        ┌────────────────┘
+        │
+        ▼
     """
     initial = ''
-    for _ in range(n_final_rows - 1):
+    for _ in range(n_final_rows):
         initial += ' ' * (start_left + finish_right) + '│' + '\n'
 
     final = ''
-    for _ in range(n_initial_rows - 1):
+    for _ in range(n_initial_rows - 2):
         final += ' ' * start_left + '│' + '\n'
 
-    underscore_line = list('_' * finish_right)
+    underscore_line = list('─' * finish_right)
     if underscore_line:
-        underscore_line[0] = ' '
+        underscore_line[0] = '┌'
+        underscore_line += ['┘', ' ', '\n']
+    else:
+        underscore_line += ['|', '\n']
     underscore_line = ''.join(underscore_line)
 
     output = initial \
-        + ' ' * start_left + underscore_line + '│' + ' ' + '\n' \
+        + ' ' * start_left + underscore_line \
         + final \
         + ' ' * start_left + '▼'
     output = '\n'.join(output.split('\n')[1:])
@@ -95,9 +102,9 @@ def create_arrow(start_left: int, finish_right: int, n_initial_rows: int, n_fina
 
     Example::
 
-        ____________|
-        |
-        v
+        ┌──────┘
+        │
+        ▼
     """
     initial = ''
     for _ in range(n_initial_rows - 1):
