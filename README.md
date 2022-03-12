@@ -73,13 +73,13 @@ my_pipeline = prepare >> batch >> nn.Linear(10, 20) >> unbatch >> post
 
 
 ## Dev Blog
-Read more about PADL in devloper blog at https://devblog.padl.ai/
+Read more about PADL on the [PADL developer's blog](https://devblog.padl.ai/)
 
 ## Contributing
 
-Code of conduct: https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md
+[Code of conduct](https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md)
 
-If your interested in contributing to PADL please look at the current issues: https://github.com/lf1-io/padl/issues
+If you're interested in contributing to PADL please look at the [current issues](https://github.com/lf1-io/padl/issues)
 
 
 ## Licensing
