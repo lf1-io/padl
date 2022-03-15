@@ -206,7 +206,7 @@ def get_statement(source: str, lineno: int):
             except SyntaxError:
                 statement, offset = _get_statement_from_block('(\n' + block + '\n)',
                                                               lineno_in_block + row_offset + 1)
-                return statement, (lineno - lineno_in_block - 1, -col_offset)
+                return statement, (lineno - lineno_in_block - 1 - row_offset, -col_offset)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
@@ -410,7 +410,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     if segment is None or not found:
         raise RuntimeError(f'{segment_type} not found.')
 
-    locs = (
+    corrected_locs = (
         locs.lineno - 1 + offset[0],
         locs.end_lineno - 1 + offset[0],
         locs.col_offset - offset[1],
@@ -418,13 +418,14 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     )
     # cutting is necessary instead of just using the segment from above for support of
     # `sourceget.ReplaceString`s
-    segment = cut(full_source, *locs)
+    cut_segment = cut(full_source, *corrected_locs)
 
     if return_locs:
         return (
-            segment, locs
+            cut_segment, corrected_locs
         )
-    return segment
+    assert cut_segment
+    return cut_segment
 
 
 def _count_leading_whitespace(line: str) -> int:
