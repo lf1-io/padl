@@ -206,7 +206,7 @@ def get_statement(source: str, lineno: int):
             except SyntaxError:
                 statement, offset = _get_statement_from_block('(\n' + block + '\n)',
                                                               lineno_in_block + row_offset + 1)
-                return statement, (lineno - lineno_in_block - 1 - row_offset, -col_offset)
+                return statement, (lineno - (lineno_in_block + row_offset) - 1, -col_offset)
         except SyntaxError:
             continue
     raise SyntaxError("Couldn't find the statement.")
