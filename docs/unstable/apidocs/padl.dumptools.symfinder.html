@@ -193,8 +193,10 @@
 in an AST tree of a source code.</p>
 <p>Finding names in code then corresponds to building the AST tree of the code and using the
 <cite>_ThingFinder</cite> subclasses to identify if and how the names were created.</p>
-<p>The main function to use is <cite>find</cite>, which will find a name in a module or the current ipython
+<p>The main function to use is <a class="reference internal" href="#padl.dumptools.symfinder.find" title="padl.dumptools.symfinder.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">find()</span></code></a>, which will find a name in a module or the current ipython
 history.</p>
+<p>This module also defines the <a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a>, which represents the “location” of an python-thing,
+and the <a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScopedName</span></code></a>, which is the name of a thing, with its scope.</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.NameNotFound">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">NameNotFound</span></span><a class="headerlink" href="#padl.dumptools.symfinder.NameNotFound" title="Permalink to this definition"></a></dt>
@@ -205,6 +207,19 @@ history.</p>
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.Scope">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">Scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">def_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Scope" title="Permalink to this definition"></a></dt>
 <dd><p>A scope.</p>
+<p>This determines the “location” of an object. A scope has a module and a list of functions.</p>
+<p>For example, if the following were defined in a module “examplemodule”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># &lt;-- here</span>
+</pre></div>
+</div>
+<p>the indicated location is in the scope <em>examplemodule.f</em>. The following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">g</span><span class="p">():</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># &lt;-- here</span>
+</pre></div>
+</div>
+<p>would have the scope <em>examplemodule.f.g</em>.</p>
 <p>Scope objects can be used to find names that are not defined globally in a module, but
 nested, for example within a function body.</p>
 <p>It contains the module, the source string and a “scopelist”.</p>
@@ -279,8 +294,8 @@ the containing scope.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.ScopedName">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">ScopedName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><span class="pre">padl.dumptools.symfinder.Scope</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.ScopedName" title="Permalink to this definition"></a></dt>
-<dd><p>A name with a scope and a counter. The “name” is the name of the item, the scope is its
-<a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a> and the counter counts the items with the same name, in the same scope,
+<dd><p>A name with a scope and a counter. The “name” is the name of the item, the scope
+is its <a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a> and the counter counts the items with the same name, in the same scope,
 from most recent on up.</p>
 <p>Example - the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span>
@@ -360,12 +375,12 @@ module <em>module</em>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find_in_scope">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_scope" title="Permalink to this definition"></a></dt>
-<dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
-scope <em>scope</em>.</p>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_scope" title="Permalink to this definition"></a></dt>
+<dd><p>Find the piece of code that assigned a value to the variable with name
+<em>scoped_name.name</em> in the scope <em>scoped_name.scope</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>scope</strong> – Name (with scope) of the variable to look for.</p>
+<dd class="field-odd"><p><strong>scoped_name</strong> – Name (with scope) of the variable to look for.</p>
 </dd>
 </dl>
 </dd></dl>

@@ -1,3 +1,5 @@
+"""Module for converting python variables into modules.
+"""
 import ast
 import builtins
 from collections import Counter, namedtuple

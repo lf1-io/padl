@@ -94,6 +94,22 @@ def x(one=1,
 '''
 
 
+testcode_5 = '''
+m = (
+    add_one
+  >> model(0)
+)
+'''
+
+
+testcode_6 = '''
+m = (
+    add_one
+     >> model(0)
+)
+'''
+
+
 class TestGetStatement:
     def test_simple_1(self):
         statement, _ = inspector.get_statement(testcode_0, 2)
@@ -126,6 +142,14 @@ class TestGetStatement:
     def test_multiline_5(self):
         statement, _ = inspector.get_statement(testcode_0, 14)
         assert statement == 'k = f(1,\n      2, 3,\n      4)'
+
+    def test_hanging_1(self):
+        statement, _ = inspector.get_statement(testcode_5, 4)
+        assert statement == 'm = (\n    add_one\n  >> model(0)\n)'
+
+    def test_hanging_2(self):
+        statement, _ = inspector.get_statement(testcode_6, 4)
+        assert statement == '(\nadd_one\n >> model(0)\n)'
 
 
 class TestGetSurroundingBlock:
