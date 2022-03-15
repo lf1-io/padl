@@ -194,6 +194,9 @@ def get_statement(source: str, lineno: int):
     for row_offset in range(lineno):
         try:
             block, lineno_in_block, col_offset = get_surrounding_block(source, lineno - row_offset)
+            # if the found block doesn't contain the line we're looking for
+            if block.count('\n') - (lineno_in_block - 1) < row_offset:
+                continue
         except ValueError:
             continue
         try:
