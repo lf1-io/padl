@@ -97,7 +97,7 @@ def dump_requirements(nodes, strict=False):
             dist = get_distribution(package)
         except DistributionNotFound as exc:
             if strict and package not in _ignore_requirements:
-                raise RequirementNotFound(f'Could not found an insatalled version of {package}.',
+                raise RequirementNotFound(f'Could not find an installed version of {package}.',
                                           package) from exc
             warn(f'The "{package}" requirement was not found.')
             continue
