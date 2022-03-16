@@ -12,8 +12,8 @@ from importlib.machinery import ModuleSpec
 from importlib.util import module_from_spec
 import inspect
 from itertools import chain
-from pathlib import Path
 from os import remove
+from pathlib import Path
 from shutil import rmtree
 import textwrap
 import traceback
