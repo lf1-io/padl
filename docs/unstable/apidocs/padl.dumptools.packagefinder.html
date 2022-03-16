@@ -178,19 +178,36 @@
   <section id="module-padl.dumptools.packagefinder">
 <span id="padl-dumptools-packagefinder"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code><a class="headerlink" href="#module-padl.dumptools.packagefinder" title="Permalink to this headline"></a></h1>
 <p>Utilities for finding packages used in code.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="padl.dumptools.packagefinder.RequirementNotFound">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">RequirementNotFound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">package</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.RequirementNotFound" title="Permalink to this definition"></a></dt>
+<dd><p>Exception indicating that a requirement was not found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> – The exception message.</p></li>
+<li><p><strong>package</strong> – The package that wasn’t found.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.dumptools.packagefinder.dump_packages_versions">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">dump_packages_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.dump_packages_versions" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="padl.dumptools.packagefinder.dump_requirements">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.packagefinder.</span></span><span class="sig-name descname"><span class="pre">dump_requirements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.packagefinder.dump_requirements" title="Permalink to this definition"></a></dt>
 <dd><p>Dump packages and their versions to a string.</p>
-<p>Format of the string is:</p>
-<p>&lt;package&gt;==&lt;version&gt;</p>
-<p>[…]</p>
+<p>Format of the string is like a “requirements.txt”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># created with python-X.X</span>
+<span class="n">package</span><span class="o">-</span><span class="mi">1</span><span class="o">==</span><span class="mf">1.2.3</span>
+<span class="n">package</span><span class="o">-</span><span class="mi">2</span><span class="o">==</span><span class="mf">2.3.4</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>nodes</strong> – List of ast nodes in a module.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>String with packages and versions.</p>
+<dd class="field-even"><p>String containing requirements.</p>
 </dd>
 </dl>
 </dd></dl>
