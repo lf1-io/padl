@@ -7,6 +7,9 @@ try:
     from importlib.metadata import version, PackageNotFoundError
 except ModuleNotFoundError:
     from importlib_metadata import version, PackageNotFoundError
+from warnings import warn
+
+from pkg_resources import get_distribution, DistributionNotFound
 
 
 def standard_lib_names_gen(include_underscored=False):
@@ -58,21 +61,47 @@ def get_version(package):
         return '?'
 
 
-def dump_packages_versions(nodes):
+class RequirementNotFound(Exception):
+    """Exception indicating that a requirement was not found.
+
+    :param msg: The exception message.
+    :param package: The package that wasn't found.
+    """
+
+    def __init__(self, msg: str, package: str):
+        super().__init__(msg)
+        self.package = package
+
+
+# append to this to ignore package when checking for requirements (e.g. for testing)
+_ignore_requirements = []
+
+
+def dump_requirements(nodes, strict=False):
     """Dump packages and their versions to a string.
 
-    Format of the string is:
+    Format of the string is like a "requirements.txt"::
 
-    <package>==<version>
-
-    [...]
+        # created with python-X.X
+        package-1==1.2.3
+        package-2==2.3.4
 
     :param nodes: List of ast nodes in a module.
-    :returns: String with packages and versions.
+    :returns: String containing requirements.
     """
     result = f'# created with python-{".".join([str(x) for x in sys.version_info[:3]])}\n'
     for package in get_packages(nodes):
         if package in STDLIBNAMES:
             continue
-        result += f'{package}=={get_version(package)}' + '\n'
+        try:
+            dist = get_distribution(package)
+        except DistributionNotFound as exc:
+            if strict and package not in _ignore_requirements:
+                raise RequirementNotFound(f'Could not found an insatalled version of {package}.',
+                                          package) from exc
+            warn(f'The "{package}" requirement was not found.')
+            continue
+        assert dist.project_name
+        assert dist.version
+        result += f'{dist.project_name}=={dist.version}\n'
     return result
