@@ -82,6 +82,7 @@ def _get_scope_from_frame(frame, drop_n):
     if frame.f_code.co_name == '<module>':
 
         return symfinder.Scope.toplevel(module)
+
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
     except (RuntimeError, FileNotFoundError, AttributeError, OSError):
@@ -182,111 +183,6 @@ def _instructions_up_to_offset(x, lasti: int) -> list:
         if instruction.offset == lasti:
             break
     return instructions
-
-
-def get_statement(source: str, lineno: int):
-    """Get complete (potentially multi-line) statement at line *lineno* out of *source*.
-
-    :returns: A tuple of statement and offset. The offset is a tuple of row offset and col offset.
-        It can be used to determine the location of the statement within the source.
-    """
-    for row_offset in range(lineno):
-        try:
-            block, lineno_in_block, col_offset = get_surrounding_block(source, lineno - row_offset)
-            # if the found block doesn't contain the line we're looking for
-            if block.count('\n') - (lineno_in_block - 1) < row_offset:
-                continue
-        except ValueError:
-            continue
-        try:
-            try:
-                statement, offset = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - offset - 1, -col_offset)
-            except SyntaxError:
-                statement, offset = _get_statement_from_block('(\n' + block + '\n)',
-                                                              lineno_in_block + row_offset + 1)
-                return statement, (lineno - (lineno_in_block + row_offset) - 1, -col_offset)
-        except SyntaxError:
-            continue
-    raise SyntaxError("Couldn't find the statement.")
-
-
-def _get_statement_from_block(block: str, lineno_in_block: int):
-    """Get statements at like *lineno_in_block* from a code block.
-
-    :param block: The code block to get the statements from.
-    :param lineno_in_block: Line number which the statement must include. Counted from 1.
-    :returns: A tuple of string with the found statements and and offset between the beginning of
-        the match and *lineno_in_block*.
-    """
-    module = ast.parse(block)
-    stmts = []
-    offset = None
-    for stmt in module.body:
-        position = ast_utils.get_position(block, stmt)
-        if position.lineno <= lineno_in_block <= position.end_lineno:
-            stmts.append(ast_utils.get_source_segment(block, stmt))
-            if offset is None:
-                offset = lineno_in_block - position.lineno
-    if offset is None:
-        offset = 0
-    return '\n'.join(stmts), offset
-
-
-def get_surrounding_block(source: str, lineno: int):
-    """Get the code block surrounding the line at *lineno* in *source*.
-
-    The code block surrounding a line is the largest block of lines with the same or larger
-    indentation as the line itself.
-
-    The result will be unindented.
-
-    Raises a `ValueError` if the line at *lineno* is empty.
-
-    :param source: The source to extract the block from.
-    :param lineno: Number of the line for extracting the block.
-    :returns: A tuple containing the block itself and the line number of the target line
-        within the block and the number of spaces removed from the front.
-    """
-    lines = source.split('\n')
-    before, after = lines[:lineno-1], lines[lineno:]
-    white = _count_leading_whitespace(lines[lineno-1])
-    if white is None:
-        raise ValueError('Line is empty.')
-    block = [lines[lineno-1][white:]]
-    lineno_in_block = 1
-
-    # get all lines of the same block before *lineno*
-    while before:
-        next_ = before.pop(-1)
-        next_white = _count_leading_whitespace(next_)
-        starts_with_comment = next_.lstrip().startswith('#')
-        if next_.strip().endswith(':'):
-            break
-        if next_white is None or next_white >= white or starts_with_comment:
-            block = [next_[white:]] + block
-        else:
-            break
-        lineno_in_block += 1
-
-    # remove leading rows with more than *white* leading whitespace
-    # (e.g. hanging function arguments)
-    while block:
-        next_white = _count_leading_whitespace(block[0])
-        if next_white is None or next_white == 0:
-            break
-        block.pop(0)
-        lineno_in_block -= 1
-
-    # get all lines of the same block after *lineno*
-    while after:
-        next_ = after.pop(0)
-        next_white = _count_leading_whitespace(next_)
-        if next_white is None or next_white >= white:
-            block = block + [next_[white:]]
-        else:
-            break
-    return '\n'.join(block), lineno_in_block, white
 
 
 def _module(frame: types.FrameType) -> types.ModuleType:
