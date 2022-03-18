@@ -13,7 +13,7 @@ import inspect
 from itertools import chain
 from pathlib import Path
 from os import remove
-from shutil import rmtree, move
+from shutil import rmtree, copytree
 import textwrap
 import traceback
 from tempfile import TemporaryDirectory
@@ -406,7 +406,7 @@ class Transform:
             with TemporaryDirectory('.padl') as dirname:
                 self.pd_save(dirname, False)
                 rmtree(path)
-                move(dirname, path)
+                copytree(dirname, path)
 
         path.mkdir(exist_ok=True)
 
