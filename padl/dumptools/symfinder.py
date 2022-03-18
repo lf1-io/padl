@@ -117,7 +117,7 @@ class _FunctionDefFinder(_NameFinder):
     >>> finder.deparse()
     'def foo(x):\\n    ...'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.FunctionDef object at 0x...>
+    <...ast.FunctionDef object at 0x...>
     """
 
     def visit_FunctionDef(self, node):
@@ -177,7 +177,7 @@ class _ClassDefFinder(_NameFinder):
     >>> finder.deparse()
     'class Foo:\\n    ...'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.ClassDef object at 0x...>
+    <...ast.ClassDef object at 0x...>
     """
 
     def visit_ClassDef(self, node):
@@ -317,7 +317,7 @@ class _AssignFinder(_NameFinder):
     >>> finder.deparse()
     'X = 100'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.Assign object at 0x...>
+    <...ast.Assign object at 0x...>
     """
 
     def visit_Assign(self, node):
@@ -395,7 +395,7 @@ class _CallFinder(_ThingFinder):
     >>> finder.deparse()
     'baz(100)'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.Call object at 0x...>
+    <...ast.Call object at 0x...>
     """
 
     def visit_Call(self, node):

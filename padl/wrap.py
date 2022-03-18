@@ -80,14 +80,15 @@ def _wrap_class(cls, ignore_scope=False):
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
     Example:
-    >>> @transform
+
+    >>> @transform  # doctest: +SKIP
     ... class MyClass:
     ...     def __init__(self, x):
     ...         self.x = x
     ...     def __call__(self, args):
     ...         return self.x + args
-    >>> myobj = MyClass('hello')
-    >>> myobj._pd_call
+    >>> myobj = MyClass('hello')  # doctest: +SKIP
+    >>> myobj._pd_call  # doctest: +SKIP
     "MyClass('hello')"
 
     :param cls: class to be wrapped
