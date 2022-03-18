@@ -10,7 +10,6 @@ try:
 except ImportError:
     from typing_extensions import Literal
 from typing import Callable, Optional
-from warnings import warn
 
 from padl.dumptools import ast_utils, symfinder, var2mod
 from padl.dumptools.sourceget import get_source, original, cut
@@ -25,9 +24,9 @@ class CallInfo:
 
     Example:
 
-    >>> def f():
+    >>> def f():  # doctest: +SKIP
     ...     return CallInfo('here')
-    >>> print(f().scope)
+    >>> print(f().scope)  # doctest: +SKIP
     'Scope[__main__.f]'
 
     :param origin: Where to look for the call, can be
