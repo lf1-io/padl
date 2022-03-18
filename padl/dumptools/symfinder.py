@@ -134,7 +134,7 @@ class _FunctionDefFinder(_NameFinder):
         return _fix_indent(res)
 
 
-def _fix_indent(source):
+def _fix_indent(source):  # TODO a@lf1.io: kind of dubious - is there a better way?
     """Fix the indentation of functions that are wrongly indented.
 
     This can happen with :func:`ast_utils.get_source_segment`.
