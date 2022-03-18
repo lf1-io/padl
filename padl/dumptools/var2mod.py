@@ -52,7 +52,7 @@ class Finder(ast.NodeVisitor):
         >>> Finder(ast.Name).get_source_segments('x(y)')
         [('x', Position(lineno=1, end_lineno=1, col_offset=0, end_col_offset=1)), ('y', Position(lineno=1, end_lineno=1, col_offset=2, end_col_offset=3))]
         """
-        nodes = self.find(ast.parse(source))
+        nodes = self.find(ast_utils.cached_parse(source))
         return [
             (
                 ast_utils.get_source_segment(source, node),
@@ -120,7 +120,7 @@ class _VarFinder(ast.NodeVisitor):
 
     def find_in_source(self, source):
         """Find all globals and locals in a piece of source code."""
-        return self.find(ast.parse(source).body[0])
+        return self.find(ast_utils.cached_parse(source).body[0])
 
     def _find_in_function_def(self, node):
         """This is a special case: Functions args are "locals" rather than "globals".
@@ -733,7 +733,7 @@ class CodeNode:
     @classmethod
     def from_source(cls, source, scope, name):
         """Build a `CodeNode` from a source string. """
-        node = ast.parse(source).body[0]
+        node = ast_utils.cached_parse(source).body[0]
         globals_ = {
             ScopedName(name.name, scope, name.n)
             for name in find_globals(node)
@@ -847,7 +847,7 @@ class CodeGraph(dict):
             v_unscoped = unscope(v.name, k.scope)
             changed = changed or k_unscoped != k.name
             code = v.source
-            tree = ast.parse(code)
+            tree = ast_utils.cached_parse(code)
             rename(tree, k.name, k_unscoped, rename_locals=True)
             vars_ = set()
             for var in list(v.globals_):
