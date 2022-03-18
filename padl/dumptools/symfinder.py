@@ -372,47 +372,6 @@ class _SetAttribute(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-class _CallFinder(_ThingFinder):
-    """Class for finding a *call* in an AST tree.
-
-    Example:
-
-    >>> source = '''
-    ... import baz
-    ...
-    ... class Foo:
-    ...     ...
-    ...
-    ... def bar(y):
-    ...     ...
-    ...
-    ... X = baz(100)'''
-    >>> finder = _CallFinder(source, 'baz')
-    >>> node = ast.parse(source)
-    >>> finder.visit(node)
-    >>> finder.found_something()
-    True
-    >>> finder.deparse()
-    'baz(100)'
-    >>> finder.node()  # doctest: +ELLIPSIS
-    <...ast.Call object at 0x...>
-    """
-
-    def visit_Call(self, node):
-        if node.func.id == self.var_name:
-            self._result = node
-
-    def find(self):
-        tree = ast.parse(self.source)
-        self.visit(tree)
-        if self.found_something():
-            return self._get_name(self._result), (*_get_call_signature(self.source),)
-        raise NameNotFound(f'Did not find call of "{self.var_name}".')
-
-    def _get_name(self, call: ast.Call):
-        return ast_utils.get_source_segment(self.source, call.func)
-
-
 def _get_call_assignments(args, source, values, keywords):
     argnames = [x.arg for x in args.args]
     try:
