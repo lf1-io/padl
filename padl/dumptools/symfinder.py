@@ -90,11 +90,7 @@ class _ThingFinder(ast.NodeVisitor):
         return self._result
 
 
-class _NameFinder(_ThingFinder):
-    pass
-
-
-class _FunctionDefFinder(_NameFinder):
+class _FunctionDefFinder(_ThingFinder):
     """Class for finding a *function definition* of a specified name in an AST tree.
 
     Example:
@@ -154,7 +150,7 @@ def _fix_indent(source):  # TODO a@lf1.io: kind of dubious - is there a better w
     return '\n'.join(line.rstrip() for line in res)
 
 
-class _ClassDefFinder(_NameFinder):
+class _ClassDefFinder(_ThingFinder):
     """Class for finding a *class definition* of a specified name in an AST tree.
 
     Example:
@@ -195,7 +191,7 @@ class _ClassDefFinder(_NameFinder):
         return res
 
 
-class _ImportFinder(_NameFinder):
+class _ImportFinder(_ThingFinder):
     """Class for finding a *module import* of a specified name in an AST tree.
 
     Works with normal imports ("import x") and aliased imports ("import x as y").
@@ -245,7 +241,7 @@ class _ImportFinder(_NameFinder):
         return node
 
 
-class _ImportFromFinder(_NameFinder):
+class _ImportFromFinder(_ThingFinder):
     """Class for finding a *from import* of a specified name in an AST tree.
 
     Example:
@@ -294,7 +290,7 @@ class _ImportFromFinder(_NameFinder):
         return node
 
 
-class _AssignFinder(_NameFinder):
+class _AssignFinder(_ThingFinder):
     """Class for finding a *variable assignment* of a specified name in an AST tree.
 
     Example:
@@ -684,7 +680,7 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
     if tree is None:
         tree = ast.parse(source)
     replace_star_imports(tree)
-    finder_clss = _NameFinder.__subclasses__()
+    finder_clss = _ThingFinder.__subclasses__()
     for statement in tree.body[::-1]:
         for finder_cls in finder_clss:
             finder = finder_cls(source, var_name)
