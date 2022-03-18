@@ -66,7 +66,7 @@ class CallInfo:
 
 
 # exclude these modules from detailed scope analysis (as that slows testing down in python 3.7.)
-_EXCLUDED_MODULES = ['pytest', 'pluggy']
+_EXCLUDED_MODULES = ['pytest', 'pluggy', '_pytest']
 
 
 def _get_scope_from_frame(frame, drop_n):
