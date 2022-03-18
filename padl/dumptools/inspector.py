@@ -220,6 +220,9 @@ def caller_frame() -> types.FrameType:
 
 def instructions_are_the_same(instr, target_instr, frame=None):
     """Check if the disassebled instructions *instr* and *target_instr* are (basically) the same.
+
+    Mainly this checks if the *opname* and *argval* of the two instructions are the same,
+    additionally accounting for some subleties involving code object - argvals and LOAD-operators.
     """
     # for the LOAD_FAST operator, get the argval from the frame's locals
     if (frame is not None and target_instr.opname == 'LOAD_FAST'
