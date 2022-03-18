@@ -1140,3 +1140,19 @@ def test_failing_save_doesnt_overwrite(tmp_path):
         save(X(), tmp_path, force_overwrite=True)  # doesn't work
 
     assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f
+
+
+def test_successful_save_overwrites(tmp_path):
+    @transform
+    def f(x):
+        ...
+
+    save(f, tmp_path)
+
+    @transform
+    class X:
+        ...
+
+    save(X(), tmp_path, force_overwrite=True)  # works
+
+    assert load(str(tmp_path) + '.padl')._pd_call == 'X()'  # location contains X
