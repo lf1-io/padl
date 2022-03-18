@@ -331,11 +331,14 @@ class Transform:
         :param options: Options dictionary to add fine-grained control to saving,
                         comes from attribute `self.pd_save_options`
         """
+        # pylint: disable=no-member
         # pd_pre_save requires default behaviour on receiving None
         if hasattr(self, 'pre_save'):
             if 'options' in inspect.signature(self.pre_save).parameters:
-                return self.pre_save(path, i, options=options)
-            return self.pre_save(path, i)
+                self.pre_save(path, i, options=options)
+                return
+            self.pre_save(path, i)
+        return
 
     def pd_post_load(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform after loading.
@@ -347,10 +350,13 @@ class Transform:
         :param options: Options dictionary (optional) to control saving behaviour, comes
                         from attribute "self.pd_save_options"
         """
+        # pylint: disable=no-member
         if hasattr(self, 'post_load'):
             if 'options' in inspect.signature(self.post_load).parameters:
-                return self.post_load(path, i, options=options)
-            return self.post_load(path, i)
+                self.post_load(path, i, options=options)
+                return
+            self.post_load(path, i)
+        return
 
     def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
         """Save the transform to a zip-file at *path*.
@@ -400,9 +406,7 @@ class Transform:
 
         path.mkdir()
 
-        options = None
-        if hasattr(self, 'pd_save_options'):
-            options = self.pd_save_options
+        options = getattr(self, 'pd_save_options', None)
 
         for i, subtrans in enumerate(self._pd_all_transforms()):
             subtrans.pd_pre_save(path, i, options=options)
@@ -1415,8 +1419,10 @@ class TorchModuleTransform(ClassTransform):
             options = {}
         if hasattr(self, 'post_load'):
             if 'options' in inspect.signature(self.post_load).parameters:
-                return self.post_load(path, i, options=options)
-            return self.post_load(path, i)
+                self.post_load(path, i, options=options)
+                return
+            self.post_load(path, i)
+            return
         if options.get('torch.nn.Module') == 'no-save':
             return
         path = Path(path)
