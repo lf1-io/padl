@@ -2,7 +2,6 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
-import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
