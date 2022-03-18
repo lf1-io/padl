@@ -2,7 +2,7 @@ import os
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity, batch, unbatch, group
+from padl import transforms as pd, transform, Identity, batch, unbatch, group, save, load
 from padl.transforms import Batchify, Unbatchify, TorchModuleTransform
 from padl.dumptools.serialize import value
 import padl
@@ -1123,3 +1123,20 @@ def test_device_check_in_init_works():
     t = SimpleClassTransform(1)
     DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
 
+
+def test_failing_save_doesnt_overwrite(tmp_path):
+    @transform
+    def f(x):
+        ...
+
+    save(f, tmp_path)
+
+    @transform
+    class X:
+        def pre_save(self, *args, **kwargs):  # this will crash saving
+            1 / 0
+
+    with pytest.raises(ZeroDivisionError):
+        save(X(), tmp_path, force_overwrite=True)  # doesn't work
+
+    assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f

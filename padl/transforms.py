@@ -13,7 +13,7 @@ import inspect
 from itertools import chain
 from pathlib import Path
 from os import remove
-from shutil import rmtree
+from shutil import rmtree, move
 import textwrap
 import traceback
 from tempfile import TemporaryDirectory
@@ -399,12 +399,16 @@ class Transform:
         if path.suffix == '':
             path = path.parent / (path.name + '.padl')
 
-        if path.exists():
+        if path.exists() and list(path.glob('*')):
             if not force_overwrite:
                 raise FileExistsError(f'{path} exists, call with *force_overwrite* to overwrite.')
-            rmtree(path)
 
-        path.mkdir()
+            with TemporaryDirectory('.padl') as dirname:
+                self.pd_save(dirname, False)
+                rmtree(path)
+                move(dirname, path)
+
+        path.mkdir(exist_ok=True)
 
         options = getattr(self, 'pd_save_options', None)
 
