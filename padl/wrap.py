@@ -3,10 +3,11 @@
 import ast
 import dis
 import functools
+import importlib
 import inspect
 import copy
 from types import MethodWrapperType, ModuleType
-import importlib
+import re
 
 import numpy as np
 import torch
@@ -17,7 +18,6 @@ from padl.transforms import (
     AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform
 )
 
-import re
 
 def _set_local_varname(frame, event, _args, scope):
     if event == 'return':
