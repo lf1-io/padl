@@ -80,6 +80,14 @@ def hangin_indent(a=1,
 
 
 @transform
+def mutated_transform(arg):
+    return arg * 2
+
+
+mutated_transform = mutated_transform.pd_to('cpu')
+
+
+@transform
 class MyClassTransform:
     def __init__(self, a, b, c):
         self.a = a
@@ -226,6 +234,10 @@ def test_setcomp_a():
 
 def test_recursive():
     assert recursive._pd_dumps() == read_dump('recursive')
+
+
+def test_mutated_transform():
+    assert mutated_transform._pd_dumps() == read_dump('mutated_transform')
 
 
 def test_with_raises():

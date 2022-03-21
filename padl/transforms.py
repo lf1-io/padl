@@ -544,10 +544,7 @@ class Transform:
 
             # see if the object itself knows how to generate its codegraph
             try:
-                if next_name.scope.is_global():
-                    next_obj = globals_dict[next_name.name]
-                else:
-                    next_obj = all_vars_dict[next_name.name]
+                next_obj = all_vars_dict[next_name.name]
                 # pylint: disable=protected-access
                 next_obj._pd_build_codegraph(graph, next_name.name)
             except (KeyError, AttributeError):
@@ -555,6 +552,7 @@ class Transform:
             else:
                 continue
 
+            # Only triggered if KeyError or AttributeError is raised
             # find how *next_name* came into being
             next_codenode = find_codenode(next_name, self._pd_external_full_dump_modules)
 

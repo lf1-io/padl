@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Set
 
 from padl.dumptools import ast_utils
-from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope
+from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope, NameNotFound
 
 try:
     unparse = ast.unparse
@@ -555,6 +555,7 @@ class _MethodFinder(ast.NodeVisitor):
 def _filter_builtins(names):
     return {name for name in names if name.name not in builtins.__dict__}
 
+
 def _find_globals_in_classdef(node: ast.ClassDef, filter_builtins: bool = True):
     """Find globals used below a ClassDef node. """
     methods = _MethodFinder().find(node)
@@ -597,8 +598,29 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     return globals_
 
 
+def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: ScopedName):
+    """Check and make increment if the ScopedName after increment of exists.
+
+    Here increment means the increment of *scoped_name.n*.
+    This signifies which one of the usages of a name is the code pointing to.
+    0 being the most recent, and increase integer representing older usages.
+
+    :param var: target ScopedName for increment
+    :param scope: Scope
+    :param scoped_name: source ScopedName for increment
+    :return:
+        ScopedName after increment
+    """
+    try:
+        new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n + 1)
+        find_in_scope(new_scoped_name)
+    except NameNotFound:
+        new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n)
+    return new_scoped_name
+
+
 def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName):
-    """Go through *variables* and increment the the counter for those with the same name as
+    """Go through *variables* and increment the counter for those with the same name as
     *scoped_name* by *scoped_name.n*.
 
     Example:
@@ -617,9 +639,8 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
             scope = scoped_name.scope
         else:
             scope = var.scope
-
         if var.name == scoped_name.name:
-            result.add(ScopedName(var.name, scope, var.n + scoped_name.n))
+            result.add(_check_and_make_increment(var, scope, scoped_name))
         else:
             result.add(ScopedName(var.name, scope, var.n))
     return result
@@ -639,7 +660,6 @@ def find_codenode(name: ScopedName, full_dump_module_names=None):
         if any(module_name.startswith(mod) for mod in full_dump_module_names):
             return find_codenode(ScopedName(name.name, Scope.toplevel(module_name), name.n),
                                  full_dump_module_names)
-
     # find dependencies
     globals_ = find_globals(node)
     next_name = ScopedName(name.name, scope_of_next_var, name.n)

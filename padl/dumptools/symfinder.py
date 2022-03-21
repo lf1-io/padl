@@ -619,6 +619,12 @@ def find_in_scope(scoped_name: ScopedName):
     *scoped_name.name* in the scope *scoped_name.scope*.
 
     :param scoped_name: Name (with scope) of the variable to look for.
+    :return:
+        source: string representation of piece of code
+        node: _ast node for the code
+        scope: scope of the code
+        name: string name
+
     """
     scope = scoped_name.scope
     i = scoped_name.n
@@ -768,6 +774,7 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search (defaults to __main__).
+    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
     :returns: Tuple with source code segment and corresponding ast node.
     """
     if module is None:
