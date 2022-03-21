@@ -3,12 +3,13 @@
 import ast
 import os
 import sys
-try:
-    from importlib.metadata import version, PackageNotFoundError
-except ModuleNotFoundError:
-    from importlib_metadata import version, PackageNotFoundError
-from importlib_metadata import packages_distributions
 from warnings import warn
+
+try:
+    from importlib.metadata import version
+except ModuleNotFoundError:
+    from importlib_metadata import version
+from importlib_metadata import packages_distributions
 
 
 def standard_lib_names_gen(include_underscored=False):
