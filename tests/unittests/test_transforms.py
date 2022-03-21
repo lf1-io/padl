@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pytest
 import torch
 from padl import transforms as pd, transform, Identity, batch, unbatch, group
-from padl.transforms import Batchify, Unbatchify, TorchModuleTransform
+from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, RequirementNotFound
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
@@ -1122,3 +1122,12 @@ def test_device_check_in_init_works():
     from tests.material.transforms_in_module import DeviceCheckInInit
     t = SimpleClassTransform(1)
     DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
+
+
+def test_missing_package(tmp_path):
+    with pytest.raises(RequirementNotFound) as excinfo:
+        plus_one.pd_save(tmp_path / 'test.padl')
+    assert excinfo.value.package == 'padl'
+    assert str(excinfo.value) == ('Could not find an installed version of "padl", which this '
+                                  'Transform depends on. Run with *strict_requirements=False* '
+                                  'to ignore.')
