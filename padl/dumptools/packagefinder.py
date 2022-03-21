@@ -7,9 +7,8 @@ try:
     from importlib.metadata import version, PackageNotFoundError
 except ModuleNotFoundError:
     from importlib_metadata import version, PackageNotFoundError
+from importlib_metadata import packages_distributions
 from warnings import warn
-
-from pkg_resources import get_distribution, DistributionNotFound
 
 
 def standard_lib_names_gen(include_underscored=False):
@@ -53,12 +52,18 @@ def get_packages(nodes):
     return result
 
 
-def get_version(package):
-    """Get a package's version (defaults to '?'). """
+_packages_distributions = None
+
+
+def get_distribution_name(package):
+    global _packages_distributions
+    if _packages_distributions is None:
+        _packages_distributions = packages_distributions()
     try:
-        return version(package)
-    except PackageNotFoundError:
-        return '?'
+        return _packages_distributions[package]
+    except KeyError as exc:
+        raise RequirementNotFound(f'Could not found an installed version of {package}.',
+                                  package) from exc
 
 
 class RequirementNotFound(Exception):
@@ -94,14 +99,11 @@ def dump_requirements(nodes, strict=False):
         if package in STDLIBNAMES:
             continue
         try:
-            dist = get_distribution(package)
-        except DistributionNotFound as exc:
+            dist = get_distribution_name(package)[0]
+        except RequirementNotFound as exc:
             if strict and package not in _ignore_requirements:
-                raise RequirementNotFound(f'Could not found an insatalled version of {package}.',
-                                          package) from exc
+                raise exc
             warn(f'The "{package}" requirement was not found.')
             continue
-        assert dist.project_name
-        assert dist.version
-        result += f'{dist.project_name}=={dist.version}\n'
+        result += f'{dist}=={version(dist)}\n'
     return result
