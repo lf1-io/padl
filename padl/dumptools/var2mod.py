@@ -599,15 +599,16 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
 
 
 def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: ScopedName):
-    """Check and make increment if the ScopedName after increment of exists.
+    """Check and make increment if the ScopedName after increment exists.
 
-    Here increment means the increment of *scoped_name.n*.
-    This signifies which one of the usages of a name is the code pointing to.
-    0 being the most recent, and increase integer representing older usages.
+    Increment means the increment of *scoped_name.n*.
+    *scoped_name.n* signifies which one of the usages of a *name* in the code does this
+     *scoped_name* points to.
+    0 being the most recent, and increase integer representing the older usages.
 
-    :param var: target ScopedName for increment
+    :param var: Target ScopedName for increment
     :param scope: Scope
-    :param scoped_name: source ScopedName for increment
+    :param scoped_name: Source ScopedName for increment
     :return:
         ScopedName after increment
     """
