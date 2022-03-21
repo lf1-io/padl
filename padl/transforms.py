@@ -12,8 +12,8 @@ from importlib.machinery import ModuleSpec
 from importlib.util import module_from_spec
 import inspect
 from itertools import chain
-from pathlib import Path
 from os import remove
+from pathlib import Path
 from shutil import rmtree
 import textwrap
 import traceback
@@ -40,7 +40,7 @@ from padl.dumptools.serialize import Serializer
 from padl.dumptools.sourceget import replace
 from padl.dumptools.ast_utils import get_position
 
-from padl.dumptools.packagefinder import dump_packages_versions
+from padl.dumptools.packagefinder import dump_requirements, RequirementNotFound
 from padl.exceptions import WrongDeviceError
 from padl.print_utils import combine_multi_line_strings, create_reverse_arrow, make_bold, \
     make_green, create_arrow, format_argument, visible_len
@@ -384,7 +384,8 @@ class Transform:
                     if file.is_file():
                         zipf.write(file, file.name)
 
-    def pd_save(self, path: Union[Path, str], force_overwrite: bool = False):
+    def pd_save(self, path: Union[Path, str], force_overwrite: bool = False,
+                strict_requirements: bool = True):
         """Save the transform to a folder at *path*.
 
         The folder's name should end with '.padl'. If no extension is given, it will be added
@@ -392,6 +393,11 @@ class Transform:
 
         If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
+
+        :param path: The path to save the transform at.
+        :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
+        :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
+            be found. If *False* print a warning if that's the case.
         """
         path = Path(path)
         if path.suffix == '':
@@ -410,12 +416,14 @@ class Transform:
 
         for i, subtrans in enumerate(self._pd_all_transforms()):
             subtrans.pd_pre_save(path, i, options=options)
-        code, versions = self._pd_dumps(True, path=path)
+        code, requirements = self._pd_dumps(return_requirements=True,
+                                            strict_requirements=strict_requirements,
+                                            path=path)
 
         with open(path / 'transform.py', 'w') as f:
             f.write(code)
-        with open(path / 'versions.txt', 'w') as f:
-            f.write(versions)
+        with open(path / 'requirements.txt', 'w') as f:
+            f.write(requirements)
 
     def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> Set:
         """Build the start-:class:`CodeNode` objects - the node with the source needed to create
@@ -599,20 +607,30 @@ class Transform:
         # pylint: disable=no-self-use
         raise NotImplementedError
 
-    def _pd_dumps(self, return_versions: bool = False,
-                  path: Optional[Path] = None) -> Union[str, Tuple[str, str]]:
+    def _pd_dumps(self, return_requirements: bool = False,
+                  path: Optional[Path] = None,
+                  strict_requirements: bool = True) -> Union[str, Tuple[str, str]]:
         """Dump the transform as python code.
 
-        :param return_versions: If *True* return a tuple of the code and a file listing
-            dependencies and their versions.
+        :param return_requirements: If *True* return a tuple of the code and a file listing
+            requirements.
         :param path: Optional path to save at, might be required for serializer code snippets.
+        :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
+            be found. If *False* print a warning if that's the case.
         """
         graph = self._pd_build_codegraph(name='_pd_main')
         Serializer.save_all(graph, path)
         code = graph.dumps()
-        if return_versions:
-            versions = dump_packages_versions(node.ast_node for node in graph.values())
-            return code, versions
+        if return_requirements:
+            try:
+                requirements = dump_requirements((node.ast_node for node in graph.values()),
+                                                 strict=strict_requirements)
+            except RequirementNotFound as exc:
+                raise RequirementNotFound(f'Could not find an installed version of '
+                                          f'"{exc.package}", which this Transform depends on. '
+                                          'Run with *strict_requirements=False* to ignore.',
+                                          exc.package) from exc
+            return code, requirements
         return code
 
     def __repr__(self):
@@ -2442,7 +2460,7 @@ class Batchify(BuiltinTransform):
 
 
 def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = False,
-         compress: bool = False):
+         compress: bool = False, strict_requirements: bool = True):
     """Save the transform to a folder at *path* or a compressed (zip-)file of the same name if
     *compress* == True.
 
@@ -2451,6 +2469,12 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
 
     If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
     will raise a FileExistsError.
+
+    :param path: The path to save the transform at.
+    :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
+    :param compress: If *True, save in a compressed (zip-) file instead of a folder.
+    :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
+        be found. If *False* print a warning if that's the case.
     """
     if compress:
         transform.pd_zip_save(path, force_overwrite)
