@@ -626,7 +626,7 @@ class Transform:
                 requirements = dump_requirements((node.ast_node for node in graph.values()),
                                                  strict=strict_requirements)
             except RequirementNotFound as exc:
-                raise RequirementNotFound(f'Could not found an insatalled version of '
+                raise RequirementNotFound(f'Could not find an installed version of '
                                           f'"{exc.package}", which this Transform depends on. '
                                           'Run with *strict_requirements=False* to ignore.',
                                           exc.package) from exc

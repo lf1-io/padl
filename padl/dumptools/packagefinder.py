@@ -56,13 +56,17 @@ _packages_distributions = None
 
 
 def get_distribution_name(package):
+    """Get the name of the distribution of a package.
+
+    For example dateutil -> python-dateutil
+    """
     global _packages_distributions
     if _packages_distributions is None:
         _packages_distributions = packages_distributions()
     try:
-        return _packages_distributions[package]
+        return _packages_distributions[package][0]
     except KeyError as exc:
-        raise RequirementNotFound(f'Could not found an installed version of {package}.',
+        raise RequirementNotFound(f'Could not find an installed version of {package}.',
                                   package) from exc
 
 
@@ -99,7 +103,7 @@ def dump_requirements(nodes, strict=False):
         if package in STDLIBNAMES:
             continue
         try:
-            dist = get_distribution_name(package)[0]
+            dist = get_distribution_name(package)
         except RequirementNotFound as exc:
             if strict and package not in _ignore_requirements:
                 raise exc
