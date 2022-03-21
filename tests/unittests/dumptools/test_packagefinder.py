@@ -54,7 +54,7 @@ class TestDumpRequirements:
         d = packagefinder.dump_requirements(ast.parse(source).body, strict=False)
         lines = d.splitlines()
         assert lines[0] == f'# created with python-{sys.version.split(" ")[0]}'
-        assert lines[1].split('+')[0] == f'torch=={torch.__version__}'
+        assert lines[1].split('+')[0] == f'torch=={torch.__version__}'.split('+')[0]
         assert 'ast' not in d, 'builtin modules should not appear in requirements.'
 
     def test_strict_raises(self):
