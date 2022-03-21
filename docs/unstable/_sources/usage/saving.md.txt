@@ -14,10 +14,10 @@ This creates a folder
 ```python
 mypipeline.padl/
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 ```
 
-containing a python file defining the Transform and a file containing a list of all package dependencies and their versions.
+containing a python file defining the Transform and a file with the precise requirements of the Transform.
 
 When saving Pipelines which include PyTorch {class}`Module`s as Transforms, checkpoint files with all parameters are stored, too.
 

@@ -106,7 +106,12 @@ def dump_requirements(nodes, strict=False):
             dist = get_distribution_name(package)
         except RequirementNotFound as exc:
             if strict and package not in _ignore_requirements:
+<<<<<<< HEAD
                 raise exc
+=======
+                raise RequirementNotFound(f'Could not find an installed version of {package}.',
+                                          package) from exc
+>>>>>>> 8a6616f7a3c3533fe0840c951ad7ba89c32d999d
             warn(f'The "{package}" requirement was not found.')
             continue
         result += f'{dist}=={version(dist)}\n'
