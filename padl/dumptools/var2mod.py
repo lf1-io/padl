@@ -608,7 +608,7 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
 
 
 def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: ScopedName):
-    """Check and make increment if the ScopedName after increment exists.
+    """Apply Increment on ScopedName if necessary.
 
     Increment means the increment of *scoped_name.n*.
     *scoped_name.n* signifies which one of the usages of a *name* in the code does this

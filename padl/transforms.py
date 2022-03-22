@@ -544,7 +544,10 @@ class Transform:
 
             # see if the object itself knows how to generate its codegraph
             try:
-                next_obj = all_vars_dict[next_name.name]
+                if next_name.scope.is_global():
+                    next_obj = globals_dict[next_name.name]
+                else:
+                    next_obj = all_vars_dict[next_name.name]
                 # pylint: disable=protected-access
                 next_obj._pd_build_codegraph(graph, next_name.name)
             except (KeyError, AttributeError):
