@@ -186,10 +186,10 @@
 <p>This creates a folder</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>mypipeline.padl/
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 </pre></div>
 </div>
-<p>containing a python file defining the Transform and a file containing a list of all package dependencies and their versions.</p>
+<p>containing a python file defining the Transform and a file with the precise requirements of the Transform.</p>
 <p>When saving Pipelines which include PyTorch <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>s as Transforms, checkpoint files with all parameters are stored, too.</p>
 <p>Saved Transforms can be loaded with <a class="reference internal" href="../apidocs/padl.html#padl.load" title="padl.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">padl</span> <span class="kn">import</span> <span class="n">load</span>

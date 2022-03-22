@@ -229,7 +229,7 @@ This means you can save a Transform from a messy ipython notebook and will get a
 <p>The last statement - <code class="code docutils literal notranslate"><span class="pre">save(..)</span></code> - creates a directory <code class="file docutils literal notranslate"><span class="pre">mytransform.padl</span></code> containing two files:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>mytransform.padl/
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 </pre></div>
 </div>
 <p><code class="file docutils literal notranslate"><span class="pre">transform.py</span></code> contains the code needed to recreate the Transform:</p>
@@ -264,7 +264,9 @@ This means you can save a Transform from a messy ipython notebook and will get a
 </pre></div>
 </div>
 <p>As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see <a class="reference internal" href="#what-does-not-save"><span class="std std-ref">Saving Transforms from other modules</span></a>).</p>
-<p><code class="file docutils literal notranslate"><span class="pre">versions.txt</span></code> contains all the packages that were used in creating the Transforms and their versions. This is very similar to a <code class="file docutils literal notranslate"><span class="pre">requirements.txt</span></code> - however, it contains the package names rather that their names in the <code class="docutils literal notranslate"><span class="pre">PyPI</span></code>.</p>
+<p><code class="file docutils literal notranslate"><span class="pre">requirements.txt</span></code> contains the requirements of the Transform - those packages that need to be installed in order to load and use the Transform.</p>
+<p>By default, saving will fail if one of the requirements cannot be found. Save with
+<code class="docutils literal notranslate"><span class="pre">strict_requirements=False</span></code> to ignore.</p>
 </section>
 <section id="saving-by-value">
 <span id="id1"></span><h2>Saving by value<a class="headerlink" href="#saving-by-value" title="Permalink to this headline"></a></h2>
@@ -309,7 +311,7 @@ the data processing</em> in <code class="code docutils literal notranslate"><spa
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>word_index.padl/
 ├── 1.json
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 </pre></div>
 </div>
 <p>The resulting <code class="code docutils literal notranslate"><span class="pre">transform.py</span></code> includes statements to load the json file:</p>

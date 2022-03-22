@@ -63,7 +63,7 @@ The last statement - {code}`save(..)` - creates a directory {file}`mytransform.p
 ```
 mytransform.padl/
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 ```
 
 {file}`transform.py` contains the code needed to recreate the Transform:
@@ -101,7 +101,10 @@ _pd_main = (
 
 As you can see, PADL saving supports third party imports, star imports and globally defined constants (there are some limitations to this, see {ref}`what-does-not-save`).
 
-{file}`versions.txt` contains all the packages that were used in creating the Transforms and their versions. This is very similar to a {file}`requirements.txt` - however, it contains the package names rather that their names in the `PyPI`.
+{file}`requirements.txt` contains the requirements of the Transform - those packages that need to be installed in order to load and use the Transform.
+
+By default, saving will fail if one of the requirements cannot be found. Save with
+`strict_requirements=False` to ignore.
 
 (saving-by-value)=
 
@@ -157,7 +160,7 @@ When saving {code}`word_index`, PADL creates a json file containing the *value* 
 word_index.padl/
 ├── 1.json
 ├── transform.py
-└── versions.txt
+└── requirements.txt
 ```
 
 The resulting {code}`transform.py` includes statements to load the json file:

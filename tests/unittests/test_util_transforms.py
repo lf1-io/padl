@@ -75,7 +75,7 @@ class TestIfInMode:
         assert list(self.transform_2.train_apply([1, 2])) == [6, 9]
         assert list(self.transform_3.train_apply([1, 2])) == [6, 9]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl', True)
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 9
@@ -142,7 +142,7 @@ class TestTry:
                     exceptions=Exception)
             t.pd_forward
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.try_transform_1.pd_save(tmp_path / 'test.padl', force_overwrite=True)
         t1 = padl.load(tmp_path / 'test.padl')
         assert t1.infer_apply(4) == 9

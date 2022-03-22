@@ -3,7 +3,7 @@ from collections import OrderedDict
 import pytest
 import torch
 from padl import transforms as pd, transform, Identity, batch, unbatch, group, save, load
-from padl.transforms import Batchify, Unbatchify, TorchModuleTransform
+from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, RequirementNotFound
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
@@ -200,7 +200,7 @@ class TestPADLCallTransform:
         self.transform_5._repr_pretty_(PrettyMock, False)
         self.transform_6._repr_pretty_(PrettyMock, False)
 
-    def test_save_load(self, tmp_path):
+    def test_save_load(self, tmp_path, ignore_padl_requirement):
         for transform_ in [self.transform_1,
                            self.transform_2,
                            self.transform_3,
@@ -281,7 +281,7 @@ class TestMap:
                [((4, 6), (3, 4)), ((4, 6), (3, 4))]
         assert list(self.transform_4.train_apply([1])) == [(2, 2, 2)]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply([2, 3, 4]) == (3, 4, 5)
@@ -346,7 +346,7 @@ class TestParallel:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([(2, 3, 4), (3, 3, 4)])) == [(3, 6, 8), (4, 6, 8)]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply((2, 3, 4)) == (3, 6, 8)
@@ -429,7 +429,7 @@ class TestRollout:
     def test_eval_apply(self):
         assert list(self.transform_1.eval_apply([2, 3])) == [(3, 4, 4), (4, 6, 6)]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(2) == (3, 4, 4)
@@ -543,7 +543,7 @@ class TestCompose:
         all_ = c._pd_all_transforms()
         assert set(all_) == set([plus_one, times_two, c, trans_with_globals, plus])
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         _ = pd.load(tmp_path / 'test.padl')
         self.transform_2.pd_save(tmp_path / 'test.padl', True)
@@ -683,7 +683,7 @@ class TestModel:
         assert list(self.model_4.train_apply([5, 6])) == [(8, 20), (9, 24)]
         assert list(self.model_5.train_apply([(5, 5), (5, 5)])) == [(13, 13), (13, 13)]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         pd.save(self.model_1, tmp_path / 'test.padl', compress=True, force_overwrite=True)
         m1 = pd.load(tmp_path / 'test.padl')
         assert m1.infer_apply((5, 5)) == (13, 13)
@@ -792,7 +792,7 @@ class TestFunctionTransform:
         self.transform_1.pd_to('cpu')
         assert self.transform_1.pd_device == 'cpu'
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl', True)
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(5) == 6
@@ -838,7 +838,7 @@ class TestClassTransform:
         assert self.transform_2.infer_apply(1) == 3
         assert self.transform_3.infer_apply('abc') == [0, 1, 2]
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 3
@@ -881,12 +881,12 @@ class TestTorchModuleTransform:
         params = list(self.transform_1.pd_parameters())
         assert len(params) == 2
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 2
 
-    def test_pd_save_with_options(self, tmp_path, capsys):
+    def test_pd_save_with_options(self, tmp_path, capsys, ignore_padl_requirement):
         self.transform_2.pd_save(tmp_path / 'test.padl')
         print(tmp_path / 'test.padl')
         assert not os.path.exists((tmp_path / 'test.padl') / '0.pt')
@@ -928,7 +928,7 @@ class TestTorchModuleTransformWithJit:
     def test_pd_parameters(self):
         assert len(list(self.jit_1.pd_parameters())) == 2
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.jit_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(torch.tensor(1)) == torch.tensor(2)
@@ -977,7 +977,7 @@ class TestClassInstance:
         params = list(self.transform_2.pd_parameters())
         assert len(params) == 2
 
-    def test_save_and_load(self, tmp_path):
+    def test_save_and_load(self, tmp_path, ignore_padl_requirement):
         self.transform_1.pd_save(tmp_path / 'test.padl')
         t1 = pd.load(tmp_path / 'test.padl')
         assert t1.infer_apply(1) == 2
@@ -1014,7 +1014,7 @@ class TestComposeWithComments:
             >> transform(lambda x: x)
         )
 
-    def test_function_1(self, tmp_path):
+    def test_function_1(self, tmp_path, ignore_padl_requirement):
         t = (
             Identity()
             #
@@ -1023,7 +1023,7 @@ class TestComposeWithComments:
 
         t.pd_save(tmp_path)
 
-    def test_function_2(self, tmp_path):
+    def test_function_2(self, tmp_path, ignore_padl_requirement):
         t = (
             Identity()
         #
@@ -1081,13 +1081,13 @@ class TestTrace:
             assert _pd_trace[2].args == [[9, 8, 8], [4, 4, 4]]
 
 
-def test_identity_compose_saves(tmp_path):
+def test_identity_compose_saves(tmp_path, ignore_padl_requirement):
     t = padl.identity >> padl.identity
     t.pd_save(tmp_path / 'test')
 
 
 class TestParam:
-    def test_param_works(self, tmp_path):
+    def test_param_works(self, tmp_path, ignore_padl_requirement):
         x = padl.param(1, 'x')
         t = SimpleClassTransform(x)
         assert t(1) == 2
@@ -1097,7 +1097,7 @@ class TestParam:
         t_2 = padl.load(tmp_path / 'test.padl', x=2)
         assert t_2(1) == 3
 
-    def test_no_default(self, tmp_path):
+    def test_no_default(self, tmp_path, ignore_padl_requirement):
         x = padl.param(1, 'x', use_default=False)
         t = SimpleClassTransform(x)
         assert t(1) == 2
@@ -1107,7 +1107,7 @@ class TestParam:
         t_2 = padl.load(tmp_path / 'test.padl', x=2)
         assert t_2(1) == 3
 
-    def test_wrong_param(self, tmp_path):
+    def test_wrong_param(self, tmp_path, ignore_padl_requirement):
         x = padl.param(1, 'x')
         t = SimpleClassTransform(x)
         assert t(1) == 2
@@ -1156,3 +1156,12 @@ def test_successful_save_overwrites(tmp_path):
     save(X(), tmp_path, force_overwrite=True)  # works
 
     assert load(str(tmp_path) + '.padl')._pd_call == 'X()'  # location contains X
+
+
+def test_missing_package(tmp_path):
+    with pytest.raises(RequirementNotFound) as excinfo:
+        plus_one.pd_save(tmp_path / 'test.padl')
+    assert excinfo.value.package == 'padl'
+    assert str(excinfo.value) == ('Could not find an installed version of "padl", which this '
+                                  'Transform depends on. Run with *strict_requirements=False* '
+                                  'to ignore.')

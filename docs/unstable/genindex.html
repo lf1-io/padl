@@ -262,7 +262,7 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.dump_packages_versions">dump_packages_versions() (in module padl.dumptools.packagefinder)</a>
+      <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.dump_requirements">dump_requirements() (in module padl.dumptools.packagefinder)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -334,6 +334,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.Finder.generic_visit">generic_visit() (padl.dumptools.var2mod.Finder method)</a>
 </li>
+      <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.get_distribution_name">get_distribution_name() (in module padl.dumptools.packagefinder)</a>
+</li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.get_module_source">get_module_source() (in module padl.dumptools.sourceget)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.get_packages">get_packages() (in module padl.dumptools.packagefinder)</a>
@@ -344,17 +346,13 @@
 </li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.get_source">get_source() (in module padl.dumptools.sourceget)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="apidocs/padl.dumptools.ast_utils.html#padl.dumptools.ast_utils.get_source_segment">get_source_segment() (in module padl.dumptools.ast_utils)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.Finder.get_source_segments">get_source_segments() (padl.dumptools.var2mod.Finder method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.get_statement">get_statement() (in module padl.dumptools.inspector)</a>
-</li>
-      <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.get_surrounding_block">get_surrounding_block() (in module padl.dumptools.inspector)</a>
-</li>
-      <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.get_version">get_version() (in module padl.dumptools.packagefinder)</a>
+      <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.get_statement_at_line">get_statement_at_line() (in module padl.dumptools.inspector)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.global_">global_() (padl.dumptools.symfinder.Scope method)</a>
 </li>
@@ -415,6 +413,8 @@
       <li><a href="apidocs/padl.dumptools.var2mod.html#padl.dumptools.var2mod.increment_same_name_var">increment_same_name_var() (in module padl.dumptools.var2mod)</a>
 </li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.Transform.infer_apply">infer_apply() (padl.transforms.Transform method)</a>
+</li>
+      <li><a href="apidocs/padl.dumptools.inspector.html#padl.dumptools.inspector.instructions_are_the_same">instructions_are_the_same() (in module padl.dumptools.inspector)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.symfinder.html#padl.dumptools.symfinder.Scope.is_global">is_global() (padl.dumptools.symfinder.Scope method)</a>
 </li>
@@ -728,6 +728,8 @@
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.ReplaceString">ReplaceString (class in padl.dumptools.sourceget)</a>
 </li>
       <li><a href="apidocs/padl.dumptools.sourceget.html#padl.dumptools.sourceget.ReplaceStrings">ReplaceStrings (class in padl.dumptools.sourceget)</a>
+</li>
+      <li><a href="apidocs/padl.dumptools.packagefinder.html#padl.dumptools.packagefinder.RequirementNotFound">RequirementNotFound</a>
 </li>
       <li><a href="apidocs/padl.transforms.html#padl.transforms.Rollout">Rollout (class in padl.transforms)</a>
 </li>
