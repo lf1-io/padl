@@ -90,11 +90,7 @@ class _ThingFinder(ast.NodeVisitor):
         return self._result
 
 
-class _NameFinder(_ThingFinder):
-    pass
-
-
-class _FunctionDefFinder(_NameFinder):
+class _FunctionDefFinder(_ThingFinder):
     """Class for finding a *function definition* of a specified name in an AST tree.
 
     Example:
@@ -117,7 +113,7 @@ class _FunctionDefFinder(_NameFinder):
     >>> finder.deparse()
     'def foo(x):\\n    ...'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.FunctionDef object at 0x...>
+    <...ast.FunctionDef object at 0x...>
     """
 
     def visit_FunctionDef(self, node):
@@ -134,7 +130,7 @@ class _FunctionDefFinder(_NameFinder):
         return _fix_indent(res)
 
 
-def _fix_indent(source):
+def _fix_indent(source):  # TODO a@lf1.io: kind of dubious - is there a better way?
     """Fix the indentation of functions that are wrongly indented.
 
     This can happen with :func:`ast_utils.get_source_segment`.
@@ -154,7 +150,7 @@ def _fix_indent(source):
     return '\n'.join(line.rstrip() for line in res)
 
 
-class _ClassDefFinder(_NameFinder):
+class _ClassDefFinder(_ThingFinder):
     """Class for finding a *class definition* of a specified name in an AST tree.
 
     Example:
@@ -177,7 +173,7 @@ class _ClassDefFinder(_NameFinder):
     >>> finder.deparse()
     'class Foo:\\n    ...'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.ClassDef object at 0x...>
+    <...ast.ClassDef object at 0x...>
     """
 
     def visit_ClassDef(self, node):
@@ -195,7 +191,7 @@ class _ClassDefFinder(_NameFinder):
         return res
 
 
-class _ImportFinder(_NameFinder):
+class _ImportFinder(_ThingFinder):
     """Class for finding a *module import* of a specified name in an AST tree.
 
     Works with normal imports ("import x") and aliased imports ("import x as y").
@@ -245,7 +241,7 @@ class _ImportFinder(_NameFinder):
         return node
 
 
-class _ImportFromFinder(_NameFinder):
+class _ImportFromFinder(_ThingFinder):
     """Class for finding a *from import* of a specified name in an AST tree.
 
     Example:
@@ -294,7 +290,7 @@ class _ImportFromFinder(_NameFinder):
         return node
 
 
-class _AssignFinder(_NameFinder):
+class _AssignFinder(_ThingFinder):
     """Class for finding a *variable assignment* of a specified name in an AST tree.
 
     Example:
@@ -317,7 +313,7 @@ class _AssignFinder(_NameFinder):
     >>> finder.deparse()
     'X = 100'
     >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.Assign object at 0x...>
+    <...ast.Assign object at 0x...>
     """
 
     def visit_Assign(self, node):
@@ -370,47 +366,6 @@ class _SetAttribute(ast.NodeVisitor):
     def generic_visit(self, node):
         setattr(node, self.attr, self.value)
         super().generic_visit(node)
-
-
-class _CallFinder(_ThingFinder):
-    """Class for finding a *call* in an AST tree.
-
-    Example:
-
-    >>> source = '''
-    ... import baz
-    ...
-    ... class Foo:
-    ...     ...
-    ...
-    ... def bar(y):
-    ...     ...
-    ...
-    ... X = baz(100)'''
-    >>> finder = _CallFinder(source, 'baz')
-    >>> node = ast.parse(source)
-    >>> finder.visit(node)
-    >>> finder.found_something()
-    True
-    >>> finder.deparse()
-    'baz(100)'
-    >>> finder.node()  # doctest: +ELLIPSIS
-    <_ast.Call object at 0x...>
-    """
-
-    def visit_Call(self, node):
-        if node.func.id == self.var_name:
-            self._result = node
-
-    def find(self):
-        tree = ast.parse(self.source)
-        self.visit(tree)
-        if self.found_something():
-            return self._get_name(self._result), (*_get_call_signature(self.source),)
-        raise NameNotFound(f'Did not find call of "{self.var_name}".')
-
-    def _get_name(self, call: ast.Call):
-        return ast_utils.get_source_segment(self.source, call.func)
 
 
 def _get_call_assignments(args, source, values, keywords):
@@ -725,7 +680,7 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
     if tree is None:
         tree = ast.parse(source)
     replace_star_imports(tree)
-    finder_clss = _NameFinder.__subclasses__()
+    finder_clss = _ThingFinder.__subclasses__()
     for statement in tree.body[::-1]:
         for finder_cls in finder_clss:
             finder = finder_cls(source, var_name)

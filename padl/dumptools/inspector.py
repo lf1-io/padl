@@ -10,7 +10,6 @@ try:
 except ImportError:
     from typing_extensions import Literal
 from typing import Callable, Optional
-from warnings import warn
 
 from padl.dumptools import ast_utils, symfinder, var2mod
 from padl.dumptools.sourceget import get_source, original, cut
@@ -25,9 +24,9 @@ class CallInfo:
 
     Example:
 
-    >>> def f():
+    >>> def f():  # doctest: +SKIP
     ...     return CallInfo('here')
-    >>> print(f().scope)
+    >>> print(f().scope)  # doctest: +SKIP
     'Scope[__main__.f]'
 
     :param origin: Where to look for the call, can be
@@ -67,7 +66,7 @@ class CallInfo:
 
 
 # exclude these modules from detailed scope analysis (as that slows testing down in python 3.7.)
-_EXCLUDED_MODULES = ['pytest', 'pluggy']
+_EXCLUDED_MODULES = ['pytest', 'pluggy', '_pytest']
 
 
 def _get_scope_from_frame(frame, drop_n):
@@ -83,6 +82,7 @@ def _get_scope_from_frame(frame, drop_n):
     if frame.f_code.co_name == '<module>':
 
         return symfinder.Scope.toplevel(module)
+
     try:
         call_source = get_segment_from_frame(frame.f_back, 'call')
     except (RuntimeError, FileNotFoundError, AttributeError, OSError):
@@ -185,111 +185,6 @@ def _instructions_up_to_offset(x, lasti: int) -> list:
     return instructions
 
 
-def get_statement(source: str, lineno: int):
-    """Get complete (potentially multi-line) statement at line *lineno* out of *source*.
-
-    :returns: A tuple of statement and offset. The offset is a tuple of row offset and col offset.
-        It can be used to determine the location of the statement within the source.
-    """
-    for row_offset in range(lineno):
-        try:
-            block, lineno_in_block, col_offset = get_surrounding_block(source, lineno - row_offset)
-            # if the found block doesn't contain the line we're looking for
-            if block.count('\n') - (lineno_in_block - 1) < row_offset:
-                continue
-        except ValueError:
-            continue
-        try:
-            try:
-                statement, offset = _get_statement_from_block(block, lineno_in_block + row_offset)
-                return statement, (lineno - offset - 1, -col_offset)
-            except SyntaxError:
-                statement, offset = _get_statement_from_block('(\n' + block + '\n)',
-                                                              lineno_in_block + row_offset + 1)
-                return statement, (lineno - (lineno_in_block + row_offset) - 1, -col_offset)
-        except SyntaxError:
-            continue
-    raise SyntaxError("Couldn't find the statement.")
-
-
-def _get_statement_from_block(block: str, lineno_in_block: int):
-    """Get statements at like *lineno_in_block* from a code block.
-
-    :param block: The code block to get the statements from.
-    :param lineno_in_block: Line number which the statement must include. Counted from 1.
-    :returns: A tuple of string with the found statements and and offset between the beginning of
-        the match and *lineno_in_block*.
-    """
-    module = ast.parse(block)
-    stmts = []
-    offset = None
-    for stmt in module.body:
-        position = ast_utils.get_position(block, stmt)
-        if position.lineno <= lineno_in_block <= position.end_lineno:
-            stmts.append(ast_utils.get_source_segment(block, stmt))
-            if offset is None:
-                offset = lineno_in_block - position.lineno
-    if offset is None:
-        offset = 0
-    return '\n'.join(stmts), offset
-
-
-def get_surrounding_block(source: str, lineno: int):
-    """Get the code block surrounding the line at *lineno* in *source*.
-
-    The code block surrounding a line is the largest block of lines with the same or larger
-    indentation as the line itself.
-
-    The result will be unindented.
-
-    Raises a `ValueError` if the line at *lineno* is empty.
-
-    :param source: The source to extract the block from.
-    :param lineno: Number of the line for extracting the block.
-    :returns: A tuple containing the block itself and the line number of the target line
-        within the block and the number of spaces removed from the front.
-    """
-    lines = source.split('\n')
-    before, after = lines[:lineno-1], lines[lineno:]
-    white = _count_leading_whitespace(lines[lineno-1])
-    if white is None:
-        raise ValueError('Line is empty.')
-    block = [lines[lineno-1][white:]]
-    lineno_in_block = 1
-
-    # get all lines of the same block before *lineno*
-    while before:
-        next_ = before.pop(-1)
-        next_white = _count_leading_whitespace(next_)
-        starts_with_comment = next_.lstrip().startswith('#')
-        if next_.strip().endswith(':'):
-            break
-        if next_white is None or next_white >= white or starts_with_comment:
-            block = [next_[white:]] + block
-        else:
-            break
-        lineno_in_block += 1
-
-    # remove leading rows with more than *white* leading whitespace
-    # (e.g. hanging function arguments)
-    while block:
-        next_white = _count_leading_whitespace(block[0])
-        if next_white is None or next_white == 0:
-            break
-        block.pop(0)
-        lineno_in_block -= 1
-
-    # get all lines of the same block after *lineno*
-    while after:
-        next_ = after.pop(0)
-        next_white = _count_leading_whitespace(next_)
-        if next_white is None or next_white >= white:
-            block = block + [next_[white:]]
-        else:
-            break
-    return '\n'.join(block), lineno_in_block, white
-
-
 def _module(frame: types.FrameType) -> types.ModuleType:
     """Get module of *frame*. """
     try:
@@ -323,6 +218,35 @@ def caller_frame() -> types.FrameType:
     return outer_caller_frameinfo(calling_module_name).frame
 
 
+def instructions_are_the_same(instr, target_instr, frame=None):
+    """Check if the disassebled instructions *instr* and *target_instr* are (basically) the same.
+
+    Mainly this checks if the *opname* and *argval* of the two instructions are the same,
+    additionally accounting for some subleties involving code object - argvals and LOAD-operators.
+    """
+    # for the LOAD_FAST operator, get the argval from the frame's locals
+    if (frame is not None and target_instr.opname == 'LOAD_FAST'
+            and target_instr.argval in frame.f_locals
+            and target_instr.argval in frame.f_code.co_varnames):
+        argval = frame.f_locals[target_instr.argval]
+    else:
+        argval = target_instr.argval
+    # if the instruction's argval contains code objects, compare the code
+    instr_argval = getattr(instr.argval, 'co_code', instr.argval)
+    target_argval = getattr(target_instr.argval, 'co_code', target_instr.argval)
+
+    if instr_argval not in (target_argval, argval):
+        return False
+
+    if instr.opname == target_instr.opname:
+        return True
+
+    # load operations can have many different name, accept if both are load ops regardless
+    # of which kind exactly
+    load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
+    return instr.opname in load_ops and target_instr.opname in load_ops
+
+
 def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_locs=False) -> str:
     """Get a segment of a given type from a frame.
 
@@ -352,6 +276,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         full_source = get_source(caller_frame.f_code.co_filename)
 
     lineno = caller_frame.f_lineno
+
     # in python <= 3.7, the lineno points to the end of
     # the statement rather than the beginning, therefore we need to decrement it
     if segment_type == 'call':
@@ -359,63 +284,43 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         while '(' not in lines[lineno - 1] and not lines[lineno - 1].startswith('@'):
             lineno -= 1
 
-    source, offset = get_statement(original(full_source), lineno)
-    # the source can contain surrounding stuff we need to discard
-    # as we only have the line number (this is what makes this complicated)
-
-    # get all segments in the source that correspond to calls and might thus
-    # potentially be the class init
-    candidate_segments = var2mod.Finder(node_type).get_source_segments(source)
-    # for each candidate, disassemble and compare the instructions to what we
-    # actually have, a match means this is the correct statement
-    if not candidate_segments:
-        raise RuntimeError(f'{segment_type} not found.')
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
                                                caller_frame.f_lasti)
-
     # filter out EXTENDED_ARG (instruction used for very large args in target_instrs, this won't
     # be present in instrs)
     target_instrs = [x for x in target_instrs if x.opname != 'EXTENDED_ARG']
 
-    segment = None
-    locs = None
-    found = False
-
-    for segment, locs in sorted(candidate_segments, key=lambda x: -len(x[0])):
-
+    def check_segment(segment):
+        # for each candidate, disassemble and compare the instructions to what we
+        # actually have, a match means this is the correct statement
         instrs = instructions_finder(segment)
         if len(instrs) > len(target_instrs):
-            continue
+            return False
         for instr, target_instr in zip(instrs, target_instrs[-len(instrs):]):
-            if (target_instr.opname == 'LOAD_FAST'
-                    and target_instr.argval in caller_frame.f_locals
-                    and target_instr.argval in caller_frame.f_code.co_varnames):
-                argval = caller_frame.f_locals[target_instr.argval]
-            else:
-                argval = target_instr.argval
-            instr_argval = getattr(instr.argval, 'co_code', instr.argval)
-            target_argval = getattr(target_instr.argval, 'co_code', target_instr.argval)
-            if instr_argval not in (target_argval, argval):
-                break
-            same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
-            both_load = instr.opname in load_ops and target_instr.opname in load_ops
-            if not (same_opname or both_load):
-                break
-        else:
-            found = True
-            break
+            if not instructions_are_the_same(instr, target_instr, caller_frame):
+                return False
+        return True
 
-    if segment is None or not found:
-        raise RuntimeError(f'{segment_type} not found.')
+    def check_statement(statement_node, source):
+        # iterate over nodes of the correct type found in the statement and check them
+        for node in var2mod.Finder(node_type).find(statement_node):
+            segment = ast_utils.get_source_segment(source, node)
+            if check_segment(segment):
+                return ast_utils.get_position(source, node)
+        return None
+
+    # get all segments in the source that correspond to calls and might thus
+    # potentially be the class init
+    locs = get_statement_at_line(original(full_source), lineno, check_statement)
 
     corrected_locs = (
-        locs.lineno - 1 + offset[0],
-        locs.end_lineno - 1 + offset[0],
-        locs.col_offset - offset[1],
-        locs.end_col_offset - offset[1]
+        locs.lineno - 1,
+        locs.end_lineno - 1,
+        locs.col_offset,
+        locs.end_col_offset
     )
+
     # cutting is necessary instead of just using the segment from above for support of
     # `sourceget.ReplaceString`s
     cut_segment = cut(full_source, *corrected_locs)
@@ -424,16 +329,26 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         return (
             cut_segment, corrected_locs
         )
+
     assert cut_segment
     return cut_segment
 
 
-def _count_leading_whitespace(line: str) -> int:
-    """Count the number of spaces *line* starts with. If *line* is empty, return *None*."""
-    i = 0
-    for char in line:
-        if char == ' ':
-            i += 1
-            continue
-        return i
-    return None
+def get_statement_at_line(source: str, lineno: int, checker):
+    """Get statements at line *lineno* from a source string.
+
+    :param source: The source to get the statements from.
+    :param lineno: Line number which the statement must include. Counted from 1.
+    :param checker: A function that checks each statement. It must return *None* if the check
+        fails. If anything else is returned, that becomes the return value of this function.
+    :returns: A list of tuples of string with the found statements and and offset between the
+        beginning of the match and *lineno*.
+    """
+    module = ast_utils.cached_parse(source)
+    for stmt in module.body:
+        position = ast_utils.get_position(source, stmt)
+        if position.lineno <= lineno <= position.end_lineno:
+            res = checker(stmt, source)
+            if res is not None:
+                return res
+    raise RuntimeError('Statement not found.')
