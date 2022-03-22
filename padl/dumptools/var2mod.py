@@ -62,13 +62,20 @@ class Finder(ast.NodeVisitor):
         ]
 
 
-def _join_attr(node):
-    if not isinstance(node, (ast.Attribute, ast.Name)):
+def _join_attr(ast_node):
+    """Get list of base object name and attribute names
+
+    'f.pd_to' -> ['f', 'pd_to']
+
+    :param ast_node: ast.node
+    :return: List of strings representing name of base object and the name of attributes accessed
+    """
+    if not isinstance(ast_node, (ast.Attribute, ast.Name)):
         raise TypeError()
     try:
-        return [node.id]
+        return [ast_node.id]
     except AttributeError:
-        return _join_attr(node.value) + [node.attr]
+        return _join_attr(ast_node.value) + [ast_node.attr]
 
 
 Vars = namedtuple('Vars', 'globals locals')
@@ -182,6 +189,7 @@ class _VarFinder(ast.NodeVisitor):
 
         scope = getattr(node, '_scope', None)
         name = ScopedName('.'.join(path), scope, 0)
+        # name = ScopedName('.'.join(path), scope, 0)
         if self.in_locals(name):
             return
         self.globals.add(name)
@@ -612,11 +620,11 @@ def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: Scoped
     :return:
         ScopedName after increment
     """
+    new_scoped_name = ScopedName(scoped_name.name, scope, var.n + scoped_name.n + 1)
     try:
-        new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n + 1)
         find_in_scope(new_scoped_name)
     except NameNotFound:
-        new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n)
+        new_scoped_name = ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
     return new_scoped_name
 
 
@@ -640,7 +648,8 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
             scope = scoped_name.scope
         else:
             scope = var.scope
-        if var.name == scoped_name.name:
+        split_var_name = var.name.rsplit('.', 1)[0]
+        if split_var_name == scoped_name.name:
             result.add(_check_and_make_increment(var, scope, scoped_name))
         else:
             result.add(ScopedName(var.name, scope, var.n))

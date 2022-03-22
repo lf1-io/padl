@@ -88,6 +88,16 @@ mutated_transform = mutated_transform.pd_to('cpu')
 
 
 @transform
+def mutated_recursive_transform(arg):
+    if arg == 0:
+        return arg
+    return 1 + mutated_recursive_transform(arg - 1)
+
+
+mutated_recursive_transform = mutated_recursive_transform.pd_to('cpu')
+
+
+@transform
 class MyClassTransform:
     def __init__(self, a, b, c):
         self.a = a
@@ -238,6 +248,10 @@ def test_recursive():
 
 def test_mutated_transform():
     assert mutated_transform._pd_dumps() == read_dump('mutated_transform')
+
+
+def test_mutated_recursive_transform():
+    assert mutated_recursive_transform._pd_dumps() == read_dump('mutated_recursive_transform')
 
 
 def test_with_raises():
