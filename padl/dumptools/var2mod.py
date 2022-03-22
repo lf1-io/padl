@@ -651,7 +651,7 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
 
     >>> import padl as somemodule
     >>> out = increment_same_name_var({ScopedName('a', None, 1), ScopedName('b', None, 2)},
-    ...                               ScopedName('b', somemodule, 2))
+    ...                               ScopedName('b', Scope.toplevel(somemodule), 2))
     >>> isinstance(out, set)
     True
     >>> {(x.name, x.n) for x in out} == {('a', 1), ('b', 4)}
