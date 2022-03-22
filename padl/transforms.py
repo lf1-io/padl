@@ -13,7 +13,7 @@ import inspect
 from itertools import chain
 from os import remove
 from pathlib import Path
-from shutil import rmtree
+from shutil import rmtree, copytree
 import textwrap
 import traceback
 from tempfile import TemporaryDirectory
