@@ -191,7 +191,6 @@ class _VarFinder(ast.NodeVisitor):
 
         scope = getattr(node, '_scope', None)
         name = ScopedName('.'.join(path), scope, 0)
-        # name = ScopedName('.'.join(path), scope, 0)
         if self.in_locals(name):
             return
         self.globals.add(name)
