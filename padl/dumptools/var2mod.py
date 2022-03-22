@@ -621,16 +621,20 @@ def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: Scoped
     :return:
         ScopedName after increment
     """
-    (_, ast_node), _, _ = find_in_scope(scoped_name)
+    # check if the actual names of the objects are the same, e.g. obj.attr == obj
     split_var_name = var.name.rsplit('.', 1)[0]
     split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
 
     if split_var_name != split_scoped_name:
         return ScopedName(var.name, scope, var.n)
 
+    # In the case that names are the same, and ast.Node is FunctionDef or ClassDef,
+    # this will overwrite the previous definition, so does not need + 1
+    (_, ast_node), _, _ = find_in_scope(scoped_name)
     if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef)):
         return ScopedName(var.name, scope, var.n + scoped_name.n)
 
+    # Check if ScopedName with + 1 exists, if yes, then use that else use without + 1
     new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n + 1)
     try:
         find_in_scope(new_scoped_name)
