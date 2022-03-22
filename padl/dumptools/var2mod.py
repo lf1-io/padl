@@ -103,6 +103,8 @@ class _VarFinder(ast.NodeVisitor):
     ...                                                     ScopedName('z', None, 0),
     ...                                                     ScopedName('y', None, 0)})
     True
+
+    attributes `globals` and `locals` are sets of ScopedName.
     """
 
     def __init__(self):
@@ -114,7 +116,7 @@ class _VarFinder(ast.NodeVisitor):
         """Find all globals and locals in an AST-node.
 
         :param node: An ast node to search.
-        :returns: Tuple of sets with names of globals and locals.
+        :returns: Tuple of sets with ScopedNames of globals and locals.
         """
         if isinstance(node, list):
             for node_ in node:
@@ -624,7 +626,11 @@ def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: Scoped
     try:
         find_in_scope(new_scoped_name)
     except NameNotFound:
-        new_scoped_name = ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
+        return ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
+
+    (_, ast_node), _, _ = find_in_scope(scoped_name)
+    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef)):
+        return ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
     return new_scoped_name
 
 
