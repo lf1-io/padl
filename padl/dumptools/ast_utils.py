@@ -21,6 +21,11 @@ class Position:
 
 
 def cached_parse(source):
+    """Cached version of :func:`ast.parse`.
+
+    If called a second time with the same *source*, this returns a cached tree instead of parsing
+    again.
+    """
     hash_ = hashlib.md5(source.encode()).digest()
     if hash_ not in AST_NODE_CACHE:
         AST_NODE_CACHE[hash_] = ast.parse(source)
