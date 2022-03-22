@@ -621,15 +621,21 @@ def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: Scoped
     :return:
         ScopedName after increment
     """
-    new_scoped_name = ScopedName(scoped_name.name, scope, var.n + scoped_name.n + 1)
+    (_, ast_node), _, _ = find_in_scope(scoped_name)
+    split_var_name = var.name.rsplit('.', 1)[0]
+    split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
+
+    if split_var_name != split_scoped_name:
+        return ScopedName(var.name, scope, var.n)
+
+    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef)):
+        return ScopedName(var.name, scope, var.n + scoped_name.n)
+
+    new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n + 1)
     try:
         find_in_scope(new_scoped_name)
     except NameNotFound:
-        return ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
-
-    (_, ast_node), _, _ = find_in_scope(scoped_name)
-    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef)):
-        return ScopedName(scoped_name.name, scope, var.n + scoped_name.n)
+        return ScopedName(var.name, scope, var.n + scoped_name.n)
     return new_scoped_name
 
 
@@ -653,11 +659,7 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
             scope = scoped_name.scope
         else:
             scope = var.scope
-        split_var_name = var.name.rsplit('.', 1)[0]
-        if split_var_name == scoped_name.name:
-            result.add(_check_and_make_increment(var, scope, scoped_name))
-        else:
-            result.add(ScopedName(var.name, scope, var.n))
+        result.add(_check_and_make_increment(var, scope, scoped_name))
     return result
 
 
