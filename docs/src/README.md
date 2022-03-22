@@ -35,8 +35,7 @@ can be slower in **3.7**.
 WARNING: PADL transforms do not work in the base Python Interpreter environment because we rely on
 the inspect module to find source code (used when saving PADL transforms). Unfortunately, the 
 source code typed at this interactive prompt is discarded as soon as it is parsed. 
-Therefore, we recommend using the iPython interpreter or Jupyter Notebooks for interactive sessions 
-because they do not have this problem. 
+Therefore, we recommend using the IPython interpreter or Jupyter Notebooks for interactive sessions. 
 
 ### Your first PADL program
 
