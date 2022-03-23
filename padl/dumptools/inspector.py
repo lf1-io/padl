@@ -218,11 +218,16 @@ def caller_frame() -> types.FrameType:
     return outer_caller_frameinfo(calling_module_name).frame
 
 
-def instructions_are_the_same(instr, target_instr, frame=None):
-    """Check if the disassebled instructions *instr* and *target_instr* are (basically) the same.
+def instructions_are_the_same(instr: dis.Instruction, target_instr: dis.Instruction,
+                              frame=None):
+    """Check if the disassembled instructions *instr* and *target_instr* are (basically) the same.
 
     Mainly this checks if the *opname* and *argval* of the two instructions are the same,
-    additionally accounting for some subleties involving code object - argvals and LOAD-operators.
+    additionally accounting for some subtleties involving code object - argvals and LOAD-operators.
+
+    :param instr: Candidate instruction that should be matched to the target.
+    :param target_instr: Target instruction.
+    :param frame: Frame the target instruction came from.
     """
     # for the LOAD_FAST operator, get the argval from the frame's locals
     if (frame is not None and target_instr.opname == 'LOAD_FAST'
