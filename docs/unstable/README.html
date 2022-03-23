@@ -49,6 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#resources">Resources</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#dev-blog">Dev Blog</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#licensing">Licensing</a></li>
 </ul>
@@ -196,6 +197,10 @@
 <p>PADL currently supports python <strong>3.7</strong>, <strong>3.8</strong> and <strong>3.9</strong>.</p>
 <p>Python version &gt;= <strong>3.8</strong> is preferred because creating and loading transforms (<strong>not</strong> execution)
 can be slower in <strong>3.7</strong>.</p>
+<p>WARNING: PADL transforms do not work in the base Python Interpreter environment because we rely on
+the inspect module to find source code (used when saving PADL transforms). Unfortunately, the
+source code typed at this interactive prompt is discarded as soon as it is parsed.
+Therefore, we recommend using the IPython interpreter or Jupyter Notebooks for interactive sessions.</p>
 </section>
 <section id="your-first-padl-program">
 <h3>Your first PADL program<a class="headerlink" href="#your-first-padl-program" title="Permalink to this headline"></a></h3>
@@ -219,9 +224,12 @@ can be slower in <strong>3.7</strong>.</p>
 <section id="try-out-padl-in-colab-notebooks">
 <h3>Try out PADL in Colab notebooks<a class="headerlink" href="#try-out-padl-in-colab-notebooks" title="Permalink to this headline"></a></h3>
 <ol class="simple">
-<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb#scrollTo=bd560eb8">MNIST</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/00_basic_padl.ipynb">Basic PADL</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/01_MNIST_using_padl.ipynb">MNIST</a></p></li>
 <li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/02_nlp_example.ipynb">Simple NLP example</a></p></li>
 <li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/03_Sentiment_Analysis_with_padl.ipynb">Sentiment Analysis - NLP</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/04_DCGAN.ipynb">DC-GAN - Image Generation</a></p></li>
+<li><p><a class="reference external" href="https://colab.research.google.com/github/lf1-io/padl/blob/main/notebooks/05_diffuse_faces.ipynb">CLIP guided diffusion for face editing</a></p></li>
 </ol>
 </section>
 <section id="resources">
@@ -233,10 +241,14 @@ can be slower in <strong>3.7</strong>.</p>
 </ul>
 </section>
 </section>
+<section id="dev-blog">
+<h2>Dev Blog<a class="headerlink" href="#dev-blog" title="Permalink to this headline"></a></h2>
+<p>Read more about PADL on the PADL developer’s blog: <a class="reference external" href="https://devblog.padl.ai/">https://devblog.padl.ai/</a></p>
+</section>
 <section id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h2>
 <p>Code of conduct: <a class="reference external" href="https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md">https://github.com/lf1-io/padl/blob/main/CODE_OF_CONDUCT.md</a>.</p>
-<p>If your interested in contributing to PADL please look at the current issues: <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p>
+<p>If you’re interested in contributing to PADL please look at the current issues: <a class="reference external" href="https://github.com/lf1-io/padl/issues">https://github.com/lf1-io/padl/issues</a>.</p>
 </section>
 <section id="licensing">
 <h2>Licensing<a class="headerlink" href="#licensing" title="Permalink to this headline"></a></h2>
