@@ -607,7 +607,7 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     return globals_
 
 
-def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: ScopedName):
+def _check_and_make_increment(var: ScopedName, scoped_name: ScopedName):
     """Apply Increment on ScopedName if necessary.
 
     Increment means the increment of *scoped_name.n*.
@@ -616,11 +616,16 @@ def _check_and_make_increment(var: ScopedName, scope: Scope, scoped_name: Scoped
     0 being the most recent, and increase integer representing the older usages.
 
     :param var: Target ScopedName for increment
-    :param scope: Scope
     :param scoped_name: Source ScopedName for increment
     :return:
         ScopedName after increment
     """
+    # Get the correct scope
+    if var.scope is None:
+        scope = scoped_name.scope
+    else:
+        scope = var.scope
+
     # check if the actual names of the objects are the same, e.g. obj.attr == obj
     split_var_name = var.name.rsplit('.', 1)[0]
     split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
@@ -661,11 +666,7 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
     """
     result = set()
     for var in variables:
-        if var.scope is None:
-            scope = scoped_name.scope
-        else:
-            scope = var.scope
-        result.add(_check_and_make_increment(var, scope, scoped_name))
+        result.add(_check_and_make_increment(var, scoped_name))
     return result
 
 
