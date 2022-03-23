@@ -7,7 +7,7 @@ from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, Requirem
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
-from padl.transforms import save, load
+from padl.transforms import load
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
@@ -1129,7 +1129,7 @@ def test_failing_save_doesnt_overwrite(tmp_path):
     def f(x):
         ...
 
-    save(f, tmp_path)
+    pd.save(f, tmp_path)
 
     @transform
     class X:
@@ -1137,7 +1137,7 @@ def test_failing_save_doesnt_overwrite(tmp_path):
             1 / 0
 
     with pytest.raises(ZeroDivisionError):
-        save(X(), tmp_path, force_overwrite=True)  # doesn't work
+        pd.save(X(), tmp_path, force_overwrite=True)  # doesn't work
 
     assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f
 
@@ -1147,13 +1147,13 @@ def test_successful_save_overwrites(tmp_path):
     def f(x):
         ...
 
-    save(f, tmp_path)
+    pd.save(f, tmp_path)
 
     @transform
     class X:
         ...
 
-    save(X(), tmp_path, force_overwrite=True)  # works
+    pd.save(X(), tmp_path, force_overwrite=True)  # works
 
     assert load(str(tmp_path) + '.padl')._pd_call == 'X()'  # location contains X
 
