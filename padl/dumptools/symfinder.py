@@ -699,7 +699,7 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
         return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
     if return_partial:
         return i
-    raise NameNotFound(f'{var_name} not found in {source}.')
+    raise NameNotFound(f'{var_name} not found.')
 
 
 def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:

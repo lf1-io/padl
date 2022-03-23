@@ -654,14 +654,14 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
 
     Example:
 
-    >>> import sys
-    >>> a = b = 2
-    >>> b = a + b
-    >>> out = increment_same_name_var({ScopedName('a', None, 0), ScopedName('b', None, 0)},
-    ...                               ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))
-    >>> isinstance(out, set)
+    import sys
+    a = b = 2
+    b = a + b
+    out = increment_same_name_var({ScopedName('a', None, 0), ScopedName('b', None, 0)},
+                                  ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))
+    > isinstance(out, set)
     True
-    >>> {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}
+    > {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}
     True
     """
     result = set()
