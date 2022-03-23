@@ -633,10 +633,10 @@ def _check_and_make_increment(var: ScopedName, scoped_name: ScopedName):
     if split_var_name != split_scoped_name:
         return ScopedName(var.name, scope, var.n)
 
-    # In the case that names are the same, and ast.Node is FunctionDef or ClassDef,
+    # In the case that names are the same, and ast.Node is Async/FunctionDef or ClassDef,
     # this will overwrite the previous definition, so does not need + 1
     (_, ast_node), _, _ = find_in_scope(scoped_name)
-    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef)):
+    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
         return ScopedName(var.name, scope, var.n + scoped_name.n)
 
     # Check if ScopedName with + 1 exists, if yes, then use that else use without + 1

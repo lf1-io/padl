@@ -73,6 +73,14 @@ def maketransform():
     return z
 
 
+def maketransform2():
+    CONST = 20
+    @transform
+    def z(x):
+        return x*CONST
+    return z
+
+
 @transform
 def hangin_indent(a=1,
                   b=2):
@@ -192,6 +200,11 @@ def test_nested_dump_c():
 def test_nested_dump_d():
     t = maketransformclass()(1, 2, x)
     assert t._pd_dumps() == read_dump('nested_d')
+
+
+def test_nested_dump_e():
+    t = maketransform2()
+    assert t._pd_dumps() == read_dump('nested_e')
 
 
 c_a = x >> y >> x
