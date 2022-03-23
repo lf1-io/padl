@@ -2,12 +2,12 @@ import os
 from collections import OrderedDict
 import pytest
 import torch
-from padl import transforms as pd, transform, Identity, batch, unbatch, group, save, load
+from padl import transforms as pd, transform, Identity, batch, unbatch, group
 from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, RequirementNotFound
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
-from padl.transforms import Transform
+from padl.transforms import save, load
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
