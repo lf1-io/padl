@@ -1124,7 +1124,7 @@ def test_device_check_in_init_works():
     DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
 
 
-def test_failing_save_doesnt_overwrite(tmp_path):
+def test_failing_save_doesnt_overwrite(tmp_path, ignore_padl_requirement):
     @transform
     def f(x):
         ...
@@ -1142,7 +1142,7 @@ def test_failing_save_doesnt_overwrite(tmp_path):
     assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f
 
 
-def test_successful_save_overwrites(tmp_path):
+def test_successful_save_overwrites(tmp_path, ignore_padl_requirement):
     @transform
     def f(x):
         ...
