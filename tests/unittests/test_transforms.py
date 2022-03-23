@@ -7,7 +7,7 @@ from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, Requirem
 from padl.dumptools.serialize import value
 import padl
 from collections import namedtuple
-from padl.transforms import Transform
+from padl.transforms import load
 
 GLOBAL_1 = 0
 GLOBAL_1 = GLOBAL_1 + 5
@@ -1122,6 +1122,40 @@ def test_device_check_in_init_works():
     from tests.material.transforms_in_module import DeviceCheckInInit
     t = SimpleClassTransform(1)
     DeviceCheckInInit(t >> t >> batch >> t)  # should not cause an error
+
+
+def test_failing_save_doesnt_overwrite(tmp_path, ignore_padl_requirement):
+    @transform
+    def f(x):
+        ...
+
+    pd.save(f, tmp_path)
+
+    @transform
+    class X:
+        def pre_save(self, *args, **kwargs):  # this will crash saving
+            1 / 0
+
+    with pytest.raises(ZeroDivisionError):
+        pd.save(X(), tmp_path, force_overwrite=True)  # doesn't work
+
+    assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f
+
+
+def test_successful_save_overwrites(tmp_path, ignore_padl_requirement):
+    @transform
+    def f(x):
+        ...
+
+    pd.save(f, tmp_path)
+
+    @transform
+    class X:
+        ...
+
+    pd.save(X(), tmp_path, force_overwrite=True)  # works
+
+    assert load(str(tmp_path) + '.padl')._pd_call == 'X()'  # location contains X
 
 
 def test_missing_package(tmp_path):

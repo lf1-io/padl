@@ -97,6 +97,7 @@ def dump_requirements(nodes, strict=False):
         package-2==2.3.4
 
     :param nodes: List of ast nodes in a module.
+    :param strict: If *True* throw an exception if a package is not found
     :returns: String containing requirements.
     """
     result = f'# created with python-{".".join([str(x) for x in sys.version_info[:3]])}\n'

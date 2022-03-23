@@ -13,7 +13,7 @@ import inspect
 from itertools import chain
 from os import remove
 from pathlib import Path
-from shutil import rmtree
+from shutil import rmtree, copytree
 import textwrap
 import traceback
 from tempfile import TemporaryDirectory
@@ -358,7 +358,8 @@ class Transform:
             self.post_load(path, i)
         return
 
-    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
+    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False,
+                    strict_requirements: bool = True):
         """Save the transform to a zip-file at *path*.
 
         The file's name should end with '.padl'. If no extension is given, it will be added
@@ -366,6 +367,11 @@ class Transform:
 
         If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
+
+        :param path: The path to save the transform at.
+        :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
+        :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
+            be found. If *False* print a warning if that's the case.
         """
         path = Path(path)
         if path.suffix == '':
@@ -380,7 +386,7 @@ class Transform:
                 remove(path)
 
         with TemporaryDirectory('.padl') as dirname:
-            self.pd_save(dirname, True)
+            self.pd_save(dirname, True, strict_requirements)
             with ZipFile(path, 'w') as zipf:
                 for file in Path(dirname).glob('*'):
                     if file.is_file():
@@ -405,12 +411,16 @@ class Transform:
         if path.suffix == '':
             path = path.parent / (path.name + '.padl')
 
-        if path.exists():
+        if path.exists() and list(path.glob('*')):
             if not force_overwrite:
                 raise FileExistsError(f'{path} exists, call with *force_overwrite* to overwrite.')
-            rmtree(path)
 
-        path.mkdir()
+            with TemporaryDirectory('.padl') as dirname:
+                self.pd_save(dirname, False)
+                rmtree(path)
+                copytree(dirname, path)
+
+        path.mkdir(exist_ok=True)
 
         options = getattr(self, 'pd_save_options', None)
 
@@ -2472,6 +2482,7 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
     If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
     will raise a FileExistsError.
 
+    :param transform: transform to save
     :param path: The path to save the transform at.
     :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
     :param compress: If *True, save in a compressed (zip-) file instead of a folder.
@@ -2479,9 +2490,9 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         be found. If *False* print a warning if that's the case.
     """
     if compress:
-        transform.pd_zip_save(path, force_overwrite)
+        transform.pd_zip_save(path, force_overwrite, strict_requirements)
     else:
-        transform.pd_save(path, force_overwrite)
+        transform.pd_save(path, force_overwrite, strict_requirements)
 
 
 def load(path, **kwargs):
