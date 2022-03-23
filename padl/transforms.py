@@ -367,6 +367,11 @@ class Transform:
 
         If the file exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
         will raise a FileExistsError.
+
+        :param path: The path to save the transform at.
+        :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
+        :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
+            be found. If *False* print a warning if that's the case.
         """
         path = Path(path)
         if path.suffix == '':
