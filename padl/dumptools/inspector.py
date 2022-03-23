@@ -270,6 +270,9 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     elif segment_type == 'getitem':
         node_type = ast.Subscript
         instructions_finder = _instructions_in_getitem
+    else:
+        raise ValueError('Segment type not supported (must be one of "call", "attribute", '
+                         '"getitem".')
     # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
     # , for python 3.11 (currently in development) this can be done via co_positions
     # (see https://www.python.org/dev/peps/pep-0657/),
