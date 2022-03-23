@@ -1,14 +1,15 @@
 import ast
 from dataclasses import dataclass
+import hashlib
 
 NEW_AST_FEATURES = hasattr(ast, 'get_source_segment')
 
 if not NEW_AST_FEATURES:
     from asttokens import ASTTokens, LineNumbers
-    import hashlib
 
 
 TREECACHE = {}
+AST_NODE_CACHE = {}
 
 
 @dataclass
@@ -17,6 +18,13 @@ class Position:
     end_lineno: int
     col_offset: int
     end_col_offset: int
+
+
+def cached_parse(source):
+    hash_ = hashlib.md5(source.encode()).digest()
+    if hash_ not in AST_NODE_CACHE:
+        AST_NODE_CACHE[hash_] = ast.parse(source)
+    return AST_NODE_CACHE[hash_]
 
 
 def get_source_segment(source, node):

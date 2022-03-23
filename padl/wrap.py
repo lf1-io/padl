@@ -3,10 +3,11 @@
 import ast
 import dis
 import functools
+import importlib
 import inspect
 import copy
 from types import MethodWrapperType, ModuleType
-import importlib
+import re
 
 import numpy as np
 import torch
@@ -17,7 +18,6 @@ from padl.transforms import (
     AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform
 )
 
-import re
 
 def _set_local_varname(frame, event, _args, scope):
     if event == 'return':
@@ -80,14 +80,15 @@ def _wrap_class(cls, ignore_scope=False):
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
     Example:
-    >>> @transform
+
+    >>> @transform  # doctest: +SKIP
     ... class MyClass:
     ...     def __init__(self, x):
     ...         self.x = x
     ...     def __call__(self, args):
     ...         return self.x + args
-    >>> myobj = MyClass('hello')
-    >>> myobj._pd_call
+    >>> myobj = MyClass('hello')  # doctest: +SKIP
+    >>> myobj._pd_call  # doctest: +SKIP
     "MyClass('hello')"
 
     :param cls: class to be wrapped
@@ -171,59 +172,38 @@ def _wrap_lambda(fun, ignore_scope=False):
     except KeyError:
         full_source = get_source(caller_frame.f_code.co_filename)
 
-    source, offset = inspector.get_statement(original(full_source), caller_frame.f_lineno)
-    # find all lambda nodes
-    nodes = var2mod.Finder(ast.Lambda).find(ast.parse(source))
-    candidate_segments = []
-    candidate_calls = []
-    for node in nodes:
-        # keep lambda nodes which are contained in a call of `lf.trans`
-        if not isinstance(node.parent, ast.Call):
-            continue
-        containing_call = ast_utils.get_source_segment(source, node.parent.func)
-        containing_function = eval(containing_call, caller_frame.f_globals)
-        if containing_function is not transform:
-            continue
-        candidate_segments.append(
-            ast_utils.get_source_segment(source, node),
-        )
-        candidate_calls.append((
-            ast_utils.get_source_segment(source, node.parent),
-            ast_utils.get_position(source, node.parent)
-        ))
-
-    # compare candidate's bytecodes to that of `fun`
-    # keep the call for the matching one
     target_instrs = list(dis.get_instructions(fun))
 
-    found = False
-    call = None
-    locs = None
-
-    for segment, (call, locs) in zip(candidate_segments, candidate_calls):
-        instrs = list(dis.get_instructions(eval(segment)))
+    def check_segment(segment):
+        instrs = list(dis.get_instructions(eval('(' + segment + ')')))
         if not len(instrs) == len(target_instrs):
-            continue
+            return False
         for instr, target_instr in zip(instrs, target_instrs):
-            if instr.argval != target_instr.argval:
-                break
-            same_opname = instr.opname == target_instr.opname
-            load_ops = ('LOAD_NAME', 'LOAD_FAST', 'LOAD_GLOBAL', 'LOAD_CONST', 'LOAD_DEREF')
-            both_load = instr.opname in load_ops and target_instr.opname in load_ops
-            if not (same_opname or both_load):
-                break
-        else:
-            found = True
-            break
+            if not inspector.instructions_are_the_same(instr, target_instr):
+                return False
+        return True
 
-    if call is None or not found:
-        raise RuntimeError('Lambda not found.')
+    def check_statement(statement_node, source):
+        for node in var2mod.Finder(ast.Lambda).find(statement_node):
+            if not isinstance(node.parent, ast.Call):
+                continue
+            containing_call = ast_utils.get_source_segment(source, node.parent.func)
+            containing_function = eval(containing_call, caller_frame.f_globals)
+            if containing_function is not transform:
+                continue
+            segment = ast_utils.get_source_segment(source, node)
+            if check_segment(segment):
+                return ast_utils.get_position(source, node.parent)
+        return None
+
+    locs = inspector.get_statement_at_line(original(full_source), caller_frame.f_lineno,
+                                           check_statement)
 
     locs = (
-        locs.lineno - 1 + offset[0],
-        locs.end_lineno - 1 + offset[0],
-        locs.col_offset - offset[1],
-        locs.end_col_offset - offset[1]
+        locs.lineno - 1,
+        locs.end_lineno - 1,
+        locs.col_offset,
+        locs.end_col_offset
     )
 
     call = cut(full_source, *locs)

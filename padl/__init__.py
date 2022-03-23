@@ -17,4 +17,4 @@ unbatch = Unbatchify()
 
 __all__ = ['value', 'transform', 'Batchify', 'Unbatchify', 'Identity', 'group', 'load', 'save',
            'IfTrain', 'IfEval', 'IfInfer', 'IfInMode', 'identity', 'batch', 'unbatch', 'same',
-           '__version__', 'fulldump', 'importdump', 'param']
+           '__version__', 'fulldump', 'importdump', 'param', 'pd_debug']
