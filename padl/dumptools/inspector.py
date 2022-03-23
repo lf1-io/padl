@@ -285,13 +285,6 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
 
     lineno = caller_frame.f_lineno
 
-    # in python <= 3.7, the lineno points to the end of
-    # the statement rather than the beginning, therefore we need to decrement it
-    if segment_type == 'call':
-        lines = original(full_source).split('\n')
-        while '(' not in lines[lineno - 1] and not lines[lineno - 1].startswith('@'):
-            lineno -= 1
-
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
                                                caller_frame.f_lasti)
