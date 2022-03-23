@@ -358,7 +358,8 @@ class Transform:
             self.post_load(path, i)
         return
 
-    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False):
+    def pd_zip_save(self, path: Union[Path, str], force_overwrite: bool = False,
+                    strict_requirements: bool = True):
         """Save the transform to a zip-file at *path*.
 
         The file's name should end with '.padl'. If no extension is given, it will be added
@@ -380,7 +381,7 @@ class Transform:
                 remove(path)
 
         with TemporaryDirectory('.padl') as dirname:
-            self.pd_save(dirname, True)
+            self.pd_save(dirname, True, strict_requirements)
             with ZipFile(path, 'w') as zipf:
                 for file in Path(dirname).glob('*'):
                     if file.is_file():
@@ -2476,6 +2477,7 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
     If the folder exists, call with *force_overwrite* = `True` to overwrite. Otherwise, this
     will raise a FileExistsError.
 
+    :param transform: transform to save
     :param path: The path to save the transform at.
     :param force_overwrite: If *True*, overwrite any existing saved transform at *path*.
     :param compress: If *True, save in a compressed (zip-) file instead of a folder.
@@ -2483,9 +2485,9 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         be found. If *False* print a warning if that's the case.
     """
     if compress:
-        transform.pd_zip_save(path, force_overwrite)
+        transform.pd_zip_save(path, force_overwrite, strict_requirements)
     else:
-        transform.pd_save(path, force_overwrite)
+        transform.pd_save(path, force_overwrite, strict_requirements)
 
 
 def load(path, **kwargs):
