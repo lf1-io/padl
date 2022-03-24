@@ -3,10 +3,11 @@
 import ast
 import dis
 import functools
+import importlib
 import inspect
 import copy
 from types import MethodWrapperType, ModuleType
-import importlib
+import re
 
 import numpy as np
 import torch
@@ -17,7 +18,6 @@ from padl.transforms import (
     AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform
 )
 
-import re
 
 def _set_local_varname(frame, event, _args, scope):
     if event == 'return':
@@ -80,14 +80,15 @@ def _wrap_class(cls, ignore_scope=False):
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
     Example:
-    >>> @transform
+
+    >>> @transform  # doctest: +SKIP
     ... class MyClass:
     ...     def __init__(self, x):
     ...         self.x = x
     ...     def __call__(self, args):
     ...         return self.x + args
-    >>> myobj = MyClass('hello')
-    >>> myobj._pd_call
+    >>> myobj = MyClass('hello')  # doctest: +SKIP
+    >>> myobj._pd_call  # doctest: +SKIP
     "MyClass('hello')"
 
     :param cls: class to be wrapped

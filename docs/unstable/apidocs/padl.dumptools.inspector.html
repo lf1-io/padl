@@ -49,6 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../README.html#resources">Resources</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#dev-blog">Dev Blog</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
 </ul>
@@ -190,9 +191,9 @@
 </dd>
 </dl>
 <p>Example:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">():</span>  
 <span class="gp">... </span>    <span class="k">return</span> <span class="n">CallInfo</span><span class="p">(</span><span class="s1">&#39;here&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">()</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">()</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span>  
 <span class="go">&#39;Scope[__main__.f]&#39;</span>
 </pre></div>
 </div>
@@ -238,37 +239,31 @@ available as then it will be possible to get column information from frames
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.dumptools.inspector.get_statement">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">get_statement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.get_statement" title="Permalink to this definition"></a></dt>
-<dd><p>Get complete (potentially multi-line) statement at line <em>lineno</em> out of <em>source</em>.</p>
+<dt class="sig sig-object py" id="padl.dumptools.inspector.get_statement_at_line">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">get_statement_at_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.get_statement_at_line" title="Permalink to this definition"></a></dt>
+<dd><p>Get statements at line <em>lineno</em> from a source string.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A tuple of statement and offset. The offset is a tuple of row offset and col offset.
-It can be used to determine the location of the statement within the source.</p>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – The source to get the statements from.</p></li>
+<li><p><strong>lineno</strong> – Line number which the statement must include. Counted from 1.</p></li>
+<li><p><strong>checker</strong> – A function that checks each statement. It must return <em>None</em> if the check
+fails. If anything else is returned, that becomes the return value of this function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A list of tuples of string with the found statements and and offset between the
+beginning of the match and <em>lineno</em>.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.dumptools.inspector.get_surrounding_block">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">get_surrounding_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.get_surrounding_block" title="Permalink to this definition"></a></dt>
-<dd><p>Get the code block surrounding the line at <em>lineno</em> in <em>source</em>.</p>
-<p>The code block surrounding a line is the largest block of lines with the same or larger
-indentation as the line itself.</p>
-<p>The result will be unindented.</p>
-<p>Raises a <cite>ValueError</cite> if the line at <em>lineno</em> is empty.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>source</strong> – The source to extract the block from.</p></li>
-<li><p><strong>lineno</strong> – Number of the line for extracting the block.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple containing the block itself and the line number of the target line
-within the block and the number of spaces removed from the front.</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="padl.dumptools.inspector.instructions_are_the_same">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">instructions_are_the_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_instr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.instructions_are_the_same" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the disassebled instructions <em>instr</em> and <em>target_instr</em> are (basically) the same.</p>
+<p>Mainly this checks if the <em>opname</em> and <em>argval</em> of the two instructions are the same,
+additionally accounting for some subleties involving code object - argvals and LOAD-operators.</p>
 </dd></dl>
 
 <dl class="py function">

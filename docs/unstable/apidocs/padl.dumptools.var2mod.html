@@ -49,6 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../README.html#resources">Resources</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html#dev-blog">Dev Blog</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#contributing">Contributing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../README.html#licensing">Licensing</a></li>
 </ul>
@@ -250,7 +251,7 @@ variables. The edges are the dependencies between the nodes.</p>
 <dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ast.NodeVisitor</span></code> for finding AST-nodes of a given type in an AST-tree.</p>
 <p>Example:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Finder</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">Name</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;x(y)&#39;</span><span class="p">))</span>  
-<span class="go">[&lt;_ast.Name object at 0x...&gt;, &lt;_ast.Name object at 0x...&gt;]</span>
+<span class="go">[&lt;...ast.Name object at 0x...&gt;, &lt;...ast.Name object at 0x...&gt;]</span>
 </pre></div>
 </div>
 <dl class="py method">

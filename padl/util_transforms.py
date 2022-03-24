@@ -80,7 +80,7 @@ class IfInMode(ClassTransform):
         )
 
         return if_output_components_reduced, final_splits, \
-               if_has_batchify or else_has_batchify, if_has_unbatchify or else_has_unbatchify
+            if_has_batchify or else_has_batchify, if_has_unbatchify or else_has_unbatchify
 
 
 class IfInfer(IfInMode):
@@ -169,7 +169,7 @@ class Try(ClassTransform):
                       else_output_components_reduced]
         assert all(isinstance(component, int) for component in components) \
                and len(set(components)) == 1, \
-            'Try Transform cannot contain transforms that have multiple stages.'
+               'Try Transform cannot contain transforms that have multiple stages.'
 
         final_splits = tuple(
             self if i == components[0]

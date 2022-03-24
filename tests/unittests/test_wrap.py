@@ -16,7 +16,7 @@ np = transform(np)
 pd_torch = transform(torch)
 
 
-def test_function_a(tmp_path):
+def test_function_a(tmp_path, ignore_padl_requirement):
     t = np.cos
     assert isinstance(t, FunctionTransform)
     assert t._pd_call == 'np.cos'
@@ -46,7 +46,7 @@ class TestModuleWrap:
         request.cls.transform_3 = transform_temp + transform_temp >> np.add
         request.cls.transform_4 = np.cos + np.cos >> np.add
 
-    def test_save_load(self, tmp_path):
+    def test_save_load(self, tmp_path, ignore_padl_requirement):
         for transform_ in [self.transform_1, self.transform_2, self.transform_3, self.transform_4]:
             transform_.pd_save(tmp_path / 'test.padl', True)
             t_ = load(tmp_path / 'test.padl')
