@@ -255,10 +255,7 @@ class _VarFinder(ast.NodeVisitor):
         for name in sub_globals:
             if self.in_locals(name):
                 continue
-            if name in targets:
-                sub_dependencies.add(ScopedName(name.name, name.scope, name.n + 1))
-            else:
-                sub_dependencies.add(name)
+            sub_dependencies.add(_check_and_make_increment(name, targets))
         self.locals.update(targets)
         self.globals.update(sub_dependencies)
 
@@ -598,6 +595,7 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
 
     :param node: AST node to search in.
     :param filter_builtins: If *True*, filter out builtins.
+    :return: Set of global ScopedNames
     """
     if isinstance(node, ast.ClassDef):
         return _find_globals_in_classdef(node)
@@ -607,45 +605,25 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     return globals_
 
 
-def _check_and_make_increment(var: ScopedName, scoped_name: ScopedName):
-    """Apply Increment on ScopedName if necessary.
+def _check_and_make_increment(value: ScopedName, targets: Set):
+    """Apply Increment on *value* ScopedName if necessary.
 
-    Increment means the increment of *scoped_name.n*.
-    *scoped_name.n* signifies which one of the usages of a *name* in the code does this
+    Increment means the increment of *value.n*.
+    *value.n* signifies which one of the usages of a *name* in the code does this
      *scoped_name* points to.
     0 being the most recent, and increase integer representing the older usages.
 
-    :param var: Target ScopedName for increment
-    :param scoped_name: Source ScopedName for increment
+    :param value: Target ScopedName for increment
+    :param targets: Set of ScopedName for increment
     :return:
         ScopedName after increment
     """
-    # Get the correct scope
-    if var.scope is None:
-        scope = scoped_name.scope
-    else:
-        scope = var.scope
-
-    # check if the actual names of the objects are the same, e.g. obj.attr == obj
-    split_var_name = var.name.rsplit('.', 1)[0]
-    split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
-
-    if split_var_name != split_scoped_name:
-        return ScopedName(var.name, scope, var.n)
-
-    # In the case that names are the same, and ast.Node is Async/FunctionDef or ClassDef,
-    # this will overwrite the previous definition, so does not need + 1
-    (_, ast_node), _, _ = find_in_scope(scoped_name)
-    if isinstance(ast_node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef)):
-        return ScopedName(var.name, scope, var.n + scoped_name.n)
-
-    # Check if ScopedName with + 1 exists, if yes, then use that else use without + 1
-    new_scoped_name = ScopedName(var.name, scope, var.n + scoped_name.n + 1)
-    try:
-        find_in_scope(new_scoped_name)
-    except NameNotFound:
-        return ScopedName(var.name, scope, var.n + scoped_name.n)
-    return new_scoped_name
+    split_value_name = value.name.rsplit('.', 1)[0]
+    for target in targets:
+        split_target_name = target.name.rsplit('.', 1)[0]
+        if split_value_name == split_target_name:
+            return ScopedName(value.name, value.scope, value.n + 1)
+    return value
 
 
 def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName):
@@ -665,8 +643,17 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
     True
     """
     result = set()
+    split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
     for var in variables:
-        result.add(_check_and_make_increment(var, scoped_name))
+        if var.scope is None:
+            scope = scoped_name.scope
+        else:
+            scope = var.scope
+        split_var_name = var.name.rsplit('.', 1)[0]
+        if split_var_name == split_scoped_name:
+            result.add(ScopedName(var.name, scope, var.n + scoped_name.n))
+        else:
+            result.add(ScopedName(var.name, scope, var.n))
     return result
 
 
