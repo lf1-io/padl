@@ -619,11 +619,11 @@ def find_in_scope(scoped_name: ScopedName):
     *scoped_name.name* in the scope *scoped_name.scope*.
 
     :param scoped_name: Name (with scope) of the variable to look for.
-    :return:
-        source: string representation of piece of code
-        node: _ast node for the code
-        scope: scope of the code
-        name: string name
+    :return: Tuple as ((source, node), scope, name), where
+        * source: String representation of piece of code.
+        * node: Ast node for the code.
+        * scope: Scope of the code.
+        * name: Name of variable (str).
 
     """
     scope = scoped_name.scope

@@ -65,7 +65,8 @@ class Finder(ast.NodeVisitor):
 def _join_attr(ast_node):
     """Get list of base object name and attribute names
 
-    'f.pd_to' -> ['f', 'pd_to']
+    >>> _join_attr('f.pd_to')
+    ['f', 'pd_to']
 
     :param ast_node: ast.node
     :return: List of strings representing name of base object and the name of attributes accessed
@@ -104,7 +105,7 @@ class _VarFinder(ast.NodeVisitor):
     ...                                                     ScopedName('y', None, 0)})
     True
 
-    attributes `globals` and `locals` are sets of ScopedName.
+    Attributes `globals` and `locals` are sets of ScopedName.
     """
 
     def __init__(self):
@@ -606,17 +607,16 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
 
 
 def _check_and_make_increment(value: ScopedName, targets: Set):
-    """Apply Increment on *value* ScopedName if necessary.
+    """Apply increment on *value* ScopedName if necessary.
 
     Increment means the increment of *value.n*.
-    *value.n* signifies which one of the usages of a *name* in the code does this
+    *value.n* signifies which one of the usages of a *name* in the code this
      *scoped_name* points to.
     0 being the most recent, and increase integer representing the older usages.
 
-    :param value: Target ScopedName for increment
-    :param targets: Set of ScopedName for increment
-    :return:
-        ScopedName after increment
+    :param value: ScopedName to be incremented (if necessary).
+    :param targets: Set of ScopedName's to compare to *value*.
+    :return: ScopedName after increment.
     """
     split_value_name = value.name.rsplit('.', 1)[0]
     for target in targets:
@@ -636,10 +636,10 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
     >>> a = b = 2
     >>> b = a + b
     >>> out = increment_same_name_var({ScopedName('a', None, 0), ScopedName('b', None, 0)},
-    ...                 ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))  # doctest: +SKIP
-    >>> isinstance(out, set)  # doctest: +SKIP
+    ...                 ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))
+    >>> isinstance(out, set)
     True
-    >>> {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}  #doctest: +SKIP
+    >>> {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}
     True
     """
     result = set()
