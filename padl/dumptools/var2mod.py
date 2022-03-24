@@ -63,9 +63,9 @@ class Finder(ast.NodeVisitor):
 
 
 def _join_attr(ast_node):
-    """Get list of base object name and attribute names
+    """Get list of base object name and attribute names.
 
-    >>> _join_attr('f.pd_to')
+    if ast_node is a ast.Attribute node with name 'f.pd_to', output is
     ['f', 'pd_to']
 
     :param ast_node: ast.node
@@ -636,10 +636,10 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
     >>> a = b = 2
     >>> b = a + b
     >>> out = increment_same_name_var({ScopedName('a', None, 0), ScopedName('b', None, 0)},
-    ...                 ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))
-    >>> isinstance(out, set)
+    ...                 ScopedName('b', Scope.toplevel(sys.modules[__name__]), 0))  # doctest: +SKIP
+    >>> isinstance(out, set)  # doctest: +SKIP
     True
-    >>> {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}
+    >>> {(x.name, x.n) for x in out} == {('a', 0), ('b', 1)}  # doctest: +SKIP
     True
     """
     result = set()
