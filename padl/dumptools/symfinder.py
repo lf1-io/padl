@@ -30,6 +30,7 @@ import sys
 from textwrap import dedent
 from types import ModuleType
 from typing import List, Tuple
+from collections import defaultdict
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -578,7 +579,6 @@ class Scope:
         return hash(str(self))
 
 
-@dataclass
 class ScopedName:
     """A name with a scope and a counter. The "name" is the name of the item, the scope
     is its :class:`Scope` and the counter counts the items with the same name, in the same scope,
@@ -607,11 +607,25 @@ class ScopedName:
     scope: Scope
     n: int = 0
 
+    def __init__(self, name: str, scope: Scope, n: int):
+        self.name = name
+        self.scope = scope
+        self.n = n
+        self.variants = [(name, n)]
+
+    def add_variant(self, name, n):
+        self.variants.append((name, n))
+
     def __hash__(self):
         return hash((self.name, self.scope, self.n))
 
     def __eq__(self, other):
         return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+
+    def copy(self):
+        _copy = type(self)(self.name, self.scope, self.n)
+        _copy.variants = [(_name, _n) for _name, _n in self.variants]
+        return _copy
 
 
 def find_in_scope(scoped_name: ScopedName):
@@ -627,25 +641,25 @@ def find_in_scope(scoped_name: ScopedName):
 
     """
     scope = scoped_name.scope
-    i = scoped_name.n
+    n = scoped_name.n
     for _scopename, tree in scope.scopelist:
         try:
-            res = find_in_source(scoped_name.name, scoped_name.scope.def_source, tree=tree, i=i,
-                                 return_partial=True)
-            if isinstance(res, int):
-                i = res
-                continue
+            res = find_scopedname_in_source(scoped_name, source = scoped_name.scope.def_source, tree = tree)
+            # res = find_in_source(scoped_name.name, scoped_name.scope.def_source, tree=tree, i=n,
+            #                      return_partial=True)
+            # if isinstance(res, int):
+            #     n = res
+            #     continue
             source, node, name = res
             if getattr(node, '_globalscope', False):
                 scope = Scope.empty()
-
             return (source, node), scope, name
         except NameNotFound:
             scope = scope.up()
             continue
     if scope.module is None:
         raise NameNotFound(f'{scoped_name.name} not found in function hierarchy.')
-    source, node, name = find(scoped_name.name, scope.module, i)
+    source, node, name = find_scopedname(scoped_name)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:
@@ -674,6 +688,35 @@ def replace_star_imports(tree: ast.Module):
                 node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
+def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    source string *source*.
+
+    :param scoped_name: ScopedName to look for.
+    :param tree: AST.Module to look into for scoped_name.
+    :param source: Source code to search.
+    :returns: Tuple with source code segment and corresponding AST node.
+    """
+    if tree is None:
+        tree = ast.parse(source)
+
+    replace_star_imports(tree)
+    finder_clss = _ThingFinder.__subclasses__()
+
+    n_dict = {var_name: var_n for var_name, var_n in scoped_name.variants}
+
+    for statement in tree.body[::-1]:
+        for var_name, var_n in scoped_name.variants:
+            for finder_cls in finder_clss:
+                finder = finder_cls(source, var_name)
+                finder.visit(statement)
+                if finder.found_something():
+                    if n_dict[var_name] == 0:
+                        return finder.deparse(), finder.node(), var_name
+                    n_dict[var_name] -= 1
+    raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
+
+
 def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
                    return_partial=False) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
@@ -681,7 +724,7 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
 
     :param var_name: Name of the variable to look for.
     :param source: Source code to search.
-    :returns: Tuple with source code segment and corresponding AST node.
+    :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
     if tree is None:
         tree = ast.parse(source)
@@ -700,6 +743,11 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
     if return_partial:
         return i
     raise NameNotFound(f'{var_name} not found.')
+
+
+def find_scopedname_in_module(scoped_name: ScopedName, module):
+    source = sourceget.get_module_source(module)
+    return find_scopedname_in_source(scoped_name, source)
 
 
 def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
@@ -742,6 +790,24 @@ def _find_branch(tree, lineno, source):
     return [tree]
 
 
+def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[ScopedName, ast.AST]:
+    """Find ScopedName in ipython
+
+    :param scoped_name:
+    :return:
+    """
+    source = node = None
+    for cell in sourceget._ipython_history()[::-1]:
+        try:
+            source, node, name = find_scopedname_in_source(scoped_name, cell)
+        except (NameNotFound, SyntaxError):
+            continue
+        break
+    if source is None:
+        raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
+    return source, node, name
+
+
 def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     ipython history.
@@ -763,6 +829,29 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     if source is None:
         raise NameNotFound(f'"{var_name}" not found.')
     return source, node, name
+
+
+def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    module *module*.
+
+    If *module* is not specified, this uses `__main__`. In that case, the ipython history will
+    be searched as well.
+
+    :param var_name: Name of the variable to look for.
+    :param module: Module to search (defaults to __main__).
+    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
+    :returns: Tuple with source code segment and corresponding ast node.
+    """
+    module = scoped_name.scope.module
+    if module is None:
+        module = sys.modules['__main__']
+    try:
+        return find_scopedname_in_module(scoped_name, module)
+    except TypeError as exc:
+        if module is not sys.modules['__main__']:
+            raise NameNotFound(f'"{scoped_name}" not found.') from exc
+        return find_scopedname_in_ipython(scoped_name)
 
 
 def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:

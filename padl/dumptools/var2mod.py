@@ -2,6 +2,7 @@
 """
 import ast
 import builtins
+import warnings
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -621,8 +622,23 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
     split_value_name = value.name.rsplit('.', 1)[0]
     for target in targets:
         split_target_name = target.name.rsplit('.', 1)[0]
-        if split_value_name == split_target_name:
+        if value.name == target.name:
+            # a = a
             return ScopedName(value.name, value.scope, value.n + 1)
+
+        if split_value_name == target.name:
+            # a = a.b + 1
+            return_name = ScopedName(split_value_name, value.scope, value.n + 1)
+            return_name.add_variant(value.name, value.n)
+            return return_name
+
+        if (value.name == split_target_name) or\
+            (split_value_name == split_target_name):
+            # a.b = a; a.b = a.b + 1
+            raise warnings.warn(f'''
+            Cannot save attribute assignments. It is not currently implemented.
+            Warning related to {target.name}
+            ''')
     return value
 
 
@@ -643,15 +659,19 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
     True
     """
     result = set()
-    split_scoped_name = scoped_name.name.rsplit('.', 1)[0]
+
     for var in variables:
         if var.scope is None:
             scope = scoped_name.scope
         else:
             scope = var.scope
-        split_var_name = var.name.rsplit('.', 1)[0]
-        if split_var_name == split_scoped_name:
-            result.add(ScopedName(var.name, scope, var.n + scoped_name.n))
+        if scoped_name.name in [name for name,_ in var.variants]:
+            return_scoped_name = ScopedName(None, scope, None)
+            for variant_name, variant_n in var.variants:
+                return_scoped_name.add_variant(variant_name, scoped_name.n + variant_n)
+            return_scoped_name.variants.pop(0)
+            return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
+            result.add(return_scoped_name)
         else:
             result.add(ScopedName(var.name, scope, var.n))
     return result
