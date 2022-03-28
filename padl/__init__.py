@@ -22,14 +22,14 @@ __all__ = ['value', 'transform', 'Batchify', 'Unbatchify', 'Identity', 'group', 
 try:
     import inspect
     from padl.dumptools.sourceget import get_source
-    _ = get_source(inspect.stack()[0].filename)
+    _ = get_source(inspect.stack()[-1].filename)
     # We do not want these to be padl level imports so we remove them
     del inspect
     del get_source
 except Exception as e:
     raise RuntimeError('PADL does not work in the current Interpreter Environment because we '
-                       'rely on the inspect module to find source code (used when saving PADL '
-                       'transforms). Unfortunately, the source code typed at this interactive '
+                       'rely on the inspect module to find source code. '
+                       'Unfortunately, the source code typed at this interactive '
                        'prompt is discarded as soon as it is parsed. Therefore, we recommend '
                        'using the IPython interpreter or Jupyter Notebooks for interactive '
                        'sessions.') from e
