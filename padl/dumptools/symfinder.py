@@ -603,11 +603,8 @@ class ScopedName:
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
     """
-    name: str
-    scope: Scope
-    n: int = 0
 
-    def __init__(self, name: str, scope: Scope, n: int):
+    def __init__(self, name: str, scope: Scope, n: int = 0):
         self.name = name
         self.scope = scope
         self.n = n
