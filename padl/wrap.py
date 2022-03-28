@@ -55,7 +55,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
                 call = None
                 wrap_type = 'decorator'
 
-    # if this is the decorator case we drop one leven from the scope (this is the decorated
+    # if this is the decorator case we drop one level from the scope (this is the decorated
     # function itself)
     drop_n = 1 if call is None else 0
     if call_info is None:
