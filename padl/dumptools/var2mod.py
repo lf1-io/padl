@@ -639,6 +639,12 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
             Cannot save attribute assignments. It is not currently implemented.
             Warning related to {target.name}
             ''')
+        if '.' in value.name:
+            # x = f.read()
+            return_name = ScopedName(value.name, value.scope, value.n)
+            return_name.add_variant(split_value_name, value.n)
+            return return_name
+
     return value
 
 
@@ -673,7 +679,12 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
             return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
             result.add(return_scoped_name)
         else:
-            result.add(ScopedName(var.name, scope, var.n))
+            return_scoped_name = ScopedName(None, scope, None)
+            for variant_name, variant_n in var.variants:
+                return_scoped_name.add_variant(variant_name, variant_n)
+            return_scoped_name.variants.pop(0)
+            return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
+            result.add(return_scoped_name)
     return result
 
 
