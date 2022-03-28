@@ -642,11 +642,6 @@ def find_in_scope(scoped_name: ScopedName):
     for _scopename, tree in scope.scopelist:
         try:
             res = find_scopedname_in_source(scoped_name, source = scoped_name.scope.def_source, tree = tree)
-            # res = find_in_source(scoped_name.name, scoped_name.scope.def_source, tree=tree, i=n,
-            #                      return_partial=True)
-            # if isinstance(res, int):
-            #     n = res
-            #     continue
             source, node, name = res
             if getattr(node, '_globalscope', False):
                 scope = Scope.empty()
