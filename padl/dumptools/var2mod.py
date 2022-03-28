@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Set
 
 from padl.dumptools import ast_utils
-from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope, NameNotFound
+from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope, NameNotFound, update_scopedname
 
 try:
     unparse = ast.unparse
@@ -672,19 +672,9 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
         else:
             scope = var.scope
         if scoped_name.name in [name for name,_ in var.variants]:
-            return_scoped_name = ScopedName(None, scope, None)
-            for variant_name, variant_n in var.variants:
-                return_scoped_name.add_variant(variant_name, scoped_name.n + variant_n)
-            return_scoped_name.variants.pop(0)
-            return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
-            result.add(return_scoped_name)
+            result.add(update_scopedname(var, scope, scoped_name.n))
         else:
-            return_scoped_name = ScopedName(None, scope, None)
-            for variant_name, variant_n in var.variants:
-                return_scoped_name.add_variant(variant_name, variant_n)
-            return_scoped_name.variants.pop(0)
-            return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
-            result.add(return_scoped_name)
+            result.add(update_scopedname(var, scope, 0))
     return result
 
 

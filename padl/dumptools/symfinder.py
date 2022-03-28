@@ -688,6 +688,25 @@ def replace_star_imports(tree: ast.Module):
                 node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
+def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0, remove_dot: bool = False):
+    """Get updated ScopedName with added *n* and/or removed dot '.'.
+
+    :param scoped_name: ScopedName to update.
+    :param scope: Scope of new ScopedName.
+    :param add_n: *n* to add to new ScopedName.
+    :param remove_dot: Boolean to remove dot from ScopedName or not.
+    :return: New ScopedName with updated name and *n*.
+    """
+    return_scoped_name = ScopedName(None, scope, None)
+    for variant_name, variant_n in scoped_name.variants:
+        if remove_dot and '.' in variant_name:
+            variant_name = variant_name.rsplit('.', 1)[0]
+        return_scoped_name.add_variant(variant_name, add_n + variant_n)
+    return_scoped_name.variants.pop(0)
+    return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
+    return return_scoped_name
+
+
 def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
@@ -714,6 +733,9 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                     if n_dict[var_name] == 0:
                         return finder.deparse(), finder.node(), var_name
                     n_dict[var_name] -= 1
+    if any(['.' in var_name for var_name, _ in scoped_name.variants]):
+        update_scoped_name = update_scopedname(scoped_name, scoped_name.scope, remove_dot=True)
+        return find_scopedname_in_source(update_scoped_name, source, tree)
     raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
 
 
