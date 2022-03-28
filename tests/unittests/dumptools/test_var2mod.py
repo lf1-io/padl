@@ -1,5 +1,7 @@
 import ast
 
+import pytest
+
 from padl.dumptools import var2mod
 from padl.dumptools.var2mod import ScopedName
 
@@ -47,3 +49,36 @@ class TestFindGlobals:
         )
         res = var2mod.find_globals(ast.parse(statement))
         assert res == {ScopedName('numpy.uint8', None, 0), ScopedName('transform', None, 0)}
+
+
+class Test_CheckAndMakeIncrement:
+    @staticmethod
+    def parse(eqn):
+        t, v = eqn.split('=')
+        target = var2mod.ScopedName(name=t.strip(), n=0, scope=None)
+        value = var2mod.ScopedName(name=v.strip(), n=0, scope=None)
+        return value, [target]
+
+    def test_a_a(self):
+        res = var2mod._check_and_make_increment(*self.parse('a = a'))
+        assert set(res.variants) == {('a', 1)}
+
+    def test_a_b(self):
+        res = var2mod._check_and_make_increment(*self.parse('a = b'))
+        assert set(res.variants) == {('b', 0)}
+
+    def test_a_ab(self):
+        res = var2mod._check_and_make_increment(*self.parse('a = a.b'))
+        assert set(res.variants) == {('a', 1), ('a.b', 0)}
+
+    def test_a_abc(self):
+        res = var2mod._check_and_make_increment(*self.parse('a = a.b.c'))
+        assert set(res.variants) == {('a', 1), ('a.b', 0), ('a.b.c', 0)}
+
+    def test_ab_a(self):
+        with pytest.warns(UserWarning):
+            var2mod._check_and_make_increment(*self.parse('a.b = a'))
+
+    def test_ab_abc(self):
+        with pytest.warns(UserWarning):
+            var2mod._check_and_make_increment(*self.parse('a.b = a.b.c'))

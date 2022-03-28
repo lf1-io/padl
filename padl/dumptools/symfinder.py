@@ -680,7 +680,8 @@ def replace_star_imports(tree: ast.Module):
                 node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
-def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0, remove_dot: bool = False):
+def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0,
+                      remove_dot: bool = False):
     """Get updated ScopedName with added *n* and/or removed dot '.'.
 
     :param scoped_name: ScopedName to update.
