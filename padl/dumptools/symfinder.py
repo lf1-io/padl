@@ -579,6 +579,7 @@ class Scope:
         return hash(str(self))
 
 
+@dataclass
 class ScopedName:
     """A name with a scope and a counter. The "name" is the name of the item, the scope
     is its :class:`Scope` and the counter counts the items with the same name, in the same scope,
@@ -603,12 +604,12 @@ class ScopedName:
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
     """
+    name: str
+    scope: Scope
+    n: int = 0
 
-    def __init__(self, name: str, scope: Scope, n: int = 0):
-        self.name = name
-        self.scope = scope
-        self.n = n
-        self.variants = [(name, n)]
+    def __post_init__(self):
+        self.variants = [(self.name, self.n)]
 
     def add_variant(self, name, n):
         self.variants.append((name, n))
