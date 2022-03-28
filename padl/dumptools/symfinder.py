@@ -639,7 +639,6 @@ def find_in_scope(scoped_name: ScopedName):
 
     """
     scope = scoped_name.scope
-    n = scoped_name.n
     for _scopename, tree in scope.scopelist:
         try:
             res = find_scopedname_in_source(scoped_name, source = scoped_name.scope.def_source, tree = tree)
@@ -700,14 +699,14 @@ def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0, rem
     return return_scoped_name
 
 
-def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST]:
+def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
     :param scoped_name: ScopedName to look for.
     :param tree: AST.Module to look into for scoped_name.
     :param source: Source code to search.
-    :returns: Tuple with source code segment and corresponding AST node.
+    :returns: Tuple with source code segment, corresponding AST node and variable name.
     """
     if tree is None:
         tree = ast.parse(source)
@@ -805,11 +804,11 @@ def _find_branch(tree, lineno, source):
     return [tree]
 
 
-def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[ScopedName, ast.AST]:
+def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, str]:
     """Find ScopedName in ipython
 
-    :param scoped_name:
-    :return:
+    :param scoped_name: ScopedName to find.
+    :returns: Tuple with source code segment and corresponding ast node.
     """
     source = node = None
     for cell in sourceget._ipython_history()[::-1]:
@@ -846,17 +845,15 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     return source, node, name
 
 
-def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST]:
-    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST, str]:
+    """Find the piece of code that assigned a value to the variable with name *scoped_name* in the
     module *module*.
 
     If *module* is not specified, this uses `__main__`. In that case, the ipython history will
     be searched as well.
 
-    :param var_name: Name of the variable to look for.
-    :param module: Module to search (defaults to __main__).
-    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
-    :returns: Tuple with source code segment and corresponding ast node.
+    :param scoped_name: Name of the variable to look for.
+    :returns: Tuple with source code segment, corresponding ast node and variable name.
     """
     module = scoped_name.scope.module
     if module is None:
@@ -869,7 +866,7 @@ def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST]:
         return find_scopedname_in_ipython(scoped_name)
 
 
-def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
+def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -879,7 +876,7 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
     :param var_name: Name of the variable to look for.
     :param module: Module to search (defaults to __main__).
     :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
-    :returns: Tuple with source code segment and corresponding ast node.
+    :returns: Tuple with source code segment, corresponding ast node and variable name.
     """
     if module is None:
         module = sys.modules['__main__']
