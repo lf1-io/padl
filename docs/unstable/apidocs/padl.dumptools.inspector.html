@@ -260,10 +260,19 @@ beginning of the match and <em>lineno</em>.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.inspector.instructions_are_the_same">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">instructions_are_the_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_instr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.instructions_are_the_same" title="Permalink to this definition"></a></dt>
-<dd><p>Check if the disassebled instructions <em>instr</em> and <em>target_instr</em> are (basically) the same.</p>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">instructions_are_the_same</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dis.Instruction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_instr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dis.Instruction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.instructions_are_the_same" title="Permalink to this definition"></a></dt>
+<dd><p>Check if the disassembled instructions <em>instr</em> and <em>target_instr</em> are (basically) the same.</p>
 <p>Mainly this checks if the <em>opname</em> and <em>argval</em> of the two instructions are the same,
-additionally accounting for some subleties involving code object - argvals and LOAD-operators.</p>
+additionally accounting for some subtleties involving code object - argvals and LOAD-operators.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instr</strong> – Candidate instruction that should be matched to the target.</p></li>
+<li><p><strong>target_instr</strong> – Target instruction.</p></li>
+<li><p><strong>frame</strong> – Frame the target instruction came from.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">

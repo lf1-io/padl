@@ -2,6 +2,12 @@ import ast
 from dataclasses import dataclass
 import hashlib
 
+try:
+    unparse = ast.unparse
+except AttributeError:  # python < 3.9
+    from astunparse import unparse
+
+
 NEW_AST_FEATURES = hasattr(ast, 'get_source_segment')
 
 if not NEW_AST_FEATURES:
@@ -21,6 +27,11 @@ class Position:
 
 
 def cached_parse(source):
+    """Cached version of :func:`ast.parse`.
+
+    If called a second time with the same *source*, this returns a cached tree instead of parsing
+    again.
+    """
     hash_ = hashlib.md5(source.encode()).digest()
     if hash_ not in AST_NODE_CACHE:
         AST_NODE_CACHE[hash_] = ast.parse(source)

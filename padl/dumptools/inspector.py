@@ -218,11 +218,16 @@ def caller_frame() -> types.FrameType:
     return outer_caller_frameinfo(calling_module_name).frame
 
 
-def instructions_are_the_same(instr, target_instr, frame=None):
-    """Check if the disassebled instructions *instr* and *target_instr* are (basically) the same.
+def instructions_are_the_same(instr: dis.Instruction, target_instr: dis.Instruction,
+                              frame=None):
+    """Check if the disassembled instructions *instr* and *target_instr* are (basically) the same.
 
     Mainly this checks if the *opname* and *argval* of the two instructions are the same,
-    additionally accounting for some subleties involving code object - argvals and LOAD-operators.
+    additionally accounting for some subtleties involving code object - argvals and LOAD-operators.
+
+    :param instr: Candidate instruction that should be matched to the target.
+    :param target_instr: Target instruction.
+    :param frame: Frame the target instruction came from.
     """
     # for the LOAD_FAST operator, get the argval from the frame's locals
     if (frame is not None and target_instr.opname == 'LOAD_FAST'
@@ -265,6 +270,9 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     elif segment_type == 'getitem':
         node_type = ast.Subscript
         instructions_finder = _instructions_in_getitem
+    else:
+        raise ValueError('Segment type not supported (must be one of "call", "attribute", '
+                         '"getitem".')
     # we want to extract the precise init statement here (e.g. `MyClass(1, 2, 3)`
     # , for python 3.11 (currently in development) this can be done via co_positions
     # (see https://www.python.org/dev/peps/pep-0657/),
@@ -276,13 +284,6 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
         full_source = get_source(caller_frame.f_code.co_filename)
 
     lineno = caller_frame.f_lineno
-
-    # in python <= 3.7, the lineno points to the end of
-    # the statement rather than the beginning, therefore we need to decrement it
-    if segment_type == 'call':
-        lines = original(full_source).split('\n')
-        while '(' not in lines[lineno - 1] and not lines[lineno - 1].startswith('@'):
-            lineno -= 1
 
     # disassemble and get the instructions up to the current position
     target_instrs = _instructions_up_to_offset(caller_frame.f_code,
@@ -305,7 +306,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     def check_statement(statement_node, source):
         # iterate over nodes of the correct type found in the statement and check them
         for node in var2mod.Finder(node_type).find(statement_node):
-            segment = ast_utils.get_source_segment(source, node)
+            segment = ast_utils.unparse(node)
             if check_segment(segment):
                 return ast_utils.get_position(source, node)
         return None
