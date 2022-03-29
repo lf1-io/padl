@@ -8,12 +8,8 @@ from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Set
 
 from padl.dumptools import ast_utils
+from padl.dumptools.ast_utils import unparse
 from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope
-
-try:
-    unparse = ast.unparse
-except AttributeError:  # python < 3.9
-    from astunparse import unparse
 
 
 class Finder(ast.NodeVisitor):
