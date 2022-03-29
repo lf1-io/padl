@@ -1017,7 +1017,8 @@ class Transform:
                 raise err
         return self._pd_format_output(inputs)
 
-    def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def eval_apply(self, inputs: Iterable, flatten: bool = False,
+                   use_post: bool = True, **kwargs):
         """Call transform within the eval context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1029,9 +1030,11 @@ class Transform:
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
         """
-        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs,
-                                 flatten=flatten)
+        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs, flatten=flatten,
+                                 use_post=use_post)
 
     def train_apply(self, inputs: Iterable, flatten: bool = False,
                     use_post: bool = True, **kwargs):
