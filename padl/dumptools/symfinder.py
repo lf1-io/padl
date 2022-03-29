@@ -579,7 +579,6 @@ class Scope:
         return hash(str(self))
 
 
-@dataclass
 class ScopedName:
     """A name with a scope and a counter. The "name" is the name of the item, the scope
     is its :class:`Scope` and the counter counts the items with the same name, in the same scope,
@@ -618,9 +617,13 @@ class ScopedName:
     n: int = 0
     overwriting_variant: bool = False
 
-    def __post_init__(self):
-        variant_names = self._make_variants_list()
-        start_n = self.n
+    def __init__(self, name: str, scope: Scope, n: int = 0, overwriting_variant: bool = False):
+
+        self.scope = scope
+        self.overwriting_variant = overwriting_variant
+
+        variant_names = self._make_variants_list(name)
+        start_n = n
 
         if self.overwriting_variant:
             start_n += 1
@@ -636,13 +639,14 @@ class ScopedName:
         self.n = start_n
         self.base_name = max(variant_names)
 
-    def _make_variants_list(self):
+    @classmethod
+    def _make_variants_list(cls, name):
         """Returns list of splits for input_name.
         Example:
             _make_variants_list('a.b.c')
             ['a.b.c', 'a.b', 'a']
         """
-        splits = self.name.split('.')
+        splits = name.split('.')
         out = []
         for ind, split in enumerate(splits):
             out.append('.'.join(splits[:ind] + [split]))
@@ -689,6 +693,9 @@ class ScopedName:
         if var_intersection:
             return True
         return False
+
+    def __repr__(self):
+        return f"ScopedName(name='{self.name}', scope={self.scope}, n={self.n}, overwriting_variant={self.overwriting_variant})"
 
     def copy(self):
         _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
