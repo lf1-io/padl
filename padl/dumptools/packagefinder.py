@@ -3,10 +3,13 @@
 import ast
 import os
 import sys
+from warnings import warn
+
 try:
-    from importlib.metadata import version, PackageNotFoundError
+    from importlib.metadata import version
 except ModuleNotFoundError:
-    from importlib_metadata import version, PackageNotFoundError
+    from importlib_metadata import version
+from importlib_metadata import packages_distributions
 
 
 def standard_lib_names_gen(include_underscored=False):
@@ -50,29 +53,63 @@ def get_packages(nodes):
     return result
 
 
-def get_version(package):
-    """Get a package's version (defaults to '?'). """
+_packages_distributions = None
+
+
+def get_distribution_name(package):
+    """Get the name of the distribution of a package.
+
+    For example dateutil -> python-dateutil
+    """
+    global _packages_distributions
+    if _packages_distributions is None:
+        _packages_distributions = packages_distributions()
     try:
-        return version(package)
-    except PackageNotFoundError:
-        return '?'
+        return _packages_distributions[package][0]
+    except KeyError as exc:
+        raise RequirementNotFound(f'Could not find an installed version of {package}.',
+                                  package) from exc
 
 
-def dump_packages_versions(nodes):
+class RequirementNotFound(Exception):
+    """Exception indicating that a requirement was not found.
+
+    :param msg: The exception message.
+    :param package: The package that wasn't found.
+    """
+
+    def __init__(self, msg: str, package: str):
+        super().__init__(msg)
+        self.package = package
+
+
+# append to this to ignore package when checking for requirements (e.g. for testing)
+_ignore_requirements = []
+
+
+def dump_requirements(nodes, strict=False):
     """Dump packages and their versions to a string.
 
-    Format of the string is:
+    Format of the string is like a "requirements.txt"::
 
-    <package>==<version>
-
-    [...]
+        # created with python-X.X
+        package-1==1.2.3
+        package-2==2.3.4
 
     :param nodes: List of ast nodes in a module.
-    :returns: String with packages and versions.
+    :param strict: If *True* throw an exception if a package is not found
+    :returns: String containing requirements.
     """
     result = f'# created with python-{".".join([str(x) for x in sys.version_info[:3]])}\n'
     for package in get_packages(nodes):
         if package in STDLIBNAMES:
             continue
-        result += f'{package}=={get_version(package)}' + '\n'
+        try:
+            dist = get_distribution_name(package)
+        except RequirementNotFound as exc:
+            if strict and package not in _ignore_requirements:
+                raise exc
+            warn(f'The "{package}" requirement was not found.')
+            continue
+        result += f'{dist}=={version(dist)}\n'
     return result
