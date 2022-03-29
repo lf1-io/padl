@@ -791,7 +791,7 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[s
 
     :param var_name: Name of the variable to look for.
     :param tree: AST.module.
-    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
+    :param i: Occurrence of var_name, 0 is the most recent, with increasing int denoting earlier occurrence.
     :param source: Source code to search.
     :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
@@ -810,7 +810,7 @@ def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST, str
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search.
-    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
+    :param i: Occurrence of var_name, 0 is the most recent, with increasing int denoting earlier occurrence.
     :returns: Tuple with source code segment and corresponding ast node.
     """
     scoped_name = ScopedName(var_name, None, i)
@@ -868,7 +868,7 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST, str]:
     ipython history.
 
     :param var_name: Name of the variable to look for.
-    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
+    :param i: Occurrence of var_name, 0 is the most recent, with increasing int denoting earlier occurrence.
     :returns: Tuple with source code segment and the corresponding ast node.
     """
     scoped_name = ScopedName(var_name, None, i)
@@ -905,7 +905,7 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST, str]:
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search (defaults to __main__).
-    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
+    :param i: Occurrence of var_name, 0 is the most recent, with increasing int denoting earlier occurrence.
     :returns: Tuple with source code segment, corresponding ast node and variable name.
     """
     if module is None:
