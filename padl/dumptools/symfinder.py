@@ -785,12 +785,13 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
     raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
 
 
-def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
-                   return_partial=False) -> Tuple[str, ast.AST]:
+def find_in_source(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
     :param var_name: Name of the variable to look for.
+    :param tree: AST.module.
+    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
     :param source: Source code to search.
     :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
@@ -803,12 +804,13 @@ def find_scopedname_in_module(scoped_name: ScopedName, module):
     return find_scopedname_in_source(scoped_name, source)
 
 
-def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
+def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search.
+    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
     :returns: Tuple with source code segment and corresponding ast node.
     """
     scoped_name = ScopedName(var_name, None, i)
@@ -861,11 +863,12 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
     return source, node, name
 
 
-def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
+def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     ipython history.
 
     :param var_name: Name of the variable to look for.
+    :param i: occurence of var_name, 0 is the most recent, with increasing int denoting earlier occurence
     :returns: Tuple with source code segment and the corresponding ast node.
     """
     scoped_name = ScopedName(var_name, None, i)
