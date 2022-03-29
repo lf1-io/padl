@@ -223,8 +223,7 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={ScopedName(name='open', scope=None, n=0, overwriting_variant=False)},
-        ...     locals={ScopedName(name='f', scope=None, n=0, overwriting_variant=False)})
+        Vars(globals={ScopedName(name='open', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='f', scope=None, n=0, overwriting_variant=False)})
         """
         self.visit(node.context_expr)
         if node.optional_vars is not None:
@@ -236,8 +235,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x = y')
-        Vars(globals={ScopedName(name='y', scope=None, n=0, overwriting_variant=False)},
-        ...     locals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)})
+        Vars(globals={ScopedName(name='y', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)})
         """
         # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
         targets = set()
@@ -273,8 +271,7 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={ScopedName(name='range', scope=None, n=0, overwriting_variant=False)},
-        ...     locals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)})
+        Vars(globals={ScopedName(name='range', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)})
         """
         self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
                             for x in Finder(ast.Name).find(node.target)])
@@ -292,11 +289,8 @@ class _VarFinder(ast.NodeVisitor):
         ... while a := l.pop():
         ...     ...
         ... '''
-        >>> sys.version.startswith('3.7') or str(_VarFinder().find_in_source(source)) == '''
-        ... Vars(globals={ScopedName(name='l.pop', scope=None, n=0), overwriting_variant=False},
-        ... locals={ScopedName(name='a', scope=None, n=0, overwriting_variant=False)})
-        ... '''
-        True
+        >>> sys.version.startswith('3.7') or _VarFinder().find_in_source(source)
+        Vars(globals={ScopedName(name='l', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='a', scope=None, n=0, overwriting_variant=False)})
         """
         self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
                             for x in Finder(ast.Name).find(node.target)])
