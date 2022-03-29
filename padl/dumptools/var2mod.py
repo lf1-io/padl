@@ -285,7 +285,7 @@ class _VarFinder(ast.NodeVisitor):
         ... while a := l.pop():
         ...     ...
         ... '''
-        >>> sys.version.startswith('3.7') or _VarFinder().find_in_source(source)=="Vars(globals={ScopedName(name='l', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='a', scope=None, n=0, overwriting_variant=False)})"
+        >>> sys.version.startswith('3.7') or str(_VarFinder().find_in_source(source))=="Vars(globals={ScopedName(name='l', scope=None, n=0, overwriting_variant=False)}, locals={ScopedName(name='a', scope=None, n=0, overwriting_variant=False)})"
         True
         """
         self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
