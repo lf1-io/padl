@@ -775,9 +775,6 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                     if n_dict[var_name] == 0:
                         return finder.deparse(), finder.node(), var_name
                     n_dict[var_name] -= 1
-    # if any(['.' in var_name for var_name, _ in scoped_name.variants]):
-    #     update_scoped_name = update_scopedname(scoped_name, scoped_name.scope, remove_dot=True)
-    #     return find_scopedname_in_source(update_scoped_name, source, tree)
     raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
 
 
@@ -790,23 +787,8 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
     :param source: Source code to search.
     :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
-    if tree is None:
-        tree = ast.parse(source)
-    replace_star_imports(tree)
-    finder_clss = _ThingFinder.__subclasses__()
-    for statement in tree.body[::-1]:
-        for finder_cls in finder_clss:
-            finder = finder_cls(source, var_name)
-            finder.visit(statement)
-            if finder.found_something():
-                if i == 0:
-                    return finder.deparse(), finder.node(), var_name
-                i -= 1
-    if '.' in var_name:
-        return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
-    if return_partial:
-        return i
-    raise NameNotFound(f'{var_name} not found.')
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_source(scoped_name, source, tree)
 
 
 def find_scopedname_in_module(scoped_name: ScopedName, module):
@@ -822,8 +804,8 @@ def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
     :param module: Module to search.
     :returns: Tuple with source code segment and corresponding ast node.
     """
-    source = sourceget.get_module_source(module)
-    return find_in_source(var_name, source, i=i)
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_module(scoped_name, module)
 
 
 def _find_branch(tree, lineno, source):
@@ -879,20 +861,8 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     :param var_name: Name of the variable to look for.
     :returns: Tuple with source code segment and the corresponding ast node.
     """
-    source = node = None
-    for cell in sourceget._ipython_history()[::-1]:
-        try:
-            res = find_in_source(var_name, cell, i=i, return_partial=True)
-            if isinstance(res, int):
-                i = res
-                continue
-            source, node, name = res
-        except (NameNotFound, SyntaxError):
-            continue
-        break
-    if source is None:
-        raise NameNotFound(f'"{var_name}" not found.')
-    return source, node, name
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_ipython(scoped_name)
 
 
 def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST, str]:
