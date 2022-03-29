@@ -714,7 +714,6 @@ def find_codenode(name: ScopedName, full_dump_module_names=None):
                                  full_dump_module_names)
     # find dependencies
     globals_ = find_globals(node)
-    import pdb; pdb.set_trace()
     next_name = ScopedName(name.name, scope_of_next_var, name.n)
     globals_ = increment_same_name_var(globals_, next_name)
 

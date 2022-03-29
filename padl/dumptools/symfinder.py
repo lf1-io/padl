@@ -661,7 +661,7 @@ class ScopedName:
         return hash((self.name, self.scope, self.n))
 
     def __eq__(self, other):
-        return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+        return (self.scope, tuple(self.variants)) == (other.scope, tuple(self.variants))
 
     def copy(self):
         _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
