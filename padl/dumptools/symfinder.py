@@ -623,13 +623,18 @@ class ScopedName:
         start_n = self.n
 
         if self.overwriting_variant:
-            variant_names = variant_names[::-1]
             start_n += 1
+        else:
+            variant_names = variant_names[::-1]
 
         variants = []
         for ind, name in enumerate(variant_names):
             variants.append((name, start_n if ind == 0 else self.n))
+
         self.variants = variants
+        self.name = min(variant_names)
+        self.n = start_n
+        self.base_name = max(variant_names)
 
     def _make_variants_list(self):
         """Returns list of splits for input_name.
@@ -641,16 +646,33 @@ class ScopedName:
         out = []
         for ind, split in enumerate(splits):
             out.append('.'.join(splits[:ind] + [split]))
-        return out[::-1]
+        return out
+
+    def get_names(self):
+        return [name for name, _ in self.variants]
+
+    def get_ns(self):
+        return [n for _, n in self.variants]
 
     def update_scope(self, new_scope):
         self.scope = new_scope
+        return self
+
+    def increment_variants_from_other(self, other):
+        variants = []
+        other_var_dict = {var_name: var_n for var_name, var_n in other.variants}
+        for varname, var_n in self.variants:
+            variants.append((varname, var_n if varname not in other_var_dict else var_n + other_var_dict[varname]))
+            if varname == self.name:
+                self.n = variants[-1][-1]
+        self.variants = variants
         return self
 
     def add_n(self, increment):
         """Add *increment* to all variants."""
         variants = [(name, n+increment) for name, n in self.variants]
         self.variants = variants
+        self.n += increment
         return self
 
     def add_variant(self, name, n):
@@ -661,7 +683,12 @@ class ScopedName:
         return hash((self.name, self.scope, self.n))
 
     def __eq__(self, other):
-        return (self.scope, tuple(self.variants)) == (other.scope, tuple(self.variants))
+        if self.scope != other.scope:
+            return False
+        var_intersection = set(self.variants).intersection(set(other.variants))
+        if var_intersection:
+            return True
+        return False
 
     def copy(self):
         _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
@@ -721,26 +748,6 @@ def replace_star_imports(tree: ast.Module):
                 except AttributeError:
                     names = [x for x in sys.modules[node.module].__dict__ if not x.startswith('_')]
                 node.names = [ast.alias(name=name, asname=None) for name in names]
-
-
-def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0,
-                      remove_dot: bool = False):
-    """Get updated ScopedName with added *n* and/or removed dot '.'.
-
-    :param scoped_name: ScopedName to update.
-    :param scope: Scope of new ScopedName.
-    :param add_n: *n* to add to new ScopedName.
-    :param remove_dot: Boolean to remove dot from ScopedName or not.
-    :return: New ScopedName with updated name and *n*.
-    """
-    return_scoped_name = ScopedName(None, scope, None)
-    for variant_name, variant_n in scoped_name.variants:
-        if remove_dot and '.' in variant_name:
-            variant_name = variant_name.rsplit('.', 1)[0]
-        return_scoped_name.add_variant(variant_name, add_n + variant_n)
-    return_scoped_name.variants.pop(0)
-    return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
-    return return_scoped_name
 
 
 def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST, str]:
