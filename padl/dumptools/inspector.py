@@ -306,7 +306,7 @@ def get_segment_from_frame(caller_frame: types.FrameType, segment_type, return_l
     def check_statement(statement_node, source):
         # iterate over nodes of the correct type found in the statement and check them
         for node in var2mod.Finder(node_type).find(statement_node):
-            segment = ast_utils.get_source_segment(source, node)
+            segment = ast_utils.unparse(node)
             if check_segment(segment):
                 return ast_utils.get_position(source, node)
         return None
