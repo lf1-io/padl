@@ -603,25 +603,95 @@ class ScopedName:
         - the function name "f", module level scope, `n = 0`
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
+
+    :param name: Main name of this ScopedName.
+    :param scope: Scope of this ScopedName.
+    :param n: Main n of this ScopedName.
+    :param overwriting_variant: The variant is overwrites same named variable or not.
+                    - Case 1: a = a.b + 1 : Variable 'a' already exists on both sides, so `a.b + 1` overwrites itself,
+                                            thus, overwriting_variant = True
+                    - Case 2: a = r.b + 1 : Variable 'a' is new here, so overwriting_variants = False
+
     """
     name: str
     scope: Scope
     n: int = 0
+    overwriting_variant: bool = False
 
     def __post_init__(self):
-        self.variants = [(self.name, self.n)]
+        variant_names = self._make_variants_list()
+        start_n = self.n
+
+        if self.overwriting_variant:
+            start_n += 1
+        else:
+            variant_names = variant_names[::-1]
+
+        variants = []
+        for ind, name in enumerate(variant_names):
+            variants.append((name, start_n if ind == 0 else self.n))
+
+        self.variants = variants
+        self.name = min(variant_names)
+        self.n = start_n
+        self.base_name = max(variant_names)
+
+    def _make_variants_list(self):
+        """Returns list of splits for input_name.
+        Example:
+            >>> _make_variants_list('a.b.c')
+            ['a.b.c', 'a.b', 'a']
+        """
+        splits = self.name.split('.')
+        out = []
+        for ind, split in enumerate(splits):
+            out.append('.'.join(splits[:ind] + [split]))
+        return out
+
+    def get_names(self):
+        return [name for name, _ in self.variants]
+
+    def get_ns(self):
+        return [n for _, n in self.variants]
+
+    def update_scope(self, new_scope):
+        self.scope = new_scope
+        return self
+
+    def increment_variants_from_other(self, other):
+        variants = []
+        other_var_dict = {var_name: var_n for var_name, var_n in other.variants}
+        for varname, var_n in self.variants:
+            variants.append((varname, var_n if varname not in other_var_dict else var_n + other_var_dict[varname]))
+            if varname == self.name:
+                self.n = variants[-1][-1]
+        self.variants = variants
+        return self
+
+    def add_n(self, increment):
+        """Add *increment* to all variants."""
+        variants = [(name, n+increment) for name, n in self.variants]
+        self.variants = variants
+        self.n += increment
+        return self
 
     def add_variant(self, name, n):
         self.variants.append((name, n))
+        return self
 
     def __hash__(self):
         return hash((self.name, self.scope, self.n))
 
     def __eq__(self, other):
-        return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+        if self.scope != other.scope:
+            return False
+        var_intersection = set(self.variants).intersection(set(other.variants))
+        if var_intersection:
+            return True
+        return False
 
     def copy(self):
-        _copy = type(self)(self.name, self.scope, self.n)
+        _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
         _copy.variants = [(_name, _n) for _name, _n in self.variants]
         return _copy
 
@@ -680,26 +750,6 @@ def replace_star_imports(tree: ast.Module):
                 node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
-def update_scopedname(scoped_name: ScopedName, scope: Scope, add_n: int = 0,
-                      remove_dot: bool = False):
-    """Get updated ScopedName with added *n* and/or removed dot '.'.
-
-    :param scoped_name: ScopedName to update.
-    :param scope: Scope of new ScopedName.
-    :param add_n: *n* to add to new ScopedName.
-    :param remove_dot: Boolean to remove dot from ScopedName or not.
-    :return: New ScopedName with updated name and *n*.
-    """
-    return_scoped_name = ScopedName(None, scope, None)
-    for variant_name, variant_n in scoped_name.variants:
-        if remove_dot and '.' in variant_name:
-            variant_name = variant_name.rsplit('.', 1)[0]
-        return_scoped_name.add_variant(variant_name, add_n + variant_n)
-    return_scoped_name.variants.pop(0)
-    return_scoped_name.name, return_scoped_name.n = return_scoped_name.variants[0]
-    return return_scoped_name
-
-
 def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
@@ -716,7 +766,6 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
     finder_clss = _ThingFinder.__subclasses__()
 
     n_dict = {var_name: var_n for var_name, var_n in scoped_name.variants}
-
     for statement in tree.body[::-1]:
         for var_name, var_n in scoped_name.variants:
             for finder_cls in finder_clss:
@@ -726,9 +775,6 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                     if n_dict[var_name] == 0:
                         return finder.deparse(), finder.node(), var_name
                     n_dict[var_name] -= 1
-    if any(['.' in var_name for var_name, _ in scoped_name.variants]):
-        update_scoped_name = update_scopedname(scoped_name, scoped_name.scope, remove_dot=True)
-        return find_scopedname_in_source(update_scoped_name, source, tree)
     raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
 
 
@@ -741,23 +787,8 @@ def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
     :param source: Source code to search.
     :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
-    if tree is None:
-        tree = ast.parse(source)
-    replace_star_imports(tree)
-    finder_clss = _ThingFinder.__subclasses__()
-    for statement in tree.body[::-1]:
-        for finder_cls in finder_clss:
-            finder = finder_cls(source, var_name)
-            finder.visit(statement)
-            if finder.found_something():
-                if i == 0:
-                    return finder.deparse(), finder.node(), var_name
-                i -= 1
-    if '.' in var_name:
-        return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
-    if return_partial:
-        return i
-    raise NameNotFound(f'{var_name} not found.')
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_source(scoped_name, source, tree)
 
 
 def find_scopedname_in_module(scoped_name: ScopedName, module):
@@ -773,8 +804,8 @@ def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
     :param module: Module to search.
     :returns: Tuple with source code segment and corresponding ast node.
     """
-    source = sourceget.get_module_source(module)
-    return find_in_source(var_name, source, i=i)
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_module(scoped_name, module)
 
 
 def _find_branch(tree, lineno, source):
@@ -830,20 +861,8 @@ def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
     :param var_name: Name of the variable to look for.
     :returns: Tuple with source code segment and the corresponding ast node.
     """
-    source = node = None
-    for cell in sourceget._ipython_history()[::-1]:
-        try:
-            res = find_in_source(var_name, cell, i=i, return_partial=True)
-            if isinstance(res, int):
-                i = res
-                continue
-            source, node, name = res
-        except (NameNotFound, SyntaxError):
-            continue
-        break
-    if source is None:
-        raise NameNotFound(f'"{var_name}" not found.')
-    return source, node, name
+    scoped_name = ScopedName(var_name, None, i)
+    return find_scopedname_in_ipython(scoped_name)
 
 
 def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST, str]:

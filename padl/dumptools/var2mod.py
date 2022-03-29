@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, List, Tuple, Set
 
 from padl.dumptools import ast_utils
-from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope, NameNotFound, update_scopedname
+from padl.dumptools.symfinder import find_in_scope, ScopedName, Scope, NameNotFound
 
 try:
     unparse = ast.unparse
@@ -257,7 +257,7 @@ class _VarFinder(ast.NodeVisitor):
         for name in sub_globals:
             if self.in_locals(name):
                 continue
-            sub_dependencies.add(_check_and_make_increment(name, targets))
+            sub_dependencies.add(_check_and_make_variants(name, targets))
         self.locals.update(targets)
         self.globals.update(sub_dependencies)
 
@@ -597,7 +597,7 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
 
     :param node: AST node to search in.
     :param filter_builtins: If *True*, filter out builtins.
-    :return: Set of global ScopedNames
+    :return: Set of global ScopedNames.
     """
     if isinstance(node, ast.ClassDef):
         return _find_globals_in_classdef(node)
@@ -607,8 +607,8 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     return globals_
 
 
-def _check_and_make_increment(value: ScopedName, targets: Set):
-    """Apply increment on *value* ScopedName if necessary.
+def _check_and_make_variants(value: ScopedName, targets: Set):
+    """Apply increment on *value* ScopedName and create variants if necessary.
 
     Increment means the increment of *value.n*.
     *value.n* signifies which one of the usages of a *name* in the code this
@@ -621,28 +621,25 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
     """
     split_value_name = value.name.rsplit('.', 1)[0]
     for target in targets:
-        split_target_name = target.name.rsplit('.', 1)[0]
-        if value.name == target.name:
-            # a = a
-            return ScopedName(value.name, value.scope, value.n + 1)
+        if any(['.' in name for name in target.get_names()]):
+            # a.b = a; a.b = a.b + 1
+            warnings.warn(f'''
+            Cannot save attribute assignments. It is not currently implemented.
+            Warning related to {target.base_name}
+            ''')
 
-        if split_value_name == target.name:
-            # a = a.b + 1
-            return_name = ScopedName(split_value_name, value.scope, value.n + 1)
-            return_name.add_variant(value.name, value.n)
+        if (value.name == target.name) and (value.base_name == target.base_name):
+            # a = a
+            return value.copy().add_n(1)
+
+        if value.name == target.name:
+            # a = a.b + 1, here find, (a, n+1) or (a.b, n)
+            return_name = ScopedName(value.base_name, value.scope, value.n, overwriting_variant=True)
             return return_name
 
-        if (value.name == split_target_name) or\
-            (split_value_name == split_target_name):
-            # a.b = a; a.b = a.b + 1
-            raise warnings.warn(f'''
-            Cannot save attribute assignments. It is not currently implemented.
-            Warning related to {target.name}
-            ''')
         if '.' in value.name:
             # x = f.read()
-            return_name = ScopedName(value.name, value.scope, value.n)
-            return_name.add_variant(split_value_name, value.n)
+            return_name = ScopedName(value.base_name, value.scope, value.n, overwriting_variant=False)
             return return_name
 
     return value
@@ -671,10 +668,7 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
             scope = scoped_name.scope
         else:
             scope = var.scope
-        if scoped_name.name in [name for name,_ in var.variants]:
-            result.add(update_scopedname(var, scope, scoped_name.n))
-        else:
-            result.add(update_scopedname(var, scope, 0))
+        result.add(var.increment_variants_from_other(scoped_name).update_scope(scope))
     return result
 
 
@@ -694,9 +688,8 @@ def find_codenode(name: ScopedName, full_dump_module_names=None):
                                  full_dump_module_names)
     # find dependencies
     globals_ = find_globals(node)
-    next_name = ScopedName(name.name, scope_of_next_var, name.n)
+    next_name = name.copy().update_scope(scope_of_next_var)
     globals_ = increment_same_name_var(globals_, next_name)
-
     return CodeNode(source=source, globals_=globals_, ast_node=node, scope=scope_of_next_var,
                     name=found_name, n=name.n)
 
@@ -805,8 +798,8 @@ class CodeNode:
 
     def __eq__(self, other):
         return (
-            (self.name, self.scope, self.n)
-            == (other.name, other.scope, other.n)
+            (self.name, self.scope, self.n, self.globals_)
+            == (other.name, other.scope, other.n, other.globals_)
         )
 
 

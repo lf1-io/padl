@@ -533,7 +533,6 @@ class Transform:
         # find dependencies
         while todo:
             next_name = todo.pop()
-
             # we know this already - go on
             if next_name in graph:
                 continue
@@ -562,7 +561,6 @@ class Transform:
             graph[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
-
         return graph
 
     def _pd_process_traceback(self):
