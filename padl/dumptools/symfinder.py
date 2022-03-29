@@ -639,7 +639,7 @@ class ScopedName:
     def _make_variants_list(self):
         """Returns list of splits for input_name.
         Example:
-            >>> _make_variants_list('a.b.c')
+            _make_variants_list('a.b.c')
             ['a.b.c', 'a.b', 'a']
         """
         splits = self.name.split('.')
