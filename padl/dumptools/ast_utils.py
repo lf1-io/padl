@@ -7,7 +7,7 @@ try:
 except AttributeError:  # python < 3.9
     from astunparse import unparse
 
-    
+
 NEW_AST_FEATURES = hasattr(ast, 'get_source_segment')
 
 if not NEW_AST_FEATURES:
