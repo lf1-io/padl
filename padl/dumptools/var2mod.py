@@ -257,7 +257,7 @@ class _VarFinder(ast.NodeVisitor):
         for name in sub_globals:
             if self.in_locals(name):
                 continue
-            sub_dependencies.add(_check_and_make_increment(name, targets))
+            sub_dependencies.add(_check_and_make_variants(name, targets))
         self.locals.update(targets)
         self.globals.update(sub_dependencies)
 
@@ -607,8 +607,8 @@ def find_globals(node: ast.AST, filter_builtins: bool = True) -> Set[Tuple[str, 
     return globals_
 
 
-def _check_and_make_increment(value: ScopedName, targets: Set):
-    """Apply increment on *value* ScopedName if necessary.
+def _check_and_make_variants(value: ScopedName, targets: Set):
+    """Apply increment on *value* ScopedName and create variants if necessary.
 
     Increment means the increment of *value.n*.
     *value.n* signifies which one of the usages of a *name* in the code this
@@ -619,6 +619,18 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
     :param targets: Set of ScopedName's to compare to *value*.
     :return: ScopedName after increment.
     """
+    def _make_variants_list(input_name: str):
+        """Returns list of splits for input_name.
+        Example:
+            >>> _make_variants_list('a.b.c')
+            ['a.b.c', 'a.b', 'a']
+        """
+        splits = input_name.split('.')
+        out = []
+        for ind, split in enumerate(splits):
+            out.append('.'.join(splits[:ind] + [split]))
+        return out[::-1]
+
     split_value_name = value.name.rsplit('.', 1)[0]
     for target in targets:
         split_target_name = target.name.rsplit('.', 1)[0]
@@ -627,9 +639,12 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
             return ScopedName(value.name, value.scope, value.n + 1)
 
         if split_value_name == target.name:
-            # a = a.b + 1
-            return_name = ScopedName(split_value_name, value.scope, value.n + 1)
-            return_name.add_variant(value.name, value.n)
+            # a = a.b + 1, here find, (a, n+1) or (a.b, n)
+            return_name = ScopedName(value.name, value.scope, value.n, overwriting_variant=True)
+            # variant_list = _make_variants_list(value.name)[::-1]
+            # return_name = ScopedName(variant_list[0], value.scope, value.n + 1)
+            # for variant_name in variant_list[1:]:
+            #     return_name.add_variant(variant_name, value.n)
             return return_name
 
         if (value.name == split_target_name) or\
@@ -641,8 +656,11 @@ def _check_and_make_increment(value: ScopedName, targets: Set):
             ''')
         if '.' in value.name:
             # x = f.read()
-            return_name = ScopedName(value.name, value.scope, value.n)
-            return_name.add_variant(split_value_name, value.n)
+            return_name = ScopedName(value.name, value.scope, value.n, overwriting_variant=False)
+            # variant_list = _make_variants_list(value.name)
+            # return_name = ScopedName(variant_list[0], value.scope, value.n)
+            # for variant_name in variant_list[1:]:
+            #     return_name.add_variant(variant_name, value.n)
             return return_name
 
     return value
@@ -672,9 +690,11 @@ def increment_same_name_var(variables: List[ScopedName], scoped_name: ScopedName
         else:
             scope = var.scope
         if scoped_name.name in [name for name,_ in var.variants]:
-            result.add(update_scopedname(var, scope, scoped_name.n))
+            result.add(var.copy().add_n(scoped_name.n).update_scope(scope))
+            # result.add(update_scopedname(var, scope, scoped_name.n))
         else:
-            result.add(update_scopedname(var, scope, 0))
+            result.add(var.copy().update_scope(scope))
+            # result.add(update_scopedname(var, scope, 0))
     return result
 
 
@@ -694,6 +714,7 @@ def find_codenode(name: ScopedName, full_dump_module_names=None):
                                  full_dump_module_names)
     # find dependencies
     globals_ = find_globals(node)
+    import pdb; pdb.set_trace()
     next_name = ScopedName(name.name, scope_of_next_var, name.n)
     globals_ = increment_same_name_var(globals_, next_name)
 
@@ -805,8 +826,8 @@ class CodeNode:
 
     def __eq__(self, other):
         return (
-            (self.name, self.scope, self.n)
-            == (other.name, other.scope, other.n)
+            (self.name, self.scope, self.n, self.globals_)
+            == (other.name, other.scope, other.n, other.globals_)
         )
 
 

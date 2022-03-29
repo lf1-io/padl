@@ -603,16 +603,59 @@ class ScopedName:
         - the function name "f", module level scope, `n = 0`
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
+
+    :param name: Main name of this ScopedName.
+    :param scope: Scope of this ScopedName.
+    :param n: Main n of this ScopedName.
+    :param overwriting_variant: The variant is overwrites same named variable or not.
+                    - Case 1: a = a.b + 1 : Variable 'a' already exists on both sides, so `a.b + 1` overwrites itself,
+                                            thus, overwriting_variant = True
+                    - Case 2: a = r.b + 1 : Variable 'a' is new here, so overwriting_variants = False
+
     """
     name: str
     scope: Scope
     n: int = 0
+    overwriting_variant: bool = False
 
     def __post_init__(self):
-        self.variants = [(self.name, self.n)]
+        variant_names = self._make_variants_list()
+        start_n = self.n
+
+        if self.overwriting_variant:
+            variant_names = variant_names[::-1]
+            start_n += 1
+
+        variants = []
+        for ind, name in enumerate(variant_names):
+            variants.append((name, start_n if ind == 0 else self.n))
+        self.variants = variants
+
+    def _make_variants_list(self):
+        """Returns list of splits for input_name.
+        Example:
+            >>> _make_variants_list('a.b.c')
+            ['a.b.c', 'a.b', 'a']
+        """
+        splits = self.name.split('.')
+        out = []
+        for ind, split in enumerate(splits):
+            out.append('.'.join(splits[:ind] + [split]))
+        return out[::-1]
+
+    def update_scope(self, new_scope):
+        self.scope = new_scope
+        return self
+
+    def add_n(self, increment):
+        """Add *increment* to all variants."""
+        variants = [(name, n+increment) for name, n in self.variants]
+        self.variants = variants
+        return self
 
     def add_variant(self, name, n):
         self.variants.append((name, n))
+        return self
 
     def __hash__(self):
         return hash((self.name, self.scope, self.n))
@@ -621,7 +664,7 @@ class ScopedName:
         return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
 
     def copy(self):
-        _copy = type(self)(self.name, self.scope, self.n)
+        _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
         _copy.variants = [(_name, _n) for _name, _n in self.variants]
         return _copy
 
@@ -716,7 +759,6 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
     finder_clss = _ThingFinder.__subclasses__()
 
     n_dict = {var_name: var_n for var_name, var_n in scoped_name.variants}
-
     for statement in tree.body[::-1]:
         for var_name, var_n in scoped_name.variants:
             for finder_cls in finder_clss:
@@ -726,9 +768,9 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                     if n_dict[var_name] == 0:
                         return finder.deparse(), finder.node(), var_name
                     n_dict[var_name] -= 1
-    if any(['.' in var_name for var_name, _ in scoped_name.variants]):
-        update_scoped_name = update_scopedname(scoped_name, scoped_name.scope, remove_dot=True)
-        return find_scopedname_in_source(update_scoped_name, source, tree)
+    # if any(['.' in var_name for var_name, _ in scoped_name.variants]):
+    #     update_scoped_name = update_scopedname(scoped_name, scoped_name.scope, remove_dot=True)
+    #     return find_scopedname_in_source(update_scoped_name, source, tree)
     raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
 
 

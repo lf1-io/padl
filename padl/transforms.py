@@ -559,10 +559,11 @@ class Transform:
             # find how *next_name* came into being
             next_codenode = find_codenode(next_name, self._pd_external_full_dump_modules)
 
+            import pdb; pdb.set_trace()
             graph[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
-
+        import pdb;pdb.set_trace()
         return graph
 
     def _pd_process_traceback(self):
