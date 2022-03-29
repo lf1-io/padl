@@ -827,7 +827,7 @@ class Transform:
         return x
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
-                     flatten: bool = False) -> Iterator:
+                     flatten: bool = False, ignore_post=False) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
@@ -849,7 +849,7 @@ class Transform:
 
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
-        use_post = not isinstance(post, Identity)
+        use_post = not isinstance(post, Identity) and not ignore_post
 
         if use_forward:
             self.pd_forward_device_check()
@@ -1031,7 +1031,8 @@ class Transform:
         return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs,
                                  flatten=flatten)
 
-    def train_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def train_apply(self, inputs: Iterable, flatten: bool = False,
+                    ignore_post:bool = False, **kwargs):
         """Call transform within the train context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1044,7 +1045,8 @@ class Transform:
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
         """
-        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten)
+        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten,
+                                 ignore_post=ignore_post)
 
 
 class AtomicTransform(Transform):

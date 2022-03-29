@@ -420,7 +420,7 @@ def _get_call_assignments(args, source, values, keywords):
 def _get_call_signature(source: str):
     """Get the call signature of a string containing a call.
 
-    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)")
+
     :returns: A tuple with a list of positional arguments and a list of keyword arguments.
 
     Example:
