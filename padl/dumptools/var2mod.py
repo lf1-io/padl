@@ -97,13 +97,13 @@ class _VarFinder(ast.NodeVisitor):
     ...     z = np.array(x + b)
     ...     return str(z)
     ... '''
-    >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0),
-    ...                                                      ScopedName('np.array', None, 0),
-    ...                                                      ScopedName('a', None, 0),
-    ...                                                      ScopedName('b', None, 0)},
-    ...                                             locals={ScopedName('x', None, 0),
-    ...                                                     ScopedName('z', None, 0),
-    ...                                                     ScopedName('y', None, 0)})
+    >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0, overwriting_variant=False),
+    ...                                                      ScopedName('np.array', None, 0, overwriting_variant=False),
+    ...                                                      ScopedName('a', None, 0, overwriting_variant=False),
+    ...                                                      ScopedName('b', None, 0, overwriting_variant=False)},
+    ...                                             locals={ScopedName('x', None, 0, overwriting_variant=False),
+    ...                                                     ScopedName('z', None, 0, overwriting_variant=False),
+    ...                                                     ScopedName('y', None, 0, overwriting_variant=False)})
     True
 
     Attributes `globals` and `locals` are sets of ScopedName.
@@ -144,13 +144,13 @@ class _VarFinder(ast.NodeVisitor):
         ...     z = np.array(x + b)
         ...     return str(z)
         ... '''
-        >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0),
-        ...                                                      ScopedName('np.array', None, 0),
-        ...                                                      ScopedName('a', None, 0),
-        ...                                                      ScopedName('b', None, 0)},
-        ...                                             locals={ScopedName('x', None, 0),
-        ...                                                     ScopedName('z', None, 0),
-        ...                                                     ScopedName('y', None, 0)})
+        >>> _VarFinder().find_in_source(source) == Vars(globals={ScopedName('str', None, 0, overwriting_variant=False),
+        ...                                                      ScopedName('np.array', None, 0, overwriting_variant=False),
+        ...                                                      ScopedName('a', None, 0, overwriting_variant=False),
+        ...                                                      ScopedName('b', None, 0, overwriting_variant=False)},
+        ...                                             locals={ScopedName('x', None, 0, overwriting_variant=False),
+        ...                                                     ScopedName('z', None, 0, overwriting_variant=False),
+        ...                                                     ScopedName('y', None, 0, overwriting_variant=False)})
         True
         """
         posonlyargs = getattr(node.args, 'posonlyargs', [])
@@ -170,7 +170,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x')
-        Vars(globals={ScopedName(name='x', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         scope = getattr(node, '_scope', None)
         name = ScopedName(node.id, scope, 0)
@@ -183,7 +183,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x')
-        Vars(globals={ScopedName(name='x', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         try:
             path = _join_attr(node)
@@ -223,7 +223,8 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={ScopedName(name='open', scope=None, n=0)}, locals={ScopedName(name='f', scope=None, n=0)})
+        Vars(globals={ScopedName(name='open', scope=None, n=0, overwriting_variant=False)},
+        ...     locals={ScopedName(name='f', scope=None, n=0, overwriting_variant=False)})
         """
         self.visit(node.context_expr)
         if node.optional_vars is not None:
@@ -272,7 +273,8 @@ class _VarFinder(ast.NodeVisitor):
         ...     ...
         ... '''
         >>> _VarFinder().find_in_source(source)
-        Vars(globals={ScopedName(name='range', scope=None, n=0)}, locals={ScopedName(name='x', scope=None, n=0)})
+        Vars(globals={ScopedName(name='range', scope=None, n=0, overwriting_variant=False)},
+        ...     locals={ScopedName(name='x', scope=None, n=0, overwriting_variant=False)})
         """
         self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
                             for x in Finder(ast.Name).find(node.target)])
@@ -290,7 +292,10 @@ class _VarFinder(ast.NodeVisitor):
         ... while a := l.pop():
         ...     ...
         ... '''
-        >>> sys.version.startswith('3.7') or str(_VarFinder().find_in_source(source)) == "Vars(globals={ScopedName(name='l.pop', scope=None, n=0)}, locals={ScopedName(name='a', scope=None, n=0)})"
+        >>> sys.version.startswith('3.7') or str(_VarFinder().find_in_source(source)) == '''
+        ... Vars(globals={ScopedName(name='l.pop', scope=None, n=0), overwriting_variant=False},
+        ... locals={ScopedName(name='a', scope=None, n=0, overwriting_variant=False)})
+        ... '''
         True
         """
         self.locals.update([ScopedName(x.id, getattr(x, '_scope', None), 0)
@@ -315,7 +320,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('{k: v for k, v in foo}')
-        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         self.handle_comprehension(node)
 
@@ -325,7 +330,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('[x for x in foo]')
-        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         self.handle_comprehension(node)
 
@@ -335,7 +340,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('{x for x in foo}')
-        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         self.handle_comprehension(node)
 
@@ -345,7 +350,7 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('(x for x in foo)')
-        Vars(globals={ScopedName(name='foo', scope=None, n=0)}, locals=set())
+        Vars(globals={ScopedName(name='foo', scope=None, n=0, overwriting_variant=False)}, locals=set())
         """
         self.handle_comprehension(node)
 
@@ -355,8 +360,9 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> vars = _VarFinder().find_in_source('lambda x, y: x + y + foo')
-        >>> vars == Vars(globals={ScopedName('foo', None, 0)}, locals={ScopedName('x', None, 0),
-        ...                                                            ScopedName('y', None, 0)})
+        >>> vars == Vars(globals={ScopedName('foo', None, 0, overwriting_variant=False)},
+        ...         locals={ScopedName('x', None, 0, overwriting_variant=False),
+        ...         ScopedName('y', None, 0, overwriting_variant=False)})
         True
         """
         scope = getattr(node, '_scope', None)
@@ -385,9 +391,9 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('import foo')
-        Vars(globals=set(), locals={ScopedName(name='foo', scope=None, n=0)})
+        Vars(globals=set(), locals={ScopedName(name='foo', scope=None, n=0, overwriting_variant=False)})
         >>> _VarFinder().find_in_source('import foo as bar')
-        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0)})
+        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0, overwriting_variant=False)})
         """
         scope = getattr(node, '_scope', None)
         for name in node.names:
@@ -402,9 +408,9 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('from foo import bar')
-        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0)})
+        Vars(globals=set(), locals={ScopedName(name='bar', scope=None, n=0, overwriting_variant=False)})
         >>> _VarFinder().find_in_source('from foo import bar as baz')
-        Vars(globals=set(), locals={ScopedName(name='baz', scope=None, n=0)})
+        Vars(globals=set(), locals={ScopedName(name='baz', scope=None, n=0, overwriting_variant=False)})
         """
         scope = getattr(node, '_scope', None)
         for name in node.names:
