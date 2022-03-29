@@ -235,7 +235,8 @@ class _VarFinder(ast.NodeVisitor):
         Example:
 
         >>> _VarFinder().find_in_source('x = y')
-        Vars(globals={ScopedName(name='y', scope=None, n=0)}, locals={ScopedName(name='x', scope=None, n=0)})
+        Vars(globals={ScopedName(name='y', scope=None, n=0, overwriting_variant=False)},
+        ...     locals={ScopedName(name='x', scope=None, n=0), overwriting_variant=False})
         """
         # collect targets (the 'x' in 'x = a', can be multiple due to 'x = y = a')
         targets = set()
