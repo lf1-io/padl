@@ -24,13 +24,11 @@ and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
 import ast
-from dataclasses import dataclass
 from math import inf
 import sys
 from textwrap import dedent
 from types import ModuleType
 from typing import List, Tuple
-from collections import defaultdict
 
 from padl.dumptools import ast_utils, sourceget
 
