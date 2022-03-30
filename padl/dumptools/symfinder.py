@@ -19,7 +19,7 @@ Finding names in code then corresponds to building the AST tree of the code and 
 The main function to use is :func:`find`, which will find a name in a module or the current ipython
 history.
 
-This module also defines the :class:`Scope`, which represents the "location" of an python-thing,
+This module also defines the :class:`Scope`, which represents the "location" of a python-thing,
 and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
@@ -849,7 +849,7 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
     :param scoped_name: ScopedName to find.
     :returns: Tuple with source code segment and corresponding ast node.
     """
-    source = node = None
+    source = node = name = None
     for cell in sourceget._ipython_history()[::-1]:
         try:
             source, node, name = find_scopedname_in_source(scoped_name, cell)

@@ -2,6 +2,7 @@
 """
 import ast
 import builtins
+import textwrap
 import warnings
 from collections import Counter, namedtuple
 from collections.abc import Iterable
@@ -620,10 +621,10 @@ def _check_and_make_variants(value: ScopedName, targets: Set):
     for target in targets:
         if any(['.' in name for name in target.get_names()]):
             # a.b = a; a.b = a.b + 1
-            warnings.warn(f'''
+            warnings.warn(textwrap.dedent((f'''
             Cannot save attribute assignments. It is not currently implemented.
             Warning related to {target.base_name}
-            ''')
+            '''))
 
         if (value.name == target.name) and (value.base_name == target.base_name):
             # a = a
