@@ -621,23 +621,23 @@ def _check_and_make_variants(value: ScopedName, targets: Set):
     for target in targets:
         if any(['.' in name for name in target.get_names()]):
             # a.b = a; a.b = a.b + 1
-            warnings.warn(textwrap.dedent((f'''
+            warnings.warn(textwrap.dedent(f'''
             Cannot save attribute assignments. It is not currently implemented.
-            Warning related to {target.base_name}
+            Warning related to {target.full_name}
             '''))
 
-        if (value.name == target.name) and (value.base_name == target.base_name):
+        if (value.name == target.name) and (value.full_name == target.full_name):
             # a = a
             return value.copy().add_n(1)
 
         if value.name == target.name:
             # a = a.b + 1, here find, (a, n+1) or (a.b, n)
-            return_name = ScopedName(value.base_name, value.scope, value.n, overwriting_variant=True)
+            return_name = ScopedName(value.full_name, value.scope, value.n, overwriting_variant=True)
             return return_name
 
         if '.' in value.name:
             # x = f.read()
-            return_name = ScopedName(value.base_name, value.scope, value.n, overwriting_variant=False)
+            return_name = ScopedName(value.full_name, value.scope, value.n, overwriting_variant=False)
             return return_name
 
     return value

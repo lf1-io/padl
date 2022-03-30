@@ -601,7 +601,16 @@ class ScopedName:
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
 
-    :param name: Main name of this ScopedName.
+    Attributes *name* and *full_name* of ScopedName store the shortened name (removed dots) and
+    the complete name.
+    Example:
+        >>> s = ScopedName('a.b.c.d', None, 0, False)
+        >>> s.full_name
+        'a.b.c.d'
+        >>> s.name
+        'a'
+
+    :param name: Name of this ScopedName.
     :param scope: Scope of this ScopedName.
     :param n: Main n of this ScopedName.
     :param overwriting_variant: The variant is overwrites same named variable or not.
@@ -610,11 +619,6 @@ class ScopedName:
                     - Case 2: a = r.b + 1 : Variable 'a' is new here, so overwriting_variants = False
 
     """
-    name: str
-    scope: Scope
-    n: int = 0
-    overwriting_variant: bool = False
-
     def __init__(self, name: str, scope: Scope, n: int = 0, overwriting_variant: bool = False):
 
         self.scope = scope
@@ -630,12 +634,12 @@ class ScopedName:
 
         variants = []
         for ind, name in enumerate(variant_names):
-            variants.append((name, start_n if ind == 0 else self.n))
+            variants.append((name, start_n if ind == 0 else n))
 
         self.variants = variants
         self.name = min(variant_names)
         self.n = start_n
-        self.base_name = max(variant_names)
+        self.full_name = max(variant_names)
 
     @classmethod
     def _make_variants_list(cls, name):
