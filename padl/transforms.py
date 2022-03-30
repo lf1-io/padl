@@ -827,13 +827,15 @@ class Transform:
         return x
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
-                     flatten: bool = False) -> Iterator:
+                     flatten: bool = False, use_post: bool = True) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
         :param mode: Mode to call in ("eval", "train" or "infer")
         :param loader_kwargs: Data loader keyword arguments.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
 
         :return: A generator that allows iterating over the output.
         """
@@ -849,7 +851,7 @@ class Transform:
 
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
-        use_post = not isinstance(post, Identity)
+        use_post = not isinstance(post, Identity) and use_post
 
         if use_forward:
             self.pd_forward_device_check()
@@ -1015,7 +1017,8 @@ class Transform:
                 raise err
         return self._pd_format_output(inputs)
 
-    def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def eval_apply(self, inputs: Iterable, flatten: bool = False,
+                   use_post: bool = True, **kwargs):
         """Call transform within the eval context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1027,11 +1030,14 @@ class Transform:
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
         """
-        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs,
-                                 flatten=flatten)
+        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs, flatten=flatten,
+                                 use_post=use_post)
 
-    def train_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def train_apply(self, inputs: Iterable, flatten: bool = False,
+                    use_post: bool = True, **kwargs):
         """Call transform within the train context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1043,8 +1049,11 @@ class Transform:
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
         """
-        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten)
+        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten,
+                                 use_post=use_post)
 
 
 class AtomicTransform(Transform):
