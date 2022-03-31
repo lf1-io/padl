@@ -4,12 +4,14 @@ from tests.material.example_config.mystuff import create_transform, combine_tran
 
 t = build(
     create_transform,
+    'create_1',
     a=1,
     b=2,
 )
 
 s = build(
     create_transform,
+    'create_2',
     a=3,
     b=4
 )
