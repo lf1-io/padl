@@ -11,6 +11,7 @@ from padl.version import __version__
 #: this is same
 from padl.utils import same
 batch = Batchify()
+build_args = {}
 
 #: See :class:`Unbatchify`.
 unbatch = Unbatchify()
