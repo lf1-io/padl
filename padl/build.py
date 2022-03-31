@@ -1,5 +1,6 @@
 import click
 import collections
+import json
 import os
 import re
 import padl
@@ -83,7 +84,11 @@ def main(path, **kwargs):
     padl.build_args = kwargs
     if path.endswith('.py'):
         path = path[:-3].replace('/', '.')
+    dir_ = '/'.join(path.replace('.', '/').split('/')[:-1])
+    with open(dir_ + '/padl.build.json', 'w') as f:
+        json.dump(kwargs, f, indent=2)
     exec(f'import {path}')
+    padl.build_args = {}
 
 
 @click.command()
