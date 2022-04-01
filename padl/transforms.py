@@ -453,15 +453,15 @@ class Transform:
         if name is not None:
             graph[ScopedName(name, scope, 0)] = start
 
-        dependencies = set()
+        dependencies = []
         for node in nodes:
-            dependencies.update(node.globals_)
+            dependencies += node.globals_
         return dependencies
 
     @property
     def _pd_closurevars(self) -> Tuple[dict, dict]:
         """Return the closurevars (globals and nonlocals) the transform depends on. """
-        return {}, {}
+        return globals(), {}
 
     def _pd_build_codegraph(self, graph: Optional[dict] = None,
                             name: Optional[str] = None) -> Tuple[dict, dict]:
@@ -525,43 +525,75 @@ class Transform:
 
         todo = self._pd_codegraph_add_startnodes(graph, new_name)
 
+        self._pd_codegraph_find_dependencies(graph, todo)
+
+        return graph
+
+    def _pd_codegraph_find_dependencies(self, graph, todo):
         # if this transform has closurevars, get them (if there are transforms in the closure, we
         # want to allow them to build their codegraph themselves, see below)
         globals_dict, nonlocals_dict = self._pd_closurevars
         all_vars_dict = {**globals_dict, **nonlocals_dict}
-
         # find dependencies
         while todo:
             next_name = todo.pop()
+
             # we know this already - go on
             if next_name in graph:
+                next_name.finalize()
                 continue
 
             # ignoring this (it comes from the serializer)
-            if next_name.name.startswith('PADL_VALUE'):
+            if next_name.full_name.startswith('PADL_VALUE'):
+                next_name.finalize()
+                continue
+
+            if '.' not in next_name.full_name:
+                # see if the object itself knows how to generate its codegraph
+                try:
+                    if next_name.scope.is_global():
+                        next_obj = globals_dict[next_name.full_name]
+                    else:
+                        next_obj = all_vars_dict[next_name.full_name]
+                    # pylint: disable=protected-access
+                    next_obj._pd_build_codegraph(graph, next_name.full_name)
+                    next_name.finalize()
+                except (KeyError, AttributeError):
+                    pass
+                else:
+                    continue
+
+            # Only triggered if KeyError or AttributeError is raised
+            # find how *next_name* came into being
+            try:
+                next_codenode = find_codenode(next_name,
+                                              self._pd_external_full_dump_modules)
+            except symfinder.NameNotFound:
+                if ScopedName(next_name.full_name, symfinder.Scope.empty(), n=0) in graph:
+                    next_name.finalize(scope=symfinder.Scope.empty())
+                    continue
+                raise
+
+            # check again - the finalized next_name could be in the graph
+            if next_name in graph:
                 continue
 
             # see if the object itself knows how to generate its codegraph
             try:
                 if next_name.scope.is_global():
-                    next_obj = globals_dict[next_name.name]
+                    next_obj = globals_dict[next_name.full_name]
                 else:
-                    next_obj = all_vars_dict[next_name.name]
+                    next_obj = all_vars_dict[next_name.full_name]
                 # pylint: disable=protected-access
-                next_obj._pd_build_codegraph(graph, next_name.name)
+                next_obj._pd_build_codegraph(graph, next_name.full_name)
             except (KeyError, AttributeError):
                 pass
             else:
                 continue
 
-            # Only triggered if KeyError or AttributeError is raised
-            # find how *next_name* came into being
-            next_codenode = find_codenode(next_name, self._pd_external_full_dump_modules)
-
             graph[next_name] = next_codenode
 
-            todo.update(next_codenode.globals_)
-        return graph
+            todo += next_codenode.globals_
 
     def _pd_process_traceback(self):
         """Find where the Transform was defined (file, lineno, file) given the traceback. """
@@ -1144,7 +1176,7 @@ class FunctionTransform(AtomicTransform):
             start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
             if name is not None:
                 graph[ScopedName(name, scope, 0)] = start
-            return {}
+            return []
 
         if name is not None:
             source += f' as {name}'
@@ -1285,7 +1317,7 @@ class ClassTransform(AtomicTransform):
             if name is not None:
                 graph[ScopedName(name, instance_scope, 0)] = start_node
 
-        return set()
+        return []
 
     def _pd_codegraph_add_startnodes_import(self, graph, name):
         instance_scope = self._pd_call_info.scope
@@ -1314,9 +1346,9 @@ class ClassTransform(AtomicTransform):
             graph[ScopedName(name, call_scope, 0)] = start_node
         nodes.append(start_node)
 
-        dependencies = set()
+        dependencies = []
         for node in nodes:
-            dependencies.update(node.globals_)
+            dependencies += node.globals_
         return dependencies
 
     def _pd_codegraph_add_startnodes_full(self, graph, name):
@@ -1332,10 +1364,10 @@ class ClassTransform(AtomicTransform):
             graph[ScopedName(name, call_scope, 0)] = start_node
 
         for scoped_name in start_node.globals_:
-            if scoped_name.name == self.__class__.__name__:
+            if scoped_name.toplevel_name == self.__class__.__name__:
                 scoped_name.scope = class_scope
 
-        return set(start_node.globals_)
+        return list(start_node.globals_)
 
     def _pd_codegraph_add_startnodes(self, graph, name):
         if self._pd_full_dump:
@@ -1676,7 +1708,7 @@ class Pipeline(Transform):
         node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope, 0)] = node
 
-    def _pd_build_codegraph(self, graph=None, name=None):
+    def _pd_build_codegraph(self, graph=None, name=None, todo=None):
         """Build a codegraph defining the transform.
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
@@ -1691,19 +1723,21 @@ class Pipeline(Transform):
             self._codegraph_add_import_startnode(graph, name)
             return graph
 
-        self._pd_codegraph_add_startnodes(graph, name)
-
         if self._pd_group and 'padl' not in graph:
             emptyscope = symfinder.Scope.empty()
             graph[ScopedName('padl.group', emptyscope, 0)] = CodeNode.from_source('import padl',
                                                                                   emptyscope,
                                                                                   name='padl')
 
+        todo = self._pd_codegraph_add_startnodes(graph, name)
+
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
             varname = transform.pd_varname(self._pd_call_info.scope)
             # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, varname)
+
+        self._pd_codegraph_find_dependencies(graph, todo)
         return graph
 
     def _pd_longrepr(self, formatting=True, marker=None):

@@ -55,30 +55,22 @@ class Test_CheckAndMakeVariants:
     @staticmethod
     def parse(eqn):
         t, v = eqn.split('=')
-        target = var2mod.ScopedName(name=t.strip(), n=0, scope=None)
-        value = var2mod.ScopedName(name=v.strip(), n=0, scope=None)
-        return value, [target]
+        target = var2mod.ScopedName(full_name=t.strip(), n=0, scope=None)
+        value = var2mod.ScopedName(full_name=v.strip(), n=0, scope=None)
+        return [target], value
 
     def test_a_a(self):
-        res = var2mod._check_and_make_variants(*self.parse('a = a'))
-        assert set(res.variants) == {('a', 1)}
+        res = var2mod._increment_variants_from_targets(*self.parse('a = a'))
+        assert set(res.variants().items()) == {('a', 1)}
 
     def test_a_b(self):
-        res = var2mod._check_and_make_variants(*self.parse('a = b'))
-        assert set(res.variants) == {('b', 0)}
+        res = var2mod._increment_variants_from_targets(*self.parse('a = b'))
+        assert set(res.variants().items()) == {('b', 0)}
 
     def test_a_ab(self):
-        res = var2mod._check_and_make_variants(*self.parse('a = a.b'))
-        assert set(res.variants) == {('a', 1), ('a.b', 0)}
+        res = var2mod._increment_variants_from_targets(*self.parse('a = a.b'))
+        assert set(res.variants().items()) == {('a', 1), ('a.b', 0)}
 
     def test_a_abc(self):
-        res = var2mod._check_and_make_variants(*self.parse('a = a.b.c'))
-        assert set(res.variants) == {('a', 1), ('a.b', 0), ('a.b.c', 0)}
-
-    def test_ab_a(self):
-        with pytest.warns(UserWarning):
-            var2mod._check_and_make_variants(*self.parse('a.b = a'))
-
-    def test_ab_abc(self):
-        with pytest.warns(UserWarning):
-            var2mod._check_and_make_variants(*self.parse('a.b = a.b.c'))
+        res = var2mod._increment_variants_from_targets(*self.parse('a = a.b.c'))
+        assert set(res.variants().items()) == {('a', 1), ('a.b', 0), ('a.b.c', 0)}

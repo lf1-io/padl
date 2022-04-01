@@ -28,7 +28,7 @@ from math import inf
 import sys
 from textwrap import dedent
 from types import ModuleType
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -613,33 +613,61 @@ class ScopedName:
     :param name: Name of this ScopedName.
     :param scope: Scope of this ScopedName.
     :param n: Main n of this ScopedName.
-    :param overwriting_variant: The variant is overwrites same named variable or not.
-                    - Case 1: a = a.b + 1 : Variable 'a' already exists on both sides, so `a.b + 1` overwrites itself,
-                                            thus, overwriting_variant = True
-                    - Case 2: a = r.b + 1 : Variable 'a' is new here, so overwriting_variants = False
-
+    :param overwritten_variants: Dict mapping variants to increment that should be added in the
+        name's variant dict.
     """
-    def __init__(self, name: str, scope: Scope, n: int = 0, overwriting_variant: bool = False):
+
+    def __init__(self, full_name: str, scope: Scope, n: int = 0,
+                 overwritten_variants: Optional[Dict[str, int]] = None,
+                 has_variants: bool = False):
+        if not has_variants:
+            assert overwritten_variants is None
+
+        self.has_variants = has_variants
 
         self.scope = scope
-        self.overwriting_variant = overwriting_variant
+        if overwritten_variants is None:
+            overwritten_variants = {}
 
-        variant_names = self._make_variants_list(name)
-        start_n = n
+        self.overwritten_variants = overwritten_variants
 
-        if self.overwriting_variant:
-            start_n += 1
+        self.n = n
+        self.full_name = full_name
+
+        assert all(variant_name.startswith(self.toplevel_name)
+                   for variant_name in overwritten_variants)
+
+    def __hash__(self):
+        return hash((self.full_name, self.scope, self.full_name_n))
+
+    def __eq__(self, other):
+        return (
+            self.scope == other.scope
+            and self.full_name == other.full_name
+            and self.full_name_n == other.n
+        )
+
+    @property
+    def full_name_n(self):
+        if self.has_variants:
+            return self.variants().get(self.full_name, self.n)
         else:
-            variant_names = variant_names[::-1]
+            return self.n
 
-        variants = []
-        for ind, name in enumerate(variant_names):
-            variants.append((name, start_n if ind == 0 else n))
+    @property
+    def name(self):
+        assert not self.has_variants
+        return self.full_name
 
-        self.variants = variants
-        self.name = min(variant_names)
-        self.n = start_n
-        self.full_name = max(variant_names)
+    @property
+    def toplevel_name(self):
+        return self.full_name.split('.', 1)[0]
+
+    def variants(self):
+        return {
+            variant_name: self.n + self.overwritten_variants.get(variant_name, 0)
+            for variant_name in self._make_variants_list(self.full_name)
+        }
 
     @classmethod
     def _make_variants_list(cls, name):
@@ -655,54 +683,43 @@ class ScopedName:
         return out
 
     def get_names(self):
-        return [name for name, _ in self.variants]
+        return list(self.variants())
 
     def get_ns(self):
-        return [n for _, n in self.variants]
+        return list(self.variants().values())
 
     def update_scope(self, new_scope):
         self.scope = new_scope
         return self
 
     def increment_variants_from_other(self, other):
-        variants = []
-        other_var_dict = {var_name: var_n for var_name, var_n in other.variants}
-        for varname, var_n in self.variants:
-            variants.append((varname, var_n if varname not in other_var_dict else var_n + other_var_dict[varname]))
-            if varname == self.name:
-                self.n = variants[-1][-1]
-        self.variants = variants
+        assert self.has_variants
+        if not self.full_name.startswith(other.name):
+            return self
+        self.overwritten_variants[other.name] = \
+            self.overwritten_variants.get(other.name, 0) + other.n
         return self
 
     def add_n(self, increment):
         """Add *increment* to all variants."""
-        variants = [(name, n+increment) for name, n in self.variants]
-        self.variants = variants
         self.n += increment
         return self
 
-    def add_variant(self, name, n):
-        self.variants.append((name, n))
-        return self
-
-    def __hash__(self):
-        return hash((self.name, self.scope, self.n))
-
-    def __eq__(self, other):
-        if self.scope != other.scope:
-            return False
-        var_intersection = set(self.variants).intersection(set(other.variants))
-        if var_intersection:
-            return True
-        return False
-
     def __repr__(self):
-        return f"ScopedName(name='{self.name}', scope={self.scope}, n={self.n}, overwriting_variant={self.overwriting_variant})"
+        return (
+            f"ScopedName(name='{self.full_name}', scope={self.scope}, n={self.n}, "
+            f"overwritten_variants={self.overwritten_variants}, "
+            f"has_variants={self.has_variants})"
+        )
 
-    def copy(self):
-        _copy = type(self)(self.name, self.scope, self.n, self.overwriting_variant)
-        _copy.variants = [(_name, _n) for _name, _n in self.variants]
-        return _copy
+    def finalize(self, name: Optional[str] = None, scope: Optional[Scope] = None):
+        assert self.has_variants, 'Can\'t finalize a ScopedName without variants.'
+        if name is not None:
+            self.full_name = name
+        self.n = self.variants().get(self.full_name, self.n)
+        if scope is not None:
+            self.scope = scope
+        self.has_variants = False
 
 
 def find_in_scope(scoped_name: ScopedName):
@@ -774,17 +791,17 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
     replace_star_imports(tree)
     finder_clss = _ThingFinder.__subclasses__()
 
-    n_dict = {var_name: var_n for var_name, var_n in scoped_name.variants}
+    variants = scoped_name.variants()
     for statement in tree.body[::-1]:
-        for var_name, var_n in scoped_name.variants:
+        for var_name, var_n in scoped_name.variants().items():
             for finder_cls in finder_clss:
                 finder = finder_cls(source, var_name)
                 finder.visit(statement)
                 if finder.found_something():
-                    if n_dict[var_name] == 0:
+                    if variants[var_name] == 0:
                         return finder.deparse(), finder.node(), var_name
-                    n_dict[var_name] -= 1
-    raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
+                    variants[var_name] -= 1
+    raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants().items()])} not found.')
 
 
 def find_in_source(var_name: str, source: str, tree=None, i: int = 0) -> Tuple[str, ast.AST, str]:
@@ -861,7 +878,7 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
             continue
         break
     if source is None:
-        raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants])} not found.')
+        raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants().items()])} not found.')
     return source, node, name
 
 
