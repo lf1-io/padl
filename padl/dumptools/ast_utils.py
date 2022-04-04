@@ -19,6 +19,9 @@ class Position:
     col_offset: int
     end_col_offset: int
 
+    def __iter__(self):
+        yield from (self.lineno, self.end_lineno, self.col_offset, self.end_col_offset)
+
 
 def cached_parse(source):
     hash_ = hashlib.md5(source.encode()).digest()
