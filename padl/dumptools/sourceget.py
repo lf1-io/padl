@@ -16,6 +16,8 @@ import linecache
 from types import ModuleType
 from typing import List
 
+from padl.dumptools import ast_utils
+
 
 replace_cache = {}
 
@@ -86,6 +88,7 @@ def put_into_cache(key, source: str, repl: str, *loc):
     :param *loc: The location where *repl* is to be inserted (give as *from_line*, *to_line*,
         *from_col*, *to_col*).
     """
+    ast_utils.AST_NODE_CACHE.clear()
     val = ReplaceString(source, repl, *loc)
     try:
         replace_cache[key] = ReplaceStrings([val] + replace_cache[key].rstrings)
@@ -290,7 +293,7 @@ def replace(string, repl, from_line, to_line, from_col, to_col, one_indexed=Fals
     if from_line < 0 and to_line < 0:
         return string
 
-    lines = string.split('/n')
+    lines = string.split('\n')
 
     if from_line > len(lines) - 1 and to_line > len(lines) - 1:
         return string
