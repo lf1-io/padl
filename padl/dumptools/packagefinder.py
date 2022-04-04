@@ -109,7 +109,8 @@ def dump_requirements(nodes, strict=False):
         except RequirementNotFound as exc:
             if strict and package not in _ignore_requirements:
                 raise exc
-            warn(f'The "{package}" requirement was not found.')
+            if not strict:
+                warn(f'The "{package}" requirement was not found.')
             continue
         result += f'{dist}=={version(dist)}\n'
     return result
