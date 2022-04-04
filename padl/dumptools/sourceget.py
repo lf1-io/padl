@@ -98,7 +98,8 @@ def original(string: str) -> str:
     return getattr(string, 'original', string)
 
 
-def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int) -> str:
+def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int,
+        one_indexed: bool = False) -> str:
     """Cut a string (can be a normal `str`, a `ReplaceString` or a `ReplaceStrings`) and return the
     resulting substring.
 
@@ -127,8 +128,12 @@ def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int) -
     :param to_line: The last line to include.
     :param from_col: The first col on *from_line* to include.
     :param to_col: The last col on *to_line* to include.
+    :param one_indexed: If *True*, count lines from 1, else from 0.
     :returns: The cut-out string.
     """
+    if one_indexed:
+        from_line -= 1
+        to_line -= 1
     try:
         return string.cut(from_line, to_line, from_col, to_col)
     except AttributeError:
@@ -273,12 +278,19 @@ def _cut_string(string: str, from_line: int, to_line: int, from_col: int, to_col
     return '\n'.join(lines)
 
 
-def replace(string, repl, from_line, to_line, from_col, to_col):
-    """Replace a substring in *string* with *repl*. """
+def replace(string, repl, from_line, to_line, from_col, to_col, one_indexed=False):
+    """Replace a substring in *string* with *repl*.
+
+    :param one_indexed: If *True*, count lines from 1, else from 0.
+    """
+    if one_indexed:
+        from_line -= 1
+        to_line -= 1
+
     if from_line < 0 and to_line < 0:
         return string
 
-    lines = string.split('\n')
+    lines = string.splitlines()
 
     if from_line > len(lines) - 1 and to_line > len(lines) - 1:
         return string
