@@ -2500,10 +2500,6 @@ def load(path, **kwargs):
 
     Use keyword arguments to override params (see :func:`padl.param`).
     """
-    caller_frame = inspect.currentframe().f_back
-    call = inspector.get_segment_from_frame(caller_frame, 'call')
-    ci = inspector.CallInfo()
-    breakpoint()
     if Path(path).is_file():
         return _zip_load(path)
     path = Path(path)

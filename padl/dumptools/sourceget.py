@@ -290,7 +290,7 @@ def replace(string, repl, from_line, to_line, from_col, to_col, one_indexed=Fals
     if from_line < 0 and to_line < 0:
         return string
 
-    lines = string.splitlines()
+    lines = string.split('/n')
 
     if from_line > len(lines) - 1 and to_line > len(lines) - 1:
         return string
