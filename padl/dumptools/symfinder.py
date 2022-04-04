@@ -737,7 +737,8 @@ def find_in_scope(scoped_name: ScopedName):
     scope = scoped_name.scope
     for _scopename, tree in scope.scopelist:
         try:
-            res = find_scopedname_in_source(scoped_name, source = scoped_name.scope.def_source, tree = tree)
+            res = find_scopedname_in_source(scoped_name, source=scoped_name.scope.def_source,
+                                            tree=tree)
             source, node, name = res
             if getattr(node, '_globalscope', False):
                 scope = Scope.empty()
