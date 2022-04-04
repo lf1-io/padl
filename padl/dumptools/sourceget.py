@@ -44,7 +44,7 @@ def get_source(filename: str, use_replace_cache: bool = True) -> str:
         return ''.join(linecache.cache[filename][2])
 
     # normal module
-    with open(filename) as f:
+    with open(filename, encoding='utf-8') as f:
         return f.read()
 
 
