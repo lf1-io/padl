@@ -41,8 +41,8 @@ class Serializer:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
         self.load_codegraph = \
-            var2mod.CodeGraph.build(ScopedName(load_function.__name__,
-                                               symfinder.Scope.toplevel(load_function.__module__)))
+            var2mod.CodeGraph().build(ScopedName(load_function.__name__,
+                                                 symfinder.Scope.toplevel(load_function.__module__)))
         self.load_name = load_function.__name__
         super().__init__()
 
