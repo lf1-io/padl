@@ -24,12 +24,12 @@ and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import inf
 import sys
 from textwrap import dedent
 from types import ModuleType
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -368,74 +368,115 @@ class _SetAttribute(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-def _get_call_assignments(args, source, values, keywords):
+@dataclass
+class Signature:
+    argnames: list = field(default_factory=lambda: [])
+    pos_only_argnames: list = field(default_factory=lambda: [])
+    defaults: dict = field(default_factory=lambda: {})
+    kwonly_defaults: dict = field(default_factory=lambda: {})
+    vararg: Optional[str] = None
+    kwarg: Optional[str] = None
+
+    @property
+    def all_argnames(self):
+        return self.pos_only_argnames + self.argnames
+
+    def get_call_assignments(self, values, keywords):
+        res = {}
+        for name, val in self.kwonly_defaults.items():
+            try:
+                res[name] = keywords[name]
+            except KeyError:
+                res[name] = val
+
+        for name, val in zip(self.all_argnames, values):
+            res[name] = val
+
+        if self.vararg is not None:
+            res[self.vararg] = '[' + ', '.join(values[len(self.all_argnames):]) + ']'
+
+        kwargs = {}
+        for name, val in keywords.items():
+            if name in res:
+                continue
+            if name in self.argnames:
+                res[name] = val
+            else:
+                kwargs[name] = val
+
+        if kwargs and not set(kwargs) == {None}:
+            assert self.kwarg is not None, 'Extra keyword args given, but no **kwarg present.'
+            res[self.kwarg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
+
+        for name, val in self.defaults.items():
+            if name not in res:
+                res[name] = val
+
+        return res
+
+
+def _parse_def_args(args, source):
     argnames = [x.arg for x in args.args]
+
     try:
         pos_only_argnames = [x.arg for x in args.posonlyargs]
     except AttributeError:
         pos_only_argnames = []
-    all_argnames = pos_only_argnames + argnames
+
     defaults = {
         name: ast_utils.get_source_segment(source, val)
         for name, val in zip(argnames[::-1], args.defaults[::-1])
     }
+
     kwonly_defaults = {
         ast_utils.get_source_segment(source, name): ast_utils.get_source_segment(source, val)
         for name, val in zip(args.kwonlyargs, args.kw_defaults)
         if val is not None
     }
-    res = {}
-    for name, val in kwonly_defaults.items():
-        try:
-            res[name] = keywords[name]
-        except KeyError:
-            res[name] = val
-
-    for name, val in zip(all_argnames, values):
-        res[name] = val
 
     if args.vararg is not None:
-        res[args.vararg.arg] = '[' + ', '.join(values[len(all_argnames):]) + ']'
+        vararg = args.vararg.arg
+    else:
+        vararg = None
 
-    kwargs = {}
-    for name, val in keywords.items():
-        if name in res:
-            continue
-        if name in argnames:
-            res[name] = val
-        else:
-            kwargs[name] = val
+    if args.kwarg is not None:
+        kwarg = args.kwarg.arg
+    else:
+        kwarg = None
 
-    if kwargs and not set(kwargs) == {None}:
-        assert args.kwarg is not None, 'Keyword args given, but no **kwarg present.'
-        res[args.kwarg.arg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
-
-    for name, val in defaults.items():
-        if name not in res:
-            res[name] = val
-
-    return res
+    return Signature(argnames, pos_only_argnames, defaults, kwonly_defaults, vararg, kwarg)
 
 
 def _get_call_signature(source: str):
     """Get the call signature of a string containing a call.
 
-    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)")
-    :returns: A tuple with a list of positional arguments and a list of keyword arguments.
+    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)").
+    :returns: A tuple with
+        - a list of positional arguments
+        - a list of keyword arguments
+        - the value of *args, if present, else None
+        - the value of *kwargs, if present, else None
 
     Example:
 
-    >>> _get_call_signature("a(2, b, 'f', c=100)")
-    (['2', 'b', "'f'"], {'c': '100'})
+    >>> _get_call_signature("a(2, b, 'f', c=100, *[1, 2], **kwargs)")
+    (['2', 'b', "'f'"], {'c': '100'}, '[1, 2]', 'kwargs')
     """
     call = ast.parse(source).body[0].value
     if not isinstance(call, ast.Call):
         return [], {}
-    args = [ast_utils.get_source_segment(source, arg) for arg in call.args]
+    star_args = None
+    args = []
+    for arg in call.args:
+        if isinstance(arg, ast.Starred):
+            star_args = ast_utils.get_source_segment(source, arg.value)
+            continue
+        args.append(ast_utils.get_source_segment(source, arg))
     kwargs = {
         kw.arg: ast_utils.get_source_segment(source, kw.value) for kw in call.keywords
     }
-    return args, kwargs
+    star_kwargs = kwargs.pop(None, None)
+    return args, kwargs, star_args, star_kwargs
 
 
 class Scope:
@@ -512,9 +553,9 @@ class Scope:
         # b = 2
         # c = 3
         # ...
-        values, keywords = _get_call_signature(call_source)
+        values, keywords, star_args, star_kwargs = _get_call_signature(call_source)
         args = function_defs[-1].args
-        assignments = _get_call_assignments(args, def_source, values, keywords)
+        assignments = _parse_def_args(args, def_source).get_call_assignments(values, keywords)
         call_assignments = []
         for k, v in assignments.items():
             src = f'{k} = {v}'
