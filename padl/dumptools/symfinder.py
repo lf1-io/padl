@@ -550,6 +550,9 @@ class Scope:
         """*True* iff the scope is global. """
         return len(self.scopelist) == 0
 
+    def is_empty(self) -> bool:
+        return self.module is None
+
     @property
     def module_name(self) -> str:
         """The name of the scope's module. """
@@ -617,8 +620,10 @@ class ScopedName:
         name's variant dict.
     """
 
-    def __init__(self, name, scope, pos=None, cell_no=None):
+    def __init__(self, name, scope=None, pos=None, cell_no=None):
         self.name = name
+        if scope is None:
+            scope = Scope.empty()
         self.scope = scope
         self.pos = pos
         self.cell_no = cell_no
@@ -654,6 +659,9 @@ class ScopedName:
         self.scope = new_scope
         return self
 
+    def copy(self):
+        return ScopedName(self.name, self.scope, self.pos, self.cell_no)
+
     def __repr__(self):
         return (
             f"ScopedName(name='{self.name}', scope={self.scope}, pos={self.pos}, "
@@ -685,24 +693,30 @@ def find_in_scope(scoped_name: ScopedName):
 
     """
     scope = scoped_name.scope
+    searched_name = scoped_name.copy()
     for _scopename, tree in scope.scopelist:
         try:
-            res = find_scopedname_in_source(scoped_name, source=scoped_name.scope.def_source,
+            res = find_scopedname_in_source(searched_name, source=searched_name.scope.def_source,
                                             tree=tree)
             source, node, name = res
             if getattr(node, '_globalscope', False):
                 name.scope = Scope.empty()
+            else:
+                name.scope = scope
             return (source, node), name
         except NameNotFound:
             scope = scope.up()
+            searched_name.pos = None
+            searched_name.cell_no = None
             continue
     if scope.module is None:
-        raise NameNotFound(f'{scoped_name.name} not found in function hierarchy.')
-    source, node, name = find_scopedname(scoped_name)
+        raise NameNotFound(f'{searched_name.name} not found in function hierarchy.')
+    source, node, name = find_scopedname(searched_name)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:
         scope = getattr(node, '_scope', scope.global_())
+    name.scope = scope
     return (source, node), name
 
 
@@ -756,7 +770,7 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                         ScopedName(var_name, scoped_name.scope, (pos.lineno, pos.col_offset))
                     )
     raise NameNotFound(
-        f'{",".join(scoped_name.variants())} not found.')
+        f'{", ".join(scoped_name.variants())} not found.')
 
 
 def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST, str]:
@@ -828,16 +842,21 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
     if scoped_name.cell_no is None:
         start = len(cells)
     else:
-        start = scoped_name.cell_no - 1
+        start = scoped_name.cell_no
     for i, cell in cells[start::-1]:
+        if i == start:
+            name_to_find = scoped_name
+        else:
+            name_to_find = scoped_name.copy()
+            name_to_find.pos = None
         try:
-            source, node, name = find_scopedname_in_source(scoped_name, cell)
+            source, node, name = find_scopedname_in_source(name_to_find, cell)
             name.cell_no = i
         except (NameNotFound, SyntaxError):
             continue
         break
     if source is None:
-        raise NameNotFound(f'{",".join([str((var, n)) for var, n in scoped_name.variants().items()])} not found.')
+        raise NameNotFound(f'{scoped_name} not found.')
     return source, node, name
 
 
@@ -848,6 +867,7 @@ def find_in_ipython(var_name: str) -> Tuple[str, ast.AST, str]:
     :param var_name: Name of the variable to look for.
     :returns: Tuple with source code segment and the corresponding ast node.
     """
+    scoped_name = ScopedName(var_name, None)
     return find_scopedname_in_ipython(scoped_name)
 
 

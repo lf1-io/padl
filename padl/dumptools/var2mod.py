@@ -404,13 +404,16 @@ class _VarFinder(ast.NodeVisitor):
                 self.locals.add(ScopedName(name.asname, scope))
 
 
-def update_globals(variables: List[ScopedName], scoped_name: ScopedName):
+def update_globals(variables: List[ScopedName], scoped_name: ScopedName, node):
     result = set()
 
     for var in variables:
-        if var.scope is None:
+        if var.scope.is_empty():
             var.scope = scoped_name.scope
-        var.pos = scoped_name.pos
+            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                var.pos = (node.end_lineno, node.end_col_offset)
+            else:
+                var.pos = scoped_name.pos
         var.cell_no = scoped_name.cell_no
         result.add(var)
     return result
@@ -628,11 +631,7 @@ def find_codenode(name: ScopedName, full_dump_module_names=None) -> "CodeNode":
                                  full_dump_module_names)
     # find dependencies
     globals_ = find_globals(node)
-    name.name = found_name.name
-    name.scope = found_name.scope
-    name.pos = found_name.pos
-    name.cell_no = found_name.cell_no
-    globals_ = update_globals(globals_, name)
+    globals_ = update_globals(globals_, found_name, node)
     return CodeNode(source=source, globals_=globals_, ast_node=node, name=found_name)
 
 
@@ -719,6 +718,7 @@ class CodeNode:
     @classmethod
     def from_source(cls, source, scope, name):
         """Build a `CodeNode` from a source string. """
+        scoped_name = ScopedName(name, scope)
         node = ast_utils.cached_parse(source).body[0]
         globals_ = {
             name.update_scope(scope)
@@ -728,7 +728,7 @@ class CodeNode:
         return cls(
             source=source,
             ast_node=node,
-            name=name,
+            name=scoped_name,
             globals_=globals_,
         )
 
@@ -758,22 +758,33 @@ def _sort(unscoped_graph):
     return res
 
 
+def _deduplicate(keys, graph):
+    done = set()
+    res = []
+    for k in keys:
+        if graph[k] in done:
+            continue
+        done.add(graph[k])
+        res.append(k)
+    return res
+
+
+def _remove_empty(keys, graph):
+    return [k for k in keys if graph[k].source.strip()]
+
+
 def _dumps_unscoped(unscoped_graph):
     """Dump an unscoped (see :meth:`CodeGraph.unscope`) :class:`CodeGraph` to a python source
     string. """
-    sorted_ = _sort(unscoped_graph)
+    keys = _sort(unscoped_graph)
+    keys = _deduplicate(keys, unscoped_graph)
+    keys = _remove_empty(keys, unscoped_graph)
     res = ''
-    done = set()
-    for i, name in enumerate(sorted_):
+    for i, name in enumerate(keys):
         here = unscoped_graph[name]
-        if here in done:
-            continue
-        if not here.source.strip():
-            continue
-        done.add(here)
         res += here.source
-        if i < len(sorted_) - 1:
-            next_ = unscoped_graph[sorted_[i + 1]]
+        if i < len(keys) - 1:
+            next_ = unscoped_graph[keys[i + 1]]
             if isinstance(here.ast_node, (ast.Import, ast.ImportFrom)) \
                     and isinstance(next_.ast_node, (ast.Import, ast.ImportFrom)):
                 res += '\n'
@@ -829,11 +840,11 @@ class CodeGraph(dict):
         for k, v in self.items():
             changed = False
             k_unscoped = unscope(k.name, k.scope)
-            v_unscoped = unscope(v.name, k.scope)
-            changed = changed or k_unscoped != k.name
+            v_unscoped = unscope(v.name.name, k.scope)
+            changed = v_unscoped != v.name.name
             code = v.source
             tree = ast_utils.cached_parse(code)
-            rename(tree, k.name, k_unscoped, rename_locals=True)
+            rename(tree, v.name.name, v_unscoped, rename_locals=True)
             vars_ = set()
             for var in list(v.globals_):
                 var_unscoped = unscope(var.name, var.scope)
@@ -881,12 +892,12 @@ class CodeGraph(dict):
     def print(self):
         """Print the graph (for debugging). """
         for k, v in self.items():
-            print(f'{k.full_name} {k.scope} {k.n}:')
+            print(f'{k}:')
             print()
             print(v.source)
             print()
             for dep in v.globals_:
-                print(f'  {dep.full_name} {dep.scope} {dep.n} {dep.has_variants}')
+                print(f'  {dep}')
             print()
             print('--------')
             print()
