@@ -514,7 +514,11 @@ class Scope:
         """Create a top-level scope (i.e. module level, no nesting). """
         if isinstance(module, str):
             module = sys.modules[module]
-        return cls(module, sourceget.get_source(module.__file__), [])
+        try:
+            source = sourceget.get_module_source(module)
+        except TypeError:
+            source = ''
+        return cls(module, source, [])
 
     @classmethod
     def empty(cls):
@@ -623,6 +627,9 @@ class Scope:
 
     def __hash__(self):
         return hash(str(self))
+
+    def d_name(self, name, pos=None, cell_no=None):
+        return ScopedName(name, self, pos, cell_no)
 
 
 class ScopedName:

@@ -885,12 +885,11 @@ class CodeGraph(dict):
     def real_names(self):
         return {v.name: v for v in self.values()}
 
-    @classmethod
-    def from_source(cls, target: str, scope: Optional[Scope] = None, name='__out'):
+    def from_source(self, target: str, scope: Optional[Scope] = None, name='__out'):
         if scope is None:
             scope = Scope.toplevel('__main__')
         start = CodeNode.from_source(target, scope, name)
-        graph = CodeGraph().build(list(start.globals_))
+        graph = self.build(list(start.globals_))
         graph[ScopedName(name, scope=scope)] = start
         return graph
 
