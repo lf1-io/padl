@@ -41,10 +41,8 @@ class Serializer:
             module = inspector.caller_module()
         self.scope = symfinder.Scope.toplevel(module)
         self.load_codegraph = \
-            var2mod.CodeGraph.build(ScopedName(load_function.__name__,
-                                               symfinder.Scope.toplevel(load_function.__module__),
-                                               overwritten_variants={},
-                                               has_variants=True))
+            var2mod.CodeGraph().build(ScopedName(load_function.__name__,
+                                                 symfinder.Scope.toplevel(load_function.__module__)))
         self.load_name = load_function.__name__
         super().__init__()
 
@@ -78,6 +76,7 @@ class Serializer:
                  CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
                           globals_={ScopedName(self.load_name, self.scope)},
                           scope=self.scope,
+                          ast_node=ast.parse(f'{self.varname} = {self.load_name}({complete_path})').body[0],
                           name=self.varname),
              ScopedName('pathlib', SCOPE):
                  CodeNode(source='import pathlib',

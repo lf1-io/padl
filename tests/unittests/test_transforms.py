@@ -1098,8 +1098,8 @@ class TestParam:
         assert t_2(1) == 3
 
     def test_no_default(self, tmp_path, ignore_padl_requirement):
-        x = padl.param(1, 'x', use_default=False)
-        t = SimpleClassTransform(x)
+        xurgh = padl.param(1, 'x', use_default=False)
+        t = SimpleClassTransform(xurgh)
         assert t(1) == 2
         t.pd_save(tmp_path / 'test.padl')
         with pytest.raises(ValueError):

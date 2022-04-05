@@ -430,9 +430,9 @@ class Transform:
                                             strict_requirements=strict_requirements,
                                             path=path)
 
-        with open(path / 'transform.py', 'w') as f:
+        with open(path / 'transform.py', 'w', encoding='utf-8') as f:
             f.write(code)
-        with open(path / 'requirements.txt', 'w') as f:
+        with open(path / 'requirements.txt', 'w', encoding='utf-8') as f:
             f.write(requirements)
 
     def _pd_codegraph_add_startnodes(self, graph, name: Union[str, None]) -> Set:
@@ -2525,7 +2525,8 @@ def load(path, **kwargs):
     if Path(path).is_file():
         return _zip_load(path)
     path = Path(path)
-    with open(path / 'transform.py') as f:
+
+    with open(path / 'transform.py', encoding='utf-8') as f:
         source = f.read()
 
     class _EmptyLoader(Loader):

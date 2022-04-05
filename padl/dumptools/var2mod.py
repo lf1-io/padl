@@ -7,7 +7,7 @@ import warnings
 from collections import Counter, namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Dict, Optional, List, Tuple, Set
+from typing import Dict, Optional, List, Tuple, Set, Union
 
 from padl.dumptools import ast_utils
 from padl.dumptools.ast_utils import unparse
@@ -423,14 +423,12 @@ class _Renamer(ast.NodeTransformer):
     # pylint: disable=invalid-name
     """An :class:`ast.NodeTransformer` for renaming things. Used in :func:`rename`.
 
-    :param from_: Rename everything called this ...
-    :param to: ... to this.
+    :param renaming_function: Function that takes a node and a name and returns a new name.
     :param rename_locals: If *True*, rename local things, else, only rename globals.
     """
 
-    def __init__(self, from_, to, rename_locals):
-        self.from_ = from_
-        self.to = to
+    def __init__(self, renaming_function, rename_locals):
+        self.renaming_function = renaming_function
         self.rename_locals = rename_locals
 
     def visit_arg(self, node):
@@ -445,9 +443,10 @@ class _Renamer(ast.NodeTransformer):
         >>> unparse(rename(node, 'a', 'c', rename_locals=True)).strip()
         'def f(c, b):\\n    ...'
         """
-        if node.arg == self.from_:
-            return ast.arg(**{**node.__dict__, 'arg': self.to})
-        return node
+        arg = self.renaming_function(node.arg, node)
+        if arg == node.arg:
+            return node
+        return ast.arg(**{**node.__dict__, 'arg': arg})
 
     def visit_Name(self, node):
         """Names.
@@ -458,9 +457,10 @@ class _Renamer(ast.NodeTransformer):
         >>> unparse(rename(node, 'x', 'y', True)).strip()
         'y'
         """
-        if node.id == self.from_:
-            return ast.Name(**{**node.__dict__, 'id': self.to})
-        return node
+        id_ = self.renaming_function(node.id, node)
+        if id_ == node.id:
+            return node
+        return ast.Name(**{**node.__dict__, 'id': id_})
 
     def visit_FunctionDef(self, node):
         """Function definitions.
@@ -474,18 +474,17 @@ class _Renamer(ast.NodeTransformer):
         >>> unparse(rename(node, 'z', 'u', rename_locals=True)).strip()
         'def f(a, b):\\n    y = p(u)'
         """
-        if self.rename_locals and node.name == self.from_:
-            name = self.to
+        if self.rename_locals:
+            name = self.renaming_function(node.name, node)
         else:
             name = node.name
-        if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in {x.toplevel_name for x in globals_}:
+            if all(self.renaming_function(x.name, node) == x.name for x in globals_):
                 return node
         return ast.FunctionDef(**{**node.__dict__,
-                                  'args': rename(node.args, self.from_, self.to,
+                                  'args': _rename(node.args, self.renaming_function,
                                                  self.rename_locals),
-                                  'body': rename(node.body, self.from_, self.to,
+                                  'body': _rename(node.body, self.renaming_function,
                                                  self.rename_locals),
                                   'name': name})
 
@@ -502,18 +501,31 @@ class _Renamer(ast.NodeTransformer):
         >>> unparse(rename(node, 'z', 'u', rename_locals=True)).strip()  # doctest: +SKIP
         'class Foo:\\n\\n    def __init__(self, a, b):\\n        y = p(u)'
         """
-        if self.rename_locals and node.name == self.from_:
-            name = self.to
+        if self.rename_locals:
+            name = self.renaming_function(node.name, node)
         else:
             name = node.name
-        if not self.rename_locals:
             globals_ = find_globals(node)
-            if self.from_ not in {x.toplevel_name for x in globals_}:
+            if all(self.renaming_function(x.name, node) == x.name for x in globals_):
                 return node
         return ast.ClassDef(**{**node.__dict__,
-                               'body': rename(node.body, self.from_, self.to,
+                               'body': rename(node.body, self.renaming_function,
                                               self.rename_locals),
                                'name': name})
+
+
+def _rename(tree: ast.AST, renaming_function, rename_locals: bool = False):
+    if not rename_locals:
+        globals_ = find_globals(tree)
+        if all(renaming_function(x.name, None) == x.name for x in globals_):
+            return tree
+    if isinstance(tree, Iterable) and not isinstance(tree, str):
+        return [_rename(x, renaming_function, rename_locals) for x in tree]
+    if not isinstance(tree, ast.AST):
+        return tree
+
+    renamer = _Renamer(renaming_function, rename_locals)
+    return renamer.visit(tree)
 
 
 def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
@@ -524,16 +536,12 @@ def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
     :param to: ... to this.
     :param rename_locals: If *True*, rename local things, else, only rename globals.
     """
-    if not rename_locals:
-        globals_ = find_globals(tree)
-        if from_ not in {x.toplevel_name for x in globals_}:
-            return tree
-    if isinstance(tree, Iterable) and not isinstance(tree, str):
-        return [rename(x, from_, to, rename_locals) for x in tree]
-    if not isinstance(tree, ast.AST):
-        return tree
-    renamer = _Renamer(from_, to, rename_locals)
-    return renamer.visit(tree)
+    def renaming_function(name, _node):
+        if name == from_:
+            return to
+        return name
+    return _rename(tree, renaming_function, rename_locals)
+
 
 
 class _MethodFinder(ast.NodeVisitor):
@@ -836,6 +844,13 @@ class CodeGraph(dict):
                 return scope.unscoped(name)
             return name
 
+        def renaming_function(name, node, k, k_unscoped):
+            if hasattr(node, '_scope') and node._scope != k.scope:
+                return name
+            if name != k.name:
+                return name
+            return k_unscoped
+
         res = {}
         for k, v in self.items():
             changed = False
@@ -843,8 +858,9 @@ class CodeGraph(dict):
             v_unscoped = unscope(v.name.name, k.scope)
             changed = v_unscoped != v.name.name
             code = v.source
-            tree = ast_utils.cached_parse(code)
-            rename(tree, v.name.name, v_unscoped, rename_locals=True)
+            tree = v.ast_node
+
+            _rename(tree, lambda x, y: renaming_function(x,y,k,k_unscoped), rename_locals=True)
             vars_ = set()
             for var in list(v.globals_):
                 var_unscoped = unscope(var.name, var.scope)
@@ -863,15 +879,26 @@ class CodeGraph(dict):
         return _dumps_unscoped(self._unscoped())
 
     @classmethod
-    def build(cls, scoped_name: ScopedName):
-        """Build a codegraph corresponding to a `ScopedName`.
+    def from_source(cls, target: str, scope: Optional[Scope] = None, name='__out'):
+        if scope is None:
+            scope = Scope.toplevel('__main__')
+        start = CodeNode.from_source(target, scope, name)
+        graph = CodeGraph().build(list(start.globals_))
+        graph[ScopedName(name, scope=scope)] = start
+        return graph
 
-        The name will be searched for in its scope.
+    def build(self, target: Union[List[ScopedName], ScopedName]):
+        """Build a codegraph corresponding to a :class:`ScopedName` or a list of
+        :class:`ScopedName`s.
+
+        The name(s) will be searched for in its (their) scope.
         """
-        graph = cls()
         done = set()
 
-        todo = {scoped_name}
+        if isinstance(target, list):
+            todo = set(target)
+        else:
+            todo = {target}
 
         while todo:
             # we know this already - go on
@@ -882,12 +909,12 @@ class CodeGraph(dict):
 
             # find how next_var came into being
             next_codenode = find_codenode(next_name)
-            graph[next_name] = next_codenode
+            self[next_name] = next_codenode
 
             todo.update(next_codenode.globals_)
             done.add(next_name)
 
-        return graph
+        return self
 
     def print(self):
         """Print the graph (for debugging). """
