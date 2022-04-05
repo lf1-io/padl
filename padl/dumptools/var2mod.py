@@ -411,7 +411,8 @@ def update_globals(variables: List[ScopedName], scoped_name: ScopedName, node):
         if var.scope.is_empty():
             var.scope = scoped_name.scope
             if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-                var.pos = (node.end_lineno, node.end_col_offset)
+                position = ast_utils.get_position(scoped_name.scope.def_source, node)
+                var.pos = (position.end_lineno, position.end_col_offset)
             else:
                 var.pos = scoped_name.pos
         var.cell_no = scoped_name.cell_no

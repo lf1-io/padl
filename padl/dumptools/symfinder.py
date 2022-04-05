@@ -514,7 +514,7 @@ class Scope:
         """Create a top-level scope (i.e. module level, no nesting). """
         if isinstance(module, str):
             module = sys.modules[module]
-        return cls(module, '', [])
+        return cls(module, sourceget.get_source(module.__file__), [])
 
     @classmethod
     def empty(cls):
@@ -954,6 +954,7 @@ class NameNotFound(Exception):
 
 
 def format_scoped_name_not_found(scoped_name):
+    """Produce a nice error message for the case a :class:`ScopedName` isn't found. """
     variants = scoped_name.variants()
     if len(variants) > 1:
         joined = ', '.join(f'"{v}"' for v in variants[:-2])

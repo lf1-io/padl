@@ -60,11 +60,11 @@ class TestFindScopedNameInIpython:
                 ''')
             ]
         monkeypatch.setattr(sourceget, '_ipython_history', _ipython_history)
-        scoped_name = symfinder.ScopedName('a', '__main__')
+        scoped_name = symfinder.ScopedName('a', symfinder.Scope.toplevel('__main__'))
         snippet, node, name = symfinder.find_scopedname_in_ipython(scoped_name)
         assert snippet == 'a = b'
         assert isinstance(node, ast.Assign)
-        assert name.scope == '__main__'
+        assert name.scope == symfinder.Scope.toplevel('__main__')
         pos = ast_utils.get_position(_ipython_history()[1], node)
         assert name.pos == (pos.lineno, pos.col_offset)
         assert name.cell_no == 1
@@ -81,11 +81,11 @@ class TestFindScopedNameInIpython:
                 ''')
             ]
         monkeypatch.setattr(sourceget, '_ipython_history', _ipython_history)
-        scoped_name = symfinder.ScopedName('a', '__main__', cell_no=1)
+        scoped_name = symfinder.ScopedName('a', symfinder.Scope.toplevel('__main__'), pos=(2, 0), cell_no=1)
         snippet, node, name = symfinder.find_scopedname_in_ipython(scoped_name)
         assert snippet == 'a = 1'
         assert isinstance(node, ast.Assign)
-        assert name.scope == '__main__'
+        assert name.scope == symfinder.Scope.toplevel('__main__')
         pos = ast_utils.get_position(_ipython_history()[0], node)
         assert name.pos == (pos.lineno, pos.col_offset)
         assert name.cell_no == 0
