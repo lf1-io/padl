@@ -514,7 +514,7 @@ class Scope:
         """Create a top-level scope (i.e. module level, no nesting). """
         if isinstance(module, str):
             module = sys.modules[module]
-        return cls(module, sourceget.get_source(module.__file__), [])
+        return cls(module, sourceget.get_module_source(module), [])
 
     @classmethod
     def empty(cls):
