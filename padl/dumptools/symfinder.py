@@ -609,8 +609,11 @@ class Scope:
             return varname
         return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
 
+    def dot_string(self):
+        return ".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])
+
     def __repr__(self):
-        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])}]'
+        return f'Scope[{self.dot_string()}]'
 
     def __len__(self):
         return len(self.scopelist)
@@ -646,20 +649,10 @@ class ScopedName:
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
 
-    Attributes *name* and *full_name* of ScopedName store the shortened name (removed dots) and
-    the complete name.
-    Example:
-        >>> s = ScopedName('a.b.c.d', None, 0, False)
-        >>> s.full_name
-        'a.b.c.d'
-        >>> s.name
-        'a'
-
     :param name: Name of this ScopedName.
     :param scope: Scope of this ScopedName.
-    :param n: Main n of this ScopedName.
-    :param overwritten_variants: Dict mapping variants to increment that should be added in the
-        name's variant dict.
+    :param pos: (optional) Maximum position (tuple of line number and col number).
+    :param cell_no: (optional) Maximum ipython cell number.
     """
 
     def __init__(self, name, scope=None, pos=None, cell_no=None):
@@ -688,8 +681,8 @@ class ScopedName:
         """Returns list of splits for input_name.
         Example:
 
-        >>> ScopedName('a.b.c', '__main__').variants
-            ['a.b.c', 'a.b', 'a']
+        >>> ScopedName('a.b.c', '__main__').variants()
+        ['a', 'a.b', 'a.b.c']
         """
         splits = self.name.split('.')
         out = []
@@ -752,7 +745,7 @@ def find_in_scope(scoped_name: ScopedName):
             searched_name.cell_no = None
             continue
     if scope.module is None:
-        raise NameNotFound(f'{searched_name.name} not found in function hierarchy.')
+        raise NameNotFound(format_scoped_name_not_found(scoped_name))
     source, node, name = find_scopedname(searched_name)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
@@ -812,7 +805,8 @@ def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tup
                         ScopedName(var_name, scoped_name.scope, (pos.lineno, pos.col_offset))
                     )
     raise NameNotFound(
-        f'{", ".join(scoped_name.variants())} not found.')
+        format_scoped_name_not_found(scoped_name)
+    )
 
 
 def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST, str]:
@@ -882,7 +876,7 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
     source = node = name = None
     cells = list(enumerate(sourceget._ipython_history()))
     if scoped_name.cell_no is None:
-        start = len(cells)
+        start = len(cells) - 1
     else:
         start = scoped_name.cell_no
     for i, cell in cells[start::-1]:
@@ -898,7 +892,7 @@ def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, st
             continue
         break
     if source is None:
-        raise NameNotFound(f'{scoped_name} not found.')
+        raise NameNotFound(format_scoped_name_not_found(scoped_name))
     return source, node, name
 
 
@@ -930,11 +924,11 @@ def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST, str]:
         return find_scopedname_in_module(scoped_name, module)
     except TypeError as exc:
         if module is not sys.modules['__main__']:
-            raise NameNotFound(f'"{scoped_name}" not found.') from exc
+            raise NameNotFound(format_scoped_name_not_found(scoped_name)) from exc
         return find_scopedname_in_ipython(scoped_name)
 
 
-def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST, str]:
+def find(var_name: str, module=None) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -943,21 +937,34 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST, str]:
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search (defaults to __main__).
-    :param i: Occurrence of var_name, 0 is the most recent, with increasing int denoting earlier occurrence.
     :returns: Tuple with source code segment, corresponding ast node and variable name.
     """
     if module is None:
         module = sys.modules['__main__']
     try:
-        return find_in_module(var_name, module, i)
+        return find_in_module(var_name, module)
     except TypeError as exc:
         if module is not sys.modules['__main__']:
             raise NameNotFound(f'"{var_name}" not found.') from exc
-        return find_in_ipython(var_name, i)
+        return find_in_ipython(var_name)
 
 
 class NameNotFound(Exception):
     """Exception indicating that a name could not be found. """
+
+
+def format_scoped_name_not_found(scoped_name):
+    variants = scoped_name.variants()
+    if len(variants) > 1:
+        joined = ', '.join(f'"{v}"' for v in variants[:-2])
+        joined += f' or "{variants[-2]}"'
+        variant_str = f'(or one of its variants: {joined})'
+    else:
+        variant_str = ''
+    return (
+        f'Could not find "{scoped_name.name}" in scope "{scoped_name.scope.dot_string()}".\n\n'
+        f'Please make sure that "{scoped_name.name}" is defined {variant_str}.'
+    )
 
 
 def split_call(call_source):

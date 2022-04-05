@@ -10,11 +10,11 @@ def test_annassign():
     source = dedent('''
         a: int = 1
     ''')
-    scoped_name = symfinder.ScopedName('a', None, 0)
+    scoped_name = symfinder.ScopedName('a', None)
     code, node, name = symfinder.find_scopedname_in_source(scoped_name, source)
     assert code == 'a: int = 1'
     assert isinstance(node, ast.AnnAssign)
-    assert name == 'a'
+    assert name.name == 'a'
 
 
 class TestFindScopedNameInSource:

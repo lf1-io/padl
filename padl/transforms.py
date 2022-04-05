@@ -448,8 +448,6 @@ class Transform:
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
         start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
         nodes.append(start)
-        if not start.globals_:
-            breakpoint()
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
         if name is not None:
@@ -1335,9 +1333,9 @@ class ClassTransform(AtomicTransform):
             graph[ScopedName(name, call_scope)] = start_node
         nodes.append(start_node)
 
-        dependencies = []
+        dependencies = set()
         for node in nodes:
-            dependencies += node.globals_
+            dependencies.update(node.globals_)
         return dependencies
 
     def _pd_codegraph_add_startnodes_full(self, graph, name):
