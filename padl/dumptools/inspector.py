@@ -353,3 +353,26 @@ def get_statement_at_line(source: str, lineno: int, checker):
             if res is not None:
                 return res
     raise RuntimeError('Statement not found.')
+
+
+def get_my_call_signature():
+    """Call from within a function to get its call signature.
+
+    Returns a tuple of
+
+        - list of positional arguments
+        - dict of keyword arguments
+        - value of *args (as a string)
+        - value of **kwargs (as a string)
+
+    (see also :func:`symfinder._get_call_signature`).
+
+    Example:
+
+    >>> def f(a, *args, b=1, **kwargs): return get_my_call_signature()
+    >>> f(1, 2, *[1, 2], b="hello", c=123, **{'1': 1, '2': 2})
+    (['1', '2'], {'b': '"hello"', 'c': '123'}, '[1, 2]', "{'1': 1, '2': 2}")
+    """
+    calling_frame = inspect.currentframe().f_back.f_back
+    call_source = get_segment_from_frame(calling_frame, 'call')
+    return symfinder._get_call_signature(call_source)
