@@ -381,7 +381,8 @@ class Signature:
     def all_argnames(self):
         return self.pos_only_argnames + self.argnames
 
-    def get_call_assignments(self, values, keywords):
+    def get_call_assignments(self, values, keywords, star_args=None, star_kwargs=None,
+                             dump_kwargs=True):
         res = {}
         for name, val in self.kwonly_defaults.items():
             try:
@@ -406,11 +407,17 @@ class Signature:
 
         if kwargs and not set(kwargs) == {None}:
             assert self.kwarg is not None, 'Extra keyword args given, but no **kwarg present.'
-            res[self.kwarg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
+            if dump_kwargs:
+                res[self.kwarg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
+            else:
+                res[self.kwarg] = kwargs
 
         for name, val in self.defaults.items():
             if name not in res:
-                res[name] = val
+                if star_kwargs is not None:
+                    res[name] = f"{star_kwargs}.get('{name}', {val})"
+                else:
+                    res[name] = val
 
         return res
 
