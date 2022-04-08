@@ -416,7 +416,7 @@ class Transform:
                 raise FileExistsError(f'{path} exists, call with *force_overwrite* to overwrite.')
 
             with TemporaryDirectory('.padl') as dirname:
-                self.pd_save(dirname, False)
+                self.pd_save(dirname, False, strict_requirements=strict_requirements)
                 rmtree(path)
                 copytree(dirname, path)
 
