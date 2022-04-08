@@ -1088,7 +1088,7 @@ def test_identity_compose_saves(tmp_path, ignore_padl_requirement):
 
 class TestParam:
     def test_param_works(self, tmp_path, ignore_padl_requirement):
-        x = padl.param(1, 'x')
+        x = padl.param('x', 1)
         t = SimpleClassTransform(x)
         assert t(1) == 2
         t.pd_save(tmp_path / 'test.padl')
@@ -1098,7 +1098,7 @@ class TestParam:
         assert t_2(1) == 3
 
     def test_no_default(self, tmp_path, ignore_padl_requirement):
-        xurgh = padl.param(1, 'x', use_default=False)
+        xurgh = padl.param('x', 1, use_default=False)
         t = SimpleClassTransform(xurgh)
         assert t(1) == 2
         t.pd_save(tmp_path / 'test.padl')
@@ -1108,7 +1108,7 @@ class TestParam:
         assert t_2(1) == 3
 
     def test_wrong_param(self, tmp_path, ignore_padl_requirement):
-        x = padl.param(1, 'x')
+        x = padl.param('x', 1)
         t = SimpleClassTransform(x)
         assert t(1) == 2
         t.pd_save(tmp_path / 'test.padl')
@@ -1139,7 +1139,8 @@ def test_failing_save_doesnt_overwrite(tmp_path, ignore_padl_requirement):
     with pytest.raises(ZeroDivisionError):
         pd.save(X(), tmp_path, force_overwrite=True)  # doesn't work
 
-    assert load(str(tmp_path) + '.padl')._pd_call == 'f'  # location still contains f
+    call = load(str(tmp_path) + '.padl')._pd_call
+    assert call == 'f'  # location still contains f
 
 
 def test_successful_save_overwrites(tmp_path, ignore_padl_requirement):
@@ -1155,7 +1156,8 @@ def test_successful_save_overwrites(tmp_path, ignore_padl_requirement):
 
     pd.save(X(), tmp_path, force_overwrite=True)  # works
 
-    assert load(str(tmp_path) + '.padl')._pd_call == 'X()'  # location contains X
+    call = load(str(tmp_path) + '.padl')._pd_call
+    assert call == 'X()'  # location contains X
 
 
 def test_missing_package(tmp_path):
