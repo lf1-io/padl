@@ -11,7 +11,7 @@ from importlib.machinery import ModuleSpec
 from importlib.util import module_from_spec
 import inspect
 from itertools import chain
-from os import remove
+from os import remove, path as ospath
 from pathlib import Path
 from shutil import rmtree, copytree
 import textwrap
@@ -31,7 +31,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from padl.dumptools import symfinder, inspector
+from padl.dumptools import symfinder, inspector, config_tools
 from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
 from padl.dumptools.symfinder import ScopedName
 from padl.dumptools.serialize import Serializer
@@ -2516,6 +2516,14 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
 
 
 def load(path, **kwargs):
+    if kwargs:
+        _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
+    else:
+        parsed_kwargs = {}
+    return load_noparse(path, parsed_kwargs)
+
+
+def load_noparse(path, parsed_kwargs):
     """Load a transform (as saved with padl.save) from *path*.
 
     Use keyword arguments to override params (see :func:`padl.param`).
@@ -2527,40 +2535,39 @@ def load(path, **kwargs):
     with open(path / 'transform.py', encoding='utf-8') as f:
         source = f.read()
 
+    scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
+    source = config_tools.apply_params(source, parsed_kwargs, scope)
+
     class _EmptyLoader(Loader):
         def create_module(self, spec):
             return types.ModuleType(spec.name)
 
-    module_name = str(path).replace('/', '.').lstrip('.') + 'transform'
+    module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
 
-    pd_found_params = {}
     module.__dict__.update({
         '_pd_is_padl_file': True,
         '_pd_source': source,
         '_pd_module': module,
         '_pd_full_dump': True,
-        '_pd_params': kwargs,
-        '_pd_found_params': pd_found_params,
-        '__file__': str(path / 'transform.py')
     })
 
-    code = compile(source, path / 'transform.py', 'exec')
+    if parsed_kwargs:
+        tempdir = TemporaryDirectory()
+        module_path = Path(tempdir.name) / 'transform.py'
+        with open(module_path, 'w', encoding='utf-8') as f:
+            f.write(source)
+        module.__dict__['_pd_tempdir'] = tempdir
+    else:
+        module_path = path / 'transform.py'
+
+    module.__dict__['__file__'] = str(module_path)
+
+    code = compile(source, module_path, 'exec')
 
     # pylint: disable=exec-used
     exec(code, module.__dict__)
-
-    for k in kwargs:
-        if k not in pd_found_params:
-            msg = (
-                f'Parameter {k} does not exist.\n\n' +
-                'Available parameters:\n' +
-                '\n'.join(f'  {n} (default: {d})' if d is not None
-                          else 'f'
-                          for n, d in pd_found_params.items())
-            )
-            raise ValueError(msg)
 
     # pylint: disable=no-member,protected-access
 
