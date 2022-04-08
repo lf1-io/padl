@@ -381,23 +381,31 @@ class Signature:
     def all_argnames(self):
         return self.pos_only_argnames + self.argnames
 
-    def get_call_assignments(self, values, keywords, star_args=None, star_kwargs=None,
+    def get_call_assignments(self, pos_args, keyword_args, star_args=None, star_kwargs=None,
                              dump_kwargs=True):
+        """Given a call signature, return the assignmentes to this function signature.
+
+        :param pos_args: Positional args.
+        :param keyword_args: Keyword args.
+        :param star_args: Value of *args.
+        :param star_kwargs: Value of **kwargs.
+        :param dump_kwargs: If *True*, return kwargs as a dumped string, else as a dict.
+        """
         res = {}
         for name, val in self.kwonly_defaults.items():
             try:
-                res[name] = keywords[name]
+                res[name] = keyword_args[name]
             except KeyError:
                 res[name] = val
 
-        for name, val in zip(self.all_argnames, values):
+        for name, val in zip(self.all_argnames, pos_args):
             res[name] = val
 
         if self.vararg is not None:
-            res[self.vararg] = '[' + ', '.join(values[len(self.all_argnames):]) + ']'
+            res[self.vararg] = '[' + ', '.join(pos_args[len(self.all_argnames):]) + ']'
 
         kwargs = {}
-        for name, val in keywords.items():
+        for name, val in keyword_args.items():
             if name in res:
                 continue
             if name in self.argnames:
@@ -564,9 +572,10 @@ class Scope:
         # b = 2
         # c = 3
         # ...
-        values, keywords, star_args, star_kwargs = _get_call_signature(call_source)
+        pos_args, keyword_args, star_args, star_kwargs = _get_call_signature(call_source)
         args = function_defs[-1].args
-        assignments = _parse_def_args(args, def_source).get_call_assignments(values, keywords)
+        assignments = _parse_def_args(args, def_source).get_call_assignments(pos_args, keyword_args,
+                                                                             star_args, star_kwargs)
         call_assignments = []
         for k, v in assignments.items():
             src = f'{k} = {v}'
