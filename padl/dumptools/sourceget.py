@@ -131,7 +131,8 @@ def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int,
     :param to_line: The last line to include.
     :param from_col: The first col on *from_line* to include.
     :param to_col: The last col on *to_line* to include.
-    :param one_indexed: If *True*, count lines from 1, else from 0.
+    :param one_indexed: If *True*, count lines from 1, else from 0 (useful as many other libraries
+        work with one-indexed linenumbers).
     :returns: The cut-out string.
     """
     if one_indexed:
