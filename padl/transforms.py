@@ -1724,7 +1724,6 @@ class Pipeline(Transform):
             # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, varname)
 
-        #self._pd_codegraph_find_dependencies(graph, todo)
         return graph
 
     def _pd_longrepr(self, formatting=True, marker=None):
