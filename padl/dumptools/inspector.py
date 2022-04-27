@@ -75,7 +75,9 @@ def _get_scope_from_frame(frame, drop_n):
     # don't dive deeper for excluded modules
     if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
         return symfinder.Scope.toplevel(module)
-    # don't dive deeper after
+    if frame.f_back is None:
+        return symfinder.Scope.toplevel(module)
+    # don't dive deeper after main
     if module.__name__ == '__main__' and _module(frame.f_back) != module:
         return symfinder.Scope.toplevel(module)
     # don't dive deeper if not a call
