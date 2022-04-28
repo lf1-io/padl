@@ -472,7 +472,7 @@ created (needed for saving).</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.eval_apply">
-<span class="sig-name descname"><span class="pre">eval_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.eval_apply" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">eval_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_post</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.eval_apply" title="Permalink to this definition"></a></dt>
 <dd><p>Call transform within the eval context.</p>
 <p>This will use multiprocessing for the preprocessing part via <cite>DataLoader</cite> and turn
 of gradients for the forward part.</p>
@@ -484,6 +484,8 @@ of gradients for the forward part.</p>
 <li><p><strong>kwargs</strong> – Keyword arguments to be passed on to the dataloader. These can be
 any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 <li><p><strong>flatten</strong> – If <em>True</em>, flatten the output.</p></li>
+<li><p><strong>use_post</strong> – If <em>True</em>, carry out the postprocessing part of the <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transform</span></code></a>,
+otherwise ignore it.</p></li>
 </ul>
 </dd>
 </dl>
@@ -708,7 +710,7 @@ be found. If <em>False</em> print a warning if that’s the case.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.transforms.Transform.train_apply">
-<span class="sig-name descname"><span class="pre">train_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.train_apply" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">train_apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_post</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.transforms.Transform.train_apply" title="Permalink to this definition"></a></dt>
 <dd><p>Call transform within the train context.</p>
 <p>This will use multiprocessing for the preprocessing part via <cite>DataLoader</cite> and turn
 on gradients for the forward part.</p>
@@ -720,6 +722,8 @@ on gradients for the forward part.</p>
 <li><p><strong>kwargs</strong> – Keyword arguments to be passed on to the dataloader. These can be
 any that a <cite>torch.data.utils.DataLoader</cite> accepts.</p></li>
 <li><p><strong>flatten</strong> – If <em>True</em>, flatten the output.</p></li>
+<li><p><strong>use_post</strong> – If <em>True</em>, carry out the postprocessing part of the <a class="reference internal" href="#padl.transforms.Transform" title="padl.transforms.Transform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transform</span></code></a>,
+otherwise ignore it.</p></li>
 </ul>
 </dd>
 </dl>
