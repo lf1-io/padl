@@ -2527,6 +2527,8 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
 def load(path, execute_only=False, **kwargs):
     if kwargs:
         _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
+        if 'execute_only' in parsed_kwargs:
+            del parsed_kwargs['execute_only']
     else:
         parsed_kwargs = {}
     return load_noparse(path, parsed_kwargs, execute_only=execute_only)
@@ -2539,11 +2541,12 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
 
     Use keyword arguments to override params (see :func:`padl.param`).
     """
-    if Path(path).is_file():
+    if Path(path).is_file() and not execute_only:
         return _zip_load(path)
     path = Path(path)
 
-    with open(path / 'transform.py' if not execute_only else path, encoding='utf-8') as f:
+    path = path / 'transform.py' if not execute_only else path
+    with open(path, encoding='utf-8') as f:
         source = f.read()
 
     scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
@@ -2553,7 +2556,12 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
         def create_module(self, spec):
             return types.ModuleType(spec.name)
 
-    module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
+    if execute_only:
+        module_name = str(path).replace('/', ospath.sep).lstrip('.')
+        if module_name.endswith('.py'):
+            module_name = module_name[:-3]
+    else:
+        module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
 
@@ -2571,7 +2579,7 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
             f.write(source)
         module.__dict__['_pd_tempdir'] = tempdir
     else:
-        module_path = path / 'transform.py'
+        module_path = path
 
     module.__dict__['__file__'] = str(module_path)
 
@@ -2581,7 +2589,7 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
     exec(code, module.__dict__)
 
     if execute_only:
-        return
+        return module
 
     # pylint: disable=no-member,protected-access
     transform = module._pd_main
