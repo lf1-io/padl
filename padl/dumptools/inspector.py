@@ -10,6 +10,10 @@ try:
 except ImportError:
     from typing_extensions import Literal
 from typing import Callable, Optional
+try:
+    from pydevd_tracing import SetTrace
+except ImportError:
+    SetTrace = sys.settrace
 
 from padl.dumptools import ast_utils, symfinder, var2mod
 from padl.dumptools.sourceget import get_source, original, cut
@@ -144,7 +148,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
 
     if previous_tracefunc is None:
         # set global tracefunc to something, this is required to enable local tracing
-        sys.settrace(lambda _a, _b, _c: None)
+        SetTrace(lambda _a, _b, _c: None)
 
     frame.f_trace = trace
 
