@@ -2515,16 +2515,18 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         transform.pd_save(path, force_overwrite, strict_requirements)
 
 
-def load(path, **kwargs):
+def load(path, execute_only=False, **kwargs):
     if kwargs:
         _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
     else:
         parsed_kwargs = {}
-    return load_noparse(path, parsed_kwargs)
+    return load_noparse(path, parsed_kwargs, execute_only=execute_only)
 
 
-def load_noparse(path, parsed_kwargs):
+def load_noparse(path, parsed_kwargs, execute_only=False):
     """Load a transform (as saved with padl.save) from *path*.
+    If *execute_only* then only execute the script setting the *padl.param* instances specified
+    in *parsed_kwargs*.
 
     Use keyword arguments to override params (see :func:`padl.param`).
     """
@@ -2532,7 +2534,7 @@ def load_noparse(path, parsed_kwargs):
         return _zip_load(path)
     path = Path(path)
 
-    with open(path / 'transform.py', encoding='utf-8') as f:
+    with open(path / 'transform.py' if not execute_only else path, encoding='utf-8') as f:
         source = f.read()
 
     scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
@@ -2569,8 +2571,10 @@ def load_noparse(path, parsed_kwargs):
     # pylint: disable=exec-used
     exec(code, module.__dict__)
 
-    # pylint: disable=no-member,protected-access
+    if execute_only:
+        return
 
+    # pylint: disable=no-member,protected-access
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         if hasattr(transform, 'pd_save_options'):
