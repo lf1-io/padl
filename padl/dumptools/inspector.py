@@ -142,7 +142,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
     def trace(frame, event, arg):
         tracefunc(frame, event, arg, *args, **kwargs)
         if event == 'return':
-            sys.settrace(previous_tracefunc)
+            SetTrace(previous_tracefunc)
         if previous_tracefunc is not None:
             previous_tracefunc(frame, event, arg)
 
