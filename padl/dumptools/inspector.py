@@ -55,7 +55,7 @@ class CallInfo:
         module = _module(caller_frameinfo.frame)
 
         if self.function == '<module>' or ignore_scope:
-            return symfinder.Scope.toplevel(module)
+            return symfinder.Scope(module, inspect.getsource(caller_frameinfo.frame), [])
 
         return _get_scope_from_frame(caller_frameinfo.frame, drop_n)
 
