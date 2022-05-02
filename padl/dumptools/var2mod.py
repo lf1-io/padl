@@ -1,6 +1,7 @@
 """Module for converting python variables into modules.
 """
 import ast
+import copy
 import builtins
 import textwrap
 import warnings
@@ -526,7 +527,7 @@ def _rename(tree: ast.AST, renaming_function, rename_locals: bool = False):
         return tree
 
     renamer = _Renamer(renaming_function, rename_locals)
-    return renamer.visit(tree)
+    return renamer.visit(copy.deepcopy(tree))
 
 
 def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
