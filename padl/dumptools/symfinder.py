@@ -540,6 +540,9 @@ class Scope:
         """Create the empty scope (a scope with no module and no nesting). """
         return cls(None, '', [])
 
+    def __deepcopy__(self, memo):
+        return Scope(self.module, self.def_source, self.scopelist)
+
     @classmethod
     def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0,
                     calling_scope=None):
