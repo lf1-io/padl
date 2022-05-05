@@ -4,10 +4,10 @@ from textwrap import indent
 from collections import OrderedDict
 from typing import Optional, Union, List, Tuple
 
-from padl.transforms import ClassTransform, Identity, Transform, Mode, identity
+from padl.transforms import BuiltinTransform, Identity, Transform, Mode, identity
 
 
-class IfInMode(ClassTransform):
+class IfInMode(BuiltinTransform):
     """Perform *if_* if called in mode *target_mode*, else perform *else_*.
 
     Example:
@@ -116,7 +116,7 @@ class IfTrain(IfInMode):
         super().__init__(if_, 'train', else_)
 
 
-class Try(ClassTransform):
+class Try(BuiltinTransform):
     """ Perform *transform*. If this fails with any exception from *exceptions*, perform
     *catch_transform*. If *transform* is completed successfully, *else_transform* is performed
     with the output of *transform*. Regardless of any error occurring on the other Transform
