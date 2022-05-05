@@ -1,6 +1,7 @@
 import ast
 from dataclasses import dataclass
 import hashlib
+from typing import Tuple
 
 try:
     unparse = ast.unparse
@@ -27,6 +28,16 @@ class Position:
 
     def __iter__(self):
         yield from (self.lineno, self.end_lineno, self.col_offset, self.end_col_offset)
+
+
+def span_to_pos(span: Tuple[int, int], text: str):
+    """Convert a string-*span* (tuple of start- and end- character positions) to a :class:`Position`.
+    """
+    lineno = text[:span[0]].count('\n') + 1
+    end_lineno = text[:span[1]].count('\n') + 1
+    col_offset = len(text[:span[0]].split('\n')[-1])
+    end_col_offset = len(text[:span[1]].split('\n')[-1])
+    return Position(lineno, end_lineno, col_offset, end_col_offset)
 
 
 def cached_parse(source):
