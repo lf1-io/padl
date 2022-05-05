@@ -880,35 +880,31 @@ class CodeGraph(dict):
 
         def renaming_function(name, node, k, k_unscoped):
             if hasattr(node, '_scope') and node._scope != k.scope:
-                return name
+                return False
             if name != k.name:
-                return name
+                return False
+            if name == k_unscoped:
+                return False
             return k_unscoped
 
         res = {}
         for k, v in self.items():
-            changed = False
-            k_unscoped = unscope(k.name, k.scope)
-            v_unscoped = unscope(v.name.name, v.name.scope)
-            changed = v_unscoped != v.name.name
-            code = v.source
-            tree = v.ast_node
+            v_unscoped = rename_map[k]
+            parsed = ast.parse(v.source).body[0]
+            copied = copy.deepcopy(v.ast_node)
+            for a, b in zip(ast.walk(parsed), ast.walk(copied)):
+                ast.copy_location(b, a)
+                assert type(a) == type(b)
 
-            _rename(tree, lambda x, y: renaming_function(x,y,v.name,v_unscoped), rename_locals=True)
-            vars_ = set()
-            for var in list(v.globals_):
-                var_unscoped = unscope(var.name, var.scope)
-                if var.name in to_rename:
-                    mapped_var = self[var].name
-                    mapped_var_unscoped = unscope(mapped_var.name, mapped_var.scope)
-                    changed = changed or var_unscoped != var.name
-                    rename(tree, mapped_var.name, mapped_var_unscoped)
-                vars_.add((var_unscoped, var.pos, var.cell_no))
-            if changed:
-                code = unparse(tree).strip('\n')
-            res[k_unscoped, k.pos, k.cell_no] = \
-                CodeNode(code, vars_, ast_node=v.ast_node,
-                         name=ScopedName(v_unscoped, Scope.empty()))
+            def rn(name, node):
+                for n in [k] + list(v.globals_):
+                    new_name = renaming_function(name, node, n, rename_map[n])
+                    if new_name:
+                        return new_name
+                return False
+            code = rename(v.source, copied, renaming_function=rn)
+            res[k] = CodeNode(code, v.globals_, ast_node=v.ast_node,
+                              name=ScopedName(v_unscoped, Scope.empty()))
         return res
 
     def dumps(self):
