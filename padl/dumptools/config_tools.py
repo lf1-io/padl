@@ -18,10 +18,25 @@ def param(name, val, description=None, use_default=True):
 
 
 def params(name, *, use_defaults=True, allow_free=False, **kwargs):
+    """Helper function for marking parameters.
+
+    Parameters can be overridden when loading. See also :func:`padl.load`.
+
+    :param name: The name of the parameter.
+    :param description: Description of the parameter.
+    :param use_defaults: If True, use passed keyword args when loading without specifying
+        different values.
+    """
     return kwargs
 
 
-def apply_params(source, parsed_kwargs, scope, **kwargs):
+def apply_params(source, parsed_kwargs, scope):
+    """Apply param replacement in *source*.
+
+    :param source: The sourcecode in which to replace the params.
+    :param parsed_kwargs: The parsed keyword argument with params to replace.
+    :param scope: The scope.
+    """
     param_dicts = extract_param_s(source)
     params_dicts = extract_params_s(source)
 
@@ -42,7 +57,8 @@ def apply_params(source, parsed_kwargs, scope, **kwargs):
             value_dict = parse_dict(v)
             repl = {}
             for sub_k, sub_v in value_dict.items():
-                code_graph_here = var2mod.CodeGraph().from_source(f'PARAM_{k}_{sub_k} = {sub_v}', scope, name=k)
+                code_graph_here = var2mod.CodeGraph().from_source(f'PARAM_{k}_{sub_k} = {sub_v}',
+                                                                  scope, name=k)
                 if len(code_graph_here) > 1:
                     code_graph.update(code_graph_here)
                     repl[sub_k] = f'PARAM_{k}_{sub_k}'
