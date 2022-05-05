@@ -1,6 +1,6 @@
 import ast
-
 import pytest
+from textwrap import dedent
 
 from padl.dumptools import var2mod
 from padl.dumptools.var2mod import ScopedName
@@ -49,3 +49,73 @@ class TestFindGlobals:
         )
         res = var2mod.find_globals(ast.parse(statement))
         assert res == {ScopedName('numpy.uint8', None), ScopedName('transform', None)}
+
+
+class TestRename:
+    source = dedent('''\
+        aaa = 1
+
+        def ooo():
+            o = aaa  # global - should be renamed
+
+        class CCC:
+            o = aaa
+
+            def __init__(self, aaa):  # local - shouldn't be renamed
+                self.aaa = aaa  # local
+
+            def aaa(self):  # local
+                self.aaa = 123  # attribute - shoudn't be renamed
+
+            def bbb(self):
+                return aaa + self.aaa  # global - should be renamed
+
+        def bbb(aaa):  # local
+            aaa = 1
+            def ccc(bbb):
+                return 1 + aaa
+
+        def ccc():
+            def ddd():
+                return aaa  # global
+            return ddd
+
+        def fff(aaa, bbb=aaa):  # default is global
+            return x
+        ''')
+
+    target = dedent('''\
+        xxx = 1
+
+        def ooo():
+            o = xxx  # global - should be renamed
+
+        class CCC:
+            o = xxx
+
+            def __init__(self, aaa):  # local - shouldn't be renamed
+                self.aaa = aaa  # local
+
+            def aaa(self):  # local
+                self.aaa = 123  # attribute - shoudn't be renamed
+
+            def bbb(self):
+                return xxx + self.aaa  # global - should be renamed
+
+        def bbb(aaa):  # local
+            aaa = 1
+            def ccc(bbb):
+                return 1 + aaa
+
+        def ccc():
+            def ddd():
+                return xxx  # global
+            return ddd
+
+        def fff(aaa, bbb=xxx):  # default is global
+            return x
+        ''')
+
+    def test_rename(self):
+        renamed = var2mod.rename(self.source, from_='aaa', to='xxx')
+        assert renamed == self.target
