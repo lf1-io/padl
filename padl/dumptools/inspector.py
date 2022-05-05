@@ -46,8 +46,9 @@ class CallInfo:
             caller_frameinfo = outer_caller_frameinfo(calling_module_name)
         elif origin == 'here':
             caller_frameinfo = inspect.stack()[1]
-        self.function = caller_frameinfo.function
-        self.scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
+
+        self.function: str = caller_frameinfo.function
+        self.scope: symfinder.Scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
 
     def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
                          drop_n: int, ignore_scope: bool) -> symfinder.Scope:
