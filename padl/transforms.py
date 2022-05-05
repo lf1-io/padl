@@ -2,6 +2,7 @@
 
 Transforms should be created using the `padl.transform` wrap-function.
 """
+import ast
 import re
 from copy import copy
 from collections import Counter, namedtuple, OrderedDict
@@ -33,7 +34,7 @@ from torch.utils.data import DataLoader
 
 from padl.dumptools import symfinder, inspector, config_tools
 from padl.dumptools.var2mod import CodeGraph, CodeNode, find_codenode
-from padl.dumptools.symfinder import ScopedName
+from padl.dumptools.symfinder import ScopedName, _SetAttribute
 from padl.dumptools.serialize import Serializer
 
 from padl.dumptools.packagefinder import dump_requirements, RequirementNotFound
@@ -447,6 +448,9 @@ class Transform:
 
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
         start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
+        self._pd_label_ast_node(start.ast_node.value, graph)
+        start.update_globals()
+
         nodes.append(start)
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
@@ -457,6 +461,9 @@ class Transform:
         for node in nodes:
             dependencies.update(node.globals_)
         return dependencies
+
+    def _pd_label_ast_node(self, ast_node, graph):
+        _SetAttribute('_scope', self._pd_call_info.scope).visit(ast_node)
 
     @property
     def _pd_closurevars(self) -> Tuple[dict, dict]:
@@ -564,6 +571,8 @@ class Transform:
             except (KeyError, AttributeError):
                 pass
             else:
+                next_name.pos = None
+                next_name.scope = next_obj._pd_call_info.scope
                 continue
 
             graph[next_name] = next_codenode
