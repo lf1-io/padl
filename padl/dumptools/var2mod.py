@@ -736,12 +736,12 @@ class CodeNode:
     @classmethod
     def from_source(cls, source, scope, name):
         """Build a `CodeNode` from a source string. """
-        scoped_name = ScopedName(name, scope)
-        node = ast_utils.cached_parse(source).body[0]
-        globals_ = {
-            name.update_scope(scope)
-            for name in find_globals(node)
-        }
+        scoped_name = ScopedName(name, scope, pos=(0, 0))
+        node = ast_utils.ast.parse(source).body[0]
+        globals_ = find_globals(node)
+        for var in globals_:
+            if var.scope.is_empty():
+                var.update_scope(scope)
 
         return cls(
             source=source,
@@ -750,8 +750,14 @@ class CodeNode:
             globals_=globals_,
         )
 
+    def update_globals(self):
+        self.globals_ = find_globals(self.ast_node)
+        for var in self.globals_:
+            if var.scope is None:
+                var.update_scope(self.name.scope)
+
     def __hash__(self):
-        return hash((self.name, tuple(sorted(self.globals_))))
+        return hash((self.name, tuple(sorted([hash(x) for x in self.globals_]))))
 
     def __eq__(self, other):
         return (
