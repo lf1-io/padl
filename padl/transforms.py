@@ -1739,12 +1739,6 @@ class Pipeline(Transform):
             self._codegraph_add_import_startnode(graph, name)
             return graph
 
-        if self._pd_group and 'padl' not in graph:
-            emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('padl.group', emptyscope)] = CodeNode.from_source('import padl',
-                                                                               emptyscope,
-                                                                               name='padl')
-
         todo = self._pd_codegraph_add_startnodes(graph, name)
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
@@ -1753,7 +1747,7 @@ class Pipeline(Transform):
             # pylint: disable=protected-access
             transform._pd_build_codegraph(graph, varname)
 
-        #self._pd_codegraph_find_dependencies(graph, todo)
+        self._pd_codegraph_find_dependencies(graph, todo)
         return graph
 
     def _pd_longrepr(self, formatting=True, marker=None):
