@@ -772,9 +772,9 @@ def _sort(unscoped_graph):
     def sortkey(x):
         val = unscoped_graph[x]
         try:
-            return _PRECEDENCE[val.ast_node.__class__](x[0], val)
+            return _PRECEDENCE[val.ast_node.__class__](val.name.name, val)
         except KeyError:
-            return 'zz' + x[0].lower()
+            return 'zz' + x.name.lower()
 
     res = []
     for level in top:
