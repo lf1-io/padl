@@ -428,12 +428,20 @@ class _Renamer(ast.NodeVisitor):
     :param source: Sourcecode to rename in.
     """
 
-    def __init__(self, renaming_function, source):
+    def __init__(self, renaming_function, source, candidates=None):
         self.renaming_function = renaming_function
         self.source = source
         self.res = []
+        self.candidates = candidates
+
+    def is_candidate(self, name):
+        if self.candidates is None:
+            return True
+        return name in self.candidates
 
     def check(self, name, node):
+        if not self.is_candidate(name):
+            return
         new_name = self.renaming_function(name, node)
         if new_name:
             self.res.append((ast_utils.get_position(self.source, node), new_name))
@@ -475,7 +483,7 @@ class _Renamer(ast.NodeVisitor):
         >>> rename(code, from_='z', to='u').strip()
         'def f(a, b):\\n    y = p(u)'
         """
-        new_name = self.renaming_function(node.name, node)
+        new_name = self.is_candidate(node.name) and self.renaming_function(node.name, node)
         if new_name:
             source_segment = ast_utils.get_source_segment(self.source, node)
             full_position = ast_utils.get_position(self.source, node)
@@ -484,13 +492,25 @@ class _Renamer(ast.NodeVisitor):
             position.lineno += full_position.lineno - 1
             position.end_lineno += full_position.lineno - 1
             position.col_offset += full_position.col_offset
+            if position.lineno == position.end_lineno:
+                position.end_col_offset += full_position.col_offset
             self.res.append((position, new_name))
-        for arg in node.args.args:
-            self.check(arg.arg, arg)
-        for sub_node in node.body:
-            self.visit(sub_node)
+
+        for arg in node.args.defaults:
+            self.visit(arg)
         for sub_node in node.decorator_list:
             self.visit(sub_node)
+
+        globals_ = find_globals(node)
+        if self.candidates is None:
+            candidates = {x.name for x in globals_}
+        else:
+            candidates = self.candidates.union(globals_)
+
+        for sub_node in node.body:
+            sub = _Renamer(self.renaming_function, self.source, candidates)
+            sub.visit(sub_node)
+            self.res += sub.res
 
     def visit_ClassDef(self, node):
         """Class definitions.
@@ -505,7 +525,7 @@ class _Renamer(ast.NodeVisitor):
         >>> rename(code, from_='z', to='u').strip()
         'class Foo:\\n\\n    def __init__(self, a, b):\\n        y = p(u)'
         """
-        new_name = self.renaming_function(node.name, node)
+        new_name = self.is_candidate(node.name) and self.renaming_function(node.name, node)
         if new_name:
             source_segment = ast_utils.get_source_segment(self.source, node)
             full_position = ast_utils.get_position(self.source, node)
@@ -514,13 +534,24 @@ class _Renamer(ast.NodeVisitor):
             position.lineno += full_position.lineno - 1
             position.end_lineno += full_position.lineno - 1
             position.col_offset += full_position.col_offset
+            if position.lineno == position.end_lineno:
+                position.end_col_offset += full_position.col_offset
             self.res.append((position, new_name))
-        for sub_node in node.body:
-            self.visit(sub_node)
+
         for sub_node in node.bases:
             self.visit(sub_node)
         for sub_node in node.decorator_list:
             self.visit(sub_node)
+
+        for sub_node in node.body:
+            globals_ = find_globals(sub_node)
+            if self.candidates is None:
+                candidates = {x.name for x in globals_}
+            else:
+                candidates = self.candidates.union(globals_)
+            sub = _Renamer(self.renaming_function, self.source, candidates)
+            sub.visit(sub_node)
+            self.res += sub.res
 
 
 def rename(source, tree=None, from_=None, to=None, renaming_function=None):
