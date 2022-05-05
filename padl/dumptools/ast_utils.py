@@ -92,7 +92,7 @@ def get_position(source, node):
     return Position(lineno, end_lineno, col_offset, end_col_offset)
 
 
-def dump(node, annotate_fields=True, include_attributes=False, *, indent=None):
+def dump(node, annotate_fields=True, include_attributes=False, *, indent=2):
     """
     Ast dump with indentation, taken from python 3.9 source.
 
