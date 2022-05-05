@@ -72,16 +72,16 @@ class Serializer:
                              'nothing.')
         return CodeGraph(
             {**self.load_codegraph,
-             ScopedName(self.varname, self.scope):
+             ScopedName(self.varname, Scope.empty(), pos='injected'):
                  CodeNode(source=f'{self.varname} = {self.load_name}({complete_path})',
                           globals_={ScopedName(self.load_name, self.scope)},
                           ast_node=ast.parse(f'{self.varname} = {self.load_name}({complete_path})').body[0],
-                          name=ScopedName(self.varname, self.scope)),
-             ScopedName('pathlib', SCOPE):
+                          name=ScopedName(self.varname, self.scope, pos='injected')),
+             ScopedName('pathlib', SCOPE, pos='injected'):
                  CodeNode(source='import pathlib',
                           globals_=set(),
                           ast_node=ast.parse('import pathlib').body[0],
-                          name=ScopedName('pathlib', SCOPE))}
+                          name=ScopedName('pathlib', SCOPE, pos='injected'))}
         )
 
     @property

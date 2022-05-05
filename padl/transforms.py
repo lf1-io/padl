@@ -544,21 +544,9 @@ class Transform:
 
             # ignoring this (it comes from the serializer)
             if next_name.name.startswith('PADL_VALUE'):
+                next_name.pos = 'injected'
+                next_name.scope = symfinder.Scope.empty()
                 continue
-
-            if '.' not in next_name.name:
-                # see if the object itself knows how to generate its codegraph
-                try:
-                    if next_name.scope.is_global():
-                        next_obj = globals_dict[next_name.name]
-                    else:
-                        next_obj = all_vars_dict[next_name.name]
-                    # pylint: disable=protected-access
-                    next_obj._pd_build_codegraph(graph, next_name.name)
-                except (KeyError, AttributeError):
-                    pass
-                else:
-                    continue
 
             # Only triggered if KeyError or AttributeError is raised
             # find how *next_name* came into being
