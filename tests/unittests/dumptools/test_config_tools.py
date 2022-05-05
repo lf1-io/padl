@@ -55,7 +55,7 @@ class TestExtractParamS:
             'position': Position(lineno=1, end_lineno=1, col_offset=11, end_col_offset=12)
         }
 
-    def test_defaults_can_be_overridded(self):
+    def test_defaults_can_be_overridden(self):
         s = 'param("a", 1, "bla", False)'
         p = ct.extract_param_s(s)
         assert p['a'] == {
@@ -66,7 +66,7 @@ class TestExtractParamS:
             'position': Position(lineno=1, end_lineno=1, col_offset=11, end_col_offset=12)
         }
 
-    def test_defaults_can_be_overridded_via_keywords(self):
+    def test_defaults_can_be_overridden_via_keywords(self):
         s = 'param(use_default=False, description="bla", name="a", val=1)'
         p = ct.extract_param_s(s)
         assert p['a'] == {
