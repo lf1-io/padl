@@ -956,6 +956,8 @@ class CodeGraph(dict):
         for k, v in self.items():
             print(f'{k}:')
             print()
+            print(v.name)
+            print()
             print(v.source)
             print()
             for dep in v.globals_:
