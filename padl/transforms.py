@@ -712,7 +712,7 @@ class Transform:
         """
         try:
             return [
-                k for k, v in scopedict.items()
+                k for k, v in list(scopedict.items())[::-1]
                 if v is self and not k.startswith('_')
             ][0]
         except IndexError:
