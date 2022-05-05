@@ -87,7 +87,7 @@ def _get_scope_from_frame(frame, drop_n):
         return symfinder.Scope.toplevel(module)
 
     try:
-        call_source = get_segment_from_frame(frame.f_back, 'call')
+        call_source, locs = get_segment_from_frame(frame.f_back, 'call', return_locs=True)
     except (RuntimeError, FileNotFoundError, AttributeError, OSError):
         return symfinder.Scope.toplevel(module)
     try:
@@ -97,7 +97,7 @@ def _get_scope_from_frame(frame, drop_n):
     calling_scope = _get_scope_from_frame(frame.f_back, 0)
     scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
                                         call_source, module, drop_n,
-                                        calling_scope)
+                                        calling_scope, frame, locs)
     assert len(scope) <= 1, 'scope longer than 1 currently not supported'
     return scope
 

@@ -24,6 +24,7 @@ and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
 import ast
+from collections import defaultdict
 from dataclasses import dataclass, field
 from math import inf
 import sys
@@ -517,12 +518,15 @@ class Scope:
 
     It contains the module, the source string and a "scopelist".
     """
+    _counts = defaultdict(set)
 
     def __init__(self, module: ModuleType, def_source: str,
-                 scopelist: List[Tuple[str, ast.AST]]):
+                 scopelist: List[Tuple[str, ast.AST]], id_=None):
         self.module = module
         self.def_source = def_source
         self.scopelist = scopelist
+        self.id_ = id_
+        self._counts[self.dot_string()].add(id_)
 
     @classmethod
     def toplevel(cls, module):
@@ -541,11 +545,11 @@ class Scope:
         return cls(None, '', [])
 
     def __deepcopy__(self, memo):
-        return Scope(self.module, self.def_source, self.scopelist)
+        return Scope(self.module, self.def_source, self.scopelist, self.id_)
 
     @classmethod
     def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0,
-                    calling_scope=None):
+                    calling_scope=None, frame=None, locs=None):
         """Create a `Scope` object from source code.
 
         :param def_source: The source string containing the scope.
@@ -597,7 +601,9 @@ class Scope:
         # add call assignments to inner scope
         scopelist[0][1].body = call_assignments + scopelist[0][1].body
 
-        return cls(module, def_source, scopelist)
+        id_ = str((frame.f_code.co_filename, locs))
+
+        return cls(module, def_source, scopelist, id_)
 
     def from_level(self, i: int) -> 'Scope':
         """Return a new scope starting at level *i* of the scope hierarchy. """
@@ -630,13 +636,22 @@ class Scope:
         the containing scope. """
         if not self.scopelist and self.module_name in ('', '__main__'):
             return varname
-        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
+        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}{self._formatted_index()}_{varname}'
+
+    def index(self):
+        return sorted(self._counts[self.dot_string()]).index(self.id_)
+
+    def _formatted_index(self):
+        index = self.index()
+        if index == 0:
+            return ''
+        return f'_{self.index()}'
 
     def dot_string(self):
         return ".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])
 
     def __repr__(self):
-        return f'Scope[{self.dot_string()}]'
+        return f'Scope[{self.dot_string()}{self._formatted_index()}]'
 
     def __len__(self):
         return len(self.scopelist)
