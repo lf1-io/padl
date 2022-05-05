@@ -13,6 +13,7 @@ from importlib_metadata import packages_distributions
 
 
 def standard_lib_names_gen(include_underscored=False):
+    """Get a packages from the standard library. """
     standard_lib_dir = os.path.dirname(os.__file__)
     for filename in os.listdir(standard_lib_dir):
         if not include_underscored and filename.startswith('_'):

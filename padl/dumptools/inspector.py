@@ -84,7 +84,6 @@ def _get_scope_from_frame(frame, drop_n):
         return symfinder.Scope.toplevel(module)
     # don't dive deeper if not a call
     if frame.f_code.co_name == '<module>':
-
         return symfinder.Scope.toplevel(module)
 
     try:
@@ -122,7 +121,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
     Example:
 
     >>> def tracefunc(frame, event, arg):
-    ...     if 'event' == 'return':
+    ...     if event == 'return':
     ...         print('returning', arg)
 
     >>> def myfunction():
@@ -174,7 +173,6 @@ def _instructions_in_name(x) -> list:
 
 
 def _instructions_in_getitem(x) -> list:
-    """Get all instructions up to last CALL FUNCTION. """
     instructions = list(dis.get_instructions(x))
     return instructions[:-1]
 
@@ -211,7 +209,7 @@ def outer_caller_frameinfo(module_name: str) -> inspect.FrameInfo:
 
 
 def caller_module() -> types.ModuleType:
-    """Get the first module of the caller. """
+    """Get the module of the caller. """
     calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
     return _module(outer_caller_frameinfo(calling_module_name).frame)
 
@@ -240,6 +238,7 @@ def instructions_are_the_same(instr: dis.Instruction, target_instr: dis.Instruct
         argval = frame.f_locals[target_instr.argval]
     else:
         argval = target_instr.argval
+
     # if the instruction's argval contains code objects, compare the code
     instr_argval = getattr(instr.argval, 'co_code', instr.argval)
     target_argval = getattr(target_instr.argval, 'co_code', target_instr.argval)
