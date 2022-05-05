@@ -1,18 +1,17 @@
 """Module for converting python variables into modules.
 """
 import ast
-import copy
 import builtins
-import textwrap
-import warnings
-from collections import Counter, namedtuple
+from collections import Counter, namedtuple, defaultdict
 from collections.abc import Iterable
+import copy
 from dataclasses import dataclass
+import re
 from typing import Dict, Optional, List, Tuple, Set, Union
 
 from padl.dumptools import ast_utils
-from padl.dumptools.ast_utils import unparse
-from padl.dumptools.symfinder import find_in_scope, Scope, NameNotFound, ScopedName
+from padl.dumptools import sourceget
+from padl.dumptools.symfinder import find_in_scope, Scope, ScopedName
 
 
 class Finder(ast.NodeVisitor):
@@ -421,128 +420,137 @@ def update_globals(variables: List[ScopedName], scoped_name: ScopedName, node):
     return result
 
 
-class _Renamer(ast.NodeTransformer):
+class _Renamer(ast.NodeVisitor):
     # pylint: disable=invalid-name
     """An :class:`ast.NodeTransformer` for renaming things. Used in :func:`rename`.
 
     :param renaming_function: Function that takes a node and a name and returns a new name.
-    :param rename_locals: If *True*, rename local things, else, only rename globals.
+    :param source: Sourcecode to rename in.
     """
 
-    def __init__(self, renaming_function, rename_locals):
+    def __init__(self, renaming_function, source):
         self.renaming_function = renaming_function
-        self.rename_locals = rename_locals
+        self.source = source
+        self.res = []
+
+    def check(self, name, node):
+        new_name = self.renaming_function(name, node)
+        if new_name:
+            self.res.append((ast_utils.get_position(self.source, node), new_name))
 
     def visit_arg(self, node):
         """Arguments.
 
         Example:
 
-        >>> node = ast.parse('''
+        >>> code = '''
         ... def f(a, b):
         ...    ...
-        ... ''').body[0]
-        >>> unparse(rename(node, 'a', 'c', rename_locals=True)).strip()
+        ... '''
+        >>> rename(code, from_='a', to='c').strip()
         'def f(c, b):\\n    ...'
         """
-        arg = self.renaming_function(node.arg, node)
-        if arg == node.arg:
-            return node
-        return ast.arg(**{**node.__dict__, 'arg': arg})
+        self.check(node.arg, node)
 
     def visit_Name(self, node):
         """Names.
 
         Example:
 
-        >>> node = ast.parse('x')
-        >>> unparse(rename(node, 'x', 'y', True)).strip()
+        >>> code = 'x'
+        >>> rename(code, from_='x', to='y').strip()
         'y'
         """
-        id_ = self.renaming_function(node.id, node)
-        if id_ == node.id:
-            return node
-        return ast.Name(**{**node.__dict__, 'id': id_})
+        self.check(node.id, node)
 
     def visit_FunctionDef(self, node):
         """Function definitions.
 
         Example:
 
-        >>> node = ast.parse('''
+        >>> code = '''
         ... def f(a, b):
         ...    y = p(z)
-        ... ''').body[0]
-        >>> unparse(rename(node, 'z', 'u', rename_locals=True)).strip()
+        ... '''
+        >>> rename(code, from_='z', to='u').strip()
         'def f(a, b):\\n    y = p(u)'
         """
-        if self.rename_locals:
-            name = self.renaming_function(node.name, node)
-        else:
-            name = node.name
-            globals_ = find_globals(node)
-            if all(self.renaming_function(x.name, node) == x.name for x in globals_):
-                return node
-        return ast.FunctionDef(**{**node.__dict__,
-                                  'args': _rename(node.args, self.renaming_function,
-                                                 self.rename_locals),
-                                  'body': _rename(node.body, self.renaming_function,
-                                                 self.rename_locals),
-                                  'name': name})
+        new_name = self.renaming_function(node.name, node)
+        if new_name:
+            source_segment = ast_utils.get_source_segment(self.source, node)
+            full_position = ast_utils.get_position(self.source, node)
+            span = re.search(rf'def ({node.name})\(.*\):.*', source_segment).span(1)
+            position = ast_utils.span_to_pos(span, source_segment)
+            position.lineno += full_position.lineno - 1
+            position.end_lineno += full_position.lineno - 1
+            position.col_offset += full_position.col_offset
+            self.res.append((position, new_name))
+        for arg in node.args.args:
+            self.check(arg.arg, arg)
+        for sub_node in node.body:
+            self.visit(sub_node)
+        for sub_node in node.decorator_list:
+            self.visit(sub_node)
 
     def visit_ClassDef(self, node):
         """Class definitions.
 
         Example:
 
-        >>> node = ast.parse('''
+        >>> code = '''
         ... class Foo:
         ...     def __init__(self, a, b):
         ...         y = p(z)
-        ... ''').body[0]
-        >>> unparse(rename(node, 'z', 'u', rename_locals=True)).strip()  # doctest: +SKIP
+        ... '''
+        >>> rename(code, from_='z', to='u').strip()
         'class Foo:\\n\\n    def __init__(self, a, b):\\n        y = p(u)'
         """
-        if self.rename_locals:
-            name = self.renaming_function(node.name, node)
-        else:
-            name = node.name
-            globals_ = find_globals(node)
-            if all(self.renaming_function(x.name, node) == x.name for x in globals_):
-                return node
-        return ast.ClassDef(**{**node.__dict__,
-                               'body': rename(node.body, self.renaming_function,
-                                              self.rename_locals),
-                               'name': name})
+        new_name = self.renaming_function(node.name, node)
+        if new_name:
+            source_segment = ast_utils.get_source_segment(self.source, node)
+            full_position = ast_utils.get_position(self.source, node)
+            span = re.search(rf'class ({node.name}).*:.*', source_segment).span(1)
+            position = ast_utils.span_to_pos(span, source_segment)
+            position.lineno += full_position.lineno - 1
+            position.end_lineno += full_position.lineno - 1
+            position.col_offset += full_position.col_offset
+            self.res.append((position, new_name))
+        for sub_node in node.body:
+            self.visit(sub_node)
+        for sub_node in node.bases:
+            self.visit(sub_node)
+        for sub_node in node.decorator_list:
+            self.visit(sub_node)
 
 
-def _rename(tree: ast.AST, renaming_function, rename_locals: bool = False):
-    if not rename_locals:
-        globals_ = find_globals(tree)
-        if all(renaming_function(x.name, None) == x.name for x in globals_):
-            return tree
-    if isinstance(tree, Iterable) and not isinstance(tree, str):
-        return [_rename(x, renaming_function, rename_locals) for x in tree]
-    if not isinstance(tree, ast.AST):
-        return tree
-
-    renamer = _Renamer(renaming_function, rename_locals)
-    return renamer.visit(copy.deepcopy(tree))
-
-
-def rename(tree: ast.AST, from_: str, to: str, rename_locals: bool = False):
+def rename(source, tree=None, from_=None, to=None, renaming_function=None):
     """Rename things in an AST tree.
 
-    :param tree: The tree in which to rename things.
+    :param source: Source in which to rename things.
+    :param tree: The tree in which to rename things (optional, will be parsed from *source* if
+        needed).
     :param from_: Rename everything called this ...
-    :param to: ... to this.
+    :param to: ... to this (optional, alternatively provide a *renaming_function*, see below).
+    :param renaming_function: Function that takes an ast node and a name and returns a new name
+        if the name should be changed or *False* else.
     :param rename_locals: If *True*, rename local things, else, only rename globals.
     """
-    def renaming_function(name, _node):
-        if name == from_:
-            return to
-        return name
-    return _rename(tree, renaming_function, rename_locals)
+    if tree is None:
+        tree = ast.parse(source)
+
+    if renaming_function is None:
+        assert from_ is not None and to is not None, 'Must provide either *from_* and *to* or *renaming_function*.'
+
+        def renaming_function(name, _node):
+            if name == from_:
+                return to
+            return False
+
+    renamer = _Renamer(renaming_function, source)
+    renamer.visit(tree)
+    for pos, name in sorted(renamer.res, key=lambda x: tuple(x[0]), reverse=True):
+        source = sourceget.replace(source, name, *pos, one_indexed=True)
+    return source
 
 
 
