@@ -1155,7 +1155,7 @@ class FunctionTransform(AtomicTransform):
             node = CodeNode.from_source(source, scope, name=self.__name__)
             graph[ScopedName(self.__name__, scope)] = node
             emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('transform', emptyscope)] = \
+            graph[ScopedName('transform', scope)] = \
                 CodeNode.from_source('from padl import transform', emptyscope, name='transform')
 
             start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
