@@ -8,11 +8,11 @@ from types import ModuleType
 from typing import Any, Callable, List, Optional
 
 from padl.dumptools import inspector, sourceget, var2mod, symfinder
-from padl.dumptools.symfinder import ScopedName
+from padl.dumptools.symfinder import Scope, ScopedName
 from padl.dumptools.var2mod import CodeNode, CodeGraph
 
 
-SCOPE = symfinder.Scope.toplevel(sys.modules[__name__])
+SCOPE = Scope.toplevel(sys.modules[__name__])
 
 
 class Serializer:
@@ -39,10 +39,10 @@ class Serializer:
         self.file_suffix = file_suffix
         if module is None:
             module = inspector.caller_module()
-        self.scope = symfinder.Scope.toplevel(module)
+        self.scope = Scope.toplevel(module)
         self.load_codegraph = \
             var2mod.CodeGraph().build(ScopedName(load_function.__name__,
-                                                 symfinder.Scope.toplevel(load_function.__module__)))
+                                                 Scope.toplevel(load_function.__module__)))
         self.load_name = load_function.__name__
         super().__init__()
 
