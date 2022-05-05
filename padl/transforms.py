@@ -1499,6 +1499,8 @@ class Map(Transform):
 
     def __init__(self, transform: Transform, call_info: Optional[inspector.CallInfo] = None,
                  pd_name: Optional[str] = None):
+        if call_info is None:
+            call_info = transform._pd_call_info
         super().__init__(call_info, pd_name)
 
         self.transform: Transform = transform
