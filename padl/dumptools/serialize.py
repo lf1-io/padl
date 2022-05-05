@@ -1,13 +1,12 @@
 import ast
 from collections.abc import Iterable
-import inspect
 import json
 from pathlib import Path
 import sys
 from types import ModuleType
 from typing import Any, Callable, List, Optional
 
-from padl.dumptools import inspector, sourceget, var2mod, symfinder
+from padl.dumptools import inspector, sourceget, var2mod
 from padl.dumptools.symfinder import Scope, ScopedName
 from padl.dumptools.var2mod import CodeNode, CodeGraph
 
