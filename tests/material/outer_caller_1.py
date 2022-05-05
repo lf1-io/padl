@@ -1,4 +1,4 @@
-from .outer_caller_frameinfo import here
+from .outer_caller import here
 
 
 def there():
