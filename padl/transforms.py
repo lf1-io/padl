@@ -1684,6 +1684,34 @@ class Pipeline(Transform):
             and defined_as is not None
         )
 
+    def _map_binop_to_list(self, node, list_):
+        if len(list_) == 1:
+            return [(list_[-1], node)]
+        return self._map_binop_to_list(node.left, list_[:-1]) + [(list_[-1], node.right)]
+
+    def _pd_label_ast_node(self, ast_node, graph):
+        super()._pd_label_ast_node(ast_node, graph)
+        while not isinstance(ast_node, ast.BinOp) or isinstance(ast_node.op, ast.Sub):
+            if isinstance(ast_node, ast.Call):
+                assert self._pd_group
+                assert ast_node.func.value.id == 'padl'
+                assert ast_node.func.attr == 'group'
+                ast_node = ast_node.args[0]
+                emptyscope = symfinder.Scope.empty()
+                graph[ScopedName('padl.group', self._pd_call_info.scope)] = \
+                    CodeNode.from_source('import padl', emptyscope, name='padl')
+
+            if isinstance(ast_node, ast.Name):
+                super()._pd_label_ast_node(ast_node, graph)
+                return
+
+            if isinstance(ast_node.op, ast.Sub):
+                assert self._pd_name is not None
+                ast_node = ast_node.left
+
+        for sub_transform, node in self._map_binop_to_list(ast_node, self.transforms):
+            sub_transform._pd_label_ast_node(node, graph)
+
     def _codegraph_add_import_startnode(self, graph, name):
         module = inspector.caller_module()
         scope = symfinder.Scope.toplevel(module)
