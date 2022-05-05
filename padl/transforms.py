@@ -1724,7 +1724,7 @@ class Pipeline(Transform):
         node = CodeNode.from_source(source, scope, name=name)
         graph[ScopedName(name, scope)] = node
 
-    def _pd_build_codegraph(self, graph=None, name=None, todo=None):
+    def _pd_build_codegraph(self, graph=None, name=None):
         """Build a codegraph defining the transform.
 
         See :meth:`Transform._pd_build_codegraph` for an explanation of what a code-graph is.
