@@ -1138,7 +1138,9 @@ class FunctionTransform(AtomicTransform):
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
         if not self._pd_full_dump and self._wrap_type == 'inline':
             return f'transform({self.__name__})'
-        return self._pd_call
+        if self._wrap_type == 'lambda' or self.pd_varname() is None:
+            return self._pd_call
+        return self.pd_varname()
 
     def _pd_codegraph_add_startnodes(self, graph, name):
         if (self._pd_full_dump
