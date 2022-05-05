@@ -1,7 +1,6 @@
 import ast
-import inspect
 
-from padl.dumptools import inspector, var2mod, sourceget, ast_utils, symfinder
+from padl.dumptools import var2mod, sourceget, ast_utils, symfinder
 
 
 def param(name, val, description=None, use_default=True):
