@@ -2396,6 +2396,10 @@ class Parallel(Pipeline):
 class BuiltinTransform(ClassTransform):
     """A builtin transform will simply always be imported, never fully dumped. """
 
+    def __init_subclass__(cls, *_args, **_kwargs):
+        cls._pd_class_call_info = inspector.CallInfo()
+        cls._pd_class_call_info.scope = symfinder.Scope.toplevel('padl')
+
     def _pd_longrepr(self, formatting=True, marker=None):
         out = self._pd_call.split('padl.')[-1]
         if marker:
