@@ -2,8 +2,7 @@
 """
 import ast
 import builtins
-from collections import Counter, namedtuple, defaultdict
-from collections.abc import Iterable
+from collections import Counter, namedtuple
 import copy
 from dataclasses import dataclass
 import re
@@ -111,6 +110,10 @@ class _VarFinder(ast.NodeVisitor):
         self.globals = set()
         self.locals = set()
 
+    def add_to_locals(self, elements):
+        self.locals.update(elements)
+        self.globals = self.globals - self.locals
+
     def find(self, node):
         """Find all globals and locals in an AST-node.
 
@@ -152,11 +155,11 @@ class _VarFinder(ast.NodeVisitor):
         """
         posonlyargs = getattr(node.args, 'posonlyargs', [])
         for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
-            self.locals.add(ScopedName(arg.arg, None))
+            self.add_to_locals([ScopedName(arg.arg, None)])
         if node.args.vararg is not None:
-            self.locals.add(ScopedName(node.args.vararg.arg, None))
+            self.add_to_locals([ScopedName(node.args.vararg.arg, None)])
         if node.args.kwarg is not None:
-            self.locals.add(ScopedName(node.args.kwarg.arg, None))
+            self.add_to_locals([ScopedName(node.args.kwarg.arg, None)])
         for n in ast.iter_child_nodes(node):
             self.visit(n)
         return Vars(self.globals, self.locals)
@@ -217,7 +220,7 @@ class _VarFinder(ast.NodeVisitor):
         """
         self.visit(node.context_expr)
         if node.optional_vars is not None:
-            self.locals.add(ScopedName(node.optional_vars.id, None))
+            self.add_to_locals([ScopedName(node.optional_vars.id, None)])
 
     def visit_Assign(self, node):
         """Assignments - Their targets are locals, their values are globals.
@@ -241,14 +244,14 @@ class _VarFinder(ast.NodeVisitor):
                 {ScopedName(x.id, scope) for x in Finder(ast.Name).find(target)}
             )
         # find globals in RHS
-        sub_globals = {name for name in find_globals(node.value) if not self.in_locals(name)}
+        sub_globals = {name for name in find_globals(node.value, filter_builtins=False) if not self.in_locals(name)}
         sub_dependencies = set()
         # if a variable on the RHS is one of the targets, increase its counter
         for name in sub_globals:
             if self.in_locals(name):
                 continue
             sub_dependencies.add(name)
-        self.locals.update(targets)
+        self.add_to_locals(targets)
         self.globals.update(sub_dependencies)
 
     def visit_For(self, node):
@@ -263,14 +266,14 @@ class _VarFinder(ast.NodeVisitor):
         >>> _VarFinder().find_in_source(source)
         Vars(globals={ScopedName(name='range', scope=Scope[], pos=None, cell_no=None)}, locals={ScopedName(name='x', scope=Scope[], pos=None, cell_no=None)})
         """
-        self.locals.update([ScopedName(x.id, getattr(x, '_scope', None))
+        self.add_to_locals([ScopedName(x.id, getattr(x, '_scope', None))
                             for x in Finder(ast.Name).find(node.target)])
         for child in node.body:
             self.visit(child)
         self.visit(node.iter)
 
     def visit_NamedExpr(self, node):
-        """The walrus operator - it's targets become locals.
+        """The walrus operator - its targets become locals.
 
         Example:
 
@@ -282,7 +285,7 @@ class _VarFinder(ast.NodeVisitor):
         >>> sys.version.startswith('3.7') or str(_VarFinder().find_in_source(source))=="Vars(globals={ScopedName(name='l.pop', scope=Scope[], pos=None, cell_no=None)}, locals={ScopedName(name='a', scope=Scope[], pos=None, cell_no=None)})"
         True
         """
-        self.locals.update([ScopedName(x.id, getattr(x, '_scope', None))
+        self.add_to_locals([ScopedName(x.id, getattr(x, '_scope', None))
                             for x in Finder(ast.Name).find(node.target)])
         self.visit(node.value)
 
@@ -292,7 +295,8 @@ class _VarFinder(ast.NodeVisitor):
         for gen in node.generators:
             for name in Finder(ast.Name).find(gen.target):
                 targets.add(ScopedName(name.id, getattr(name, '_scope', None)))
-        sub_globals = set.union(*[find_globals(n) for n in ast.iter_child_nodes(node)])
+        sub_globals = set.union(*[find_globals(n, filter_builtins=False)
+                                  for n in ast.iter_child_nodes(node)])
         sub_globals = {n for n in sub_globals
                        if not self.in_locals(n)
                        and not self.in_ignoring_attributes(n, targets)}
@@ -352,21 +356,21 @@ class _VarFinder(ast.NodeVisitor):
         scope = getattr(node, '_scope', None)
         posonlyargs = getattr(node.args, 'posonlyargs', [])
         for arg in node.args.args + posonlyargs + node.args.kwonlyargs:
-            self.locals.add(ScopedName(arg.arg, scope))
+            self.add_to_locals([ScopedName(arg.arg, scope)])
         self.visit(node.body)
 
     def visit_FunctionDef(self, node):
         """Function definitions. """
         scope = getattr(node, '_scope', None)
-        self.locals.add(ScopedName(node.name, scope))
-        inner_globals = find_globals(node)
+        self.add_to_locals([ScopedName(node.name, scope)])
+        inner_globals = find_globals(node, filter_builtins=False)
         self.globals.update(v for v in inner_globals if not self.in_locals(v))
 
     def visit_ClassDef(self, node):
         """Class definitions. """
         scope = getattr(node, '_scope', None)
-        self.locals.add(ScopedName(node.name, scope))
-        inner_globals = find_globals(node)
+        self.add_to_locals([ScopedName(node.name, scope)])
+        inner_globals = find_globals(node, filter_builtins=False)
         self.globals.update(v for v in inner_globals if not self.in_locals(v))
 
     def visit_Import(self, node):
@@ -382,9 +386,9 @@ class _VarFinder(ast.NodeVisitor):
         scope = getattr(node, '_scope', None)
         for name in node.names:
             if name.asname is None:
-                self.locals.add(ScopedName(name.name, scope))
+                self.add_to_locals([ScopedName(name.name, scope)])
             else:
-                self.locals.add(ScopedName(name.asname, scope))
+                self.add_to_locals([ScopedName(name.asname, scope)])
 
     def visit_ImportFrom(self, node):
         """Import-from statements.
@@ -399,12 +403,14 @@ class _VarFinder(ast.NodeVisitor):
         scope = getattr(node, '_scope', None)
         for name in node.names:
             if name.asname is None:
-                self.locals.add(ScopedName(name.name, scope))
+                self.add_to_locals([ScopedName(name.name, scope)])
             else:
-                self.locals.add(ScopedName(name.asname, scope))
+                self.add_to_locals([ScopedName(name.asname, scope)])
 
 
-def update_globals(variables: List[ScopedName], scoped_name: ScopedName, node):
+def add_scope_and_pos(variables: List[ScopedName], scoped_name: ScopedName, node):
+    """Add missing scope and position information to a list of :class:`ScopedNames` objects.
+    """
     result = set()
 
     for var in variables:
@@ -412,11 +418,12 @@ def update_globals(variables: List[ScopedName], scoped_name: ScopedName, node):
             var.scope = scoped_name.scope
             if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
                 position = ast_utils.get_position(scoped_name.scope.def_source, node)
-                var.pos = (position.end_lineno, position.end_col_offset)
+                var.pos = (position.end_lineno, position.end_col_offset)  # why this?
             else:
                 var.pos = scoped_name.pos
         var.cell_no = scoped_name.cell_no
         result.add(var)
+
     return result
 
 
@@ -428,11 +435,12 @@ class _Renamer(ast.NodeVisitor):
     :param source: Sourcecode to rename in.
     """
 
-    def __init__(self, renaming_function, source, candidates=None):
+    def __init__(self, renaming_function, source, rename_locals=False, candidates=None):
         self.renaming_function = renaming_function
         self.source = source
         self.res = []
         self.candidates = candidates
+        self.rename_locals = rename_locals
 
     def is_candidate(self, name):
         if self.candidates is None:
@@ -445,6 +453,25 @@ class _Renamer(ast.NodeVisitor):
         new_name = self.renaming_function(name, node)
         if new_name:
             self.res.append((ast_utils.get_position(self.source, node), new_name))
+
+    def generic_visit(self, node):
+        if not self.rename_locals:
+            globals_ = {x.name for x in find_globals(node, filter_builtins=False)}
+            if self.candidates is None:
+                candidates = globals_
+            else:
+                candidates = self.candidates.intersection(globals_)
+        else:
+            candidates = self.candidates
+
+        for child in ast.iter_child_nodes(node):
+            sub = _Renamer(self.renaming_function, self.source, False, candidates)
+            sub.visit(child)
+            self.res += sub.res
+
+    def visit_Module(self, node):
+        for child in ast.iter_child_nodes(node):
+            self.visit(child)
 
     def visit_arg(self, node):
         """Arguments.
@@ -483,7 +510,11 @@ class _Renamer(ast.NodeVisitor):
         >>> rename(code, from_='z', to='u').strip()
         'def f(a, b):\\n    y = p(u)'
         """
-        new_name = self.is_candidate(node.name) and self.renaming_function(node.name, node)
+        new_name = (
+            self.rename_locals
+            and self.is_candidate(node.name)
+            and self.renaming_function(node.name, node)
+        )
         if new_name:
             source_segment = ast_utils.get_source_segment(self.source, node)
             full_position = ast_utils.get_position(self.source, node)
@@ -501,14 +532,14 @@ class _Renamer(ast.NodeVisitor):
         for sub_node in node.decorator_list:
             self.visit(sub_node)
 
-        globals_ = find_globals(node)
+        globals_ = {x.name for x in find_globals(node, filter_builtins=False)}
         if self.candidates is None:
-            candidates = {x.name for x in globals_}
+            candidates = globals_
         else:
-            candidates = self.candidates.union(globals_)
+            candidates = self.candidates.intersection(globals_)
 
         for sub_node in node.body:
-            sub = _Renamer(self.renaming_function, self.source, candidates)
+            sub = _Renamer(self.renaming_function, self.source, False, candidates)
             sub.visit(sub_node)
             self.res += sub.res
 
@@ -525,7 +556,11 @@ class _Renamer(ast.NodeVisitor):
         >>> rename(code, from_='z', to='u').strip()
         'class Foo:\\n\\n    def __init__(self, a, b):\\n        y = p(u)'
         """
-        new_name = self.is_candidate(node.name) and self.renaming_function(node.name, node)
+        new_name = (
+            self.rename_locals
+            and self.is_candidate(node.name)
+            and self.renaming_function(node.name, node)
+        )
         if new_name:
             source_segment = ast_utils.get_source_segment(self.source, node)
             full_position = ast_utils.get_position(self.source, node)
@@ -544,17 +579,17 @@ class _Renamer(ast.NodeVisitor):
             self.visit(sub_node)
 
         for sub_node in node.body:
-            globals_ = find_globals(sub_node)
+            globals_ = {x.name for x in find_globals(node, filter_builtins=False)}
             if self.candidates is None:
-                candidates = {x.name for x in globals_}
+                candidates = globals_
             else:
-                candidates = self.candidates.union(globals_)
-            sub = _Renamer(self.renaming_function, self.source, candidates)
+                candidates = self.candidates.intersection(globals_)
+            sub = _Renamer(self.renaming_function, self.source, False, candidates)
             sub.visit(sub_node)
             self.res += sub.res
 
 
-def rename(source, tree=None, from_=None, to=None, renaming_function=None):
+def rename(source, tree=None, from_=None, to=None, renaming_function=None, rename_locals=True):
     """Rename things in an AST tree.
 
     :param source: Source in which to rename things.
@@ -577,7 +612,7 @@ def rename(source, tree=None, from_=None, to=None, renaming_function=None):
                 return to
             return False
 
-    renamer = _Renamer(renaming_function, source)
+    renamer = _Renamer(renaming_function, source, rename_locals=rename_locals)
     renamer.visit(tree)
     for pos, name in sorted(renamer.res, key=lambda x: tuple(x[0]), reverse=True):
         source = sourceget.replace(source, name, *pos, one_indexed=True)
@@ -609,9 +644,13 @@ class _MethodFinder(ast.NodeVisitor):
     def visit_FunctionDef(self, node):
         self.methods[node.name] = node
 
+    def visit_ClassDef(self, node):
+        """Don't visit children of nested classes."""
+
     def find(self, node: ast.ClassDef) -> Dict['str', ast.FunctionDef]:
         """Do find the methods. """
-        self.visit(node)
+        for child in ast.iter_child_nodes(node):
+            self.visit(child)
         return self.methods
 
 
@@ -680,7 +719,7 @@ def find_codenode(name: ScopedName, full_dump_module_names=None) -> "CodeNode":
                                  full_dump_module_names)
     # find dependencies
     globals_ = find_globals(node)
-    globals_ = update_globals(globals_, found_name, node)
+    globals_ = add_scope_and_pos(globals_, found_name, node)
     return CodeNode(source=source, globals_=globals_, ast_node=node, name=found_name)
 
 
