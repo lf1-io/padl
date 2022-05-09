@@ -900,7 +900,9 @@ def _dumps_unscoped(unscoped_graph):
                 res += '\n'
             else:
                 res += '\n\n\n'
-    return res + '\n'
+    if res:
+        return res + '\n'
+    return res
 
 
 class CodeGraph(dict):
