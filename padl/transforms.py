@@ -2563,7 +2563,10 @@ def run_noparse(path, parsed_kwargs):
     with open(path, encoding='utf-8') as f:
         source = f.read()
     scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
-    source = config_tools.apply_params(source, parsed_kwargs, scope)
+
+    if parsed_kwargs:
+        source = config_tools.apply_params(source, parsed_kwargs, scope)
+
     module_name = str(path).replace('/', ospath.sep).lstrip('.').rstrip('.py')
 
     class _EmptyLoader(Loader):
@@ -2580,6 +2583,14 @@ def run_noparse(path, parsed_kwargs):
         module.__dict__['_pd_tempdir'] = tempdir
     else:
         module_path = path
+
+    module.__dict__.update({
+        '_pd_is_padl_file': True,
+        '_pd_source': source,
+        '_pd_module': module,
+        '_pd_full_dump': True,
+    })
+
     code = compile(source, module_path, 'exec')
     # pylint: disable=exec-used
     exec(code, module.__dict__)
