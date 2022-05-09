@@ -2551,29 +2551,58 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         transform.pd_save(path, force_overwrite, strict_requirements)
 
 
-def load(path, execute_only=False, **kwargs):
+def run(path, **kwargs):
     if kwargs:
         _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
-        if 'execute_only' in parsed_kwargs:
-            del parsed_kwargs['execute_only']
     else:
         parsed_kwargs = {}
-    return load_noparse(path, parsed_kwargs, execute_only=execute_only)
+    run_noparse(path, parsed_kwargs)
 
 
-def load_noparse(path, parsed_kwargs, execute_only=False):
+def run_noparse(path, parsed_kwargs):
+    with open(path, encoding='utf-8') as f:
+        source = f.read()
+    scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
+    source = config_tools.apply_params(source, parsed_kwargs, scope)
+    module_name = str(path).replace('/', ospath.sep).lstrip('.').rstrip('.py')
+
+    class _EmptyLoader(Loader):
+        def create_module(self, spec):
+            return types.ModuleType(spec.name)
+
+    spec = ModuleSpec(module_name, _EmptyLoader())
+    module = module_from_spec(spec)
+    if parsed_kwargs:
+        tempdir = TemporaryDirectory()
+        module_path = Path(tempdir.name) / path.name
+        with open(module_path, 'w', encoding='utf-8') as f:
+            f.write(source)
+        module.__dict__['_pd_tempdir'] = tempdir
+    else:
+        module_path = path
+    code = compile(source, module_path, 'exec')
+    # pylint: disable=exec-used
+    exec(code, module.__dict__)
+
+
+def load(path, **kwargs):
     """Load a transform (as saved with padl.save) from *path*.
-    If *execute_only* then only execute the script setting the *padl.param* instances specified
-    in *parsed_kwargs*.
 
     Use keyword arguments to override params (see :func:`padl.param`).
     """
-    if Path(path).is_file() and not execute_only:
+    if kwargs:
+        _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
+    else:
+        parsed_kwargs = {}
+    return load_noparse(path, parsed_kwargs)
+
+
+def load_noparse(path, parsed_kwargs):
+    if Path(path).is_file():
         return _zip_load(path)
     path = Path(path)
 
-    path = path / 'transform.py' if not execute_only else path
-    with open(path, encoding='utf-8') as f:
+    with open(path / 'transform.py', encoding='utf-8') as f:
         source = f.read()
 
     scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
@@ -2583,12 +2612,7 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
         def create_module(self, spec):
             return types.ModuleType(spec.name)
 
-    if execute_only:
-        module_name = str(path).replace('/', ospath.sep).lstrip('.')
-        if module_name.endswith('.py'):
-            module_name = module_name[:-3]
-    else:
-        module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
+    module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
 
@@ -2606,7 +2630,7 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
             f.write(source)
         module.__dict__['_pd_tempdir'] = tempdir
     else:
-        module_path = path
+        module_path = path / 'transform.py'
 
     module.__dict__['__file__'] = str(module_path)
 
@@ -2614,9 +2638,6 @@ def load_noparse(path, parsed_kwargs, execute_only=False):
 
     # pylint: disable=exec-used
     exec(code, module.__dict__)
-
-    if execute_only:
-        return module
 
     # pylint: disable=no-member,protected-access
     transform = module._pd_main
