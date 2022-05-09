@@ -487,6 +487,20 @@ class _Renamer(ast.NodeVisitor):
         """
         self.check(node.arg, node)
 
+    def visit_Attribute(self, node):
+        name = ast_utils.get_source_segment(self.source, node)
+        print(name)
+        if not self.is_candidate(name.split('.', 1)[0]):
+            return
+
+        new_name = self.renaming_function(name, node)
+        if new_name:
+            self.res.append((ast_utils.get_position(self.source, node), new_name))
+            return
+
+        for child in ast.iter_child_nodes(node):
+            self.visit(child)
+
     def visit_Name(self, node):
         """Names.
 
@@ -920,17 +934,38 @@ class CodeGraph(dict):
     def _unscoped(self):
         """Create a version of *self* where all non-top level variables are renamed (by prepending
         the scope) to prevent conflicts."""
-        name_scope = {(v.name.name, v.name.scope) for k, v in self.items()}
+        name_scope = {(v.name.toplevel_name, v.name.scope) for k, v in self.items()}
         counts = Counter(x[0] for x in name_scope)
         to_rename = set(k for k, c in counts.items() if c > 1)
 
         for v in self.values():
             assert v.name.pos is not None
 
-        rename_map = {
-            k: v.name.scope.unscoped(v.name.name) if v.name.name in to_rename else v.name.name
+        rename_map_k = {
+            k: v.name.scope.unscoped(k.name)
+            if k.toplevel_name in to_rename else k.name
             for k, v in self.items()
         }
+
+        rename_map_v = {
+            v.name: v.name.scope.unscoped(v.name.name)
+            if v.name.toplevel_name in to_rename else v.name.name
+            for v in self.values()
+        }
+
+        ''' WHAT TO DO WITH THIS?
+        name_scope_source = defaultdict(dict)
+        counts = Counter()
+        for k, v in self.items():
+            len_ = name_scope_source[v.name.name, v.name.scope].get(
+                v.source,
+                len(name_scope_source[v.name.name, v.name.scope])
+            )
+            name_scope_source[v.name.name, v.name.scope][v.source] = len_
+            if len_ != 0:
+                rename_map[k] = f'{rename_map[k]}_{len_}'
+                to_rename.add(v.name.name)
+        '''
 
         def unscope(name, scope):
             if name in to_rename:
@@ -948,7 +983,7 @@ class CodeGraph(dict):
 
         res = {}
         for k, v in self.items():
-            v_unscoped = rename_map[k]
+            v_unscoped = rename_map_v[v.name]
             parsed = ast.parse(v.source).body[0]
             copied = copy.deepcopy(v.ast_node)
             for a, b in zip(ast.walk(parsed), ast.walk(copied)):
@@ -956,12 +991,16 @@ class CodeGraph(dict):
                 assert type(a) == type(b)
 
             def rn(name, node):
-                for n in [k] + list(v.globals_):
-                    new_name = renaming_function(name, node, n, rename_map[n])
+                new_name = renaming_function(name, node, v.name, v_unscoped)
+                if new_name:
+                    return new_name
+                for n in list(v.globals_):
+                    new_name = renaming_function(name, node, n, rename_map_k[n])
                     if new_name:
                         return new_name
                 return False
-            code = rename(v.source, copied, renaming_function=rn)
+
+            code = rename(v.source, copied, renaming_function=rn, rename_locals=True)
             res[k] = CodeNode(code, v.globals_, ast_node=v.ast_node,
                               name=ScopedName(v_unscoped, Scope.empty()))
         return res
