@@ -505,7 +505,7 @@ class _Renamer(ast.NodeVisitor):
 
         >>> code = '''
         ... def f(a, b):
-        ...    y = p(z)
+        ...     y = p(z)
         ... '''
         >>> rename(code, from_='z', to='u').strip()
         'def f(a, b):\\n    y = p(u)'
@@ -554,7 +554,7 @@ class _Renamer(ast.NodeVisitor):
         ...         y = p(z)
         ... '''
         >>> rename(code, from_='z', to='u').strip()
-        'class Foo:\\n\\n    def __init__(self, a, b):\\n        y = p(u)'
+        'class Foo:\\n    def __init__(self, a, b):\\n        y = p(u)'
         """
         new_name = (
             self.rename_locals
