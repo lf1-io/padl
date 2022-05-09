@@ -619,7 +619,6 @@ def rename(source, tree=None, from_=None, to=None, renaming_function=None, renam
     return source
 
 
-
 class _MethodFinder(ast.NodeVisitor):
     """Find all methods in a class node.
 
