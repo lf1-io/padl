@@ -178,13 +178,30 @@
   <section class="tex2jax_ignore mathjax_ignore" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
 <p><strong>Pipeline Abstractions for Deep Learning</strong></p>
-<p><strong>PADL</strong>:</p>
+<p>Just as <strong>programs are read more often than they are written</strong>, so are <strong>deep learning models used more often than they are trained</strong>.</p>
+<p>The PyTorch ecosystem has many tools for training models. However, this is only the beginning of the journey. Once a model has been trained, it will be shared, and used in a multitude of contexts, often on a daily basis, in operations, evaluation, comparision and experimentation by data scientists. The <em>use</em> of the trained model, is how value is extracted out of its weights. Despite this important fact, support for using deep-learning models up to now has been very thin in the PyTorch ecosystem and beyond. PADL is a tool which fills this void.</p>
+<p><strong>PADL</strong></p>
+<p>Is great for:</p>
 <ul class="simple">
-<li><p>is a pipeline builder for <strong>PyTorch</strong>.</p></li>
-<li><p>can be used with all of the great <strong>PyTorch</strong> functionality you’re used to for writing layers.</p></li>
+<li><p>serving model predictions</p></li>
+<li><p>experimentation with pre-trained models in Jupyter notebooks and interactive sessions</p></li>
+<li><p>inspecting and visualizing intermediate model features</p></li>
+<li><p>evaluating and monitoring model performance on metrics and incoming test data</p></li>
+<li><p>computing model outputs as a preprocessing step for further data science tasks</p></li>
+</ul>
+<p>This is how it works:</p>
+<ul class="simple">
+<li><p>PADL is a pipeline builder for <strong>PyTorch</strong>.</p></li>
+<li><p>may be used with all of the great <strong>PyTorch</strong> functionality you’re used to for writing layers.</p></li>
 <li><p>allows users to build pre-processing, forward passes, loss functions <strong>and</strong> post-processing into the pipeline.</p></li>
 <li><p>models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.</p></li>
 <li><p>allows for converting standard functions to <strong>PADL</strong> components using a single keyword <code class="docutils literal notranslate"><span class="pre">transform</span></code>.</p></li>
+</ul>
+<p>PADL pipelines:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://medium.com/padl-developer-blog/warp-speed-model-training-in-padl-with-pytorch-lightning-645b56ba0b3a">can be trained with minimal boilerplate in PyTorch Lightning</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/padl-developer-blog/one-line-of-code-serves-your-pytorch-model-in-torchserve-using-padl-9e5990493181">can then be served in one line with TorchServe</a></p></li>
+<li><p>interact well with the entire PyTorch ecosystem (<a class="reference external" href="https://devblog.padl.ai/build-completely-novel-pipelines-on-top-of-hugging-face-in-a-few-simple-steps-with-padl-d8da7bd8b0fe">for example Hugging Face</a>)</p></li>
 </ul>
 <p><strong>PADL</strong> was developed at <a class="reference external" href="https://lf1.io/">LF1</a>, an AI innovation lab based in Berlin, Germany.</p>
 <section id="getting-started">

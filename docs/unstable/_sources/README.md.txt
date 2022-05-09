@@ -7,15 +7,33 @@
 
 **Pipeline Abstractions for Deep Learning**
 
+Just as **programs are read more often than they are written**, so are **deep learning models used more often than they are trained**.
 
+The PyTorch ecosystem has many tools for training models. However, this is only the beginning of the journey. Once a model has been trained, it will be shared, and used in a multitude of contexts, often on a daily basis, in operations, evaluation, comparision and experimentation by data scientists. The *use* of the trained model, is how value is extracted out of its weights. Despite this important fact, support for using deep-learning models up to now has been very thin in the PyTorch ecosystem and beyond. PADL is a tool which fills this void.
 
-**PADL**:
+**PADL**
 
-- is a pipeline builder for **PyTorch**. 
-- can be used with all of the great **PyTorch** functionality you're used to for writing layers.
+Is great for:
+
+- serving model predictions
+- experimentation with pre-trained models in Jupyter notebooks and interactive sessions
+- inspecting and visualizing intermediate model features
+- evaluating and monitoring model performance on metrics and incoming test data
+- computing model outputs as a preprocessing step for further data science tasks
+
+This is how it works:
+
+- PADL is a pipeline builder for **PyTorch**.
+- may be used with all of the great **PyTorch** functionality you're used to for writing layers.
 - allows users to build pre-processing, forward passes, loss functions **and** post-processing into the pipeline.
 - models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.
 - allows for converting standard functions to **PADL** components using a single keyword `transform`.
+
+PADL pipelines:
+
+- [can be trained with minimal boilerplate in PyTorch Lightning](https://medium.com/padl-developer-blog/warp-speed-model-training-in-padl-with-pytorch-lightning-645b56ba0b3a)
+- [can then be served in one line with TorchServe](https://medium.com/padl-developer-blog/one-line-of-code-serves-your-pytorch-model-in-torchserve-using-padl-9e5990493181)
+- interact well with the entire PyTorch ecosystem ([for example Hugging Face](https://devblog.padl.ai/build-completely-novel-pipelines-on-top-of-hugging-face-in-a-few-simple-steps-with-padl-d8da7bd8b0fe))
 
 **PADL** was developed at [LF1](https://lf1.io/), an AI innovation lab based in Berlin, Germany.
 
