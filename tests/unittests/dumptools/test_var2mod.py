@@ -507,3 +507,50 @@ class Test_FindGlobalsInClassdef:
         ''')
         res = var2mod._find_globals_in_classdef(ast.parse(source).body[0], filter_builtins=False)
         assert {x.name for x in res} == {'bla', 'ble'}
+
+
+class TestFindCodenode:
+    def test_find_toplevel(self):
+        scope = var2mod.Scope.toplevel(var2mod)
+        node = var2mod.ScopedName('find_codenode', scope=scope)
+        res = var2mod.find_codenode(node)
+        assert res.source.startswith('def find_codenode')
+        assert isinstance(res.ast_node, ast.FunctionDef)
+        assert res.ast_node.name == 'find_codenode'
+        assert res.name.name == 'find_codenode'
+        assert res.name.scope == scope
+        assert res.name.pos is not None
+
+    def test_find_from_import(self):
+        from tests.material import find_codenode_from_import
+        scope = var2mod.Scope.toplevel(find_codenode_from_import)
+        node = var2mod.ScopedName('find_codenode', scope=scope)
+        res = var2mod.find_codenode(node)
+        assert res.source == 'from padl.dumptools.var2mod import find_codenode'
+        assert isinstance(res.ast_node, ast.ImportFrom)
+        assert res.name.name == 'find_codenode'
+        assert res.name.scope == var2mod.Scope.empty()
+        assert res.name.pos is not None
+
+    def test_find_from_import_fulldump(self):
+        from tests.material import find_codenode_from_import
+        scope = var2mod.Scope.toplevel(find_codenode_from_import)
+        node = var2mod.ScopedName('find_codenode', scope=scope)
+        res = var2mod.find_codenode(node, full_dump_module_names='padl.dumptools.var2mod')
+        assert res.source.startswith('def find_codenode')
+        assert isinstance(res.ast_node, ast.FunctionDef)
+        assert res.ast_node.name == 'find_codenode'
+        assert res.name.name == 'find_codenode'
+        assert res.name.scope == var2mod.Scope.toplevel(var2mod)
+        assert res.name.pos is not None
+
+    def test_find_module_import(self):
+        from tests.material import find_codenode_module_import
+        scope = var2mod.Scope.toplevel(find_codenode_module_import)
+        node = var2mod.ScopedName('var2mod.find_codenode', scope=scope)
+        res = var2mod.find_codenode(node)
+        assert res.source == 'from padl.dumptools import var2mod'
+        assert isinstance(res.ast_node, ast.ImportFrom)
+        assert res.name.name == 'var2mod'
+        assert res.name.scope == var2mod.Scope.empty()
+        assert res.name.pos is not None
