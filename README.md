@@ -11,12 +11,28 @@
 
 # Pipeline Abstractions for Deep Learning
 
-
 Full documentation here: https://lf1-io.github.io/padl/
 
-**PADL**:
+Just as *programs are read more often than they are written*, so are *deep learning models used more often than they are trained*.
 
-- is a pipeline builder for **PyTorch**.
+The PyTorch ecosystem has many tools for training models. However, this is only the beginning of the journey. Once a model has been trained, it will be shared, and used in a multitude of contexts, often on a daily basis, in operations, evaluation, comparision and experimentation by data scientists. The *use* of the trained model, is how value is extracted out of its weights. Despite this important fact, support for using deep-learning models up to now has been very thin in the PyTorch ecosystem and beyond. PADL is a tool which fills this void.
+
+
+
+
+**PADL**
+
+Is great for:
+
+- serving model predictions
+- experimentation with pre-trained models in Jupyter notebooks and interactive sessions
+- inspecting and visualizing intermediate model features
+- evaluating and monitoring model performance on metrics and incoming test data
+- computing model outputs as a preprocessing step for further data science tasks
+
+This is how it works:
+
+- PADL is a pipeline builder for **PyTorch**.
 - may be used with all of the great **PyTorch** functionality you're used to for writing layers.
 - allows users to build pre-processing, forward passes, loss functions **and** post-processing into the pipeline.
 - models may have arbitrary topologies and make use of arbitrary packages from the python ecosystem.
