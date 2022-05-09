@@ -120,6 +120,15 @@ def _move_to_device(args, device):
     return args
 
 
+def _set_local_varname(frame, event, _args, scope, m=0):
+    if event == 'return':
+        for k, v in frame.f_locals.items():
+            try:
+                v._pd_varname[scope] = k
+            except AttributeError:
+                continue
+
+
 class _GeneratorWithLength:
     """A generator with a length. """
 
@@ -152,7 +161,8 @@ class Transform:
                  pd_name: Optional[str] = None):
         if call_info is None:
             # if the call was from here (i.e. transform.py), ignore the scope
-            calling_module_name = inspector.non_init_caller_frameinfo().frame.f_globals['__name__']
+            caller_frameinfo = inspector.non_init_caller_frameinfo()
+            calling_module_name = caller_frameinfo.frame.f_globals['__name__']
             call_info = inspector.CallInfo(ignore_scope=calling_module_name == __name__)
         self._pd_call_info = call_info
         self._pd_varname = {}
@@ -285,7 +295,7 @@ class Transform:
         Example:
             t = a >> b >> c
         """
-        return Compose([self, other])
+        return Compose([self, other], call_info=self._pd_call_info)
 
     def __add__(self, other: "Transform") -> "Rollout":
         """Rollout with *other*.
@@ -293,7 +303,7 @@ class Transform:
         Example:
             t = a + b + c
         """
-        return Rollout([self, other])
+        return Rollout([self, other], call_info=self._pd_call_info)
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """Parallel with *other*.
@@ -301,7 +311,7 @@ class Transform:
         Example:
             t = a / b / c
         """
-        return Parallel([self, other])
+        return Parallel([self, other], call_info=self._pd_call_info)
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
@@ -320,7 +330,7 @@ class Transform:
         Example:
             t = ~a
         """
-        return Map(self)
+        return Map(self, call_info=self._pd_call_info)
 
     def pd_pre_save(self, path: Path, i: int, options: Optional[dict] = None):
         """Method that is called on each transform before saving.
@@ -1156,8 +1166,7 @@ class FunctionTransform(AtomicTransform):
                 or self._wrap_type in ('module', 'lambda')
                 or (self._wrap_type != 'inline' and self._pd_call_info.scope.scopelist)):
             return super()._pd_codegraph_add_startnodes(graph, name)
-        module = inspector.caller_module()
-        scope = symfinder.Scope.toplevel(module)
+        scope = self._pd_call_info.scope
         source = f'from {self.__module__} import {self.__name__}'
 
         if self._wrap_type == 'inline':
@@ -1274,6 +1283,8 @@ class ClassTransform(AtomicTransform):
                  arguments: Optional[OrderedDict] = None):
         caller_frameinfo = inspector.non_init_caller_frameinfo()
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
+        if call_info.function != '<module>' and not ignore_scope:
+            inspector.trace_this(_set_local_varname, caller_frameinfo.frame, scope=call_info.scope)
         call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
         call = re.sub(r'\n\s*', ' ', call)
         self._pd_arguments = arguments
@@ -1299,7 +1310,7 @@ class ClassTransform(AtomicTransform):
         instance_scope = self._pd_call_info.scope
         varname = self.pd_varname(instance_scope)
 
-        import_source = f'from {self.__module__} import {varname}'
+        import_source = f'from {instance_scope.module_name} import {varname}'
         import_node = CodeNode.from_source(import_source, instance_scope, name=varname)
 
         graph[ScopedName(varname, instance_scope)] = import_node
@@ -1317,13 +1328,13 @@ class ClassTransform(AtomicTransform):
     def _pd_codegraph_add_startnodes_import(self, graph, name):
         instance_scope = self._pd_call_info.scope
 
-        # instance creation and class definition are in separate modules
-        if instance_scope.module_name != self.__class__.__module__:
-            return super()._pd_codegraph_add_startnodes(graph, name)
-
         # the instance has a varname - just import the instance
         if self.pd_varname(instance_scope) is not None:
             return self._pd_codegraph_add_startnodes_import_var(graph, name)
+
+        # instance creation and class definition are in separate modules
+        if instance_scope.module_name != self.__class__.__module__:
+            return super()._pd_codegraph_add_startnodes(graph, name)
 
         # import the class
         import_source = f'from {self.__class__.__module__} import {self.__class__.__name__}'
@@ -1564,7 +1575,7 @@ class Map(Transform):
         # .. and combine them as a Parallel
         return (
             output_components,
-            tuple(Parallel(s) if s else identity for s in splits),
+            tuple(Parallel(s, call_info=self._pd_call_info) if s else identity for s in splits),
             has_batchify,
             has_unbatchify
         )
@@ -1616,6 +1627,12 @@ class Pipeline(Transform):
     display_op = NotImplemented
 
     def __init__(self, transforms, call_info=None, pd_name=None, pd_group=False):
+        if call_info is None:
+            call_info = inspector.CallInfo()
+            if call_info.function != '<module>':
+                call_frame = inspector.caller_frame()
+                inspector.trace_this(_set_local_varname, call_frame, scope=call_info.scope)
+
         super().__init__(call_info, pd_name)
 
         self._pd_group = True if pd_name is not None else pd_group
@@ -1956,7 +1973,7 @@ class Compose(Pipeline):
         final_splits = []
         for split in cleaned_splits:
             if len(split) > 1:  # combine sub_splits
-                final_splits.append(Compose(split))
+                final_splits.append(Compose(split, call_info=self._pd_call_info))
             elif len(split) == 1:  # if it's just one, no need to combine
                 if isinstance(split[0], Compose):
                     final_splits.append(group(split[0]))
@@ -2232,9 +2249,9 @@ class Rollout(Pipeline):
         for i, s in enumerate(cleaned_splits):
             if isinstance(s, list):
                 if i == first_non_identity:
-                    final_splits.append(Rollout(s))
+                    final_splits.append(Rollout(s, call_info=self._pd_call_info))
                 else:
-                    final_splits.append(Parallel(s))
+                    final_splits.append(Parallel(s, call_info=self._pd_call_info))
             else:
                 final_splits.append(s)
 
@@ -2341,7 +2358,7 @@ class Parallel(Pipeline):
             for split in splits
         )
 
-        final_splits = tuple(Parallel(s) if isinstance(s, list) else s for s in cleaned_splits)
+        final_splits = tuple(Parallel(s, call_info=self._pd_call_info) if isinstance(s, list) else s for s in cleaned_splits)
 
         res = []
         for split in final_splits:
