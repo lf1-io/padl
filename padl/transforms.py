@@ -842,13 +842,15 @@ class Transform:
         return x
 
     def _pd_itercall(self, args, mode: Mode, loader_kwargs: Optional[dict] = None,
-                     flatten: bool = False) -> Iterator:
+                     flatten: bool = False, use_post: bool = True) -> Iterator:
         """Create a data loader and run preprocessing, forward, and postprocessing steps.
 
         :param args: Arguments to call with.
         :param mode: Mode to call in ("eval", "train" or "infer")
         :param loader_kwargs: Data loader keyword arguments.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
 
         :return: A generator that allows iterating over the output.
         """
@@ -864,7 +866,7 @@ class Transform:
 
         use_preprocess = not isinstance(preprocess, Identity)
         use_forward = not isinstance(forward, Identity)
-        use_post = not isinstance(post, Identity)
+        use_post = not isinstance(post, Identity) and use_post
 
         if use_forward:
             self.pd_forward_device_check()
@@ -1030,7 +1032,8 @@ class Transform:
                 raise err
         return self._pd_format_output(inputs)
 
-    def eval_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def eval_apply(self, inputs: Iterable, flatten: bool = False,
+                   use_post: bool = True, **kwargs):
         """Call transform within the eval context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1042,11 +1045,14 @@ class Transform:
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
         """
-        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs,
-                                 flatten=flatten)
+        return self._pd_itercall(inputs, 'eval', loader_kwargs=kwargs, flatten=flatten,
+                                 use_post=use_post)
 
-    def train_apply(self, inputs: Iterable, flatten: bool = False, **kwargs):
+    def train_apply(self, inputs: Iterable, flatten: bool = False,
+                    use_post: bool = True, **kwargs):
         """Call transform within the train context.
 
         This will use multiprocessing for the preprocessing part via `DataLoader` and turn
@@ -1058,8 +1064,11 @@ class Transform:
         :param kwargs: Keyword arguments to be passed on to the dataloader. These can be
             any that a `torch.data.utils.DataLoader` accepts.
         :param flatten: If *True*, flatten the output.
+        :param use_post: If *True*, carry out the postprocessing part of the :class:`Transform`,
+            otherwise ignore it.
         """
-        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten)
+        return self._pd_itercall(inputs, 'train', loader_kwargs=kwargs, flatten=flatten,
+                                 use_post=use_post)
 
 
 class AtomicTransform(Transform):
@@ -2542,24 +2551,29 @@ def save(transform: Transform, path: Union[Path, str], force_overwrite: bool = F
         transform.pd_save(path, force_overwrite, strict_requirements)
 
 
-def load(path, **kwargs):
+def load(path, execute_only=False, **kwargs):
     if kwargs:
         _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
+        if 'execute_only' in parsed_kwargs:
+            del parsed_kwargs['execute_only']
     else:
         parsed_kwargs = {}
-    return load_noparse(path, parsed_kwargs)
+    return load_noparse(path, parsed_kwargs, execute_only=execute_only)
 
 
-def load_noparse(path, parsed_kwargs):
+def load_noparse(path, parsed_kwargs, execute_only=False):
     """Load a transform (as saved with padl.save) from *path*.
+    If *execute_only* then only execute the script setting the *padl.param* instances specified
+    in *parsed_kwargs*.
 
     Use keyword arguments to override params (see :func:`padl.param`).
     """
-    if Path(path).is_file():
+    if Path(path).is_file() and not execute_only:
         return _zip_load(path)
     path = Path(path)
 
-    with open(path / 'transform.py', encoding='utf-8') as f:
+    path = path / 'transform.py' if not execute_only else path
+    with open(path, encoding='utf-8') as f:
         source = f.read()
 
     scope = inspector._get_scope_from_frame(inspector.caller_frame(), 0)
@@ -2569,7 +2583,12 @@ def load_noparse(path, parsed_kwargs):
         def create_module(self, spec):
             return types.ModuleType(spec.name)
 
-    module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
+    if execute_only:
+        module_name = str(path).replace('/', ospath.sep).lstrip('.')
+        if module_name.endswith('.py'):
+            module_name = module_name[:-3]
+    else:
+        module_name = str(path).replace('/', ospath.sep).lstrip('.') + '.transform'
     spec = ModuleSpec(module_name, _EmptyLoader())
     module = module_from_spec(spec)
 
@@ -2587,7 +2606,7 @@ def load_noparse(path, parsed_kwargs):
             f.write(source)
         module.__dict__['_pd_tempdir'] = tempdir
     else:
-        module_path = path / 'transform.py'
+        module_path = path
 
     module.__dict__['__file__'] = str(module_path)
 
@@ -2596,8 +2615,10 @@ def load_noparse(path, parsed_kwargs):
     # pylint: disable=exec-used
     exec(code, module.__dict__)
 
-    # pylint: disable=no-member,protected-access
+    if execute_only:
+        return module
 
+    # pylint: disable=no-member,protected-access
     transform = module._pd_main
     for i, subtrans in enumerate(transform._pd_all_transforms()):
         if hasattr(transform, 'pd_save_options'):
