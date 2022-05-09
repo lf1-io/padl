@@ -83,7 +83,7 @@ def apply_params(source, parsed_kwargs, scope):
     if missing:
         raise ValueError(f'Missing mandatory parameter(s): {missing}')
 
-    return code_graph.dumps() + source
+    return code_graph.dumps().strip('\n') + source
 
 
 def extract_param_s(source: str) -> dict:
