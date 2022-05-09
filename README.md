@@ -13,12 +13,9 @@
 
 Full documentation here: https://lf1-io.github.io/padl/
 
-Just as *programs are read more often than they are written*, so are *deep learning models used more often than they are trained*.
+Just as **programs are read more often than they are written**, so are **deep learning models used more often than they are trained**.
 
 The PyTorch ecosystem has many tools for training models. However, this is only the beginning of the journey. Once a model has been trained, it will be shared, and used in a multitude of contexts, often on a daily basis, in operations, evaluation, comparision and experimentation by data scientists. The *use* of the trained model, is how value is extracted out of its weights. Despite this important fact, support for using deep-learning models up to now has been very thin in the PyTorch ecosystem and beyond. PADL is a tool which fills this void.
-
-
-
 
 **PADL**
 
