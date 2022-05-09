@@ -924,23 +924,13 @@ class CodeGraph(dict):
         counts = Counter(x[0] for x in name_scope)
         to_rename = set(k for k, c in counts.items() if c > 1)
 
+        for v in self.values():
+            assert v.name.pos is not None
+
         rename_map = {
             k: v.name.scope.unscoped(v.name.name) if v.name.name in to_rename else v.name.name
             for k, v in self.items()
         }
-
-        from collections import defaultdict
-        name_scope_source = defaultdict(dict)
-        counts = Counter()
-        for k, v in self.items():
-            len_ = name_scope_source[v.name.name, v.name.scope].get(
-                v.source,
-                len(name_scope_source[v.name.name, v.name.scope])
-            )
-            name_scope_source[v.name.name, v.name.scope][v.source] = len_
-            if len_ != 0:
-                rename_map[k] = f'{rename_map[k]}_{len_}'
-                to_rename.add(v.name.name)
 
         def unscope(name, scope):
             if name in to_rename:
