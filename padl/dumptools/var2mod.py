@@ -473,20 +473,6 @@ class _Renamer(ast.NodeVisitor):
         for child in ast.iter_child_nodes(node):
             self.visit(child)
 
-    def visit_arg(self, node):
-        """Arguments.
-
-        Example:
-
-        >>> code = '''
-        ... def f(a, b):
-        ...    ...
-        ... '''
-        >>> rename(code, from_='a', to='c').strip()
-        'def f(c, b):\\n    ...'
-        """
-        self.check(node.arg, node)
-
     def visit_Attribute(self, node):
         name = ast_utils.get_source_segment(self.source, node)
         print(name)
