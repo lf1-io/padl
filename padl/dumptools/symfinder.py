@@ -705,7 +705,7 @@ class ScopedName:
         self.cell_no = cell_no
 
     def __hash__(self):
-        return hash((self.pos, self.scope, self.pos))
+        return hash((self.name, self.scope, self.pos))
 
     def __eq__(self, other):
         return (
