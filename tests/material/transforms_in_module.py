@@ -21,6 +21,9 @@ obj = Class(var)
 pipeline = obj >> obj + function >> function / function
 
 
+lambdatrans = transform(lambda x: y)
+
+
 def makefunction():
     @transform
     def z(x):
@@ -32,6 +35,9 @@ CONST = 123
 
 def k(y):
     return y
+
+
+tk = transform(k)
 
 
 @transform

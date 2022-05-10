@@ -452,25 +452,36 @@ class Transform:
 
         Returns a set of dependencies (scoped names the start-node depends on).
         """
-        scope = self._pd_call_info.scope
-
-        nodes = []
+        my_scope = self._pd_call_info.scope
 
         start_source = f'{name or "_pd_dummy"} = {self._pd_evaluable_repr()}'
-        start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
+        start = CodeNode.from_source(start_source, my_scope, name=name or "_pd_dummy")
+
+        # label all nodes with their correct scope
         self._pd_label_ast_node(start.ast_node.value, graph)
+        # update the global dependencies with the scope
         start.update_globals()
 
-        nodes.append(start)
+        # if the own name is the same as something the transform depends on, skip one
+        # name
+        if self.pd_varname() is not None:
+            my_name = ScopedName(self.pd_varname(), my_scope)
+            if (len(start.globals_) > 1 and any(x == my_name for x in start.globals_)):
+                next_codenode = find_codenode(my_name,
+                                              self._pd_external_full_dump_modules)
+
+                start.globals_ = set(next_codenode.globals_)
+            if my_name.name == name and any(x == my_name for x in start.globals_):
+                next_codenode = find_codenode(my_name,
+                                              self._pd_external_full_dump_modules)
+
+                start = next_codenode
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
         if name is not None:
-            graph[ScopedName(name, scope)] = start
+            graph[ScopedName(name, my_scope)] = start
 
-        dependencies = set()
-        for node in nodes:
-            dependencies.update(node.globals_)
-        return dependencies
+        return set(start.globals_)
 
     def _pd_label_ast_node(self, ast_node, graph):
         _SetAttribute('_scope', self._pd_call_info.scope).visit(ast_node)
@@ -723,7 +734,9 @@ class Transform:
         try:
             return [
                 k for k, v in list(scopedict.items())[::-1]
-                if v is self and not k.startswith('_')
+                if v is self
+                and not k.startswith('_')
+                and not k.startswith('@')
             ][0]
         except IndexError:
             return None
@@ -745,7 +758,13 @@ class Transform:
         if scope is None:
             scope = self._pd_call_info.scope
         if scope not in self._pd_varname:
-            self._pd_varname[scope] = self._pd_find_varname(scope.module.__dict__)
+            frame = inspector.caller_frame()
+            if len(scope) > 0 and frame.f_code.co_name == scope.scopelist[-1][0]:
+                frame = inspector.caller_frame()
+                self._pd_varname[scope] = \
+                    self._pd_find_varname({**frame.f_globals, **frame.f_locals})
+            else:
+                self._pd_varname[scope] = self._pd_find_varname(scope.module.__dict__)
         return self._pd_varname[scope]
 
     def pd_forward_device_check(self) -> bool:
@@ -1161,33 +1180,44 @@ class FunctionTransform(AtomicTransform):
             return self._pd_call
         return self.pd_varname()
 
+    @property
+    def _pd_full_dump(self):
+        return (
+            super()._pd_full_dump
+            or self._wrap_type in ('module', 'lambda')
+            or (self._wrap_type != 'inline' and bool(self._pd_call_info.scope.scopelist))
+        )
+
     def _pd_codegraph_add_startnodes(self, graph, name):
-        if (self._pd_full_dump
-                or self._wrap_type in ('module', 'lambda')
-                or (self._wrap_type != 'inline' and self._pd_call_info.scope.scopelist)):
+        if self._pd_full_dump:
             return super()._pd_codegraph_add_startnodes(graph, name)
-        scope = self._pd_call_info.scope
+
+        my_scope = self._pd_call_info.scope
         source = f'from {self.__module__} import {self.__name__}'
 
         if self._wrap_type == 'inline':
-            node = CodeNode.from_source(source, scope, name=self.__name__)
-            graph[ScopedName(self.__name__, scope)] = node
-            emptyscope = symfinder.Scope.empty()
-            graph[ScopedName('transform', scope)] = \
-                CodeNode.from_source('from padl import transform', emptyscope, name='transform')
+            graph[ScopedName(self.__name__, my_scope)] = \
+                CodeNode.from_source(source,
+                                     my_scope,
+                                     name=self.__name__)
+            graph[ScopedName('transform', my_scope)] = \
+                CodeNode.from_source('from padl import transform',
+                                     symfinder.Scope.empty(),
+                                     name='transform')
 
-            start_source = f'{name or "_pd_dummy"} = transform({self.__name__})'
-            start = CodeNode.from_source(start_source, scope, name=name or "_pd_dummy")
+            start = CodeNode.from_source(f'{name or "_pd_dummy"} = transform({self.__name__})',
+                                         my_scope,
+                                         name=name or "_pd_dummy")
             if name is not None:
-                graph[ScopedName(name, scope)] = start
+                graph[ScopedName(name, my_scope)] = start
             return set()
 
         if name is not None:
             source += f' as {name}'
         else:
             name = self.__name__
-        node = CodeNode.from_source(source, scope, name=name)
-        graph[ScopedName(name, scope)] = node
+
+        graph[ScopedName(name, my_scope)] = CodeNode.from_source(source, my_scope, name=name)
         return set()
 
     @property

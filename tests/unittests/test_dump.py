@@ -310,6 +310,19 @@ def test_dump_hanging_indent():
     assert dump == read_dump('hanging_indent')
 
 
+def test_varname_same_as_arg():
+    @transform
+    class C:
+        def __init__(self, x):
+            ...
+
+        def __call__(self, x):
+            return x
+    b = 1
+    b = C(b)
+    assert b._pd_dumps() == read_dump('varname_same_as_arg')
+
+
 class TestOtherModule:
     def test_import_function(self):
         importdump(tim)

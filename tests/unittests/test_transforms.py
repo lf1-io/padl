@@ -2,10 +2,12 @@ import os
 from collections import OrderedDict
 import pytest
 import torch
+
+import padl
 from padl import transforms as pd, transform, Identity, batch, unbatch, group
 from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, RequirementNotFound
 from padl.dumptools.serialize import value
-import padl
+from padl.dumptools import var2mod
 from collections import namedtuple
 from padl.transforms import load
 

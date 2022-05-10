@@ -52,6 +52,7 @@ class CallInfo:
             caller_frameinfo = inspect.stack()[1]
 
         self.function: str = caller_frameinfo.function
+
         self.scope: symfinder.Scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
 
     def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
