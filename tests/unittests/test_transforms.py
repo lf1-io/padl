@@ -804,6 +804,90 @@ class TestFunctionTransform:
         t3 = pd.load(tmp_path / 'test.padl')
         assert t3.infer_apply(5) == 10
 
+    def test_startnode_fulldump(self):
+        graph = var2mod.CodeGraph()
+        todo = plus_global._pd_codegraph_add_startnodes(graph, 'testing')
+        assert len(graph) == 1
+        k, v = list(graph.items())[0]
+        assert k.name == 'testing'
+        assert k.scope == 'Scope[tests.unittests.test_transforms]'
+        assert k.pos is None
+        assert v.source == 'testing = plus_global'
+        assert len(todo) == 1
+        next = list(todo)[0]
+        assert next.name == 'plus_global'
+        assert next.scope == 'Scope[tests.unittests.test_transforms]'
+        assert next.pos is None
+
+    def test_startnode_importdump(self):
+        from tests.material import transforms_in_module as tim
+        graph = var2mod.CodeGraph()
+        todo = tim.y._pd_codegraph_add_startnodes(graph, 'testing')
+
+        assert len(graph) == 1
+        k, v = list(graph.items())[0]
+        assert k.name == 'testing'
+        assert k.scope == 'Scope[tests.material.transforms_in_module]'
+        assert k.pos is None
+        assert v.source == 'from tests.material.transforms_in_module import y as testing'
+
+        assert len(todo) == 0
+
+    def test_startnode_importdump_no_name(self):
+        from tests.material import transforms_in_module as tim
+        graph = var2mod.CodeGraph()
+        todo = tim.y._pd_codegraph_add_startnodes(graph, None)
+
+        assert len(graph) == 1
+        k, v = list(graph.items())[0]
+        assert k.name == 'y'
+        assert k.scope == 'Scope[tests.material.transforms_in_module]'
+        assert k.pos is None
+        assert v.source == 'from tests.material.transforms_in_module import y'
+
+        assert len(todo) == 0
+
+    def test_startnode_importdump_inline(self):
+        from tests.material import transforms_in_module as tim
+        graph = var2mod.CodeGraph()
+        todo = transform(tim.tk)._pd_codegraph_add_startnodes(graph, 'testing')
+
+        assert len(graph) == 3
+        items = list(graph.items())
+
+        k, v = [x for x in items if x[0].name == 'testing'][0]
+        assert k.scope == 'Scope[tests.material.transforms_in_module]'
+        assert k.pos is None
+        assert v.source == 'testing = transform(k)'
+
+        k, v = [x for x in items if x[0].name == 'transform'][0]
+        assert k.scope == 'Scope[tests.material.transforms_in_module]'
+        assert k.pos is None
+        assert v.source == 'from padl import transform'
+
+        k, v = [x for x in items if x[0].name == 'k'][0]
+        assert k.scope == 'Scope[tests.material.transforms_in_module]'
+        assert k.pos is None
+        assert v.source == 'from tests.material.transforms_in_module import k'
+
+        assert len(todo) == 0
+
+    def test_here_is_fulldump(self):
+        assert plus_global._pd_full_dump
+
+    def test_othermodule_is_importdump(self):
+        from tests.material import transforms_in_module as tim
+        assert not tim.y._pd_full_dump
+
+    def test_lambda_is_fulldump(self):
+        from tests.material import transforms_in_module as tim
+        assert tim.lambdatrans._pd_full_dump
+
+    def test_from_functionscope_is_fulldump(self):
+        from tests.material import transforms_in_module as tim
+        f = tim.makefunction()
+        assert f._pd_full_dump
+
 
 def test_name():
     assert (plus_one - 'p1')._pd_name == 'p1'

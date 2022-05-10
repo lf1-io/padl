@@ -1,0 +1,16 @@
+from padl import transform
+
+
+b = 1
+
+
+@transform
+class C:
+    def __init__(self, x):
+        ...
+
+    def __call__(self, x):
+        return x
+
+
+_pd_main = C(b)
