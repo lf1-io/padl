@@ -19,7 +19,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="padl.dumptools.inspector" href="padl.dumptools.inspector.html" />
+    <link rel="next" title="padl.dumptools.config_tools" href="padl.dumptools.config_tools.html" />
     <link rel="prev" title="padl.dumptools" href="padl.dumptools.html" /> 
 </head>
 
@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -192,6 +193,21 @@ again.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.ast_utils.dump">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">dump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotate_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_attributes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.dump" title="Permalink to this definition"></a></dt>
+<dd><p>Ast dump with indentation, taken from python 3.9 source.</p>
+<p>Return a formatted dump of the tree in node.  This is mainly useful for
+debugging purposes.  If annotate_fields is true (by default),
+the returned string will show the names and the values for fields.
+If annotate_fields is false, the result string will be more compact by
+omitting unambiguous field names.  Attributes such as line
+numbers and column offsets are not dumped by default.  If this is wanted,
+include_attributes can be set to true.  If indent is a non-negative
+integer or string, then the tree will be pretty-printed with that indent
+level. None (the default) selects the single line representation.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.ast_utils.get_position">
 <span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">get_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.get_position" title="Permalink to this definition"></a></dt>
 <dd><p>Get the position of <em>node</em> in <em>source</em>.</p>
@@ -204,6 +220,12 @@ again.</p>
 <p>Same as <code class="xref py py-func docutils literal notranslate"><span class="pre">ast.get_source_segment()</span></code> in python&gt;=3.8</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.ast_utils.span_to_pos">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.ast_utils.</span></span><span class="sig-name descname"><span class="pre">span_to_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">span</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.ast_utils.span_to_pos" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a string-<em>span</em> (tuple of start- and end- character positions) to a <a class="reference internal" href="#padl.dumptools.ast_utils.Position" title="padl.dumptools.ast_utils.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a>.</p>
+</dd></dl>
+
 </section>
 
 
@@ -211,7 +233,7 @@ again.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="padl.dumptools.html" class="btn btn-neutral float-left" title="padl.dumptools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="padl.dumptools.inspector.html" class="btn btn-neutral float-right" title="padl.dumptools.inspector" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="padl.dumptools.config_tools.html" class="btn btn-neutral float-right" title="padl.dumptools.config_tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

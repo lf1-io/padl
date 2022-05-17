@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -225,25 +226,6 @@ use the calling module.</p></li>
 <dt class="sig sig-object py" id="padl.dumptools.serialize.load_json">
 <span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">load_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.load_json" title="Permalink to this definition"></a></dt>
 <dd><p>Loader for json.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="padl.dumptools.serialize.param">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.serialize.</span></span><span class="sig-name descname"><span class="pre">param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.serialize.param" title="Permalink to this definition"></a></dt>
-<dd><p>Helper function for marking parameters.</p>
-<p>Parameters can be overridden when loading. See also <a class="reference internal" href="padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.load()</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>val</strong> – The default value of the parameter / the value before saving.</p></li>
-<li><p><strong>name</strong> – The name of the parameter.</p></li>
-<li><p><strong>use_default</strong> – If True, will use <em>val</em> when loading without specifying a different value.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><em>val</em></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">

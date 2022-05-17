@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -230,7 +231,7 @@ replace locations.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.sourceget.cut">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.cut" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_indexed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.sourceget.cut" title="Permalink to this definition"></a></dt>
 <dd><p>Cut a string (can be a normal <cite>str</cite>, a <cite>ReplaceString</cite> or a <cite>ReplaceStrings</cite>) and return the
 resulting substring.</p>
 <p>Example:</p>
@@ -261,6 +262,8 @@ replacement at the expected positions.</p>
 <li><p><strong>to_line</strong> – The last line to include.</p></li>
 <li><p><strong>from_col</strong> – The first col on <em>from_line</em> to include.</p></li>
 <li><p><strong>to_col</strong> – The last col on <em>to_line</em> to include.</p></li>
+<li><p><strong>one_indexed</strong> – If <em>True</em>, count lines from 1, else from 0 (useful as many other libraries
+work with one-indexed linenumbers).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -325,8 +328,13 @@ explicit replacements of the original source strings.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.sourceget.replace">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.replace" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.sourceget.</span></span><span class="sig-name descname"><span class="pre">replace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_line</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_indexed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.sourceget.replace" title="Permalink to this definition"></a></dt>
 <dd><p>Replace a substring in <em>string</em> with <em>repl</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>one_indexed</strong> – If <em>True</em>, count lines from 1, else from 0.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

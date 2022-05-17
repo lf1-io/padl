@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -196,7 +197,7 @@ in an AST tree of a source code.</p>
 <cite>_ThingFinder</cite> subclasses to identify if and how the names were created.</p>
 <p>The main function to use is <a class="reference internal" href="#padl.dumptools.symfinder.find" title="padl.dumptools.symfinder.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">find()</span></code></a>, which will find a name in a module or the current ipython
 history.</p>
-<p>This module also defines the <a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a>, which represents the “location” of an python-thing,
+<p>This module also defines the <a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a>, which represents the “location” of a python-thing,
 and the <a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScopedName</span></code></a>, which is the name of a thing, with its scope.</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.NameNotFound">
@@ -206,7 +207,7 @@ and the <a class="reference internal" href="#padl.dumptools.symfinder.ScopedName
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.Scope">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">Scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">def_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Scope" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">Scope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">def_source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Scope" title="Permalink to this definition"></a></dt>
 <dd><p>A scope.</p>
 <p>This determines the “location” of an object. A scope has a module and a list of functions.</p>
 <p>For example, if the following were defined in a module “examplemodule”:</p>
@@ -238,7 +239,7 @@ nested, for example within a function body.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.Scope.from_source">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">def_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calling_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Scope.from_source" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">def_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lineno</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calling_scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Scope.from_source" title="Permalink to this definition"></a></dt>
 <dd><p>Create a <cite>Scope</cite> object from source code.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -294,7 +295,7 @@ the containing scope.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.ScopedName">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">ScopedName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><span class="pre">padl.dumptools.symfinder.Scope</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.ScopedName" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">ScopedName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell_no</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.ScopedName" title="Permalink to this definition"></a></dt>
 <dd><p>A name with a scope and a counter. The “name” is the name of the item, the scope
 is its <a class="reference internal" href="#padl.dumptools.symfinder.Scope" title="padl.dumptools.symfinder.Scope"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scope</span></code></a> and the counter counts the items with the same name, in the same scope,
 from most recent on up.</p>
@@ -319,11 +320,54 @@ most recent “a” in “f” scope).</p></li>
 most recent “a” in its scope).</p></li>
 </ul>
 </div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Name of this ScopedName.</p></li>
+<li><p><strong>scope</strong> – Scope of this ScopedName.</p></li>
+<li><p><strong>pos</strong> – (optional) Maximum position (tuple of line number and col number).</p></li>
+<li><p><strong>cell_no</strong> – (optional) Maximum ipython cell number.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.ScopedName.variants">
+<span class="sig-name descname"><span class="pre">variants</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.ScopedName.variants" title="Permalink to this definition"></a></dt>
+<dd><p>Returns list of splits for input_name.
+Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ScopedName</span><span class="p">(</span><span class="s1">&#39;a.b.c&#39;</span><span class="p">,</span> <span class="s1">&#39;__main__&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">variants</span><span class="p">()</span>
+<span class="go">[&#39;a&#39;, &#39;a.b&#39;, &#39;a.b.c&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.Signature">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">Signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argnames:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_only_argnames:</span> <span class="pre">list</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaults:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwonly_defaults:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vararg:</span> <span class="pre">Union[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">NoneType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwarg:</span> <span class="pre">Union[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">NoneType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Signature" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.Signature.get_call_assignments">
+<span class="sig-name descname"><span class="pre">get_call_assignments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keyword_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">star_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">star_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dump_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.Signature.get_call_assignments" title="Permalink to this definition"></a></dt>
+<dd><p>Given a call signature, return the assignmentes to this function signature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pos_args</strong> – Positional args.</p></li>
+<li><p><strong>keyword_args</strong> – Keyword args.</p></li>
+<li><p><strong>star_args</strong> – Value of <a href="#id1"><span class="problematic" id="id2">*</span></a>args.</p></li>
+<li><p><strong>star_kwargs</strong> – Value of <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs.</p></li>
+<li><p><strong>dump_kwargs</strong> – If <em>True</em>, return kwargs as a dumped string, else as a dict.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find" title="Permalink to this definition"></a></dt>
 <dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
 module <em>module</em>.</p>
 <p>If <em>module</em> is not specified, this uses <cite>__main__</cite>. In that case, the ipython history will
@@ -336,14 +380,14 @@ be searched as well.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Tuple with source code segment and corresponding ast node.</p>
+<dd class="field-even"><p>Tuple with source code segment, corresponding ast node and variable name.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find_in_ipython">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_ipython</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_ipython" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_ipython</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_ipython" title="Permalink to this definition"></a></dt>
 <dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
 ipython history.</p>
 <dl class="field-list simple">
@@ -358,7 +402,7 @@ ipython history.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find_in_module">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_module" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_module" title="Permalink to this definition"></a></dt>
 <dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
 module <em>module</em>.</p>
 <dl class="field-list simple">
@@ -383,25 +427,89 @@ module <em>module</em>.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>scoped_name</strong> – Name (with scope) of the variable to look for.</p>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple as ((source, node), scope, name), where
+* source: String representation of piece of code.
+* node: Ast node for the code.
+* scope: Scope of the code.
+* name: Name of variable (str).</p>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.symfinder.find_in_source">
-<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_partial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_source" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_in_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_in_source" title="Permalink to this definition"></a></dt>
 <dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
 source string <em>source</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>var_name</strong> – Name of the variable to look for.</p></li>
+<li><p><strong>tree</strong> – AST.module.</p></li>
 <li><p><strong>source</strong> – Source code to search.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Tuple with source code segment and corresponding AST node.</p>
+<dd class="field-even"><p>Tuple with (source code segment, corresponding AST node, variable name str).</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.find_scopedname">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_scopedname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_scopedname" title="Permalink to this definition"></a></dt>
+<dd><p>Find the piece of code that assigned a value to the variable with name <em>scoped_name</em> in the
+module <em>module</em>.</p>
+<p>If <em>module</em> is not specified, this uses <cite>__main__</cite>. In that case, the ipython history will
+be searched as well.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>scoped_name</strong> – Name of the variable to look for.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with source code segment, corresponding ast node and variable name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.find_scopedname_in_ipython">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_scopedname_in_ipython</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_scopedname_in_ipython" title="Permalink to this definition"></a></dt>
+<dd><p>Find ScopedName in ipython</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>scoped_name</strong> – ScopedName to find.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with source code segment and corresponding ast node.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.find_scopedname_in_source">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">find_scopedname_in_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><span class="pre">padl.dumptools.symfinder.ScopedName</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_ast.AST</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#padl.dumptools.symfinder.find_scopedname_in_source" title="Permalink to this definition"></a></dt>
+<dd><p>Find the piece of code that assigned a value to the variable with name <em>var_name</em> in the
+source string <em>source</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scoped_name</strong> – ScopedName to look for.</p></li>
+<li><p><strong>tree</strong> – AST.Module to look into for scoped_name.</p></li>
+<li><p><strong>source</strong> – Source code to search.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple with source code segment, corresponding AST node and variable name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.symfinder.format_scoped_name_not_found">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.symfinder.</span></span><span class="sig-name descname"><span class="pre">format_scoped_name_not_found</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scoped_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.symfinder.format_scoped_name_not_found" title="Permalink to this definition"></a></dt>
+<dd><p>Produce a nice error message for the case a <a class="reference internal" href="#padl.dumptools.symfinder.ScopedName" title="padl.dumptools.symfinder.ScopedName"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScopedName</span></code></a> isn’t found.</p>
 </dd></dl>
 
 <dl class="py function">

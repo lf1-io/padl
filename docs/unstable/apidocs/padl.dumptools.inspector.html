@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="padl.dumptools.packagefinder" href="padl.dumptools.packagefinder.html" />
-    <link rel="prev" title="padl.dumptools.ast_utils" href="padl.dumptools.ast_utils.html" /> 
+    <link rel="prev" title="padl.dumptools.config_tools" href="padl.dumptools.config_tools.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -135,6 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -225,7 +226,29 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="padl.dumptools.inspector.caller_module">
 <span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">caller_module</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">module</span></span></span><a class="headerlink" href="#padl.dumptools.inspector.caller_module" title="Permalink to this definition"></a></dt>
-<dd><p>Get the first module of the caller.</p>
+<dd><p>Get the module of the caller.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.inspector.get_my_call_signature">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.inspector.</span></span><span class="sig-name descname"><span class="pre">get_my_call_signature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.inspector.get_my_call_signature" title="Permalink to this definition"></a></dt>
+<dd><p>Call from within a function to get its call signature.</p>
+<p>Returns a tuple of</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>list of positional arguments</p></li>
+<li><p>dict of keyword arguments</p></li>
+<li><p>value of <a href="#id1"><span class="problematic" id="id2">*</span></a>args (as a string)</p></li>
+<li><p>value of <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs (as a string)</p></li>
+</ul>
+</div></blockquote>
+<p>(see also <code class="xref py py-func docutils literal notranslate"><span class="pre">symfinder._get_call_signature()</span></code>).</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="k">return</span> <span class="n">get_my_call_signature</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">*</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="go">([&#39;1&#39;, &#39;2&#39;], {&#39;b&#39;: &#39;&quot;hello&quot;&#39;, &#39;c&#39;: &#39;123&#39;}, &#39;[1, 2]&#39;, &quot;{&#39;1&#39;: 1, &#39;2&#39;: 2}&quot;)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -295,7 +318,7 @@ additionally accounting for some subtleties involving code object - argvals and 
 (in the documentation of which more details can be found).</p>
 <p>Example:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">tracefunc</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
-<span class="gp">... </span>    <span class="k">if</span> <span class="s1">&#39;event&#39;</span> <span class="o">==</span> <span class="s1">&#39;return&#39;</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s1">&#39;return&#39;</span><span class="p">:</span>
 <span class="gp">... </span>        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;returning&#39;</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -321,7 +344,7 @@ additionally accounting for some subtleties involving code object - argvals and 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="padl.dumptools.ast_utils.html" class="btn btn-neutral float-left" title="padl.dumptools.ast_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.dumptools.config_tools.html" class="btn btn-neutral float-left" title="padl.dumptools.config_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="padl.dumptools.packagefinder.html" class="btn btn-neutral float-right" title="padl.dumptools.packagefinder" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

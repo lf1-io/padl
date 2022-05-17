@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>padl.print_utils &mdash; PADL 0.1.0 documentation</title>
+  <title>padl.dumptools.config_tools &mdash; PADL 0.1.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -19,8 +19,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="padl.transforms" href="padl.transforms.html" />
-    <link rel="prev" title="padl.exceptions" href="padl.exceptions.html" /> 
+    <link rel="next" title="padl.dumptools.inspector" href="padl.dumptools.inspector.html" />
+    <link rel="prev" title="padl.dumptools.ast_utils" href="padl.dumptools.ast_utils.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -135,7 +135,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.html"><code class="docutils literal notranslate"><span class="pre">padl</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.ast_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.ast_utils</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="padl.dumptools.config_tools.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.inspector.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.inspector</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.packagefinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.packagefinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.serialize.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.serialize</span></code></a></li>
@@ -143,7 +143,7 @@
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.symfinder.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.symfinder</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.dumptools.var2mod.html"><code class="docutils literal notranslate"><span class="pre">padl.dumptools.var2mod</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.exceptions.html"><code class="docutils literal notranslate"><span class="pre">padl.exceptions</span></code></a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="padl.print_utils.html"><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.transforms</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.util_transforms.html"><code class="docutils literal notranslate"><span class="pre">padl.util_transforms</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="padl.utils.html"><code class="docutils literal notranslate"><span class="pre">padl.utils</span></code></a></li>
@@ -168,7 +168,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="../modules.html">API Documentation</a> &raquo;</li>
-      <li><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code></li>
+      <li><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -177,105 +177,159 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-padl.print_utils">
-<span id="padl-print-utils"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.print_utils</span></code><a class="headerlink" href="#module-padl.print_utils" title="Permalink to this headline"></a></h1>
-<p>Utilities for printing.</p>
+  <section id="module-padl.dumptools.config_tools">
+<span id="padl-dumptools-config-tools"></span><h1><code class="docutils literal notranslate"><span class="pre">padl.dumptools.config_tools</span></code><a class="headerlink" href="#module-padl.dumptools.config_tools" title="Permalink to this headline"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.combine_multi_line_strings">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">combine_multi_line_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.print_utils.combine_multi_line_strings" title="Permalink to this definition"></a></dt>
-<dd><p>Combine multi line strings, where every character takes precedence over space.
-(Image space is transparent and superimposing strings on top of one another.)</p>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.apply_params">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">apply_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parsed_kwargs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.apply_params" title="Permalink to this definition"></a></dt>
+<dd><p>Apply param replacement in <em>source</em>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>strings</strong> – list of multi-line strings</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – The sourcecode in which to replace the params.</p></li>
+<li><p><strong>parsed_kwargs</strong> – The parsed keyword argument with params to replace.</p></li>
+<li><p><strong>scope</strong> – The scope.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.create_arrow">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">create_arrow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_left</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finish_right</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_initial_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_final_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.print_utils.create_arrow" title="Permalink to this definition"></a></dt>
-<dd><p>Create an ascii arrow.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>start_left</strong> – X-coordinate where the last line arrow ends.</p></li>
-<li><p><strong>finish_right</strong> – X-coor where the first line arrow starts.</p></li>
-<li><p><strong>n_initial_rows</strong> – Y-padding.</p></li>
-<li><p><strong>n_final_rows</strong> – Y-padding.</p></li>
-</ul>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.change_param">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">change_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.dumptools.config_tools.change_param" title="Permalink to this definition"></a></dt>
+<dd><p>Change the value of a param with name <em>param_name</em> in <em>source</em> to <em>value</em>.</p>
+<p>Note that <em>value</em> is the string representation of the value.</p>
 <p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌──────┘
-│
-▼
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;x = param(&#39;myparam&#39;, 1)&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">change_param</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="s2">&quot;myparam&quot;</span><span class="p">,</span> <span class="s2">&quot;100&quot;</span><span class="p">)</span>
+<span class="go">&quot;x = param(&#39;myparam&#39;, 100)&quot;</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.create_reverse_arrow">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">create_reverse_arrow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_left</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finish_right</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_initial_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_final_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.print_utils.create_reverse_arrow" title="Permalink to this definition"></a></dt>
-<dd><p>Create an ascii arrow.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>start_left</strong> – X-coordinate where the last line arrow ends.</p></li>
-<li><p><strong>finish_right</strong> – X-coor where the first line arrow starts.</p></li>
-<li><p><strong>n_initial_rows</strong> – Y-padding.</p></li>
-<li><p><strong>n_final_rows</strong> – Y-padding.</p></li>
-</ul>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.change_params">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">change_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.change_params" title="Permalink to this definition"></a></dt>
+<dd><p>Change the value of params with name <em>param_name</em> in <em>source</em> to values provided as <em>kwargs</em>.</p>
+<p>Note that values must be the string representation of the values.</p>
 <p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌──────────┘     │
-┌────────────────┘
-│
-▼
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="s2">&quot;x = params(&#39;myparam&#39;, a=1, b=2)&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">change_params</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="s2">&quot;myparam&quot;</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="s2">&quot;100&quot;</span><span class="p">)</span>
+<span class="go">&quot;x = params(&#39;myparam&#39;, a=100, b=2)&quot;</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.format_argument">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">format_argument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#padl.print_utils.format_argument" title="Permalink to this definition"></a></dt>
-<dd><p>Format an argument value for printing.</p>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.extract_param_s">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">extract_param_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#padl.dumptools.config_tools.extract_param_s" title="Permalink to this definition"></a></dt>
+<dd><p>Extract <a class="reference internal" href="#padl.dumptools.config_tools.params" title="padl.dumptools.config_tools.params"><code class="xref py py-func docutils literal notranslate"><span class="pre">params()</span></code></a> calls from <em>source</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;a = param(&#39;param_a&#39;, x, &#39;a parameter&#39;)</span>
+<span class="gp">... </span><span class="s1">b = param(&#39;b&#39;, 2)&#39;&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">extract_param_s</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>  
+<span class="go">{&#39;param_a&#39;: {&#39;name&#39;: &quot;&#39;param_a&#39;&quot;, &#39;val&#39;: &#39;x&#39;, &#39;description&#39;: &quot;&#39;a parameter&#39;&quot;,</span>
+<span class="go">             &#39;use_default&#39;: &#39;True&#39;,</span>
+<span class="go">             &#39;position&#39;: Position(lineno=1, end_lineno=1, col_offset=21, end_col_offset=22)},</span>
+<span class="go"> &#39;b&#39;: {&#39;name&#39;: &quot;&#39;b&#39;&quot;, &#39;val&#39;: &#39;2&#39;, &#39;description&#39;: &#39;None&#39;, &#39;use_default&#39;: &#39;True&#39;,</span>
+<span class="go">       &#39;position&#39;: Position(lineno=2, end_lineno=2, col_offset=15, end_col_offset=16)}}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>source</strong> – The source code from which to extract the <a class="reference internal" href="#padl.dumptools.config_tools.param" title="padl.dumptools.config_tools.param"><code class="xref py py-func docutils literal notranslate"><span class="pre">param()</span></code></a>-calls.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dict mapping <a class="reference internal" href="#padl.dumptools.config_tools.param" title="padl.dumptools.config_tools.param"><code class="xref py py-func docutils literal notranslate"><span class="pre">param()</span></code></a> arguments (<em>name</em>, <em>val</em>, <em>description</em>, <em>use_default</em>)
+to their string values. Also adds a “position” entry with the position of the parameter’s
+value in the code.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.make_bold">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">make_bold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.print_utils.make_bold" title="Permalink to this definition"></a></dt>
-<dd><p>Make input bold</p>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.extract_params_s">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">extract_params_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.extract_params_s" title="Permalink to this definition"></a></dt>
+<dd><p>Extract <a class="reference internal" href="#padl.dumptools.config_tools.params" title="padl.dumptools.config_tools.params"><code class="xref py py-func docutils literal notranslate"><span class="pre">params()</span></code></a> calls from <em>source</em>.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;x = X(**params(&#39;params_x&#39;, a=1, b=2))&#39;&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">extract_params_s</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>  
+<span class="go">{&#39;params_x&#39;:</span>
+<span class="go">    {&#39;name&#39;: &quot;&#39;params_x&#39;&quot;,</span>
+<span class="go">     &#39;kwargs&#39;: {&#39;a&#39;: &#39;1&#39;, &#39;b&#39;: &#39;2&#39;},</span>
+<span class="go">     &#39;use_defaults&#39;: &#39;True&#39;,</span>
+<span class="go">     &#39;allow_free&#39;: &#39;False&#39;,</span>
+<span class="go">     &#39;positions&#39;: {&#39;a&#39;: Position(lineno=1, end_lineno=1, col_offset=29, end_col_offset=30),</span>
+<span class="go">                   &#39;b&#39;: Position(lineno=1, end_lineno=1, col_offset=34, end_col_offset=35)},</span>
+<span class="go">     &#39;end_position&#39;: Position(lineno=1, end_lineno=1, col_offset=35, end_col_offset=35)}}</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>source</strong> – The source code from which to extract the <a class="reference internal" href="#padl.dumptools.config_tools.params" title="padl.dumptools.config_tools.params"><code class="xref py py-func docutils literal notranslate"><span class="pre">params()</span></code></a>-calls.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dict mapping <a class="reference internal" href="#padl.dumptools.config_tools.params" title="padl.dumptools.config_tools.params"><code class="xref py py-func docutils literal notranslate"><span class="pre">params()</span></code></a> arguments (<em>name</em>, <em>use_defaults</em> and <em>allow_free</em>)
+to their string values. Also adds a “kwargs” entry and a “positions” entry with the position
+of the parameter’s values in the code.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.param">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.param" title="Permalink to this definition"></a></dt>
+<dd><p>Helper function for marking parameters.</p>
+<p>Parameters can be overridden when loading. See also <a class="reference internal" href="padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.load()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>disable</strong> – If <em>True</em>, don’t apply formatting.</p></li>
-<li><p><strong>x</strong> – string input</p></li>
+<li><p><strong>name</strong> – The name of the parameter.</p></li>
+<li><p><strong>val</strong> – The default value of the parameter / the value before saving.</p></li>
+<li><p><strong>description</strong> – Description of the parameter.</p></li>
+<li><p><strong>use_default</strong> – If True, will use <em>val</em> when loading without specifying a different value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><em>val</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.params">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_free</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.params" title="Permalink to this definition"></a></dt>
+<dd><p>Helper function for marking parameters.</p>
+<p>Parameters can be overridden when loading. See also <a class="reference internal" href="padl.html#padl.load" title="padl.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">padl.load()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The name of the parameter.</p></li>
+<li><p><strong>description</strong> – Description of the parameter.</p></li>
+<li><p><strong>use_defaults</strong> – If True, use passed keyword args when loading without specifying
+different values.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.make_green">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">make_green</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.print_utils.make_green" title="Permalink to this definition"></a></dt>
-<dd><p>Make input green</p>
+<dt class="sig sig-object py" id="padl.dumptools.config_tools.parse_dict">
+<span class="sig-prename descclassname"><span class="pre">padl.dumptools.config_tools.</span></span><span class="sig-name descname"><span class="pre">parse_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#padl.dumptools.config_tools.parse_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Parse a string containing a python dict.</p>
+<p>Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_dict</span><span class="p">(</span><span class="s2">&quot;{&#39;a&#39;: 1, &#39;b&#39;: &#39;2&#39;, &#39;c&#39;: random.rand(1000)}&quot;</span><span class="p">)</span>
+<span class="go">{&#39;a&#39;: &#39;1&#39;, &#39;b&#39;: &quot;&#39;2&#39;&quot;, &#39;c&#39;: &#39;random.rand(1000)&#39;}</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>disable</strong> – If <em>True</em>, don’t apply formatting.</p></li>
-<li><p><strong>x</strong> – string input</p></li>
-</ul>
+<dd class="field-odd"><p><strong>source</strong> – A string containing a python dict.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The dict. Note that the values are strings of the values.</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="padl.print_utils.visible_len">
-<span class="sig-prename descclassname"><span class="pre">padl.print_utils.</span></span><span class="sig-name descname"><span class="pre">visible_len</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#padl.print_utils.visible_len" title="Permalink to this definition"></a></dt>
-<dd><p>The number of visible characters in a string.</p>
-<p>Use this to get the length of strings that contain escape sequences.</p>
 </dd></dl>
 
 </section>
@@ -284,8 +338,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="padl.exceptions.html" class="btn btn-neutral float-left" title="padl.exceptions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="padl.transforms.html" class="btn btn-neutral float-right" title="padl.transforms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="padl.dumptools.ast_utils.html" class="btn btn-neutral float-left" title="padl.dumptools.ast_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="padl.dumptools.inspector.html" class="btn btn-neutral float-right" title="padl.dumptools.inspector" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
