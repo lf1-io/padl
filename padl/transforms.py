@@ -2603,7 +2603,7 @@ def run(path, **kwargs):
         _, parsed_kwargs, _, _ = inspector.get_my_call_signature()
     else:
         parsed_kwargs = {}
-    run_noparse(path, parsed_kwargs)
+    return run_noparse(path, parsed_kwargs)
 
 
 def run_noparse(path, parsed_kwargs):
@@ -2641,6 +2641,7 @@ def run_noparse(path, parsed_kwargs):
     code = compile(source, module_path, 'exec')
     # pylint: disable=exec-used
     exec(code, module.__dict__)
+    return module
 
 
 def load(path, **kwargs):

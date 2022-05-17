@@ -1,7 +1,7 @@
 from padl.wrap import transform
 from padl.transforms import (
     Batchify, Unbatchify, identity, Identity, group, load, save, fulldump,
-    importdump
+    importdump, run
 )
 from padl.dumptools.serialize import value
 from padl.dumptools.config_tools import param, params
