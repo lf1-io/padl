@@ -50,8 +50,10 @@ class CallInfo:
             caller_frameinfo = outer_caller_frameinfo(calling_module_name)
         elif origin == 'here':
             caller_frameinfo = inspect.stack()[1]
-        self.function = caller_frameinfo.function
-        self.scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
+
+        self.function: str = caller_frameinfo.function
+
+        self.scope: symfinder.Scope = self._determine_scope(caller_frameinfo, drop_n, ignore_scope)
 
     def _determine_scope(self, caller_frameinfo: inspect.FrameInfo,
                          drop_n: int, ignore_scope: bool) -> symfinder.Scope:
@@ -59,7 +61,7 @@ class CallInfo:
         module = _module(caller_frameinfo.frame)
 
         if self.function == '<module>' or ignore_scope:
-            return symfinder.Scope.toplevel(module)
+            return symfinder.Scope(module, inspect.getsource(caller_frameinfo.frame), [])
 
         return _get_scope_from_frame(caller_frameinfo.frame, drop_n)
 
@@ -79,16 +81,18 @@ def _get_scope_from_frame(frame, drop_n):
     # don't dive deeper for excluded modules
     if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
         return symfinder.Scope.toplevel(module)
-    # don't dive deeper after
+    # don't dive deeper if f_back is None
+    if frame.f_back is None:
+        return symfinder.Scope.toplevel(module)
+    # don't dive deeper after main
     if module.__name__ == '__main__' and _module(frame.f_back) != module:
         return symfinder.Scope.toplevel(module)
     # don't dive deeper if not a call
     if frame.f_code.co_name == '<module>':
-
         return symfinder.Scope.toplevel(module)
 
     try:
-        call_source = get_segment_from_frame(frame.f_back, 'call')
+        call_source, locs = get_segment_from_frame(frame.f_back, 'call', return_locs=True)
     except (RuntimeError, FileNotFoundError, AttributeError, OSError):
         return symfinder.Scope.toplevel(module)
     try:
@@ -98,7 +102,7 @@ def _get_scope_from_frame(frame, drop_n):
     calling_scope = _get_scope_from_frame(frame.f_back, 0)
     scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
                                         call_source, module, drop_n,
-                                        calling_scope)
+                                        calling_scope, frame, locs)
     assert len(scope) <= 1, 'scope longer than 1 currently not supported'
     return scope
 
@@ -122,7 +126,7 @@ def trace_this(tracefunc: Callable, frame: Optional[types.FrameType] = None, *ar
     Example:
 
     >>> def tracefunc(frame, event, arg):
-    ...     if 'event' == 'return':
+    ...     if event == 'return':
     ...         print('returning', arg)
 
     >>> def myfunction():
@@ -174,7 +178,6 @@ def _instructions_in_name(x) -> list:
 
 
 def _instructions_in_getitem(x) -> list:
-    """Get all instructions up to last CALL FUNCTION. """
     instructions = list(dis.get_instructions(x))
     return instructions[:-1]
 
@@ -211,7 +214,7 @@ def outer_caller_frameinfo(module_name: str) -> inspect.FrameInfo:
 
 
 def caller_module() -> types.ModuleType:
-    """Get the first module of the caller. """
+    """Get the module of the caller. """
     calling_module_name = inspect.currentframe().f_back.f_globals['__name__']
     return _module(outer_caller_frameinfo(calling_module_name).frame)
 
@@ -240,6 +243,7 @@ def instructions_are_the_same(instr: dis.Instruction, target_instr: dis.Instruct
         argval = frame.f_locals[target_instr.argval]
     else:
         argval = target_instr.argval
+
     # if the instruction's argval contains code objects, compare the code
     instr_argval = getattr(instr.argval, 'co_code', instr.argval)
     target_argval = getattr(target_instr.argval, 'co_code', target_instr.argval)
@@ -357,3 +361,26 @@ def get_statement_at_line(source: str, lineno: int, checker):
             if res is not None:
                 return res
     raise RuntimeError('Statement not found.')
+
+
+def get_my_call_signature():
+    """Call from within a function to get its call signature.
+
+    Returns a tuple of
+
+        - list of positional arguments
+        - dict of keyword arguments
+        - value of *args (as a string)
+        - value of **kwargs (as a string)
+
+    (see also :func:`symfinder._get_call_signature`).
+
+    Example:
+
+    >>> def f(a, *args, b=1, **kwargs): return get_my_call_signature()
+    >>> f(1, 2, *[1, 2], b="hello", c=123, **{'1': 1, '2': 2})
+    (['1', '2'], {'b': '"hello"', 'c': '123'}, '[1, 2]', "{'1': 1, '2': 2}")
+    """
+    calling_frame = inspect.currentframe().f_back.f_back
+    call_source = get_segment_from_frame(calling_frame, 'call')
+    return symfinder._get_call_signature(call_source)

@@ -16,6 +16,8 @@ import linecache
 from types import ModuleType
 from typing import List
 
+from padl.dumptools import ast_utils
+
 
 replace_cache = {}
 
@@ -44,7 +46,7 @@ def get_source(filename: str, use_replace_cache: bool = True) -> str:
         return ''.join(linecache.cache[filename][2])
 
     # normal module
-    with open(filename) as f:
+    with open(filename, encoding='utf-8') as f:
         return f.read()
 
 
@@ -86,6 +88,7 @@ def put_into_cache(key, source: str, repl: str, *loc):
     :param *loc: The location where *repl* is to be inserted (give as *from_line*, *to_line*,
         *from_col*, *to_col*).
     """
+    ast_utils.AST_NODE_CACHE.clear()
     val = ReplaceString(source, repl, *loc)
     try:
         replace_cache[key] = ReplaceStrings([val] + replace_cache[key].rstrings)
@@ -98,7 +101,8 @@ def original(string: str) -> str:
     return getattr(string, 'original', string)
 
 
-def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int) -> str:
+def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int,
+        one_indexed: bool = False) -> str:
     """Cut a string (can be a normal `str`, a `ReplaceString` or a `ReplaceStrings`) and return the
     resulting substring.
 
@@ -127,8 +131,13 @@ def cut(string: str, from_line: int, to_line: int, from_col: int, to_col: int) -
     :param to_line: The last line to include.
     :param from_col: The first col on *from_line* to include.
     :param to_col: The last col on *to_line* to include.
+    :param one_indexed: If *True*, count lines from 1, else from 0 (useful as many other libraries
+        work with one-indexed linenumbers).
     :returns: The cut-out string.
     """
+    if one_indexed:
+        from_line -= 1
+        to_line -= 1
     try:
         return string.cut(from_line, to_line, from_col, to_col)
     except AttributeError:
@@ -273,8 +282,15 @@ def _cut_string(string: str, from_line: int, to_line: int, from_col: int, to_col
     return '\n'.join(lines)
 
 
-def replace(string, repl, from_line, to_line, from_col, to_col):
-    """Replace a substring in *string* with *repl*. """
+def replace(string, repl, from_line, to_line, from_col, to_col, one_indexed=False):
+    """Replace a substring in *string* with *repl*.
+
+    :param one_indexed: If *True*, count lines from 1, else from 0.
+    """
+    if one_indexed:
+        from_line -= 1
+        to_line -= 1
+
     if from_line < 0 and to_line < 0:
         return string
 

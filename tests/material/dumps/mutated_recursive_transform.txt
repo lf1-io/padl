@@ -1,0 +1,12 @@
+from padl import transform
+
+
+@transform
+def mutated_recursive_transform(arg):
+    if arg == 0:
+        return arg
+    return 1 + mutated_recursive_transform(arg - 1)
+
+
+mutated_recursive_transform = mutated_recursive_transform.pd_to('cpu')
+_pd_main = mutated_recursive_transform

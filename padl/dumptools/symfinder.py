@@ -19,17 +19,18 @@ Finding names in code then corresponds to building the AST tree of the code and 
 The main function to use is :func:`find`, which will find a name in a module or the current ipython
 history.
 
-This module also defines the :class:`Scope`, which represents the "location" of an python-thing,
+This module also defines the :class:`Scope`, which represents the "location" of a python-thing,
 and the :class:`ScopedName`, which is the name of a thing, with its scope.
 """
 
 import ast
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, field
 from math import inf
 import sys
 from textwrap import dedent
 from types import ModuleType
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from padl.dumptools import ast_utils, sourceget
 
@@ -368,74 +369,130 @@ class _SetAttribute(ast.NodeVisitor):
         super().generic_visit(node)
 
 
-def _get_call_assignments(args, source, values, keywords):
+@dataclass
+class Signature:
+    argnames: list = field(default_factory=lambda: [])
+    pos_only_argnames: list = field(default_factory=lambda: [])
+    defaults: dict = field(default_factory=lambda: {})
+    kwonly_defaults: dict = field(default_factory=lambda: {})
+    vararg: Optional[str] = None
+    kwarg: Optional[str] = None
+
+    @property
+    def all_argnames(self):
+        return self.pos_only_argnames + self.argnames
+
+    def get_call_assignments(self, pos_args, keyword_args, star_args=None, star_kwargs=None,
+                             dump_kwargs=True):
+        """Given a call signature, return the assignmentes to this function signature.
+
+        :param pos_args: Positional args.
+        :param keyword_args: Keyword args.
+        :param star_args: Value of *args.
+        :param star_kwargs: Value of **kwargs.
+        :param dump_kwargs: If *True*, return kwargs as a dumped string, else as a dict.
+        """
+        res = {}
+        for name, val in self.kwonly_defaults.items():
+            try:
+                res[name] = keyword_args[name]
+            except KeyError:
+                res[name] = val
+
+        for name, val in zip(self.all_argnames, pos_args):
+            res[name] = val
+
+        if self.vararg is not None:
+            res[self.vararg] = '[' + ', '.join(pos_args[len(self.all_argnames):]) + ']'
+
+        kwargs = {}
+        for name, val in keyword_args.items():
+            if name in res:
+                continue
+            if name in self.argnames:
+                res[name] = val
+            else:
+                kwargs[name] = val
+
+        if kwargs and not set(kwargs) == {None}:
+            assert self.kwarg is not None, 'Extra keyword args given, but no **kwarg present.'
+            if dump_kwargs:
+                res[self.kwarg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
+            else:
+                res[self.kwarg] = kwargs
+
+        for name, val in self.defaults.items():
+            if name not in res:
+                if star_kwargs is not None:
+                    res[name] = f"{star_kwargs}.get('{name}', {val})"
+                else:
+                    res[name] = val
+
+        return res
+
+
+def _parse_def_args(args, source):
     argnames = [x.arg for x in args.args]
+
     try:
         pos_only_argnames = [x.arg for x in args.posonlyargs]
     except AttributeError:
         pos_only_argnames = []
-    all_argnames = pos_only_argnames + argnames
+
     defaults = {
         name: ast_utils.get_source_segment(source, val)
         for name, val in zip(argnames[::-1], args.defaults[::-1])
     }
+
     kwonly_defaults = {
         ast_utils.get_source_segment(source, name): ast_utils.get_source_segment(source, val)
         for name, val in zip(args.kwonlyargs, args.kw_defaults)
         if val is not None
     }
-    res = {}
-    for name, val in kwonly_defaults.items():
-        try:
-            res[name] = keywords[name]
-        except KeyError:
-            res[name] = val
-
-    for name, val in zip(all_argnames, values):
-        res[name] = val
 
     if args.vararg is not None:
-        res[args.vararg.arg] = '[' + ', '.join(values[len(all_argnames):]) + ']'
+        vararg = args.vararg.arg
+    else:
+        vararg = None
 
-    kwargs = {}
-    for name, val in keywords.items():
-        if name in res:
-            continue
-        if name in argnames:
-            res[name] = val
-        else:
-            kwargs[name] = val
+    if args.kwarg is not None:
+        kwarg = args.kwarg.arg
+    else:
+        kwarg = None
 
-    if kwargs and not set(kwargs) == {None}:
-        assert args.kwarg is not None, 'Keyword args given, but no **kwarg present.'
-        res[args.kwarg.arg] = '{' + ', '.join(f"'{k}': {v}" for k, v in kwargs.items()) + '}'
-
-    for name, val in defaults.items():
-        if name not in res:
-            res[name] = val
-
-    return res
+    return Signature(argnames, pos_only_argnames, defaults, kwonly_defaults, vararg, kwarg)
 
 
 def _get_call_signature(source: str):
     """Get the call signature of a string containing a call.
 
-    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)")
-    :returns: A tuple with a list of positional arguments and a list of keyword arguments.
+    :param source: String containing a call (e.g. "a(2, b, 'f', c=100)").
+    :returns: A tuple with
+        - a list of positional arguments
+        - a list of keyword arguments
+        - the value of *args, if present, else None
+        - the value of *kwargs, if present, else None
 
     Example:
 
-    >>> _get_call_signature("a(2, b, 'f', c=100)")
-    (['2', 'b', "'f'"], {'c': '100'})
+    >>> _get_call_signature("a(2, b, 'f', c=100, *[1, 2], **kwargs)")
+    (['2', 'b', "'f'"], {'c': '100'}, '[1, 2]', 'kwargs')
     """
     call = ast.parse(source).body[0].value
     if not isinstance(call, ast.Call):
         return [], {}
-    args = [ast_utils.get_source_segment(source, arg) for arg in call.args]
+    star_args = None
+    args = []
+    for arg in call.args:
+        if isinstance(arg, ast.Starred):
+            star_args = ast_utils.get_source_segment(source, arg.value)
+            continue
+        args.append(ast_utils.get_source_segment(source, arg))
     kwargs = {
         kw.arg: ast_utils.get_source_segment(source, kw.value) for kw in call.keywords
     }
-    return args, kwargs
+    star_kwargs = kwargs.pop(None, None)
+    return args, kwargs, star_args, star_kwargs
 
 
 class Scope:
@@ -461,28 +518,38 @@ class Scope:
 
     It contains the module, the source string and a "scopelist".
     """
+    _counts = defaultdict(set)
 
     def __init__(self, module: ModuleType, def_source: str,
-                 scopelist: List[Tuple[str, ast.AST]]):
+                 scopelist: List[Tuple[str, ast.AST]], id_=None):
         self.module = module
         self.def_source = def_source
         self.scopelist = scopelist
+        self.id_ = id_
+        self._counts[self.dot_string()].add(id_)
 
     @classmethod
     def toplevel(cls, module):
         """Create a top-level scope (i.e. module level, no nesting). """
         if isinstance(module, str):
             module = sys.modules[module]
-        return cls(module, '', [])
+        try:
+            source = sourceget.get_module_source(module)
+        except TypeError:
+            source = ''
+        return cls(module, source, [])
 
     @classmethod
     def empty(cls):
         """Create the empty scope (a scope with no module and no nesting). """
         return cls(None, '', [])
 
+    def __deepcopy__(self, memo):
+        return Scope(self.module, self.def_source, self.scopelist, self.id_)
+
     @classmethod
     def from_source(cls, def_source, lineno, call_source, module=None, drop_n=0,
-                    calling_scope=None):
+                    calling_scope=None, frame=None, locs=None):
         """Create a `Scope` object from source code.
 
         :param def_source: The source string containing the scope.
@@ -512,9 +579,10 @@ class Scope:
         # b = 2
         # c = 3
         # ...
-        values, keywords = _get_call_signature(call_source)
+        pos_args, keyword_args, star_args, star_kwargs = _get_call_signature(call_source)
         args = function_defs[-1].args
-        assignments = _get_call_assignments(args, def_source, values, keywords)
+        assignments = _parse_def_args(args, def_source).get_call_assignments(pos_args, keyword_args,
+                                                                             star_args, star_kwargs)
         call_assignments = []
         for k, v in assignments.items():
             src = f'{k} = {v}'
@@ -533,7 +601,9 @@ class Scope:
         # add call assignments to inner scope
         scopelist[0][1].body = call_assignments + scopelist[0][1].body
 
-        return cls(module, def_source, scopelist)
+        id_ = str((frame.f_code.co_filename, locs))
+
+        return cls(module, def_source, scopelist, id_)
 
     def from_level(self, i: int) -> 'Scope':
         """Return a new scope starting at level *i* of the scope hierarchy. """
@@ -551,6 +621,9 @@ class Scope:
         """*True* iff the scope is global. """
         return len(self.scopelist) == 0
 
+    def is_empty(self) -> bool:
+        return self.module is None
+
     @property
     def module_name(self) -> str:
         """The name of the scope's module. """
@@ -563,10 +636,22 @@ class Scope:
         the containing scope. """
         if not self.scopelist and self.module_name in ('', '__main__'):
             return varname
-        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}_{varname}'
+        return f'{"_".join(x[0] for x in [(self.module_name.replace(".", "_"), 0)] + self.scopelist)}{self._formatted_index()}_{varname}'
+
+    def index(self):
+        return sorted(self._counts[self.dot_string()]).index(self.id_)
+
+    def _formatted_index(self):
+        index = self.index()
+        if index == 0:
+            return ''
+        return f'_{self.index()}'
+
+    def dot_string(self):
+        return ".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])
 
     def __repr__(self):
-        return f'Scope[{".".join(x[0] for x in [(self.module_name, 0)] + self.scopelist[::-1])}]'
+        return f'Scope[{self.dot_string()}{self._formatted_index()}]'
 
     def __len__(self):
         return len(self.scopelist)
@@ -577,8 +662,10 @@ class Scope:
     def __hash__(self):
         return hash(str(self))
 
+    def d_name(self, name, pos=None, cell_no=None):
+        return ScopedName(name, self, pos, cell_no)
 
-@dataclass
+
 class ScopedName:
     """A name with a scope and a counter. The "name" is the name of the item, the scope
     is its :class:`Scope` and the counter counts the items with the same name, in the same scope,
@@ -602,16 +689,71 @@ class ScopedName:
         - the function name "f", module level scope, `n = 0`
         - the "a" of `a = 1`, with `name = a`, module-level scope and `n = 1` (as it's the second
           most recent "a" in its scope).
+
+    :param name: Name of this ScopedName.
+    :param scope: Scope of this ScopedName.
+    :param pos: (optional) Maximum position (tuple of line number and col number).
+    :param cell_no: (optional) Maximum ipython cell number.
     """
-    name: str
-    scope: Scope
-    n: int = 0
+
+    def __init__(self, name, scope=None, pos=None, cell_no=None):
+        self.name = name
+        if scope is None:
+            scope = Scope.empty()
+        self.scope = scope
+        self.pos = pos
+        self.cell_no = cell_no
 
     def __hash__(self):
-        return hash((self.name, self.scope, self.n))
+        return hash((self.name, self.scope, self.pos))
 
     def __eq__(self, other):
-        return (self.name, self.scope, self.n) == (other.name, other.scope, other.n)
+        return (
+            self.scope == other.scope
+            and self.name == other.name
+            and self.pos == other.pos
+        )
+
+    @property
+    def toplevel_name(self):
+        return self.name.split('.', 1)[0]
+
+    def variants(self):
+        """Returns list of splits for input_name.
+        Example:
+
+        >>> ScopedName('a.b.c', '__main__').variants()
+        ['a', 'a.b', 'a.b.c']
+        """
+        splits = self.name.split('.')
+        out = []
+        for ind, split in enumerate(splits):
+            out.append('.'.join(splits[:ind] + [split]))
+        return out
+
+    def update_scope(self, new_scope):
+        self.scope = new_scope
+        return self
+
+    def copy(self):
+        return ScopedName(self.name, self.scope, self.pos, self.cell_no)
+
+    def __repr__(self):
+        return (
+            f"ScopedName(name='{self.name}', scope={self.scope}, pos={self.pos}, "
+            f"cell_no={self.cell_no})"
+        )
+
+
+def statements_before(source, statements, pos):
+    if pos is None:
+        return statements
+    line, col = pos
+    for i, node in enumerate(statements):
+        pos = ast_utils.get_position(source, node)
+        if pos.lineno < line or (pos.lineno == line and pos.col_offset < col):
+            return statements[i:]
+    return []
 
 
 def find_in_scope(scoped_name: ScopedName):
@@ -619,32 +761,39 @@ def find_in_scope(scoped_name: ScopedName):
     *scoped_name.name* in the scope *scoped_name.scope*.
 
     :param scoped_name: Name (with scope) of the variable to look for.
+    :return: Tuple as ((source, node), scope, name), where
+        * source: String representation of piece of code.
+        * node: Ast node for the code.
+        * scope: Scope of the code.
+        * name: Name of variable (str).
+
     """
     scope = scoped_name.scope
-    i = scoped_name.n
+    searched_name = scoped_name.copy()
     for _scopename, tree in scope.scopelist:
         try:
-            res = find_in_source(scoped_name.name, scoped_name.scope.def_source, tree=tree, i=i,
-                                 return_partial=True)
-            if isinstance(res, int):
-                i = res
-                continue
+            res = find_scopedname_in_source(searched_name, source=searched_name.scope.def_source,
+                                            tree=tree)
             source, node, name = res
             if getattr(node, '_globalscope', False):
-                scope = Scope.empty()
-
-            return (source, node), scope, name
+                name.scope = Scope.empty()
+            else:
+                name.scope = scope
+            return (source, node), name
         except NameNotFound:
             scope = scope.up()
+            searched_name.pos = None
+            searched_name.cell_no = None
             continue
     if scope.module is None:
-        raise NameNotFound(f'{scoped_name.name} not found in function hierarchy.')
-    source, node, name = find(scoped_name.name, scope.module, i)
+        raise NameNotFound(format_scoped_name_not_found(scoped_name))
+    source, node, name = find_scopedname(searched_name)
     if getattr(node, '_globalscope', False):
         scope = Scope.empty()
     else:
         scope = getattr(node, '_scope', scope.global_())
-    return (source, node), scope, name
+    name.scope = scope
+    return (source, node), name
 
 
 def replace_star_imports(tree: ast.Module):
@@ -668,35 +817,58 @@ def replace_star_imports(tree: ast.Module):
                 node.names = [ast.alias(name=name, asname=None) for name in names]
 
 
-def find_in_source(var_name: str, source: str, tree=None, i: int = 0,
-                   return_partial=False) -> Tuple[str, ast.AST]:
+def find_scopedname_in_source(scoped_name: ScopedName, source, tree=None) -> Tuple[str, ast.AST, str]:
+    """Find the piece of code that assigned a value to the variable with name *var_name* in the
+    source string *source*.
+
+    :param scoped_name: ScopedName to look for.
+    :param tree: AST.Module to look into for scoped_name.
+    :param source: Source code to search.
+    :returns: Tuple with source code segment, corresponding AST node and variable name.
+    """
+    if tree is None:
+        tree = ast.parse(source)
+
+    replace_star_imports(tree)
+    finder_clss = _ThingFinder.__subclasses__()
+
+    for statement in statements_before(source, tree.body[::-1], scoped_name.pos):
+        for var_name in scoped_name.variants():
+            for finder_cls in finder_clss:
+                finder = finder_cls(source, var_name)
+                finder.visit(statement)
+                if finder.found_something():
+                    node = finder.node()
+                    pos = ast_utils.get_position(source, node)
+                    return (
+                        finder.deparse(),
+                        node,
+                        ScopedName(var_name, scoped_name.scope, (pos.lineno, pos.col_offset))
+                    )
+    raise NameNotFound(
+        format_scoped_name_not_found(scoped_name)
+    )
+
+
+def find_in_source(var_name: str, source: str, tree=None) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     source string *source*.
 
     :param var_name: Name of the variable to look for.
+    :param tree: AST.module.
     :param source: Source code to search.
-    :returns: Tuple with source code segment and corresponding AST node.
+    :returns: Tuple with (source code segment, corresponding AST node, variable name str).
     """
-    if tree is None:
-        tree = ast.parse(source)
-    replace_star_imports(tree)
-    finder_clss = _ThingFinder.__subclasses__()
-    for statement in tree.body[::-1]:
-        for finder_cls in finder_clss:
-            finder = finder_cls(source, var_name)
-            finder.visit(statement)
-            if finder.found_something():
-                if i == 0:
-                    return finder.deparse(), finder.node(), var_name
-                i -= 1
-    if '.' in var_name:
-        return find_in_source(var_name.rsplit('.', 1)[0], source, tree, i, return_partial)
-    if return_partial:
-        return i
-    raise NameNotFound(f'{var_name} not found.')
+    scoped_name = ScopedName(var_name, None)
+    return find_scopedname_in_source(scoped_name, source, tree)
 
 
-def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
+def find_scopedname_in_module(scoped_name: ScopedName, module):
+    source = sourceget.get_module_source(module)
+    return find_scopedname_in_source(scoped_name, source)
+
+
+def find_in_module(var_name: str, module) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -704,8 +876,8 @@ def find_in_module(var_name: str, module, i: int = 0) -> Tuple[str, ast.AST]:
     :param module: Module to search.
     :returns: Tuple with source code segment and corresponding ast node.
     """
-    source = sourceget.get_module_source(module)
-    return find_in_source(var_name, source, i=i)
+    scoped_name = ScopedName(var_name, None)
+    return find_scopedname_in_module(scoped_name, module)
 
 
 def _find_branch(tree, lineno, source):
@@ -736,30 +908,68 @@ def _find_branch(tree, lineno, source):
     return [tree]
 
 
-def find_in_ipython(var_name: str, i: int = 0) -> Tuple[str, ast.AST]:
+def find_scopedname_in_ipython(scoped_name: ScopedName) ->Tuple[str, ast.AST, str]:
+    """Find ScopedName in ipython
+
+    :param scoped_name: ScopedName to find.
+    :returns: Tuple with source code segment and corresponding ast node.
+    """
+    source = node = name = None
+    cells = list(enumerate(sourceget._ipython_history()))
+    if scoped_name.cell_no is None:
+        start = len(cells) - 1
+    else:
+        start = scoped_name.cell_no
+    for i, cell in cells[start::-1]:
+        if i == start:
+            name_to_find = scoped_name
+        else:
+            name_to_find = scoped_name.copy()
+            name_to_find.pos = None
+        try:
+            source, node, name = find_scopedname_in_source(name_to_find, cell)
+            name.cell_no = i
+        except (NameNotFound, SyntaxError):
+            continue
+        break
+    if source is None:
+        raise NameNotFound(format_scoped_name_not_found(scoped_name))
+    return source, node, name
+
+
+def find_in_ipython(var_name: str) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     ipython history.
 
     :param var_name: Name of the variable to look for.
     :returns: Tuple with source code segment and the corresponding ast node.
     """
-    source = node = None
-    for cell in sourceget._ipython_history()[::-1]:
-        try:
-            res = find_in_source(var_name, cell, i=i, return_partial=True)
-            if isinstance(res, int):
-                i = res
-                continue
-            source, node, name = res
-        except (NameNotFound, SyntaxError):
-            continue
-        break
-    if source is None:
-        raise NameNotFound(f'"{var_name}" not found.')
-    return source, node, name
+    scoped_name = ScopedName(var_name, None)
+    return find_scopedname_in_ipython(scoped_name)
 
 
-def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
+def find_scopedname(scoped_name: ScopedName) -> Tuple[str, ast.AST, str]:
+    """Find the piece of code that assigned a value to the variable with name *scoped_name* in the
+    module *module*.
+
+    If *module* is not specified, this uses `__main__`. In that case, the ipython history will
+    be searched as well.
+
+    :param scoped_name: Name of the variable to look for.
+    :returns: Tuple with source code segment, corresponding ast node and variable name.
+    """
+    module = scoped_name.scope.module
+    if module is None:
+        module = sys.modules['__main__']
+    try:
+        return find_scopedname_in_module(scoped_name, module)
+    except TypeError as exc:
+        if module is not sys.modules['__main__']:
+            raise NameNotFound(format_scoped_name_not_found(scoped_name)) from exc
+        return find_scopedname_in_ipython(scoped_name)
+
+
+def find(var_name: str, module=None) -> Tuple[str, ast.AST, str]:
     """Find the piece of code that assigned a value to the variable with name *var_name* in the
     module *module*.
 
@@ -768,20 +978,35 @@ def find(var_name: str, module=None, i: int = 0) -> Tuple[str, ast.AST]:
 
     :param var_name: Name of the variable to look for.
     :param module: Module to search (defaults to __main__).
-    :returns: Tuple with source code segment and corresponding ast node.
+    :returns: Tuple with source code segment, corresponding ast node and variable name.
     """
     if module is None:
         module = sys.modules['__main__']
     try:
-        return find_in_module(var_name, module, i)
+        return find_in_module(var_name, module)
     except TypeError as exc:
         if module is not sys.modules['__main__']:
             raise NameNotFound(f'"{var_name}" not found.') from exc
-        return find_in_ipython(var_name, i)
+        return find_in_ipython(var_name)
 
 
 class NameNotFound(Exception):
     """Exception indicating that a name could not be found. """
+
+
+def format_scoped_name_not_found(scoped_name):
+    """Produce a nice error message for the case a :class:`ScopedName` isn't found. """
+    variants = scoped_name.variants()
+    if len(variants) > 1:
+        joined = ', '.join(f'"{v}"' for v in variants[:-2])
+        joined += f' or "{variants[-2]}"'
+        variant_str = f'(or one of its variants: {joined})'
+    else:
+        variant_str = ''
+    return (
+        f'Could not find "{scoped_name.name}" in scope "{scoped_name.scope.dot_string()}".\n\n'
+        f'Please make sure that "{scoped_name.name}" is defined {variant_str}.'
+    )
 
 
 def split_call(call_source):

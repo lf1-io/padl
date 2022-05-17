@@ -1,0 +1,12 @@
+from padl import transform
+
+
+CONST = 20
+
+
+@transform
+def z(x):
+    return x*CONST
+
+
+_pd_main = z

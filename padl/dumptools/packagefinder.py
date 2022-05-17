@@ -13,6 +13,7 @@ from importlib_metadata import packages_distributions
 
 
 def standard_lib_names_gen(include_underscored=False):
+    """Get a packages from the standard library. """
     standard_lib_dir = os.path.dirname(os.__file__)
     for filename in os.listdir(standard_lib_dir):
         if not include_underscored and filename.startswith('_'):
@@ -109,7 +110,8 @@ def dump_requirements(nodes, strict=False):
         except RequirementNotFound as exc:
             if strict and package not in _ignore_requirements:
                 raise exc
-            warn(f'The "{package}" requirement was not found.')
+            if not strict:
+                warn(f'The "{package}" requirement was not found.')
             continue
         result += f'{dist}=={version(dist)}\n'
     return result

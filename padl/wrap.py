@@ -15,17 +15,8 @@ import torch
 from padl.dumptools import ast_utils, var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform
+    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _set_local_varname
 )
-
-
-def _set_local_varname(frame, event, _args, scope):
-    if event == 'return':
-        for k, v in frame.f_locals.items():
-            try:
-                v._pd_varname[scope] = k
-            except AttributeError:
-                continue
 
 
 def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None):
@@ -55,7 +46,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
                 call = None
                 wrap_type = 'decorator'
 
-    # if this is the decorator case we drop one leven from the scope (this is the decorated
+    # if this is the decorator case we drop one level from the scope (this is the decorated
     # function itself)
     drop_n = 1 if call is None else 0
     if call_info is None:

@@ -1,0 +1,10 @@
+from padl import transform
+
+
+@transform
+def mutated_transform(arg):
+    return arg * 2
+
+
+mutated_transform = mutated_transform.pd_to('cpu')
+_pd_main = mutated_transform

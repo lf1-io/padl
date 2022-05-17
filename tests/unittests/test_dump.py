@@ -73,10 +73,36 @@ def maketransform():
     return z
 
 
+def maketransform2():
+    CONST = 20
+    @transform
+    def z(x):
+        return x*CONST
+    return z
+
+
 @transform
 def hangin_indent(a=1,
                   b=2):
     return a, b
+
+
+@transform
+def mutated_transform(arg):
+    return arg * 2
+
+
+mutated_transform = mutated_transform.pd_to('cpu')
+
+
+@transform
+def mutated_recursive_transform(arg):
+    if arg == 0:
+        return arg
+    return 1 + mutated_recursive_transform(arg - 1)
+
+
+mutated_recursive_transform = mutated_recursive_transform.pd_to('cpu')
 
 
 @transform
@@ -176,6 +202,11 @@ def test_nested_dump_d():
     assert t._pd_dumps() == read_dump('nested_d')
 
 
+def test_nested_dump_e():
+    t = maketransform2()
+    assert t._pd_dumps() == read_dump('nested_e')
+
+
 c_a = x >> y >> x
 c_b = x >> y >> x / x + c_a
 c_c = (x
@@ -228,6 +259,14 @@ def test_recursive():
     assert recursive._pd_dumps() == read_dump('recursive')
 
 
+def test_mutated_transform():
+    assert mutated_transform._pd_dumps() == read_dump('mutated_transform')
+
+
+def test_mutated_recursive_transform():
+    assert mutated_recursive_transform._pd_dumps() == read_dump('mutated_recursive_transform')
+
+
 def test_with_raises():
     with open(__file__) as f:
         x = f.read()
@@ -269,6 +308,19 @@ def test_dotimport():
 def test_dump_hanging_indent():
     dump = hangin_indent._pd_dumps()
     assert dump == read_dump('hanging_indent')
+
+
+def test_varname_same_as_arg():
+    @transform
+    class C:
+        def __init__(self, x):
+            ...
+
+        def __call__(self, x):
+            return x
+    b = 1
+    b = C(b)
+    assert b._pd_dumps() == read_dump('varname_same_as_arg')
 
 
 class TestOtherModule:

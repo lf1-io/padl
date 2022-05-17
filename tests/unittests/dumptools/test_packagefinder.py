@@ -8,6 +8,25 @@ import torch
 from padl.dumptools import packagefinder
 
 
+class TestStandardLibNameGen:
+    def test_works(self):
+        res = list(packagefinder.standard_lib_names_gen())
+        for x in res:
+            assert isinstance(x, str)
+            assert not x.startswith('_')
+        assert 'dis' in res
+        assert 'random' in res
+        assert 'datetime' in res
+
+    def test_include_underscored(self):
+        res = list(packagefinder.standard_lib_names_gen(True))
+
+        for x in res:
+            assert isinstance(x, str)
+
+        assert any(x.startswith('_') for x in res)
+
+
 class TestGetDistributionName:
     def test_same_name(self):
         assert packagefinder.get_distribution_name('torch') == 'torch'
