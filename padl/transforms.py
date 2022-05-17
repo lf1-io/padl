@@ -462,16 +462,18 @@ class Transform:
         # update the global dependencies with the scope
         start.update_globals()
 
-        # if the own name is the same as something the transform depends on, skip one
-        # name
         if self.pd_varname() is not None:
             my_name = ScopedName(self.pd_varname(), my_scope)
-            if (len(start.globals_) > 1 and any(x == my_name for x in start.globals_)):
+            # if the own name is the same as something the transform depends on, skip one
+            # example: x = Bla(x)
+            if len(start.globals_) > 1 and any(x == my_name for x in start.globals_):
                 next_codenode = find_codenode(my_name,
                                               self._pd_external_full_dump_modules)
 
                 start.globals_ = set(next_codenode.globals_)
-            if my_name.name == name and any(x == my_name for x in start.globals_):
+            # if the name is the same as the varname, skip the startnode
+            # example name = name
+            if len(start.globals_) == 1 and my_name.name == name and any(x == my_name for x in start.globals_):
                 next_codenode = find_codenode(my_name,
                                               self._pd_external_full_dump_modules)
 
@@ -1414,7 +1416,7 @@ class ClassTransform(AtomicTransform):
     def source(self) -> str:
         """The class source code. """
         (body_msg, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
-                                                                 self._pd_call_info.scope))
+                                                              self._pd_call_info.scope))
         try:
             return 'class ' + body_msg.split('class ', 1)[1]
         except IndexError:
