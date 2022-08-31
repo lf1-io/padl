@@ -99,7 +99,7 @@ class Test_GetScopeFromFrame:
 
 class A:
     def __init__(self):
-        self.frameinfo = inspector.non_init_caller_frameinfo()
+        self.frameinfo = inspector.non_init_caller_frameinfo(self)
 
 
 class B(A):
@@ -107,10 +107,17 @@ class B(A):
         super().__init__()
 
 
+class C:
+    def __init__(self):
+        a = A()
+        self.a = a
+        self.frameinfo = inspect.stack()[0]
+
+
 class TestNonInitCallerFrameinfo:
     def test_trivial(self):
         here = inspect.stack()[0]
-        there = inspector.non_init_caller_frameinfo()
+        there = inspector.non_init_caller_frameinfo(self)
         assert here.filename == there.filename
         assert here.function == there.function
 
@@ -126,6 +133,12 @@ class TestNonInitCallerFrameinfo:
         assert here.filename == there.filename
         assert here.function == there.function
 
+    def test_different_class_init(self):
+        c = C()
+        in_c = c.frameinfo
+        a_caller = c.a.frameinfo
+        assert in_c.filename == a_caller.filename
+        assert in_c.function == a_caller.function
 
 class TestTraceThis:
     def test_works(self):

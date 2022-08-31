@@ -107,14 +107,20 @@ def _get_scope_from_frame(frame, drop_n):
     return scope
 
 
-def non_init_caller_frameinfo() -> inspect.FrameInfo:
-    """Get the FrameInfo for the first outer frame that is not of an "__init__" method. """
+def non_init_caller_frameinfo(obj) -> inspect.FrameInfo:
+    """Get the FrameInfo for the first outer frame that is not of an "__init__" method of *obj*. 
+
+    :param obj: The object to compare against.
+    """
     stack = inspect.stack()
     frameinfo = None
     for frameinfo in stack[1:]:
         if frameinfo.function != '__init__':
             break
-    assert frameinfo is not None and frameinfo.function != '__init__'
+        if frameinfo.function == '__init__' and all(v != obj for v in frameinfo.frame.f_locals.values()):
+            # if the frame is an __init__ method and the locals don't contain the object, it's not not a super __init__
+            break
+    assert frameinfo is not None
     return frameinfo
 
 

@@ -161,7 +161,7 @@ class Transform:
                  pd_name: Optional[str] = None):
         if call_info is None:
             # if the call was from here (i.e. transform.py), ignore the scope
-            caller_frameinfo = inspector.non_init_caller_frameinfo()
+            caller_frameinfo = inspector.non_init_caller_frameinfo(self)
             calling_module_name = caller_frameinfo.frame.f_globals['__name__']
             call_info = inspector.CallInfo(ignore_scope=calling_module_name == __name__)
         self._pd_call_info = call_info
@@ -1311,7 +1311,7 @@ class ClassTransform(AtomicTransform):
 
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
                  arguments: Optional[OrderedDict] = None):
-        caller_frameinfo = inspector.non_init_caller_frameinfo()
+        caller_frameinfo = inspector.non_init_caller_frameinfo(self)
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         if call_info.function != '<module>' and not ignore_scope:
             inspector.trace_this(_set_local_varname, caller_frameinfo.frame, scope=call_info.scope)
