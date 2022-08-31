@@ -1114,9 +1114,11 @@ class AtomicTransform(Transform):
     """
 
     def __init__(self, call: str, call_info: Optional[inspector.CallInfo] = None,
-                 pd_name: Optional[str] = None):
+                 pd_name: Optional[str] = None,
+                 fulldump_relevant_module: Optional[types.ModuleType] = None):
         super().__init__(call_info, pd_name)
         self._pd_call = call
+        self._pd_set_full_dump_relevant_module = fulldump_relevant_module
 
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
         return self._pd_call
@@ -1310,7 +1312,7 @@ class ClassTransform(AtomicTransform):
         cls._pd_class_call_info = inspector.CallInfo()
 
     def __init__(self, pd_name: str = None, ignore_scope: bool = False,
-                 arguments: Optional[OrderedDict] = None):
+                 arguments: Optional[OrderedDict] = None, fulldump_relevant_module: Optional[types.ModuleType] = None):
         caller_frameinfo = inspector.non_init_caller_frameinfo(self)
         call_info = inspector.CallInfo(caller_frameinfo, ignore_scope=ignore_scope)
         if call_info.function != '<module>' and not ignore_scope:
@@ -1322,7 +1324,8 @@ class ClassTransform(AtomicTransform):
             self,
             call=call,
             call_info=call_info,
-            pd_name=pd_name
+            pd_name=pd_name,
+            fulldump_relevant_module=fulldump_relevant_module
         )
 
     def _pd_evaluable_repr_inner(self, indent: int = 0) -> str:
@@ -1334,6 +1337,8 @@ class ClassTransform(AtomicTransform):
 
     @property
     def _pd_full_dump_relevant_module(self):
+        if self._pd_set_full_dump_relevant_module is not None:
+            return self._pd_set_full_dump_relevant_module
         return inspect.getmodule(self.__class__)
 
     def _pd_codegraph_add_startnodes_import_var(self, graph, name):

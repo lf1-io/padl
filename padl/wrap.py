@@ -64,7 +64,7 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     return wrapper
 
 
-def _wrap_class(cls, ignore_scope=False):
+def _wrap_class(cls, ignore_scope=False, fulldump_relevant_module=None):
     """Patch __init__ of class such that the initialization statement is stored
     as an attribute `_pd_call`. In addition make class inherit from Transform.
 
@@ -102,7 +102,8 @@ def _wrap_class(cls, ignore_scope=False):
         old__init__(self, *args, **kwargs)
         args = signature.bind(None, *args, **kwargs).arguments
         args.pop(next(iter(args.keys())))
-        trans_class.__init__(self, ignore_scope=ignore_scope, arguments=args)
+        trans_class.__init__(self, ignore_scope=ignore_scope, arguments=args, 
+                             fulldump_relevant_module=fulldump_relevant_module)
 
     functools.update_wrapper(__init__, old__init__)
 
@@ -142,8 +143,9 @@ def _wrap_class_instance(obj, ignore_scope=False):
     call = inspector.get_segment_from_frame(caller_frameinfo.frame, 'call')
     call = re.sub(r'\n\s*', ' ', call)
     obj_copy._pd_arguments = None
+    obj_copy._pd_class_call_info = call_info
 
-    AtomicTransform.__init__(obj_copy, call=call, call_info=call_info)
+    AtomicTransform.__init__(obj_copy, call=call, call_info=call_info, fulldump_relevant_module=inspector.caller_module())
 
     return obj_copy
 
@@ -230,7 +232,7 @@ class PatchedModule:
         x = getattr(self._module, key)
         if inspect.isclass(x):
             if hasattr(x, '__call__') and not isinstance(x.__call__, MethodWrapperType):
-                return _wrap_class(x)
+                return _wrap_class(x, fulldump_relevant_module=inspector.caller_module())
             return x
         if callable(x):
             call_info = inspector.CallInfo()

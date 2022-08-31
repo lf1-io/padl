@@ -1,9 +1,13 @@
 import pytest
 import sys
+from torch import nn
+from torchvision import transforms as tvt
 
 from padl import transform, group, IfTrain, Batchify, Unbatchify, importdump, fulldump
 import padl.dumptools.var2mod
 from tests.material import transforms_in_module as tim
+
+nn = transform(nn)
 
 
 CONST = 1
@@ -321,6 +325,17 @@ def test_varname_same_as_arg():
     b = 1
     b = C(b)
     assert b._pd_dumps() == read_dump('varname_same_as_arg')
+
+
+patched = nn.Conv2d(1, 2, 3)
+patched1 = transform(tvt.ToTensor())
+
+def test_patched_module_dump():
+    assert 'import patched' not in patched._pd_dumps()
+
+
+def test_patched_object_dump():
+    assert 'import patched1' not in patched1._pd_dumps()
 
 
 class TestOtherModule:
