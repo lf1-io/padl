@@ -103,12 +103,13 @@ def _get_scope_from_frame(frame, drop_n):
     scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
                                         call_source, module, drop_n,
                                         calling_scope, frame, locs)
-    assert len(scope) <= 1, 'scope longer than 1 currently not supported'
+    # TODO: fix this and readd (problem with transforms initialized in __init__)
+    #assert len(scope) <= 1, 'scope longer than 1 currently not supported'
     return scope
 
 
 def non_init_caller_frameinfo(obj) -> inspect.FrameInfo:
-    """Get the FrameInfo for the first outer frame that is not of an "__init__" method of *obj*. 
+    """Get the FrameInfo for the first outer frame that is not of an "__init__" method of *obj*.
 
     :param obj: The object to compare against.
     """
@@ -117,8 +118,9 @@ def non_init_caller_frameinfo(obj) -> inspect.FrameInfo:
     for frameinfo in stack[1:]:
         if frameinfo.function != '__init__':
             break
-        if frameinfo.function == '__init__' and all(v != obj for v in frameinfo.frame.f_locals.values()):
-            # if the frame is an __init__ method and the locals don't contain the object, it's not not a super __init__
+        if all(v != obj for v in frameinfo.frame.f_locals.values()):
+            # if the frame is an __init__ method and the locals don't contain the
+            # object, it's not not a super __init__
             break
     assert frameinfo is not None
     return frameinfo
