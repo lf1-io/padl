@@ -576,10 +576,15 @@ class Scope:
         for x in branch:
             if isinstance(x, ast.FunctionDef):
                 function_defs.append(x)
-                if isinstance(previous, ast.ClassDef) and not any([x.id == 'staticmethod' for x in x.decorator_list]):
-                    x.is_dynamic_method = True
+                if isinstance(previous, ast.ClassDef):
+                    x.full_name = f'{previous.name}::{x.name}'
+                    if not any([getattr(x, 'id', None) == 'staticmethod' for x in x.decorator_list]):
+                        x.is_dynamic_method = True
+                    else:
+                        x.is_dynamic_method = False
                 else:
                     x.is_dynamic_method = False
+                    x.full_name = x.name
             previous = x
 
         if drop_n > 0:
@@ -623,7 +628,7 @@ class Scope:
             module_node = ast.Module()
             module_node.body = []
             module_node.body = fdef.body
-            scopelist.append((fdef.name, module_node))
+            scopelist.append((fdef.full_name, module_node))
 
         # add call assignments to inner scope
         scopelist[0][1].body = call_assignments + scopelist[0][1].body
