@@ -378,9 +378,9 @@ class Signature:
     def remove_fist(self):
         '''Remove the fist positional argument. '''
         if self.argnames:
-            self.argnames = self.argnames[1:]
+            return self.argnames.pop(0)
         else:
-            self.pos_only_argnames = self.pos_only_argnames[1:]
+            return self.pos_only_argnames.pop(0)
 
     @property
     def all_argnames(self):
@@ -607,12 +607,21 @@ class Scope:
 
         if function_defs[-1].is_dynamic_method:
             # remove 'self' args from dynamic methods
-            signature.remove_fist()
+            self_var = signature.remove_fist()
 
         assignments = signature.get_call_assignments(pos_args, keyword_args, star_args, 
                                                      star_kwargs)
 
         call_assignments = []
+        if function_defs[-1].is_dynamic_method:
+            # TODO: make this work, see test_transforms.test_classtransform_created_in_init_with_self_can_be_dumped
+            src = f'{self_var} = please_do_not_need_a_self_attribute'
+            assignment = ast.parse(src).body[0]
+            assignment._final_source = src
+            _SetAttribute('_scope', calling_scope).visit(assignment.value)
+            call_assignments.append(assignment)
+
+
         for k, v in assignments.items():
             src = f'{k} = {v}'
             assignment = ast.parse(src).body[0]
