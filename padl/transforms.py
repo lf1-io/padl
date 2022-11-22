@@ -479,9 +479,12 @@ class Transform:
 
         # if name is given, add the node to the CodeGraph, otherwise only use the dependencies
         if name is not None:
-            graph[ScopedName(name, my_scope)] = start
+            scoped_name = ScopedName(name, my_scope)
+            graph[scoped_name] = start
+        else:
+            scoped_name = None
 
-        return set(start.globals_)
+        return set(start.globals_), scoped_name
 
     def _pd_label_ast_node(self, ast_node, graph):
         _SetAttribute('_scope', self._pd_call_info.scope).visit(ast_node)
@@ -551,11 +554,11 @@ class Transform:
         else:
             new_name = name
 
-        todo = self._pd_codegraph_add_startnodes(graph, new_name)
+        todo, scoped_name = self._pd_codegraph_add_startnodes(graph, new_name)
 
         self._pd_codegraph_find_dependencies(graph, todo)
 
-        return graph
+        return graph, scoped_name
 
     def _pd_codegraph_find_dependencies(self, graph, todo):
         # if this transform has closurevars, get them (if there are transforms in the closure, we
@@ -588,12 +591,14 @@ class Transform:
                 else:
                     next_obj = all_vars_dict[next_codenode.name.name]
                 # pylint: disable=protected-access
-                next_obj._pd_build_codegraph(graph, next_codenode.name.name)
+                _, scoped_name = next_obj._pd_build_codegraph(graph, next_codenode.name.name)
             except (KeyError, AttributeError):
                 pass
             else:
                 next_name.pos = None
                 next_name.scope = next_obj._pd_call_info.scope
+                if scoped_name is not None:
+                    graph[next_name] = graph[scoped_name]
                 continue
 
             graph[next_name] = next_codenode
@@ -664,7 +669,7 @@ class Transform:
         :param strict_requirements: If *True*, fail if any of the Transform's requirements cannot
             be found. If *False* print a warning if that's the case.
         """
-        graph = self._pd_build_codegraph(name='_pd_main')
+        graph, _ = self._pd_build_codegraph(name='_pd_main')
         Serializer.save_all(graph, path)
         code = graph.dumps()
         if return_requirements:
@@ -1348,7 +1353,8 @@ class ClassTransform(AtomicTransform):
         import_source = f'from {instance_scope.module_name} import {varname}'
         import_node = CodeNode.from_source(import_source, instance_scope, name=varname)
 
-        graph[ScopedName(varname, instance_scope)] = import_node
+        scoped_name = ScopedName(varname, instance_scope)
+        graph[scoped_name] = import_node
 
         if name != varname:
             start_source = f'{name or "_pd_dummy"} = {varname}'
@@ -1356,9 +1362,12 @@ class ClassTransform(AtomicTransform):
                                               instance_scope,
                                               name=name or "_pd_dummy")
             if name is not None:
-                graph[ScopedName(name, instance_scope)] = start_node
+                scoped_name = ScopedName(name, instance_scope)
+                graph[scoped_name] = start_node
+            else:
+                scoped_name = None
 
-        return set()
+        return set(), scoped_name
 
     def _pd_codegraph_add_startnodes_import(self, graph, name):
         instance_scope = self._pd_call_info.scope
@@ -1384,13 +1393,16 @@ class ClassTransform(AtomicTransform):
         start_source = f'{name or "_pd_dummy"} = {call}'
         start_node = CodeNode.from_source(start_source, instance_scope, name=name or "_pd_dummy")
         if name is not None:
-            graph[ScopedName(name, call_scope)] = start_node
+            scoped_name = ScopedName(name, call_scope)
+            graph[scoped_name] = start_node
+        else:
+            scoped_name = None
         nodes.append(start_node)
 
         dependencies = set()
         for node in nodes:
             dependencies.update(node.globals_)
-        return dependencies
+        return dependencies, scoped_name
 
     def _pd_codegraph_add_startnodes_full(self, graph, name):
         call_scope = self._pd_call_info.scope
@@ -1402,13 +1414,16 @@ class ClassTransform(AtomicTransform):
         start_source = f'{name or "_pd_dummy"} = {call}'
         start_node = CodeNode.from_source(start_source, call_scope, name=name or '_pd_dummy')
         if name is not None:
-            graph[ScopedName(name, call_scope)] = start_node
+            scoped_name = ScopedName(name, call_scope)
+            graph[scoped_name] = start_node
+        else:
+            scoped_name = None
 
-        for scoped_name in start_node.globals_:
-            if scoped_name.toplevel_name == self.__class__.__name__:
-                scoped_name.scope = class_scope
+        for global_ in start_node.globals_:
+            if global_.toplevel_name == self.__class__.__name__:
+                global_.scope = class_scope
 
-        return set(start_node.globals_)
+        return set(start_node.globals_), scoped_name
 
     def _pd_codegraph_add_startnodes(self, graph, name):
         if self._pd_full_dump:
@@ -1418,12 +1433,12 @@ class ClassTransform(AtomicTransform):
     @property
     def source(self) -> str:
         """The class source code. """
-        (body_msg, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
+        (body, _), _ = symfinder.find_in_scope(ScopedName(self.__class__.__name__,
                                                                  self._pd_call_info.scope))
         try:
-            return 'class ' + body_msg.split('class ', 1)[1]
+            return 'class ' + body.split('class ', 1)[1]
         except IndexError:
-            return body_msg
+            return body
 
     def _pd_split_call(self):
         """Split class initialization call from its arguments.
@@ -1783,7 +1798,9 @@ class Pipeline(Transform):
         else:
             name = defined_as
         node = CodeNode.from_source(source, scope, name=name)
-        graph[ScopedName(name, scope)] = node
+        scoped_name = ScopedName(name, scope)
+        graph[scoped_name] = node
+        return scoped_name
 
     def _pd_build_codegraph(self, graph=None, name=None):
         """Build a codegraph defining the transform.
@@ -1797,10 +1814,10 @@ class Pipeline(Transform):
             graph = CodeGraph()
 
         if not self._pd_full_dump and self._defined_somewhere_else():
-            self._codegraph_add_import_startnode(graph, name)
-            return graph
+            scoped_name = self._codegraph_add_import_startnode(graph, name)
+            return graph, scoped_name
 
-        todo = self._pd_codegraph_add_startnodes(graph, name)
+        todo, scoped_name = self._pd_codegraph_add_startnodes(graph, name)
 
         # iterate over sub-transforms and update the codegraph with their codegraphs
         for transform in self.transforms:
@@ -1809,7 +1826,7 @@ class Pipeline(Transform):
             transform._pd_build_codegraph(graph, varname)
 
         self._pd_codegraph_find_dependencies(graph, todo)
-        return graph
+        return graph, scoped_name
 
     def _pd_longrepr(self, formatting=True, marker=None):
         between = f'\n{make_green(self.display_op, not formatting)}  \n'

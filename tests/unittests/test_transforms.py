@@ -806,7 +806,7 @@ class TestFunctionTransform:
 
     def test_startnode_fulldump(self):
         graph = var2mod.CodeGraph()
-        todo = plus_global._pd_codegraph_add_startnodes(graph, 'testing')
+        todo, _ = plus_global._pd_codegraph_add_startnodes(graph, 'testing')
         assert len(graph) == 1
         k, v = list(graph.items())[0]
         assert k.name == 'testing'
@@ -822,7 +822,7 @@ class TestFunctionTransform:
     def test_startnode_importdump(self):
         from tests.material import transforms_in_module as tim
         graph = var2mod.CodeGraph()
-        todo = tim.y._pd_codegraph_add_startnodes(graph, 'testing')
+        todo, _ = tim.y._pd_codegraph_add_startnodes(graph, 'testing')
 
         assert len(graph) == 1
         k, v = list(graph.items())[0]
@@ -836,7 +836,7 @@ class TestFunctionTransform:
     def test_startnode_importdump_no_name(self):
         from tests.material import transforms_in_module as tim
         graph = var2mod.CodeGraph()
-        todo = tim.y._pd_codegraph_add_startnodes(graph, None)
+        todo, _ = tim.y._pd_codegraph_add_startnodes(graph, None)
 
         assert len(graph) == 1
         k, v = list(graph.items())[0]
@@ -850,7 +850,7 @@ class TestFunctionTransform:
     def test_startnode_importdump_inline(self):
         from tests.material import transforms_in_module as tim
         graph = var2mod.CodeGraph()
-        todo = transform(tim.tk)._pd_codegraph_add_startnodes(graph, 'testing')
+        todo, _ = transform(tim.tk)._pd_codegraph_add_startnodes(graph, 'testing')
 
         assert len(graph) == 3
         items = list(graph.items())
