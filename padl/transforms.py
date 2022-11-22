@@ -1263,7 +1263,7 @@ class FunctionTransform(AtomicTransform):
         if self._source is not None:
             return self._source
         body = inspect.getsource(self.function)
-        splits = re.split('(\s+def )', body, 1)
+        splits = re.split(r'(\s+def )', body, 1)
         leading_whites = len(splits[0]) - len(splits[0].lstrip(' '))
         body = ''.join(splits[1:])
         body = '\n'.join([x[leading_whites:] for x in body.split('\n')])
