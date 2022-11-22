@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import padl
-from padl import transforms as pd, transform, Identity, batch, unbatch, group
+from padl import transforms as pd, transform, Identity, batch, unbatch, group, identity
 from padl.transforms import Batchify, Unbatchify, TorchModuleTransform, RequirementNotFound
 from padl.dumptools.serialize import value
 from padl.dumptools import var2mod

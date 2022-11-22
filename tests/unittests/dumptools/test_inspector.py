@@ -63,7 +63,7 @@ class Test_GetScopeFromFrame:
         assert 'b = 2' in unparsed
         assert 'c = 3' in unparsed
         assert "kwargs = {'u': 123}" in unparsed
-        assert all(x.value._scope == 'Scope[tests.unittests.dumptools.test_inspector.test_nested]'
+        assert all(x.value._scope == 'Scope[tests.unittests.dumptools.test_inspector.Test_GetScopeFromFrame::test_nested]'
                    for x in assigns)
 
     def test_chain_nested(self):
@@ -76,7 +76,7 @@ class Test_GetScopeFromFrame:
             'Scope[tests.unittests.dumptools.test_inspector.chain_nested]'
         outer_scope = chain_scope.scopelist[0][1].body[0].value._scope
         assert outer_scope == \
-            'Scope[tests.unittests.dumptools.test_inspector.test_chain_nested]'
+            'Scope[tests.unittests.dumptools.test_inspector.Test_GetScopeFromFrame::test_chain_nested]'
         assign = outer_scope.scopelist[0][1].body[0]
         assert ast_utils.unparse(assign).strip() == 'e = 1'
         assign = chain_scope.scopelist[0][1].body[0]
