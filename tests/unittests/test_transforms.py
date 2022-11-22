@@ -1253,3 +1253,12 @@ def test_missing_package(tmp_path):
     assert str(excinfo.value) == ('Could not find an installed version of "padl", which this '
                                   'Transform depends on. Run with *strict_requirements=False* '
                                   'to ignore.')
+
+
+def test_pipelines_have_correct_scope():
+    scope = (identity >> identity)._pd_call_info.scope
+    assert str(scope) == 'Scope[tests.unittests.test_transforms.test_pipelines_have_correct_scope]'
+    scope = (identity + identity)._pd_call_info.scope
+    assert str(scope) == 'Scope[tests.unittests.test_transforms.test_pipelines_have_correct_scope]'
+    scope = (identity / identity)._pd_call_info.scope
+    assert str(scope) == 'Scope[tests.unittests.test_transforms.test_pipelines_have_correct_scope]'

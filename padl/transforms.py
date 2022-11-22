@@ -295,7 +295,7 @@ class Transform:
         Example:
             t = a >> b >> c
         """
-        return Compose([self, other], call_info=self._pd_call_info)
+        return Compose([self, other])
 
     def __add__(self, other: "Transform") -> "Rollout":
         """Rollout with *other*.
@@ -303,7 +303,7 @@ class Transform:
         Example:
             t = a + b + c
         """
-        return Rollout([self, other], call_info=self._pd_call_info)
+        return Rollout([self, other])
 
     def __truediv__(self, other: "Transform") -> "Parallel":
         """Parallel with *other*.
@@ -311,7 +311,7 @@ class Transform:
         Example:
             t = a / b / c
         """
-        return Parallel([self, other], call_info=self._pd_call_info)
+        return Parallel([self, other])
 
     def __sub__(self, name: str) -> "Transform":
         """Create a named clone of the transform.
