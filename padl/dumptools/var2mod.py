@@ -475,7 +475,6 @@ class _Renamer(ast.NodeVisitor):
 
     def visit_Attribute(self, node):
         name = ast_utils.get_source_segment(self.source, node)
-        print(name)
         if not self.is_candidate(name.split('.', 1)[0]):
             return
 
