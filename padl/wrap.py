@@ -123,6 +123,9 @@ def _wrap_class(cls, ignore_scope=False, fulldump_relevant_module=None):
 
     @functools.wraps(cls.__init__)
     def __init__(self, *args, **kwargs):
+        # needed to instruct dumptools.inspector._parent_frame to skip this frame, otherwise
+        # this would mess up argument extraction
+        __SKIP_THIS_FRAME = True  
         old__init__(self, *args, **kwargs)
         args = signature.bind(None, *args, **kwargs).arguments
         args.pop(next(iter(args.keys())))

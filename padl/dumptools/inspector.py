@@ -71,6 +71,17 @@ class CallInfo:
         return self.scope.module
 
 
+def _parent_frame(frame):
+    """Get the parent (calling) frame of *frame*. 
+
+    This skips all frames that have a variable called "__SKIP_THIS_FRAME" in their locals.
+    """
+    parent = frame.f_back
+    if parent is None or '__SKIP_THIS_FRAME' not in parent.f_locals:
+        return parent
+    return _parent_frame(parent)
+
+
 # exclude these modules from detailed scope analysis (as that slows testing down in python 3.7.)
 _EXCLUDED_MODULES = ['pytest', 'pluggy', '_pytest']
 
@@ -79,27 +90,28 @@ def _get_scope_from_frame(frame, drop_n):
     """Get the :class:`~symfinder.Scope` from the frame object *frame*. """
     module = _module(frame)
     # don't dive deeper for excluded modules
+    parent = _parent_frame(frame)
     if any(module.__name__.startswith(excluded_module) for excluded_module in _EXCLUDED_MODULES):
         return symfinder.Scope.toplevel(module)
-    # don't dive deeper if f_back is None
-    if frame.f_back is None:
+    # don't dive deeper if parent is None
+    if parent is None:
         return symfinder.Scope.toplevel(module)
     # don't dive deeper after main
-    if module.__name__ == '__main__' and _module(frame.f_back) != module:
+    if module.__name__ == '__main__' and _module(parent) != module:
         return symfinder.Scope.toplevel(module)
     # don't dive deeper if not a call
     if frame.f_code.co_name == '<module>':
         return symfinder.Scope.toplevel(module)
 
     try:
-        call_source, locs = get_segment_from_frame(frame.f_back, 'call', return_locs=True)
+        call_source, locs = get_segment_from_frame(parent, 'call', return_locs=True)
     except (RuntimeError, FileNotFoundError, AttributeError, OSError):
         return symfinder.Scope.toplevel(module)
     try:
         definition_source = get_source(frame.f_code.co_filename)
     except FileNotFoundError:
         return symfinder.Scope.toplevel(module)
-    calling_scope = _get_scope_from_frame(frame.f_back, 0)
+    calling_scope = _get_scope_from_frame(parent, 0)
     scope = symfinder.Scope.from_source(definition_source, frame.f_lineno,
                                         call_source, module, drop_n,
                                         calling_scope, frame, locs)
