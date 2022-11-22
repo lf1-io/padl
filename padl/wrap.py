@@ -65,9 +65,16 @@ def _wrap_function(fun, ignore_scope=False, call_info: inspector.CallInfo = None
     return wrapper
 
 
+def _get_parent_of_in_mro(cls, target):
+    for i, ancestor in enumerate(cls.__mro__):
+        if ancestor is target:
+            return cls.__mro__[i + 1]
+    raise ValueError('Target not found.')
+
+
 def _wrap_class(cls, ignore_scope=False, fulldump_relevant_module=None):
     """Patch __init__ of class such that the initialization statement is stored
-    as an attribute `_pd_call`. In addition make class inherit from Transform.
+    as an attribute `_pd_call`. In addition make the class inherit from Transform.
 
     This is called by `transform`, don't call `_wrap_class` directly, always use `transform`.
 
