@@ -125,7 +125,7 @@ def _set_local_varname(frame, event, _args, scope, m=0):
         for k, v in frame.f_locals.items():
             try:
                 v._pd_varname[scope] = k
-            except AttributeError:
+            except (AttributeError, TypeError):
                 continue
 
 
