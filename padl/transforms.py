@@ -1131,13 +1131,39 @@ class AtomicTransform(Transform):
     def _pd_title(self, max_width=None) -> str:
         return self._pd_call
 
+    def _pd_subtransform_list(self):
+        return '\n'.join(f'{make_bold(i)}: {t}' 
+                         for i, t in enumerate(self._pd_direct_subtransforms)) 
+
+    def _pd_longrepr(self, formatting=True, marker=None) -> str:
+        try:
+            str_ = self.source
+        except (TypeError, symfinder.NameNotFound):
+            str_ = self._pd_call
+        lines = str_.splitlines()
+        if marker:
+            lines[0] = lines[0] + marker[1]
+
+        out = '\n'.join(lines)
+        stl = self._pd_subtransform_list()
+        if stl:
+            out = out + '\n\n\n' + stl
+        return out
+
     @property
     def _pd_direct_subtransforms(self) -> Iterator[Transform]:
         # pylint: disable=no-self-use
         globals_dict, nonlocals_dict = self._pd_closurevars
-        for v in chain(self.__dict__.values(), globals_dict.values(), nonlocals_dict.values()):
-            if isinstance(v, Transform):
-                yield v
+        all_vars = [t for t in chain(self.__dict__.items(), 
+                                     globals_dict.items(), 
+                                     nonlocals_dict.items())
+                    if isinstance(t[1], Transform)]
+        for _, v in sorted(all_vars, key=lambda x: x[0]):
+            yield v
+
+    def __getitem__(self, item):
+        items_ = list(self._pd_direct_subtransforms)
+        return items_[item]
 
 
 class FunctionTransform(AtomicTransform):
