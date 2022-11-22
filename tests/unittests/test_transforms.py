@@ -1274,6 +1274,17 @@ def test_classtransform_created_in_init_can_be_dumped():
     c.t._pd_dumps()
 
 
+class ClassWithTransformInInitReferringToSelf:
+    def __init__(self):
+        self.i = 1
+        self.t = SimpleClassTransform(self.i)
+
+
+def test_classtransform_created_in_init_with_self_can_be_dumped():
+    c = ClassWithTransformInInitReferringToSelf()
+    c.t._pd_dumps()
+
+
 @transform
 class TransformClassWithTransformInInit:
     def __init__(self, x):
