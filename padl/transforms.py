@@ -1242,25 +1242,32 @@ class FunctionTransform(AtomicTransform):
                                          my_scope,
                                          name=name or "_pd_dummy")
             if name is not None:
-                graph[ScopedName(name, my_scope)] = start
-            return set()
+                scoped_name = ScopedName(name, my_scope)
+                graph[scoped_name] = start
+            else:
+                scoped_name = None
+            return set(), scoped_name
 
         if name is not None:
             source += f' as {name}'
         else:
             name = self.__name__
 
-        graph[ScopedName(name, my_scope)] = CodeNode.from_source(source, my_scope, name=name)
-        return set()
+        scoped_name = ScopedName(name, my_scope)
+        graph[scoped_name] = CodeNode.from_source(source, my_scope, name=name)
+        return set(), scoped_name
 
     @property
     def source(self) -> str:
         """The source of the wrapped function. """
         if self._source is not None:
             return self._source
-        body_msg = inspect.getsource(self.function)
-        body_msg = ''.join(re.split('(def )', body_msg, 1)[1:])
-        return body_msg
+        body = inspect.getsource(self.function)
+        splits = re.split('(\s+def )', body, 1)
+        leading_whites = len(splits[0]) - len(splits[0].lstrip(' '))
+        body = ''.join(splits[1:])
+        body = '\n'.join([x[leading_whites:] for x in body.split('\n')])
+        return body.strip()
 
     @property
     @lru_cache(maxsize=128)
@@ -1269,15 +1276,6 @@ class FunctionTransform(AtomicTransform):
         if self._pd_number_of_inputs is None:
             return inspect.signature(self).parameters
         return [f'arg_{i}' for i in range(self._pd_number_of_inputs)]
-
-    def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        try:
-            str_ = self.source.split('\n')[:30]
-            if marker:
-                return str_[0] + marker[1] + '\n'.join(str_[1:])
-            return '\n'.join(str_)
-        except TypeError:
-            return self._pd_call + marker[1] + '\n' if marker else self._pd_call
 
     def _pd_shortrepr(self, formatting=True, max_width=None) -> str:
         if len(self._pd_longrepr().split('\n', 1)) == 1:
@@ -1500,15 +1498,6 @@ class ClassTransform(AtomicTransform):
                 break
         return ', '.join(max_args_list)
 
-    def _pd_longrepr(self, formatting=True, marker=None) -> str:
-        try:
-            str_ = self.source.split('\n')[:30]
-            if marker:
-                return str_[0] + marker[1] + '\n' + '\n'.join(str_[1:])
-            return '\n'.join(str_)
-        except symfinder.NameNotFound:
-            return self._pd_call + marker[1] if marker else self._pd_call
-
     def _pd_title(self, max_width=None) -> str:
         title = type(self).__name__
         if max_width is not None:
@@ -1573,8 +1562,11 @@ class TorchModuleTransform(ClassTransform):
 
     def _pd_longrepr(self, formatting=True, marker=None) -> str:
         out = torch.nn.Module.__repr__(self)
-        if marker:
-            return out + marker[1]
+        if marker is not None:
+            out = out + marker[1]
+        stl = self._pd_subtransform_list()
+        if stl:
+            out = out + '\n\n\n' + stl
         return out
 
 
