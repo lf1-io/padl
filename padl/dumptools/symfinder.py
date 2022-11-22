@@ -338,10 +338,7 @@ class _AssignFinder(_ThingFinder):
         return False
 
     def deparse(self):
-        try:
-            source = self._result._source
-        except AttributeError:
-            source = self.source
+        source = getattr(self._result, '_source', self.source)
         return ast_utils.get_source_segment(source, self._result)
 
 
