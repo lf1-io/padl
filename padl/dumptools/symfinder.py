@@ -1036,8 +1036,7 @@ def format_scoped_name_not_found(scoped_name):
     """Produce a nice error message for the case a :class:`ScopedName` isn't found. """
     variants = scoped_name.variants()
     if len(variants) > 1:
-        joined = ', '.join(f'"{v}"' for v in variants[:-2])
-        joined += f' or "{variants[-2]}"'
+        joined = ', '.join(f'"{v}"' for v in variants[:-1])
         variant_str = f'(or one of its variants: {joined})'
     else:
         variant_str = ''
