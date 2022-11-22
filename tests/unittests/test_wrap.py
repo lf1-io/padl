@@ -51,3 +51,19 @@ class TestModuleWrap:
             transform_.pd_save(tmp_path / 'test.padl', True)
             t_ = load(tmp_path / 'test.padl')
             assert t_.infer_apply(1.3) == transform_.infer_apply(1.3)
+
+
+class TestClassWrap:
+    def test_inheriting_from_wrapped_transform_works(self):
+        @transform
+        class A:
+            def __init__(self):
+                ...
+        @transform
+        class B(A):
+            def __init__(self):
+                super().__init__()
+
+        t = B()
+        t = A()
+        # should not fail

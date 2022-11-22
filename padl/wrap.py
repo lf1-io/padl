@@ -93,16 +93,32 @@ def _wrap_class(cls, ignore_scope=False, fulldump_relevant_module=None):
     :param cls: class to be wrapped
     :param ignore_scope: Don't try to determine the scope (use the toplevel scope instead).
     """
+    module = cls.__module__
+
+    if issubclass(cls, Transform):
+        # if cls is a Transform subclass, un-transform its bases
+        # as otherwise wrapping would try to make it inherit from transform twice, which 
+        # doesn't work
+        cls = copy.deepcopy(cls)
+        bases = []
+        for base in cls.__bases__:
+            try:
+                new_base = _get_parent_of_in_mro(base, Transform) 
+            except ValueError:
+                new_base = base
+            bases.append(new_base)
+        cls.__bases__ = tuple(bases)
+
     old__init__ = cls.__init__
+
+    # make cls inherit from AtomicTransform
     if issubclass(cls, torch.nn.Module):
         trans_class = TorchModuleTransform
     else:
         trans_class = ClassTransform
-
-    module = cls.__module__
-    # make cls inherit from AtomicTransform
     cls = type(cls.__name__, (trans_class, cls), {})
 
+    # patch the __init__, such that both the old __init__ and the transform __init__ are called
     signature = inspect.signature(old__init__)
 
     @functools.wraps(cls.__init__)
@@ -114,8 +130,8 @@ def _wrap_class(cls, ignore_scope=False, fulldump_relevant_module=None):
                              fulldump_relevant_module=fulldump_relevant_module)
 
     functools.update_wrapper(__init__, old__init__)
-
     cls.__init__ = __init__
+
     cls.__module__ = module
     cls._pd_class_call_info = inspector.CallInfo()
     return cls
