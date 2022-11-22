@@ -15,7 +15,8 @@ import torch
 from padl.dumptools import ast_utils, var2mod, inspector
 from padl.dumptools.sourceget import cut, get_source, original
 from padl.transforms import (
-    AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform, _set_local_varname
+    Transform, AtomicTransform, ClassTransform, FunctionTransform, TorchModuleTransform,
+    _set_local_varname
 )
 
 
