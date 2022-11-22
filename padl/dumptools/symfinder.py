@@ -378,6 +378,13 @@ class Signature:
     vararg: Optional[str] = None
     kwarg: Optional[str] = None
 
+    def remove_fist(self):
+        '''Remove the fist positional argument. '''
+        if self.argnames:
+            self.argnames = self.argnames[1:]
+        else:
+            self.pos_only_argnames = self.pos_only_argnames[1:]
+
     @property
     def all_argnames(self):
         return self.pos_only_argnames + self.argnames
@@ -563,6 +570,18 @@ class Scope:
         if not branch:
             branch = []
         function_defs = [x for x in branch if isinstance(x, ast.FunctionDef)]
+
+        function_defs = []
+        previous = None
+        for x in branch:
+            if isinstance(x, ast.FunctionDef):
+                function_defs.append(x)
+                if isinstance(previous, ast.ClassDef) and not any([x.id == 'staticmethod' for x in x.decorator_list]):
+                    x.is_dynamic_method = True
+                else:
+                    x.is_dynamic_method = False
+            previous = x
+
         if drop_n > 0:
             function_defs = function_defs[:-drop_n]
 
@@ -581,8 +600,16 @@ class Scope:
         # ...
         pos_args, keyword_args, star_args, star_kwargs = _get_call_signature(call_source)
         args = function_defs[-1].args
-        assignments = _parse_def_args(args, def_source).get_call_assignments(pos_args, keyword_args,
-                                                                             star_args, star_kwargs)
+
+        signature = _parse_def_args(args, def_source)
+
+        if function_defs[-1].is_dynamic_method:
+            # remove 'self' args from dynamic methods
+            signature.remove_fist()
+
+        assignments = signature.get_call_assignments(pos_args, keyword_args, star_args, 
+                                                     star_kwargs)
+
         call_assignments = []
         for k, v in assignments.items():
             src = f'{k} = {v}'

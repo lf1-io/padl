@@ -1262,3 +1262,13 @@ def test_pipelines_have_correct_scope():
     assert str(scope) == 'Scope[tests.unittests.test_transforms.test_pipelines_have_correct_scope]'
     scope = (identity / identity)._pd_call_info.scope
     assert str(scope) == 'Scope[tests.unittests.test_transforms.test_pipelines_have_correct_scope]'
+
+
+class ClassWithTransformInInit:
+    def __init__(self, x):
+        self.t = SimpleClassTransform(x)
+
+
+def test_classtransform_created_in_init_can_be_dumped():
+    c = ClassWithTransformInInit(1)
+    c.t._pd_dumps()
